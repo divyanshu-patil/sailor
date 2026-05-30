@@ -1,0 +1,7 @@
+{
+  "name": "@sailor/backend",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "uv run uvicorn main:app --reload --port 8000"
+  }
+}
