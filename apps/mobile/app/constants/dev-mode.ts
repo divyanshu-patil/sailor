@@ -1,6 +1,6 @@
 import { AuthTokens, User } from "@/types/auth";
 
-export const DEV_MODE = false;
+export const DEV_MODE = true;
 
 // Dev user data - used when DEV_MODE is true
 export const DEV_USER: User = {

@@ -5,7 +5,6 @@ export default function AuthenticatedLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: "slide_from_right",
       }}
     />
   );
