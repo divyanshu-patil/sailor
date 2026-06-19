@@ -8,7 +8,8 @@
     "scheme": "sailor",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/sailor.icon",
+      "bundleIdentifier": "com.sailor.presentation"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +25,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "root": "./app/routes"
+        }
+      ],
       [
         "expo-splash-screen",
         {
