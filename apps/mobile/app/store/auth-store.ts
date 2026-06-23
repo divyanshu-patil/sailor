@@ -1,18 +1,22 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createMMKV } from "react-native-mmkv";
-import type {
-  User,
-  AuthTokens,
-  LoginCredentials,
-  SignUpCredentials,
-} from "@/types/auth";
-import { DEV_MODE, DEV_TOKENS, DEV_USER } from "@/constants/dev-mode";
 
 // Initialize MMKV storage
 const mmkv = createMMKV({
   id: "auth-storage",
 });
+
+// MMKV here only stores non-sensitive, app-specific UI state —
+// NOT auth/session data (Clerk's tokenCache + expo-secure-store owns that).
+
+// - hasSeenOnboarding: persisted so onboarding doesn't replay on every app restart
+// - appUser: cached FastAPI /profile response, so the app can render instantly on
+//   cold start (and offline) instead of waiting on a network call
+
+// Safe to keep unencrypted here since nothing stored is a credential —
+// losing this data just means re-showing onboarding or a brief stale profile,
+// not a security risk like a leaked session token would be.
 
 // Custom storage adapter for MMKV
 const mmkvStorage = {
@@ -45,182 +49,61 @@ const mmkvStorage = {
   },
 };
 
-interface AuthStore {
-  user: User | null;
-  tokens: AuthTokens | null;
-  isLoading: boolean;
+// profile shape (data from supabase `users` table).
+// Clerk has actual identity (email, password)
+// app-specific that lives in YOUR database, keyed by Clerk's user id.
+export interface AppUserProfile {
+  id: string; // DB primary key
+  clerkUserId: string; // Clerk's `sub` claim
+  email: string;
+  role: "user" | "admin" | "dev";
+  // ...add as needed from database.
+}
+
+
+interface AppStore {
   hasSeenOnboarding: boolean;
   _hasHydrated: boolean;
+  appUser: AppUserProfile | null;
 
-  setUser: (user: User | null) => void;
-  setTokens: (tokens: AuthTokens | null) => void;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  signUp: (credentials: SignUpCredentials) => Promise<void>;
-  logout: () => void;
-  refreshTokens: () => Promise<void>;
-  socialLogin: (provider: "apple" | "google") => Promise<void>;
-  devLogin: () => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
   setHasHydrated: (state: boolean) => void;
+  setAppUser: (user: AppUserProfile | null) => void;
+  clearAppState: () => void; // call this on sign-out
 }
 
-export const useAuthStore = create<AuthStore>()(
+export const useAppStore = create<AppStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Initial state
-      user: null,
-      tokens: null,
-      isLoading: false,
       hasSeenOnboarding: false,
-
+      _hasHydrated: false,
+      appUser: null,
+ 
       // Actions
-      setUser: (user) => set({ user }),
-      setTokens: (tokens) => set({ tokens }),
-
-      login: async (credentials) => {
-        set({ isLoading: true });
-        try {
-          // TODO: Replace with actual API call
-          // const response = await api.post<{ user: User; tokens: AuthTokens }>("/auth/login", credentials);
-          // set({ user: response.user, tokens: response.tokens });
-
-          // Mock for now - remove when API is ready
-          const mockUser: User = {
-            id: "1",
-            email: credentials.email,
-            name: "Test User",
-            createdAt: new Date().toISOString(),
-          };
-          const mockTokens: AuthTokens = {
-            accessToken: "mock_access_token",
-            refreshToken: "mock_refresh_token",
-            expiresAt: Date.now() + 3600000,
-          };
-          set({ user: mockUser, tokens: mockTokens });
-        } catch (error) {
-          set({ user: null, tokens: null });
-          throw error;
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      signUp: async (credentials) => {
-        set({ isLoading: true });
-        try {
-          // TODO: Replace with actual API call
-          // const response = await api.post<{ user: User; tokens: AuthTokens }>("/auth/signup", credentials);
-          // set({ user: response.user, tokens: response.tokens });
-
-          // Mock for now - remove when API is ready
-          const mockUser: User = {
-            id: "1",
-            email: credentials.email,
-            name: credentials.name,
-            createdAt: new Date().toISOString(),
-          };
-          const mockTokens: AuthTokens = {
-            accessToken: "mock_access_token",
-            refreshToken: "mock_refresh_token",
-            expiresAt: Date.now() + 3600000,
-          };
-          set({ user: mockUser, tokens: mockTokens });
-        } catch (error) {
-          set({ user: null, tokens: null });
-          throw error;
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      logout: () => {
-        set({ user: null, tokens: null });
-      },
-
-      refreshTokens: async () => {
-        const { tokens } = get();
-        if (!tokens?.refreshToken) {
-          throw new Error("No refresh token available");
-        }
-
-        try {
-          // TODO: Replace with actual API call
-          // const response = await api.post<AuthTokens>("/auth/refresh", {
-          //   refreshToken: tokens.refreshToken,
-          // });
-          // set({ tokens: response });
-
-          // Mock for now - remove when API is ready
-          const newTokens: AuthTokens = {
-            accessToken: "mock_refreshed_token",
-            refreshToken: "mock_new_refresh_token",
-            expiresAt: Date.now() + 3600000,
-          };
-          set({ tokens: newTokens });
-        } catch (error) {
-          // If refresh fails, logout user
-          get().logout();
-          throw error;
-        }
-      },
-
-      socialLogin: async (provider) => {
-        set({ isLoading: true });
-        try {
-          // TODO: Replace with actual API call based on provider
-          // const response = await api.post<{ user: User; tokens: AuthTokens }>(`/auth/${provider}`, {});
-          // set({ user: response.user, tokens: response.tokens });
-
-          // Mock for now - remove when API is ready
-          const mockUser: User = {
-            id: "1",
-            email: `user@${provider}.com`,
-            name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
-            createdAt: new Date().toISOString(),
-          };
-          const mockTokens: AuthTokens = {
-            accessToken: `mock_${provider}_token`,
-            refreshToken: `mock_${provider}_refresh`,
-            expiresAt: Date.now() + 3600000,
-          };
-          set({ user: mockUser, tokens: mockTokens });
-        } catch (error) {
-          set({ user: null, tokens: null });
-          throw error;
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
       completeOnboarding: () => {
         set({ hasSeenOnboarding: true });
       },
-
+ 
       resetOnboarding: () => {
         set({ hasSeenOnboarding: false });
       },
-
-      devLogin: () => {
-        if (!DEV_MODE) {
-          console.warn(
-            "DEV_MODE is false. Set DEV_MODE = true to enable dev login.",
-          );
-          return;
-        }
-        set({ user: DEV_USER, tokens: DEV_TOKENS });
-      },
-
-      _hasHydrated: false,
+ 
+      setAppUser: (appUser) => set({ appUser }),
+ 
+      // Call clearAppState() from this store inside your signOut() handler,
+      //  alongside Clerk's own signOut().
+      clearAppState: () => set({ appUser: null }),
+ 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
-      name: "auth-store",
+      name: "app-store",
       storage: createJSONStorage(() => mmkvStorage),
       partialize: (state) => ({
-        user: state.user,
-        tokens: state.tokens,
         hasSeenOnboarding: state.hasSeenOnboarding,
+        appUser: state.appUser,
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
@@ -232,16 +115,13 @@ export const useAuthStore = create<AuthStore>()(
     },
   ),
 );
-
-export const selectIsAuthenticated = (s: AuthStore) =>
-  DEV_MODE ? true : !!s.tokens?.accessToken;
-
-// Subscribe outside the create() call, after useAuthStore is fully assigned
-useAuthStore.persist.onFinishHydration(() => {
-  useAuthStore.getState().setHasHydrated(true);
+ 
+// Subscribe outside the create() call, after useAppStore is fully assigned
+useAppStore.persist.onFinishHydration(() => {
+  useAppStore.getState().setHasHydrated(true);
 });
-
+ 
 // Handle the case where hydration already finished before this ran
-if (useAuthStore.persist.hasHydrated()) {
-  useAuthStore.getState().setHasHydrated(true);
+if (useAppStore.persist.hasHydrated()) {
+  useAppStore.getState().setHasHydrated(true);
 }

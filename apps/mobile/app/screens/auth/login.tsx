@@ -1,170 +1,293 @@
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
+import { useSignIn } from "@clerk/expo";
+import { type Href, Link, useRouter } from "expo-router";
 import React from "react";
-import { useRouter } from "expo-router";
-import { useAuthStore } from "@/store/auth-store";
-import useAuthenticated from "@/hooks/use-authenticated";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const LoginScreen = () => {
+export default function Page() {
+  const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
-  const isAuthenticated = useAuthenticated();
-  const { login, socialLogin, isLoading, devLogin } = useAuthStore();
 
-  const handleLogin = async () => {
-    // DEV_MODE quick login - set DEV_MODE = true in auth-store.ts
-    devLogin();
+  const [emailAddress, setEmailAddress] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [code, setCode] = React.useState("");
 
-    // Check if dev login succeeded (user is now authenticated)
-    if (isAuthenticated) {
-      router.replace("/(authenticated)" as any);
+  const handleSubmit = async () => {
+    const { error } = await signIn.password({
+      emailAddress,
+      password,
+    });
+    if (error) {
+      console.error(JSON.stringify(error, null, 2));
       return;
     }
 
-    try {
-      // Using mock for now - replace with actual credentials
-      await login({ email: "test@example.com", password: "password123" });
-      router.replace("/(authenticated)" as any);
-    } catch (error) {
-      console.error("Login failed:", error);
+    if (signIn.status === "complete") {
+      await signIn.finalize({
+        navigate: ({ session, decorateUrl }) => {
+          // Handle session tasks
+          // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
+          if (session?.currentTask) {
+            console.log(session?.currentTask);
+            return;
+          }
+
+          // If no session tasks, navigate the signed-in user to the home page
+          const url = decorateUrl("/");
+          if (url.startsWith("http")) {
+            window.location.href = url;
+          } else {
+            router.push(url as Href);
+          }
+        },
+      });
+    } else if (signIn.status === "needs_second_factor") {
+      // See https://clerk.com/docs/guides/development/custom-flows/authentication/multi-factor-authentication
+    } else if (signIn.status === "needs_client_trust") {
+      // For other second factor strategies,
+      // see https://clerk.com/docs/guides/development/custom-flows/authentication/client-trust
+      const emailCodeFactor = signIn.supportedSecondFactors.find(
+        (factor) => factor.strategy === "email_code",
+      );
+
+      if (emailCodeFactor) {
+        await signIn.mfa.sendEmailCode();
+      }
+    } else {
+      // Check why the sign-in is not complete
+      console.error("Sign-in attempt not complete:", signIn);
     }
   };
 
-  const handleAppleSignIn = async () => {
-    try {
-      await socialLogin("apple");
-      router.replace("/(authenticated)" as any);
-    } catch (error) {
-      console.error("Apple sign in failed:", error);
+  const handleVerify = async () => {
+    await signIn.mfa.verifyEmailCode({ code });
+
+    if (signIn.status === "complete") {
+      await signIn.finalize({
+        navigate: ({ session, decorateUrl }) => {
+          // Handle session tasks
+          // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
+          if (session?.currentTask) {
+            console.log(session?.currentTask);
+            return;
+          }
+
+          // If no session tasks, navigate the signed-in user to the home page
+          const url = decorateUrl("/");
+          if (url.startsWith("http")) {
+            window.location.href = url;
+          } else {
+            router.push(url as Href);
+          }
+        },
+      });
+    } else {
+      // Check why the sign-in is not complete
+      console.error("Sign-in attempt not complete:", signIn);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await socialLogin("google");
-      router.replace("/(authenticated)" as any);
-    } catch (error) {
-      console.error("Google sign in failed:", error);
-    }
-  };
+  if (signIn.status === "needs_client_trust") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <ThemedView style={styles.container}>
+          <ThemedText
+            type="title"
+            style={[styles.title, { fontSize: 24, fontWeight: "bold" }]}
+          >
+            Verify your account
+          </ThemedText>
+          <TextInput
+            style={styles.input}
+            value={code}
+            placeholder="Enter your verification code"
+            placeholderTextColor="#666666"
+            onChangeText={(code) => setCode(code)}
+            keyboardType="numeric"
+          />
+          {errors.fields.code && (
+            <ThemedText style={styles.error}>
+              {errors.fields.code.message}
+            </ThemedText>
+          )}
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              fetchStatus === "fetching" && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleVerify}
+            disabled={fetchStatus === "fetching"}
+          >
+            <ThemedText style={styles.buttonText}>Verify</ThemedText>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => signIn.mfa.sendEmailCode()}
+          >
+            <ThemedText style={styles.secondaryButtonText}>
+              I need a new code
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => signIn.reset()}
+          >
+            <ThemedText style={styles.secondaryButtonText}>
+              Start over
+            </ThemedText>
+          </Pressable>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.subtitle}>Welcome back!</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <ThemedView style={styles.container}>
+        <ThemedText type="title" style={styles.title}>
+          Sign in
+        </ThemedText>
 
-      <TouchableOpacity
-        style={styles.socialButton}
-        onPress={handleAppleSignIn}
-        disabled={isLoading}
-      >
-        <Text style={styles.socialButtonText}>Sign in with Apple</Text>
-      </TouchableOpacity>
+        <ThemedText style={styles.label}>Email address</ThemedText>
+        <TextInput
+          style={styles.input}
+          autoCapitalize="none"
+          value={emailAddress}
+          placeholder="Enter email"
+          placeholderTextColor="#666666"
+          onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+          keyboardType="email-address"
+        />
+        {errors.fields.identifier && (
+          <ThemedText style={styles.error}>
+            {errors.fields.identifier.message}
+          </ThemedText>
+        )}
+        <ThemedText style={styles.label}>Password</ThemedText>
+        <TextInput
+          style={styles.input}
+          value={password}
+          placeholder="Enter password"
+          placeholderTextColor="#666666"
+          secureTextEntry={true}
+          onChangeText={(password) => setPassword(password)}
+        />
+        {errors.fields.password && (
+          <ThemedText style={styles.error}>
+            {errors.fields.password.message}
+          </ThemedText>
+        )}
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <ThemedText style={styles.dividerText}>OR</ThemedText>
+          <View style={styles.dividerLine} />
+        </View>
 
-      <TouchableOpacity
-        style={styles.socialButton}
-        onPress={handleGoogleSignIn}
-        disabled={isLoading}
-      >
-        <Text style={styles.socialButtonText}>Sign in with Google</Text>
-      </TouchableOpacity>
+        <GoogleSignInButton />
 
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        <Text style={styles.primaryButtonText}>
-          {isLoading ? "Loading..." : "Login with Email"}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
-        onPress={() => router.push("/(unauthenticated)/signup" as any)}
-      >
-        <Text style={styles.linkText}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
-        onPress={() => router.push("/(unauthenticated)/forgot-password" as any)}
-      >
-        <Text style={styles.linkText}>Forgot Password?</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.linkContainer}>
+          <ThemedText>Don't have an account? </ThemedText>
+          <Link href="/(unauthenticated)/signup">
+            <ThemedText type="link">Sign up</ThemedText>
+          </Link>
+        </View>
+      </ThemedView>
+    </SafeAreaView>
   );
-};
-
-export default LoginScreen;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-    backgroundColor: "#fff",
+    padding: 20,
+    gap: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 32,
+  label: {
+    fontWeight: "600",
+    fontSize: 14,
   },
-  socialButton: {
-    width: "100%",
-    padding: 16,
-    borderRadius: 12,
+  input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  socialButtonText: {
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
+    backgroundColor: "#fff",
+  },
+  button: {
+    backgroundColor: "#0a7ea4",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonPressed: {
+    opacity: 0.7,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: "#fff",
     fontWeight: "600",
   },
-  divider: {
+  secondaryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  secondaryButtonText: {
+    color: "#0a7ea4",
+    fontWeight: "600",
+  },
+  linkContainer: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  error: {
+    color: "#d32f2f",
+    fontSize: 12,
+    marginTop: -8,
+  },
+  debug: {
+    fontSize: 10,
+    opacity: 0.5,
+    marginTop: 8,
+  },
+  dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    width: "100%",
-    marginVertical: 24,
+    marginVertical: 20,
   },
+
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#ddd",
+    backgroundColor: "#E5E7EB",
   },
+
   dividerText: {
-    marginHorizontal: 16,
-    color: "#666",
-  },
-  primaryButton: {
-    width: "100%",
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#208AEF",
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  linkButton: {
-    marginTop: 16,
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#208AEF",
+    marginHorizontal: 12,
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
   },
 });

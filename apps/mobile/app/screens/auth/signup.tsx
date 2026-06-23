@@ -1,156 +1,245 @@
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useAuth, useSignUp } from "@clerk/expo";
+import { type Href, Link, useRouter } from "expo-router";
 import React from "react";
-import { useRouter } from "expo-router";
-import { useAuthStore } from "@/store/auth-store";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const SignUpScreen = () => {
+export default function Page() {
+  const { signUp, errors, fetchStatus } = useSignUp();
+  const { isSignedIn } = useAuth();
   const router = useRouter();
-  const { signUp, socialLogin, isLoading } = useAuthStore();
 
-  const handleSignUp = async () => {
-    try {
-      // Using mock for now - replace with actual credentials
-      await signUp({
-        email: "test@example.com",
-        password: "password123",
-        name: "Test User",
+  const [emailAddress, setEmailAddress] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [code, setCode] = React.useState("");
+
+  const handleSubmit = async () => {
+    const { error } = await signUp.password({
+      emailAddress,
+      password,
+    });
+    if (error) {
+      console.error(JSON.stringify(error, null, 2));
+      return;
+    }
+
+    if (!error) await signUp.verifications.sendEmailCode();
+  };
+
+  const handleVerify = async () => {
+    await signUp.verifications.verifyEmailCode({
+      code,
+    });
+    if (signUp.status === "complete") {
+      await signUp.finalize({
+        // Redirect the user to the home page after signing up
+        navigate: ({ session, decorateUrl }) => {
+          // Handle session tasks
+          // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
+          if (session?.currentTask) {
+            console.log(session?.currentTask);
+            return;
+          }
+
+          // If no session tasks, navigate the signed-in user to the home page
+          const url = decorateUrl("/");
+          if (url.startsWith("http")) {
+            window.location.href = url;
+          } else {
+            router.push(url as Href);
+          }
+        },
       });
-      router.replace("/(authenticated)" as any);
-    } catch (error) {
-      console.error("Sign up failed:", error);
+    } else {
+      // Check why the sign-up is not complete
+      console.error("Sign-up attempt not complete:", signUp);
     }
   };
 
-  const handleAppleSignIn = async () => {
-    try {
-      await socialLogin("apple");
-      router.replace("/(authenticated)" as any);
-    } catch (error) {
-      console.error("Apple sign in failed:", error);
-    }
-  };
+  if (signUp.status === "complete" || isSignedIn) {
+    return null;
+  }
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await socialLogin("google");
-      router.replace("/(authenticated)" as any);
-    } catch (error) {
-      console.error("Google sign in failed:", error);
-    }
-  };
+  if (
+    signUp.status === "missing_requirements" &&
+    signUp.unverifiedFields.includes("email_address") &&
+    signUp.missingFields.length === 0
+  ) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <ThemedView style={styles.container}>
+          <ThemedText type="title" style={styles.title}>
+            Verify your account
+          </ThemedText>
+          <TextInput
+            style={styles.input}
+            value={code}
+            placeholder="Enter your verification code"
+            placeholderTextColor="#666666"
+            onChangeText={(code) => setCode(code)}
+            keyboardType="numeric"
+          />
+          {errors.fields.code && (
+            <ThemedText style={styles.error}>
+              {errors.fields.code.message}
+            </ThemedText>
+          )}
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              fetchStatus === "fetching" && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleVerify}
+            disabled={fetchStatus === "fetching"}
+          >
+            <ThemedText style={styles.buttonText}>Verify</ThemedText>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => signUp.verifications.sendEmailCode()}
+          >
+            <ThemedText style={styles.secondaryButtonText}>
+              I need a new code
+            </ThemedText>
+          </Pressable>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
-      <Text style={styles.subtitle}>Create your account!</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <ThemedView style={styles.container}>
+        <ThemedText type="title" style={styles.title}>
+          Sign up
+        </ThemedText>
 
-      <TouchableOpacity
-        style={styles.socialButton}
-        onPress={handleAppleSignIn}
-        disabled={isLoading}
-      >
-        <Text style={styles.socialButtonText}>Sign up with Apple</Text>
-      </TouchableOpacity>
+        <ThemedText style={styles.label}>Email address</ThemedText>
+        <TextInput
+          style={styles.input}
+          autoCapitalize="none"
+          value={emailAddress}
+          placeholder="Enter email"
+          placeholderTextColor="#666666"
+          onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+          keyboardType="email-address"
+        />
+        {errors.fields.emailAddress && (
+          <ThemedText style={styles.error}>
+            {errors.fields.emailAddress.message}
+          </ThemedText>
+        )}
+        <ThemedText style={styles.label}>Password</ThemedText>
+        <TextInput
+          style={styles.input}
+          value={password}
+          placeholder="Enter password"
+          placeholderTextColor="#666666"
+          secureTextEntry={true}
+          onChangeText={(password) => setPassword(password)}
+        />
+        {errors.fields.password && (
+          <ThemedText style={styles.error}>
+            {errors.fields.password.message}
+          </ThemedText>
+        )}
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            (!emailAddress || !password || fetchStatus === "fetching") &&
+              styles.buttonDisabled,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleSubmit}
+          disabled={!emailAddress || !password || fetchStatus === "fetching"}
+        >
+          <ThemedText style={styles.buttonText}>Sign up</ThemedText>
+        </Pressable>
 
-      <TouchableOpacity
-        style={styles.socialButton}
-        onPress={handleGoogleSignIn}
-        disabled={isLoading}
-      >
-        <Text style={styles.socialButtonText}>Sign up with Google</Text>
-      </TouchableOpacity>
+        <View style={styles.linkContainer}>
+          <ThemedText>Already have an account? </ThemedText>
+          <Link href="/(unauthenticated)/login">
+            <ThemedText type="link">Sign in</ThemedText>
+          </Link>
+        </View>
 
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={handleSignUp}
-        disabled={isLoading}
-      >
-        <Text style={styles.primaryButtonText}>
-          {isLoading ? "Loading..." : "Sign up with Email"}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
-        onPress={() => router.push("/(unauthenticated)/login" as any)}
-      >
-        <Text style={styles.linkText}>Already have an account? Login</Text>
-      </TouchableOpacity>
-    </View>
+        {/* Required for sign-up flows. Clerk's bot sign-up protection is enabled by default */}
+        <View nativeID="clerk-captcha" />
+      </ThemedView>
+    </SafeAreaView>
   );
-};
-
-export default SignUpScreen;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-    backgroundColor: "#fff",
+    padding: 20,
+    gap: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 32,
-  },
-  socialButton: {
-    width: "100%",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  socialButtonText: {
-    fontSize: 16,
+  label: {
     fontWeight: "600",
-  },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ddd",
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: "#666",
-  },
-  primaryButton: {
-    width: "100%",
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#208AEF",
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  linkButton: {
-    marginTop: 16,
-  },
-  linkText: {
     fontSize: 14,
-    color: "#208AEF",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#fff",
+  },
+  button: {
+    backgroundColor: "#0a7ea4",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonPressed: {
+    opacity: 0.7,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  secondaryButtonText: {
+    color: "#0a7ea4",
+    fontWeight: "600",
+  },
+  linkContainer: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  error: {
+    color: "#d32f2f",
+    fontSize: 12,
+    marginTop: -8,
+  },
+  debug: {
+    fontSize: 10,
+    opacity: 0.5,
+    marginTop: 8,
   },
 });
