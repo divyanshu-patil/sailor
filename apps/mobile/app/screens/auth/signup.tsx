@@ -2,8 +2,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth, useSignUp } from "@clerk/expo";
 import { type Href, Link, useRouter } from "expo-router";
-import React from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Page() {
@@ -11,21 +11,31 @@ export default function Page() {
   const { isSignedIn } = useAuth();
   const router = useRouter();
 
-  const [emailAddress, setEmailAddress] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [code, setCode] = React.useState("");
+  const [emailAddress, setEmailAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
 
   const handleSubmit = async () => {
     const { error } = await signUp.password({
       emailAddress,
       password,
     });
+
     if (error) {
       console.error(JSON.stringify(error, null, 2));
       return;
     }
 
-    if (!error) await signUp.verifications.sendEmailCode();
+    try {
+      await signUp.verifications.sendEmailCode();
+    } catch (err) {
+      console.error("Failed to send email code:", JSON.stringify(err, null, 2));
+
+      Alert.alert(
+        "Error",
+        "Failed to send verification email. Please try again.",
+      );
+    }
   };
 
   const handleVerify = async () => {

@@ -4,6 +4,7 @@ import { useAppStore } from "@/store/auth-store";
 import { ENV } from "@/lib/config/env";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
+import { View } from "react-native";
 
 function InitialLayout() {
   const isHydrated = useAppStore((s) => s._hasHydrated);
@@ -11,7 +12,7 @@ function InitialLayout() {
   const { isSignedIn, isLoaded } = useAuth();
 
   if (!isHydrated || !isLoaded) {
-    return null; // or a splash/loading component
+    return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null
   }
 
   return (

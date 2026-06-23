@@ -187,6 +187,20 @@ export default function Page() {
             {errors.fields.password.message}
           </ThemedText>
         )}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            (!emailAddress || !password || fetchStatus === "fetching") &&
+              styles.buttonDisabled,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleSubmit}
+          disabled={!emailAddress || !password || fetchStatus === "fetching"}
+        >
+          <ThemedText style={styles.buttonText}>Continue</ThemedText>
+        </Pressable>
+
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine} />
           <ThemedText style={styles.dividerText}>OR</ThemedText>

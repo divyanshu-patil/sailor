@@ -21,15 +21,29 @@ import {
   contentTransition,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
-import { useAuth } from "@clerk/expo";
+import { useAuth, useClerk, useUser } from "@clerk/expo";
 
 const messages = ["Hello", "Namaste", "Bonjour", "Hola", "Ciao"];
 
 const HomeScreen = () => {
   const router = useRouter();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const { clearAppState } = useAppStore();
+
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
+
+  const handleSignOut = async () => {
+    try {
+      clearAppState();
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      Alert.alert("Error", "An error occurred while signing out.");
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -82,6 +96,15 @@ const HomeScreen = () => {
             >
               {messages[messageIndex]}
             </Text>
+          </Button>
+        </Section>
+        <Section>
+          <Text>firstName: {user?.firstName}</Text>
+          <Text>lastName: {user?.lastName}</Text>
+        </Section>
+        <Section>
+          <Button onPress={handleSignOut}>
+            <Text>LogOut</Text>
           </Button>
         </Section>
       </Form>

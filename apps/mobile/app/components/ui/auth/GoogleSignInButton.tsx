@@ -25,31 +25,19 @@ export function GoogleSignInButton({
   if (Platform.OS !== "ios" && Platform.OS !== "android") {
     return null;
   }
-
   const handleGoogleSignIn = async () => {
     try {
       const { createdSessionId, setActive } =
         await startGoogleAuthenticationFlow();
-
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
-
-        if (onSignInComplete) {
-          onSignInComplete();
-        } else {
-          router.replace("/");
-        }
       }
     } catch (err: any) {
-      if (err.code === "SIGN_IN_CANCELLED" || err.code === "-5") {
-        return;
-      }
-
+      if (err.code === "SIGN_IN_CANCELLED" || err.code === "-5") return;
       Alert.alert(
         "Error",
         err.message || "An error occurred during Google sign-in",
       );
-      console.error("Sign in with Google error:", JSON.stringify(err, null, 2));
     }
   };
 
@@ -61,14 +49,6 @@ export function GoogleSignInButton({
       >
         <Text style={styles.googleButtonText}>Sign in with Google</Text>
       </TouchableOpacity>
-
-      {showDivider && (
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-      )}
     </>
   );
 }
