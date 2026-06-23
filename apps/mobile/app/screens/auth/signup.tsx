@@ -15,8 +15,11 @@ export default function Page() {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
 
-  const handleSubmit = async () => {
-    const { error } = await signUp.password({
+const handleSubmit = async () => {
+  try {
+    // Always start fresh — this creates a new sign-up resource
+    // instead of reusing the stale one from a previous failed attempt
+    const { error } = await signUp.create({
       emailAddress,
       password,
     });
@@ -26,18 +29,12 @@ export default function Page() {
       return;
     }
 
-    try {
-      await signUp.verifications.sendEmailCode();
-    } catch (err) {
-      console.error("Failed to send email code:", JSON.stringify(err, null, 2));
-
-      Alert.alert(
-        "Error",
-        "Failed to send verification email. Please try again.",
-      );
-    }
-  };
-
+    await signUp.verifications.sendEmailCode();
+  } catch (err) {
+    console.error('Sign up error:', JSON.stringify(err, null, 2));
+    Alert.alert('Error', 'Something went wrong. Please try again.');
+  }
+};
   const handleVerify = async () => {
     await signUp.verifications.verifyEmailCode({
       code,
