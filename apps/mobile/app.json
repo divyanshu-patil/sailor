@@ -18,7 +18,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.sailor.presentation"
     },
     "web": {
       "output": "static",
@@ -40,8 +41,21 @@
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      [
+        "@clerk/expo",
+        {
+          "appleSignIn": false
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser"
     ],
+    "extra": {
+      "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "303236832902-rj0p6ii09h0p8r25ftp1i0krrdrqi238.apps.googleusercontent.com",
+      "EXPO_PUBLIC_CLERK_GOOGLE_IOS_CLIENT_ID": "303236832902-pv9mtnriam7ikifekvtcdkf6o708t89q.apps.googleusercontent.com",
+      "EXPO_PUBLIC_CLERK_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.303236832902-pv9mtnriam7ikifekvtcdkf6o708t89q"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

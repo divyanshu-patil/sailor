@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "@/store/auth-store";
-import useAuthenticated from "@/hooks/use-authenticated";
+import { useAppStore } from "@/store/auth-store";
+import { useAuth } from "@clerk/expo";
 
 export default function Index() {
   const router = useRouter();
-  const isAuthenticated = useAuthenticated();
-  const hasSeenOnboarding = useAuthStore((s) => s.hasSeenOnboarding);
-  const isHydrated = useAuthStore((s) => s._hasHydrated);
+  // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const { isSignedIn } = useAuth();
+  const hasSeenOnboarding = useAppStore((s) => s.hasSeenOnboarding);
+  const isHydrated = useAppStore((s) => s._hasHydrated);
 
   useEffect(() => {
     if (!isHydrated) return;
 
     if (!hasSeenOnboarding) {
       router.replace("/(onboarding)/welcome");
-    } else if (isAuthenticated) {
+    } else if (isSignedIn) {
       router.replace("/(authenticated)");
     } else {
       router.replace("/(unauthenticated)/login");
     }
-  }, [isHydrated, isAuthenticated, hasSeenOnboarding]);
+  }, [isHydrated, isSignedIn, hasSeenOnboarding]);
 
   if (!isHydrated) {
     return (
