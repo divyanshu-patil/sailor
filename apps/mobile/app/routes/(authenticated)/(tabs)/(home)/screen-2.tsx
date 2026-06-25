@@ -1,6 +1,8 @@
 import { Text, ScrollView } from "react-native";
 import React, { useEffect } from "react";
 import { router, Stack, useNavigation } from "expo-router";
+import { Button, Host } from "@expo/ui/swift-ui";
+import { buttonStyle, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 const Screen2 = () => {
   const navigation = useNavigation();
@@ -26,6 +28,15 @@ const Screen2 = () => {
           }
         />
       </Stack.Toolbar>
+      <Host matchContents>
+        <Button
+          label="Go to View All Script"
+          modifiers={[buttonStyle("glassProminent")]}
+          onPress={() =>
+            router.navigate("/(authenticated)/(script)/view-all-script")
+          }
+        />
+      </Host>
     </ScrollView>
   );
 };

@@ -18,6 +18,15 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="view-all-script"
+        options={{
+          headerLargeTitleEnabled: true,
+          headerShown: true,
+          headerTitle: "Script",
+          // headerBackButtonDisplayMode: "minimal",
+        }}
+      />
     </Stack>
   );
 };
