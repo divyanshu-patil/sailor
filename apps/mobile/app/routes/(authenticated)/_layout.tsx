@@ -8,7 +8,7 @@ export default function AuthenticatedLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="(stack)" />
+      <Stack.Screen name="(script)" />
     </Stack>
   );
 }

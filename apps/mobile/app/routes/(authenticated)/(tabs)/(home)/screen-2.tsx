@@ -20,7 +20,7 @@ const Screen2 = () => {
           tintColor={"#c11b5c"}
           icon={"plus"}
           onPress={() =>
-            router.push("/(authenticated)/(stack)/create-new-script", {
+            router.push("/(authenticated)/(script)/create-new-script", {
               withAnchor: true,
             })
           }
