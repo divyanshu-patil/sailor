@@ -1,8 +1,6 @@
-import { View, Text, ScrollView } from "react-native";
+import { Text, ScrollView } from "react-native";
 import React, { useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
-import { useNavigation } from "expo-router";
+import { router, Stack, useNavigation } from "expo-router";
 
 const Screen2 = () => {
   const navigation = useNavigation();
@@ -21,7 +19,12 @@ const Screen2 = () => {
           variant="prominent"
           tintColor={"#c11b5c"}
           icon={"plus"}
-        ></Stack.Toolbar.Button>
+          onPress={() =>
+            router.push("/(authenticated)/(stack)/create-new-script", {
+              withAnchor: true,
+            })
+          }
+        />
       </Stack.Toolbar>
     </ScrollView>
   );

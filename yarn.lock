@@ -964,6 +964,11 @@
     preact "^10.24.2"
     viem "^2.27.2"
 
+"@dashdoc/react-native-system-sounds@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@dashdoc/react-native-system-sounds/-/react-native-system-sounds-2.0.0.tgz#04f8d775da71ce7a2bd138faca9963f7893a31ef"
+  integrity sha512-gDRnS25fGlVwpBOxkOhtt9oYVhSOXEuyzuWsAZyTwsNSt0Sne9GPonReOGk8WdQDk9pN5a3yP7z6wUcaHOF6HA==
+
 "@egjs/hammerjs@^2.0.17":
   version "2.0.17"
   resolved "https://registry.yarnpkg.com/@egjs/hammerjs/-/hammerjs-2.0.17.tgz#5dc02af75a6a06e4c2db0202cae38c9263895124"
@@ -4392,6 +4397,11 @@ expo-device@~56.0.4:
   dependencies:
     ua-parser-js "^0.7.33"
 
+expo-document-picker@~56.0.4:
+  version "56.0.4"
+  resolved "https://registry.yarnpkg.com/expo-document-picker/-/expo-document-picker-56.0.4.tgz#ee80925f6dc212622fd6fd9846784774ea4b1d15"
+  integrity sha512-75Apf74XNkYYohObIH19VZw42xpe0gmEnPccuzGXKVAzlvTYCfibSgW17F+6vt4paOfZEnAoZ1QFZM6dmaujRA==
+
 expo-file-system@~56.0.7:
   version "56.0.7"
   resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-56.0.7.tgz#66a69361d839afa1773dc247b160da166e3df0da"
@@ -4408,6 +4418,18 @@ expo-glass-effect@^56.0.4, expo-glass-effect@~56.0.4:
   version "56.0.4"
   resolved "https://registry.yarnpkg.com/expo-glass-effect/-/expo-glass-effect-56.0.4.tgz#4549a8c84058fb88619ecb2e818be36f2fe003ee"
   integrity sha512-xI9rXtDwi7RW82uAlfyaXO6+k21ApWJ2tHAWYqPr/FjfmZbKsgNJ4Q0iZzGPCwboqjTGxaRZ61SZxBl8hDt5iA==
+
+expo-image-loader@~56.0.3:
+  version "56.0.3"
+  resolved "https://registry.yarnpkg.com/expo-image-loader/-/expo-image-loader-56.0.3.tgz#665112665e78d0fd9629f6160e2ca419d7f0c5c6"
+  integrity sha512-JgUo4fUeU1ZC+z8iBFj8v7yoGQnZrLbOVPyNE+DWVrld55F2F6R1ck+rmdm/8TNWLz1LhNQfD7c3XYP1ZikxXA==
+
+expo-image-picker@~56.0.18:
+  version "56.0.18"
+  resolved "https://registry.yarnpkg.com/expo-image-picker/-/expo-image-picker-56.0.18.tgz#ef367d2f987f733de57478b70088db2ad207d33d"
+  integrity sha512-sCjQ8M27bhGUv2vUavIE+uWdYo79b2D7Q5h9B66BSDZ+Rd8YyLVSf7vYGfIzQ7nMVoENZ6c4xo/JiDkEeQ9iTg==
+  dependencies:
+    expo-image-loader "~56.0.3"
 
 expo-image@~56.0.9:
   version "56.0.9"

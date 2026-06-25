@@ -6,6 +6,9 @@ export default function AuthenticatedLayout() {
       screenOptions={{
         headerShown: false,
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(stack)" />
+    </Stack>
   );
 }
