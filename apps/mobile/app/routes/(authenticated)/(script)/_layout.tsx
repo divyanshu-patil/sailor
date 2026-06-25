@@ -21,10 +21,11 @@ const Layout = () => {
       <Stack.Screen
         name="view-all-script"
         options={{
-          headerLargeTitleEnabled: true,
+          // headerLargeTitleEnabled: true,
           headerShown: true,
           headerTitle: "Script",
           // headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
         }}
       />
     </Stack>
