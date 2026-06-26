@@ -1,26 +1,34 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 import Animated, {
-  FadeInDown,
-  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { colord } from "colord";
 import { Link } from "expo-router";
+
+import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
+import { getRandomIntExclusive } from "@/utils/getRandomNumber";
+import { getCardTitleMargin } from "@/utils/getCardTitleMargin";
+
 // ---------- Types ----------
 
 type ScriptItem = {
   id: string;
   title: string;
   description: string;
-  color: string; // hex stored directly on the data item
+  color: string;
   updatedAt: Date;
   slideCount: number;
   durationMins: number;
+  mb?: number;
 };
 
 // ---------- Mock data ----------
-// description length varies on purpose to exercise the masonry layout
 
 const DATA: ScriptItem[] = [
   {
@@ -28,7 +36,7 @@ const DATA: ScriptItem[] = [
     title: "Product Launch",
     description:
       "Opening hook, problem framing, three feature highlights, and a closing CTA slide.",
-    color: "#FDE8C8",
+    color: "#A0A3FF",
     updatedAt: new Date(2026, 5, 23, 12, 34),
     slideCount: 12,
     durationMins: 8,
@@ -37,7 +45,7 @@ const DATA: ScriptItem[] = [
     id: "2",
     title: "Q3 Investor Update",
     description: "Revenue, churn, roadmap.",
-    color: "#D7EAF3",
+    color: "#FFC88A",
     updatedAt: new Date(2026, 5, 21, 9, 10),
     slideCount: 6,
     durationMins: 5,
@@ -47,7 +55,7 @@ const DATA: ScriptItem[] = [
     title: "Team Onboarding Deck",
     description:
       "Company values, org chart walkthrough, tools setup, first-week expectations, and where to find help when you're stuck.",
-    color: "#E3D9F2",
+    color: "#EFC1FF",
     updatedAt: new Date(2026, 5, 20, 16, 2),
     slideCount: 18,
     durationMins: 14,
@@ -56,7 +64,7 @@ const DATA: ScriptItem[] = [
     id: "4",
     title: "Design Review",
     description: "Wireframes for the onboarding flow.",
-    color: "#FBD9DF",
+    color: "#A1AFDE",
     updatedAt: new Date(2026, 5, 18, 11, 45),
     slideCount: 9,
     durationMins: 6,
@@ -65,7 +73,7 @@ const DATA: ScriptItem[] = [
     id: "5",
     title: "Conference Talk",
     description: "Intro, three case studies, takeaways.",
-    color: "#D9F0E1",
+    color: "#F78199",
     updatedAt: new Date(2026, 5, 15, 14, 0),
     slideCount: 15,
     durationMins: 20,
@@ -75,42 +83,53 @@ const DATA: ScriptItem[] = [
     title: "Sales Pitch v2",
     description:
       "Updated pricing tiers, competitor comparison table, and customer testimonial slide added after last week's feedback.",
-    color: "#FFF2C7",
+    color: "#ACCCC0",
     updatedAt: new Date(2026, 5, 12, 17, 30),
     slideCount: 10,
     durationMins: 7,
   },
 ];
 
-// ---------- Helpers ----------
+// ---------- Jelly spring config ----------
+// Low damping = lots of bounce. Mass adds weight to the wobble.
 
-function formatTime(date: Date) {
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-function formatDate(date: Date) {
-  const today = new Date();
-  const isToday = date.toDateString() === today.toDateString();
-  if (isToday) return formatTime(date);
-  return date.toLocaleDateString([], { month: "short", day: "numeric" });
-}
+const JELLY_SPRING = {
+  damping: 8,
+  stiffness: 120,
+  mass: 0.6,
+  overshootClamping: false,
+};
 
 // ---------- Card ----------
 
 const CardItem = ({ item, index }: { item: ScriptItem; index: number }) => {
+  const scale = useSharedValue(0.55);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(24);
+
+  useEffect(() => {
+    const delay = (index % 8) * 55;
+
+    // Fade + slide in quickly with a simple timing so they don't linger
+    opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
+    translateY.value = withDelay(
+      delay,
+      withSpring(0, { damping: 30, stiffness: 160 }),
+    );
+
+    // Scale gets the full jelly treatment
+    scale.value = withDelay(delay, withSpring(1, JELLY_SPRING));
+  }, [index, opacity, scale, translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transformOrigin: ["50%", "0%", 0],
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+  }));
+
   return (
     <Animated.View
-      entering={FadeInDown.delay((index % 8) * 40)
-        .duration(280)
-        .springify()
-        .damping(70)}
-      style={[
-        styles.card,
-        {
-          backgroundColor: item.color,
-          borderBottomColor: colord(item.color).darken(0.4).toHex(),
-        },
-      ]}
+      style={[styles.card, { backgroundColor: item.color }, animatedStyle]}
     >
       <Link
         style={styles.cardPressable}
@@ -130,28 +149,73 @@ const CardItem = ({ item, index }: { item: ScriptItem; index: number }) => {
       >
         <Link.AppleZoom>
           <Pressable
-            onPress={() => {
-              // navigate to script detail
-            }}
+            onPress={() => {}}
             style={({ pressed }) => [
               styles.cardPressable,
               pressed && styles.cardPressed,
             ]}
           >
-            <Text style={styles.cardTitle} numberOfLines={2}>
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color: colord(item.color).darken(0.5).toHex(),
+                  marginBottom: getCardTitleMargin(item.slideCount),
+                },
+              ]}
+              numberOfLines={2}
+            >
               {item.title}
-            </Text>
-            <Text style={styles.cardDescription} numberOfLines={6}>
-              {item.description}
             </Text>
 
             <View style={styles.cardFooter}>
-              <View style={styles.metaPill}>
-                <Text style={styles.metaPillText}>
-                  {item.slideCount} slides · {item.durationMins}m
+              <View
+                style={[
+                  styles.slideCountPill,
+                  {
+                    backgroundColor: colord(item.color)
+                      .lighten(0.08)
+                      .desaturate(0.08)
+                      .toHex(),
+                  },
+                ]}
+              >
+                <MaterialDesignIcons
+                  name="cards-playing"
+                  size={24}
+                  color={colord(item.color)
+                    .darken(0.35)
+                    .desaturate(0.24)
+                    .toHex()}
+                />
+                <Text
+                  style={[
+                    styles.slideCountText,
+                    {
+                      color: colord(item.color)
+                        .darken(0.35)
+                        .desaturate(0.24)
+                        .toHex(),
+                    },
+                  ]}
+                >
+                  {item.slideCount}
                 </Text>
               </View>
-              <Text style={styles.cardTime}>{formatDate(item.updatedAt)}</Text>
+
+              <Text
+                style={[
+                  styles.cardTime,
+                  {
+                    color: colord(item.color)
+                      .darken(0.35)
+                      .desaturate(0.24)
+                      .toHex(),
+                  },
+                ]}
+              >
+                {item.durationMins}m
+              </Text>
             </View>
           </Pressable>
         </Link.AppleZoom>
@@ -171,10 +235,19 @@ const AllScriptsScreen = () => {
     [],
   );
 
+  const DATA_W_MB = useMemo(
+    () =>
+      DATA.map((it) => ({
+        ...it,
+        mb: getRandomIntExclusive(10, 90),
+      })),
+    [],
+  );
+
   return (
     <View style={styles.screen}>
       <FlashList
-        data={DATA}
+        data={DATA_W_MB}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         masonry
@@ -209,14 +282,13 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   card: {
-    borderRadius: 16,
-    borderColor: "black",
-    borderWidth: 1,
-    borderBottomWidth: 5,
-
+    borderRadius: 40,
     overflow: "hidden",
     marginHorizontal: COLUMN_GAP / 2,
     marginBottom: COLUMN_GAP,
+    paddingHorizontal: 8,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   cardPressable: {
     padding: 14,
@@ -225,9 +297,8 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   cardTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1C1C1E",
+    fontSize: 24,
+    fontWeight: "700",
     marginBottom: 6,
   },
   cardDescription: {
@@ -253,8 +324,20 @@ const styles = StyleSheet.create({
     color: "#1C1C1E",
   },
   cardTime: {
-    fontSize: 11,
-    color: "#3C3C43",
-    opacity: 0.7,
+    fontSize: 20,
+    fontWeight: "700",
+    transform: [{ translateY: 12 }, { translateX: -5 }],
+  },
+  slideCountPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: "row",
+    borderRadius: 100,
+    gap: 8,
+    transform: [{ translateX: -5 }],
+  },
+  slideCountText: {
+    fontSize: 20,
+    fontWeight: "700",
   },
 });

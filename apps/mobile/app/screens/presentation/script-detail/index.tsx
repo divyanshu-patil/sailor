@@ -102,7 +102,7 @@ export default function ScriptDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FAFAFA" },
+  screen: { flex: 1 },
   content: { padding: 16, paddingTop: 24, paddingBottom: 48 },
   heroWrapper: { position: "relative" },
   heroCard: {

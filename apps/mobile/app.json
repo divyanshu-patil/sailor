@@ -49,7 +49,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-vector-icons/material-design-icons"
     ],
     "extra": {
       "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "303236832902-rj0p6ii09h0p8r25ftp1i0krrdrqi238.apps.googleusercontent.com",
