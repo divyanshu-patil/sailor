@@ -150,7 +150,7 @@ export default function StepDescription() {
                 axis="vertical"
                 text={descriptionState}
                 placeholder="e.g. A persuasive pitch deck for a seed-stage climate tech startup..."
-                modifiers={[padding({ vertical: 4 })]}
+                modifiers={[padding({ vertical: 4 }), keyboardType("url")]}
                 onTextChange={setDescriptionValue}
               />
             </HStack>
