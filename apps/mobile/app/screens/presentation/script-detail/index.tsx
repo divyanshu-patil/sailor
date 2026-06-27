@@ -258,6 +258,12 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
               styles.scriptTextContainer,
               { backgroundColor: scriptCardColor },
             ]}
+            onPress={() =>
+              router.navigate({
+                pathname: "/(authenticated)/(script)/script",
+                params: { script: script.id, color: script.color },
+              })
+            }
           >
             <Text
               style={[styles.scriptText, { color: textDarkColor }]}
