@@ -23,7 +23,7 @@ const Layout = () => {
           // headerLargeTitleEnabled: true,
           headerShown: true,
           headerTitle: "Script",
-          // headerBackButtonDisplayMode: "minimal",
+          headerBackButtonDisplayMode: "minimal",
           headerTransparent: true,
         }}
       />
@@ -33,7 +33,7 @@ const Layout = () => {
           // headerLargeTitleEnabled: true,
           headerShown: false,
           headerTitle: "Script",
-          // headerBackButtonDisplayMode: "minimal",
+          headerBackButtonDisplayMode: "minimal",
           headerTransparent: true,
         }}
       />
