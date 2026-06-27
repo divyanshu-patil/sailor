@@ -1,7 +1,11 @@
 import ScriptDetailScreen from "@/screens/presentation/script-detail";
 
-const ScriptDetailRoute = () => {
-  return <ScriptDetailScreen />;
+const ScriptDetail = () => {
+  return (
+    <>
+      <ScriptDetailScreen />
+    </>
+  );
 };
 
-export default ScriptDetailRoute;
+export default ScriptDetail;

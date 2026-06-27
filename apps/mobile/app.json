@@ -27,6 +27,28 @@
     },
     "plugins": [
       [
+        "expo-font",
+        {
+          "fonts": [
+            "../../node_modules/@expo-google-fonts/krona-one/400Regular/KronaOne_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/100Thin/Amarna_100Thin.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/200ExtraLight/Amarna_200ExtraLight.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/300Light/Amarna_300Light.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/400Regular/Amarna_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/500Medium/Amarna_500Medium.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/600SemiBold/Amarna_600SemiBold.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/700Bold/Amarna_700Bold.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/100Thin_Italic/Amarna_100Thin_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/200ExtraLight_Italic/Amarna_200ExtraLight_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/300Light_Italic/Amarna_300Light_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/400Regular_Italic/Amarna_400Regular_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/500Medium_Italic/Amarna_500Medium_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/600SemiBold_Italic/Amarna_600SemiBold_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/700Bold_Italic/Amarna_700Bold_Italic.ttf"
+          ]
+        }
+      ],
+      [
         "expo-router",
         {
           "root": "./app/routes"
@@ -50,7 +72,9 @@
       ],
       "expo-secure-store",
       "expo-web-browser",
-      "@react-native-vector-icons/material-design-icons"
+      "@react-native-vector-icons/material-design-icons",
+      "@react-native-vector-icons/entypo",
+      "@react-native-vector-icons/fontawesome6"
     ],
     "extra": {
       "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "303236832902-rj0p6ii09h0p8r25ftp1i0krrdrqi238.apps.googleusercontent.com",

@@ -63,6 +63,7 @@ export const Card = ({ item, index }: { item: ScriptItem; index: number }) => {
             updatedAt: item.updatedAt.toISOString(),
             slideCount: String(item.slideCount),
             durationMins: String(item.durationMins),
+            isFavourite: JSON.stringify(item.isFavourite),
           },
         }}
         asChild
@@ -164,6 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 6,
+    fontFamily: "KronaOne",
   },
   cardDescription: {
     fontSize: 13,

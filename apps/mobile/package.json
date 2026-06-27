@@ -5,7 +5,12 @@
   "dependencies": {
     "@clerk/expo": "^3.5.2",
     "@dashdoc/react-native-system-sounds": "^2.0.0",
+    "@expo-google-fonts/amarna": "^0.4.1",
+    "@expo-google-fonts/krona-one": "^0.4.1",
     "@expo/ui": "~56.0.15",
+    "@react-native-clipboard/clipboard": "^1.16.3",
+    "@react-native-vector-icons/entypo": "^13.1.2",
+    "@react-native-vector-icons/fontawesome6": "^13.1.2",
     "@react-native-vector-icons/material-design-icons": "^13.1.2",
     "@shopify/flash-list": "2.0.2",
     "@shopify/react-native-skia": "^2.6.5",

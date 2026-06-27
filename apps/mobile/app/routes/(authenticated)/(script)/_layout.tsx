@@ -28,6 +28,26 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="[id]"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: false,
+          headerTitle: "Script",
+          // headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="script"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: false,
+          headerTitle: "Script",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 };

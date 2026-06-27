@@ -1066,6 +1066,16 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
+"@expo-google-fonts/amarna@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/amarna/-/amarna-0.4.1.tgz#083106070890546ef1f9a858d7778ee7592d6ca8"
+  integrity sha512-4iC59ZvOHnuWJRftBt9sFiNACFlE63tl3gt7uWkp1TAz3lomMz08Say7Yu0yZRToOmuyXM82QHg+GnzPG3x/pg==
+
+"@expo-google-fonts/krona-one@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/krona-one/-/krona-one-0.4.1.tgz#cabd847a223e490921e91aa4b0ae45560946adfa"
+  integrity sha512-aYbmrjYQTcmLWsFQY0HTvugUdV2kYj4VykIBwatpfZbTKJ7AsJR0Gq8HkudtwcEOVQ5V03ZGXlGI9NYTsqeAbw==
+
 "@expo-google-fonts/material-symbols@^0.4.1":
   version "0.4.26"
   resolved "https://registry.yarnpkg.com/@expo-google-fonts/material-symbols/-/material-symbols-0.4.26.tgz#f8297a6760b217338272968de378fc80f3f3d40a"
@@ -1809,6 +1819,11 @@
   dependencies:
     merge-options "^3.0.4"
 
+"@react-native-clipboard/clipboard@^1.16.3":
+  version "1.16.3"
+  resolved "https://registry.yarnpkg.com/@react-native-clipboard/clipboard/-/clipboard-1.16.3.tgz#7807a90fd9984bf4d3a96faf2eee20457984a9bd"
+  integrity sha512-cMIcvoZKIrShzJHEaHbTAp458R9WOv0fB6UyC7Ek4Qk561Ow/DrzmmJmH/rAZg21Z6ixJ4YSdFDC14crqIBmCQ==
+
 "@react-native-masked-view/masked-view@^0.3.2":
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/@react-native-masked-view/masked-view/-/masked-view-0.3.2.tgz#7064533a573e3539ec912f59c1f457371bf49dd9"
@@ -1822,6 +1837,20 @@
     find-up "^8.0.0"
     picocolors "^1.1.1"
     plist "^3.1.0"
+
+"@react-native-vector-icons/entypo@^13.1.2":
+  version "13.1.2"
+  resolved "https://registry.yarnpkg.com/@react-native-vector-icons/entypo/-/entypo-13.1.2.tgz#b9166a6f7c96ba67d1639c16a70131b96d3d8cb3"
+  integrity sha512-oxfKPz8amwmI/IiYadwgKlGBo4y68bwYVhx5N4dTffaIR4n73Lk6AUlNUcYzSoMzSAYZVfySGPq7YV8whrc8dw==
+  dependencies:
+    "@react-native-vector-icons/common" "^13.0.1"
+
+"@react-native-vector-icons/fontawesome6@^13.1.2":
+  version "13.1.2"
+  resolved "https://registry.yarnpkg.com/@react-native-vector-icons/fontawesome6/-/fontawesome6-13.1.2.tgz#a15d34b7197948baeda200a6a294e0634ae313d4"
+  integrity sha512-oQvQeDE8kSXm3l+oRKQm/Jo4ewR9YdKW2gFDVVl3st1yY5Nml1ZS4m3lTp3a/KehT9w+Uiv2JNn3kG0VOo+AZw==
+  dependencies:
+    "@react-native-vector-icons/common" "^13.0.1"
 
 "@react-native-vector-icons/material-design-icons@^13.1.2":
   version "13.1.2"

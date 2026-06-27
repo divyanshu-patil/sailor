@@ -1,6 +1,7 @@
 export const getCardTitleMargin = (
   cardLength: number,
-  marginFactor = 6,
+  max?: number,
+  marginFactor = 2,
 ): number => {
-  return cardLength * marginFactor;
+  return Math.min(cardLength * marginFactor, 150);
 };

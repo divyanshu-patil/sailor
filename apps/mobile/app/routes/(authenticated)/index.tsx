@@ -1,4 +1,3 @@
-import HomeScreen from "@/screens/home/home";
 import { Redirect } from "expo-router";
 
 const Home = () => {
