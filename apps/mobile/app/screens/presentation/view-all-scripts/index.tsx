@@ -1,8 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 
-import { getRandomIntExclusive } from "@/utils/getRandomNumber";
 import { Card } from "./Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "./constants";
 

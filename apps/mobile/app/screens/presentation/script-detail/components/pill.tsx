@@ -9,10 +9,9 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withDelay,
-  withTiming,
 } from "react-native-reanimated";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect } from "react";
+
+import { useEffect } from "react";
 
 interface PillProps {
   variant: "duration" | "date";

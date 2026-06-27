@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import EntypoIcons from "@react-native-vector-icons/entypo";
 import { colord } from "colord";
-import Animated, {
+import {
   createAnimatedComponent,
   LinearTransition,
   useAnimatedStyle,
