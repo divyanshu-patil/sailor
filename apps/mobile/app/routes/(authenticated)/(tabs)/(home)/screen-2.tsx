@@ -1,8 +1,8 @@
-import { View, Text, ScrollView } from "react-native";
+import { Text, ScrollView } from "react-native";
 import React, { useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
-import { useNavigation } from "expo-router";
+import { router, Stack, useNavigation } from "expo-router";
+import { Button, Host } from "@expo/ui/swift-ui";
+import { buttonStyle, glassEffect } from "@expo/ui/swift-ui/modifiers";
 
 const Screen2 = () => {
   const navigation = useNavigation();
@@ -21,8 +21,22 @@ const Screen2 = () => {
           variant="prominent"
           tintColor={"#c11b5c"}
           icon={"plus"}
-        ></Stack.Toolbar.Button>
+          onPress={() =>
+            router.push("/(authenticated)/(script)/create-new-script", {
+              withAnchor: true,
+            })
+          }
+        />
       </Stack.Toolbar>
+      <Host matchContents>
+        <Button
+          label="Go to View All Script"
+          modifiers={[buttonStyle("glassProminent")]}
+          onPress={() =>
+            router.navigate("/(authenticated)/(script)/view-all-script")
+          }
+        />
+      </Host>
     </ScrollView>
   );
 };

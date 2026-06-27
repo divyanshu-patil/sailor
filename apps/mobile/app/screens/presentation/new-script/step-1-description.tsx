@@ -1,0 +1,215 @@
+import React, { useCallback, useState } from "react";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import {
+  Host,
+  Form,
+  Section,
+  TextField,
+  Button,
+  HStack,
+  Spacer,
+  Text,
+  Image,
+  List,
+} from "@expo/ui/swift-ui";
+import {
+  buttonStyle,
+  font,
+  foregroundStyle,
+  padding,
+  frame,
+  keyboardType,
+  animation,
+  Animation,
+} from "@expo/ui/swift-ui/modifiers";
+import { usePresentationForm } from "./form-context";
+import { AttachmentKind, Attachment } from "./types/types";
+
+function iconForKind(kind: AttachmentKind) {
+  switch (kind) {
+    case "image":
+      return "photo";
+    case "document":
+      return "doc.text";
+    case "link":
+      return "link";
+  }
+}
+
+export default function StepDescription() {
+  const {
+    form,
+    addAttachment,
+    removeAttachment,
+    descriptionState,
+    linkDraftState,
+  } = usePresentationForm();
+
+  const linkDraft = linkDraftState;
+  const [showLinkInput, setShowLinkInput] = useState(false);
+
+  const addImage = useCallback(async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    result.assets.forEach((asset, i) => {
+      addAttachment({
+        id: `img-${Date.now()}-${i}`,
+        kind: "image",
+        name: asset.fileName ?? `Image ${form.attachments.length + i + 1}`,
+        uri: asset.uri,
+      });
+    });
+  }, [addAttachment, form.attachments.length]);
+
+  const addDocument = useCallback(async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      multiple: true,
+      type: [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+      ],
+    });
+    if (result.canceled) return;
+    result.assets.forEach((asset, i) => {
+      addAttachment({
+        id: `doc-${Date.now()}-${i}`,
+        kind: "document",
+        name: asset.name,
+        uri: asset.uri,
+      });
+    });
+  }, [addAttachment]);
+
+  // eslint-disable-next-line react-hooks/immutability
+  const addLink = useCallback(() => {
+    const trimmed = linkDraft.value.trim();
+    if (!trimmed) return;
+    addAttachment({ id: `link-${Date.now()}`, kind: "link", name: trimmed });
+    // eslint-disable-next-line react-hooks/immutability
+    linkDraft.value = "";
+    setShowLinkInput(false);
+  }, [linkDraft, addAttachment]);
+
+  return (
+    <Host style={{ flex: 1 }}>
+      <Form>
+        <Section
+          title="Description"
+          footer={
+            <Text
+              modifiers={[
+                font({ size: 13 }),
+                foregroundStyle({ type: "hierarchical", style: "secondary" }),
+              ]}
+            >
+              Describe the topic, goal, and tone of your presentation.
+            </Text>
+          }
+        >
+          <TextField
+            axis="vertical"
+            text={descriptionState}
+            placeholder="e.g. A persuasive pitch deck for a seed-stage climate tech startup..."
+            modifiers={[padding({ vertical: 4 })]}
+          />
+        </Section>
+
+        <Section
+          title="Attachments"
+          modifiers={[animation(Animation.default, showLinkInput)]}
+          footer={
+            <Text
+              modifiers={[
+                font({ size: 13 }),
+                foregroundStyle({ type: "hierarchical", style: "secondary" }),
+              ]}
+            >
+              Optional — add images, documents, or links to ground the
+              presentation in your own material.
+            </Text>
+          }
+        >
+          <HStack spacing={10} modifiers={[padding({ vertical: 4 })]}>
+            <Button modifiers={[buttonStyle("glass")]} onPress={addImage}>
+              <HStack spacing={6}>
+                <Image systemName="photo" size={15} />
+                <Text>Image</Text>
+              </HStack>
+            </Button>
+            <Button modifiers={[buttonStyle("glass")]} onPress={addDocument}>
+              <HStack spacing={6}>
+                <Image systemName="doc.text" size={15} />
+                <Text>Document</Text>
+              </HStack>
+            </Button>
+            <Button
+              modifiers={[buttonStyle("glass")]}
+              onPress={() => setShowLinkInput((v) => !v)}
+            >
+              <HStack spacing={6}>
+                <Image systemName="link" size={15} />
+                <Text>Link</Text>
+              </HStack>
+            </Button>
+          </HStack>
+
+          {showLinkInput && (
+            <HStack
+              spacing={8}
+              modifiers={[animation(Animation.spring(), showLinkInput)]}
+            >
+              <TextField
+                placeholder="https://example.com"
+                text={linkDraft}
+                modifiers={[frame({ minWidth: 0 }), keyboardType("url")]}
+              />
+              <Button
+                modifiers={[buttonStyle("glassProminent")]}
+                onPress={addLink}
+              >
+                <Text>Add</Text>
+              </Button>
+            </HStack>
+          )}
+
+          {form.attachments.length > 0 && (
+            <List>
+              {form.attachments.map((item: Attachment) => (
+                <HStack key={item.id} modifiers={[padding({ vertical: 4 })]}>
+                  <Image
+                    systemName={iconForKind(item.kind)}
+                    size={18}
+                    color="#8E8E93"
+                  />
+                  <Text
+                    modifiers={[padding({ leading: 8 }), font({ size: 15 })]}
+                  >
+                    {item.name}
+                  </Text>
+                  <Spacer />
+                  <Button
+                    modifiers={[buttonStyle("plain")]}
+                    onPress={() => removeAttachment(item.id)}
+                  >
+                    <Image
+                      systemName="xmark.circle.fill"
+                      size={18}
+                      color="#C7C7CC"
+                    />
+                  </Button>
+                </HStack>
+              ))}
+            </List>
+          )}
+        </Section>
+      </Form>
+    </Host>
+  );
+}
