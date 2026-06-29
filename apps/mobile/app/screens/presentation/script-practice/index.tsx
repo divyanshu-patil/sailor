@@ -6,8 +6,10 @@ import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
 import { useState } from "react";
 import Animated, {
-  createAnimatedComponent,
+  interpolate,
+  useAnimatedStyle,
   useSharedValue,
+  withSpring,
 } from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { fonts } from "@/constants/fonts";
@@ -32,8 +34,6 @@ type ScriptPracticeParams = { id: string; color: string };
 
 const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
 
-const AnimatedHost = createAnimatedComponent(Host);
-
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
   const params = useLocalSearchParams<ScriptPracticeParams>();
@@ -49,6 +49,8 @@ const ScriptPracticeScreen = () => {
   const [cards] = useState(() => assignColorsByQuantile(dummyScriptCards));
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexSV = useSharedValue(0);
+
+  const containerHeight = useSharedValue(0);
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -135,6 +137,19 @@ const ScriptPracticeScreen = () => {
 
   const { introRotation, introScale } = useIntroAnimation();
 
+  const TIMER_TRANSLATE_Y = 100;
+  const animatedTimerStyles = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: withSpring(
+          interpolate(isRecording.value, [0, 1], [TIMER_TRANSLATE_Y, 0]),
+          { damping: 70, stiffness: 500 },
+        ),
+      },
+    ],
+    opacity: interpolate(isRecording.value, [0, 1], [0, 1]),
+  }));
+
   return (
     <Animated.View
       style={[styles.screen, { paddingTop: headerHeight }, animatedScreenStyle]}
@@ -209,25 +224,32 @@ const ScriptPracticeScreen = () => {
               })}
             </SwiftUIText>
           </Host>
-          <AnimatedHost
-            matchContents
-            modifiers={[
-              animation(Animation.spring({ bounce: 0.25 }), currentIndex),
-            ]}
+          <Animated.View
+            style={[animatedTimerStyles]}
+            onLayout={(e) => {
+              containerHeight.value = e.nativeEvent.layout.height;
+            }}
           >
-            <SwiftUIText
+            <Host
+              matchContents
               modifiers={[
-                contentTransition("numericText", {
-                  countsDown: true,
-                }),
-                animation(Animation.spring({ bounce: 0.25 }), secsOnes),
-                font({ family: fonts.krona }),
-                foregroundStyle("#d9d9d9"),
+                animation(Animation.spring({ bounce: 0.25 }), currentIndex),
               ]}
             >
-              {`${String(minutesTens)}${String(minutesOnes)}:${String(secsTens)}${String(secsOnes)}`}
-            </SwiftUIText>
-          </AnimatedHost>
+              <SwiftUIText
+                modifiers={[
+                  contentTransition("numericText", {
+                    countsDown: true,
+                  }),
+                  animation(Animation.spring({ bounce: 0.25 }), secsOnes),
+                  font({ family: fonts.krona }),
+                  foregroundStyle("#d9d9d9"),
+                ]}
+              >
+                {`${String(minutesTens)}${String(minutesOnes)}:${String(secsTens)}${String(secsOnes)}`}
+              </SwiftUIText>
+            </Host>
+          </Animated.View>
         </View>
 
         <RecordButton
