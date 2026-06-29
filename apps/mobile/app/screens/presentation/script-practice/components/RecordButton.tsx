@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/immutability */
-import { Alert, Linking, Platform, Pressable, StyleSheet } from "react-native";
+import { Alert, Linking, Platform, StyleSheet } from "react-native";
 import Animated, {
-  createAnimatedComponent,
   Easing,
   interpolateColor,
   LinearTransition,
@@ -24,8 +23,7 @@ import {
   useAudioRecorder,
 } from "expo-audio";
 import { scheduleOnRN } from "react-native-worklets";
-
-const AnimatedPressable = createAnimatedComponent(Pressable);
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
 interface RecordButtonProps {
   onPress?: () => void;

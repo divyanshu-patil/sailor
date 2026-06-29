@@ -1,21 +1,19 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import EntypoIcons from "@react-native-vector-icons/entypo";
 import { colord } from "colord";
 import {
-  createAnimatedComponent,
   LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
 interface CtaButtonProps {
   onPress?: () => void;
   label: string;
   accentColor: string;
 }
-
-const AnimatedPressable = createAnimatedComponent(Pressable);
 
 const CtaButton = ({ accentColor, label, onPress }: CtaButtonProps) => {
   const textLightColor = colord(accentColor).lighten(0.13).toHex();

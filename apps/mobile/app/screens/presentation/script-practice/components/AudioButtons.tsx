@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability */
-import { Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import Icon from "@react-native-vector-icons/fontawesome6";
 import { colord } from "colord";
 import {
@@ -14,6 +14,7 @@ import {
   Easing,
 } from "react-native-reanimated";
 import { useCallback, useEffect } from "react";
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
 interface RecordingButtonsProps {
   color: string;
@@ -24,7 +25,6 @@ interface RecordingButtonsProps {
   finished?: boolean; // stopped
 }
 
-const AnimatedPressable = createAnimatedComponent(Pressable);
 const AnimatedIcon = createAnimatedComponent(Icon);
 
 type TIcon = "play" | "pause" | "stop" | "trash";

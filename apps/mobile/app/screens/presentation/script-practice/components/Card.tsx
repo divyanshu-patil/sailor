@@ -1,11 +1,5 @@
-import {
-  Dimensions,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-} from "react-native";
+import { Dimensions, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
-  createAnimatedComponent,
   Extrapolation,
   interpolate,
   SharedValue,
@@ -16,6 +10,7 @@ import Animated, {
 import { ScriptLine } from "../../script-text/ScriptLine";
 import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
 import Lucide from "@react-native-vector-icons/lucide";
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 export type Delivery =
   | "energetic"
   | "confident"
@@ -49,8 +44,6 @@ interface CardProps {
 }
 
 const RETURN_START_X = Dimensions.get("window").width * 1.5;
-
-const AnimatedPressable = createAnimatedComponent(Pressable);
 
 const Card = ({
   text,

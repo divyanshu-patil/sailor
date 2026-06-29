@@ -4,9 +4,8 @@ import { useLocalSearchParams } from "expo-router";
 import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Animated, {
-  Extrapolation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -28,10 +27,8 @@ import { useSwipeGesture } from "./hooks/useSwipeGesture";
 import { useBackgroundColorStyle } from "./hooks/useBackgroundColorStyle";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
 import {
-  deliveryModifier,
   digitModifiers,
   RETURN_START_X,
-  SCREEN_WIDTH,
   separatorModifiers,
   staticModifiers,
   VISIBLE_COUNT,
@@ -39,11 +36,10 @@ import {
 import { getCardsProgressInfoText } from "./utils/getCardsProgressInfoText";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { getDeliveryEmoji } from "./utils/getDeliveryEmoji";
+import DeliveryPill from "./components/DeliveryPill";
+import { lightenColor } from "./utils/lightenColor";
 
 type ScriptPracticeParams = { id: string; color: string };
-
-const lightenColor = (hex: string, threshold = 0.15) =>
-  colord(hex).lighten(threshold).toHex();
 
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
@@ -154,31 +150,6 @@ const ScriptPracticeScreen = () => {
     prevColor,
   });
 
-  const pillCurrentColor = isExhausted
-    ? lightenColor(params.color)
-    : lightenColor(cards[currentIndex].color, 0.1);
-
-  const pillNextColor =
-    !isExhausted && currentIndex + 1 < cards.length
-      ? lightenColor(cards[currentIndex + 1].color, 0.1)
-      : lightenColor(params.color);
-
-  const pillPrevColor =
-    currentIndex - 1 >= 0 && currentIndex - 1 < cards.length
-      ? lightenColor(cards[currentIndex - 1].color, 0.1)
-      : currentColor;
-
-  const animatedPillColorStyle = useBackgroundColorStyle({
-    translateX,
-    prevCardX,
-    prevCardOpacity,
-    swipeDirection,
-    isRetreating,
-    currentColor: pillCurrentColor,
-    nextColor: pillNextColor,
-    prevColor: pillPrevColor,
-  });
-
   const { introRotation, introScale } = useIntroAnimation();
 
   const TIMER_TRANSLATE_Y = 100;
@@ -193,62 +164,41 @@ const ScriptPracticeScreen = () => {
     ],
     opacity: interpolate(isRecording.value, [0, 1], [0, 1]),
   }));
+  const getDeliveryText = useCallback(
+    (currIndex: number) => {
+      if (currentIndex < cards.length) {
+        const delivery = cards[currIndex].delivery;
+        return `${getDeliveryEmoji(delivery)} ${delivery}`;
+      }
+      const delivery = cards[currIndex - 1].delivery;
 
-  const getDeliveryText = (currIndex: number) => {
-    if (currentIndex < cards.length) {
-      return `${getDeliveryEmoji(cards[currentIndex].delivery)} ${cards[currentIndex].delivery}`;
-    }
-    const dummyIndex = cards.length - 1;
-    return `${getDeliveryEmoji(cards[dummyIndex].delivery)} ${cards[dummyIndex].delivery}`;
-  };
-  const animatedPillOpacityStyle = useAnimatedStyle(() => {
-    // Fully exhausted and not retreating back — keep hidden
-    if (isExhausted && prevCardX.value >= RETURN_START_X) return { opacity: 0 };
-
-    // Not on last card — always visible
-    if (currentIndex < cards.length - 1) return { opacity: 1 };
-
-    if (isExhausted) {
-      // Past the end — fade IN as user swipes left (retreating back to last card)
-      return {
-        opacity: interpolate(
-          prevCardX.value,
-          [RETURN_START_X, RETURN_START_X * 0.6],
-          [0, 1],
-          Extrapolation.CLAMP,
-        ),
-      };
-    }
-
-    // On last card — fade OUT as user swipes right
-    return {
-      opacity: interpolate(
-        translateX.value,
-        [0, SCREEN_WIDTH * 0.4],
-        [1, 0],
-        Extrapolation.CLAMP,
-      ),
-    };
-  });
+      return `${getDeliveryEmoji(delivery)} ${delivery}`;
+    },
+    [cards, currentIndex],
+  );
 
   return (
     <Animated.View
       style={[styles.screen, { paddingTop: headerHeight }, animatedScreenStyle]}
     >
       <View style={[styles.deliveryPillContainer, { top: headerHeight }]}>
-        <Animated.View
-          style={[
-            styles.deliveryPill,
-            animatedPillColorStyle,
-            animatedPillOpacityStyle,
-          ]}
-        >
-          <Host matchContents>
-            <SwiftUIText modifiers={deliveryModifier(currentIndex)}>
-              {getDeliveryText(currentIndex)}
-            </SwiftUIText>
-          </Host>
-        </Animated.View>
+        <DeliveryPill
+          currentIndex={currentIndex}
+          delivery={getDeliveryText(currentIndex)}
+          totalCards={cards.length}
+          isExhausted={isExhausted}
+          cardsCurrentColor={
+            cards[currentIndex]?.color ?? cards[cards.length - 1].color
+          }
+          cardsNextColor={cards[currentIndex + 1]?.color ?? params.color}
+          cardsPrevColor={cards[currentIndex - 1]?.color ?? cards[0].color}
+          color={params.color}
+          isRetreating={isRetreating}
+          prevCardOpacity={prevCardOpacity}
+          prevCardX={prevCardX}
+          swipeDirection={swipeDirection}
+          translateX={translateX}
+        />
       </View>
       <GestureDetector gesture={panGesture}>
         <View style={styles.cardContainer}>
@@ -334,9 +284,7 @@ const ScriptPracticeScreen = () => {
             >
               <HStack spacing={0}>
                 {recordingDuration ? (
-                  // Playback mode: "00:13 / 01:47"
                   <>
-                    {/* Current position */}
                     <SwiftUIText
                       modifiers={digitModifiers(
                         Math.floor(playbackPosition / 60 / 10),

@@ -11,7 +11,6 @@ export const SWIPE_THRESHOLD = RIGHT_SWIPE_THRESHOLD + LEFT_SWIPE_THRESHOLD / 2;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const RETURN_START_X = SCREEN_WIDTH * 1.5;
 const RETREAT_SPRING = { damping: 22, stiffness: 250, mass: 0.6 };
-const RETURN_SPRING = { damping: 22, stiffness: 250 };
 
 type SwipeDirection = "left" | "right" | null;
 
@@ -166,9 +165,9 @@ const handleLeftSwipeEnd = (
     params.prevCardY.value = withSpring(0, RETREAT_SPRING);
     params.prevCardOpacity.value = 1;
   } else {
-    params.translateX.value = withSpring(0, SETTLE_SPRING);
-    params.translateY.value = withSpring(0, SETTLE_SPRING);
-    params.prevCardX.value = withSpring(RETURN_START_X, RETURN_SPRING);
+    params.translateX.value = withTiming(0);
+    params.translateY.value = withTiming(0);
+    params.prevCardX.value = withTiming(RETURN_START_X);
     params.prevCardOpacity.value = withTiming(0, { duration: 100 });
   }
 };
