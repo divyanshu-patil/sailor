@@ -16,10 +16,10 @@ const Layout = () => {
         <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="safari" md="home" />
       </NativeTabs.Trigger>
-      {/* <NativeTabs.Trigger name="(profile)">
+      <NativeTabs.Trigger name="(profile)">
         <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person" md="home" />
-      </NativeTabs.Trigger> */}
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger role="search" name="(search)">
         <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="magnifyingglass" md="home" />
