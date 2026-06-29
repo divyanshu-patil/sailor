@@ -23,6 +23,9 @@ export const digitModifiers = (animationId: number): ModifierConfig[] => [
 export const deliveryModifier = (animationId: number): ModifierConfig[] => [
   contentTransition("numericText", { countsDown: true }),
   animation(Animation.spring({ bounce: 0.25 }), animationId),
+  font({
+    family: fonts.amarna.regular,
+  }),
 ];
 
 export const separatorModifiers: ModifierConfig[] = [
