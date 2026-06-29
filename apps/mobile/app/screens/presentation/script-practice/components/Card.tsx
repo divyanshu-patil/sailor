@@ -3,6 +3,7 @@ import {
   StyleSheet,
   Text,
   useWindowDimensions,
+  View,
 } from "react-native";
 import Animated, {
   Extrapolation,
@@ -10,6 +11,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { ScriptLine } from "../../script-text/ScriptLine";
 
 export type Delivery =
   | "energetic"
@@ -78,7 +80,7 @@ const Card = ({
         { translateY: prevDrag.translateY.value },
         { rotate: `${progress * MAX_ROTATION}deg` },
       ],
-      opacity: prevDrag.opacity.value,
+      opacity: 1,
       zIndex: numOfCards + 1,
     };
   });
@@ -132,7 +134,7 @@ const Card = ({
     <Animated.View
       style={[styles.card, { backgroundColor: color }, animatedStyle]}
     >
-      <Text>{text}</Text>
+      <ScriptLine line={text} color={color} />
     </Animated.View>
   );
 };
@@ -150,6 +152,7 @@ const useStyles = () => {
       borderRadius: 77,
       justifyContent: "center",
       alignItems: "center",
+      paddingHorizontal: 24,
     },
   });
 };

@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import { useLocalSearchParams } from "expo-router";
 import { dummyScriptCards } from "./dummy";
@@ -13,6 +13,8 @@ import {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/spring";
 import { scheduleOnRN } from "react-native-worklets";
+import { fonts } from "@/constants/fonts";
+import { colord } from "colord";
 
 type ScriptPracticeParams = { id: string; color: string };
 
@@ -36,8 +38,9 @@ const assignColorsByQuantile = (cards: typeof dummyScriptCards) => {
   return cards.map((card) => ({ ...card, color: colorById.get(card.id)! }));
 };
 
-const SETTLE_SPRING: SpringConfig = { damping: 50 };
-const SWIPE_THRESHOLD = 120;
+const SETTLE_SPRING: SpringConfig = { damping: 70, mass: 1 };
+const RIGHT_SWIPE_THRESHOLD = 120;
+const LEFT_SWIPE_THRESHOLD = 250;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const RETURN_START_X = SCREEN_WIDTH * 1.5;
 const VISIBLE_COUNT = 4;
@@ -58,6 +61,8 @@ const ScriptPracticeScreen = () => {
   const prevCardY = useSharedValue(0);
   const prevCardOpacity = useSharedValue(0);
 
+  const isAnimating = useSharedValue(false);
+
   const advanceIndex = () => {
     setCurrentIndex((i) => {
       const next = Math.min(i + 1, cards.length);
@@ -67,6 +72,7 @@ const ScriptPracticeScreen = () => {
     requestAnimationFrame(() => {
       translateX.value = 0;
       translateY.value = 0;
+      isAnimating.value = false;
     });
   };
 
@@ -82,11 +88,13 @@ const ScriptPracticeScreen = () => {
       prevCardOpacity.value = 0;
       prevCardX.value = RETURN_START_X;
       prevCardY.value = 0;
+      isAnimating.value = false;
     });
   };
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
+      if (isAnimating.value) return;
       if (e.translationX >= 0) {
         swipeDirection.value = "right";
         translateX.value = e.translationX;
@@ -99,7 +107,7 @@ const ScriptPracticeScreen = () => {
         translateY.value = 0;
 
         if (currentIndexSV.value > 0) {
-          const progress = Math.abs(e.translationX) / SWIPE_THRESHOLD;
+          const progress = Math.abs(e.translationX) / LEFT_SWIPE_THRESHOLD;
           const clampedProgress = Math.min(progress, 1);
           prevCardX.value =
             RETURN_START_X * (1 - clampedProgress) -
@@ -110,11 +118,13 @@ const ScriptPracticeScreen = () => {
       }
     })
     .onEnd((e) => {
+      if (isAnimating.value) return;
       if (swipeDirection.value === "right") {
         if (
-          translateX.value > SWIPE_THRESHOLD &&
+          translateX.value > RIGHT_SWIPE_THRESHOLD &&
           currentIndexSV.value < cards.length
         ) {
+          isAnimating.value = true;
           translateX.value = withTiming(
             SCREEN_WIDTH * 1.5,
             { duration: 250 },
@@ -129,10 +139,11 @@ const ScriptPracticeScreen = () => {
         }
       } else if (swipeDirection.value === "left") {
         const didExceedThreshold =
-          Math.abs(e.translationX) > SWIPE_THRESHOLD &&
+          Math.abs(e.translationX) > LEFT_SWIPE_THRESHOLD &&
           currentIndexSV.value > 0;
 
         if (didExceedThreshold) {
+          isAnimating.value = true;
           prevCardX.value = withSpring(
             0,
             { damping: 22, stiffness: 250, mass: 0.6 },
@@ -145,7 +156,7 @@ const ScriptPracticeScreen = () => {
             stiffness: 250,
             mass: 0.6,
           });
-          prevCardOpacity.value = withTiming(1, { duration: 80 });
+          prevCardOpacity.value = 1;
         } else {
           translateX.value = withSpring(0, SETTLE_SPRING);
           translateY.value = withSpring(0, SETTLE_SPRING);
@@ -189,9 +200,17 @@ const ScriptPracticeScreen = () => {
               />
             );
           })}
+          <Text
+            style={[
+              styles.emptytext,
+              { color: colord(params.color).darken(0.5).toHex() },
+            ]}
+          >
+            No Cards Left
+          </Text>
         </View>
       </GestureDetector>
-      <View style={styles.footer}>
+      <View>
         <RecordButton accentColor={"#7B75E0"} />
       </View>
     </View>
@@ -203,5 +222,5 @@ export default ScriptPracticeScreen;
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: 32, paddingVertical: 28 },
   cardContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
-  footer: {},
+  emptytext: { fontSize: 36, fontFamily: fonts.amarna.regular },
 });
