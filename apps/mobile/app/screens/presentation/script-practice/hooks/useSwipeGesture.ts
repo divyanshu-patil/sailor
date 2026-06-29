@@ -5,7 +5,7 @@ import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/s
 import { scheduleOnRN } from "react-native-worklets";
 
 const SETTLE_SPRING: SpringConfig = { damping: 70, mass: 1 };
-const RIGHT_SWIPE_THRESHOLD = 120;
+const RIGHT_SWIPE_THRESHOLD = 200;
 const LEFT_SWIPE_THRESHOLD = 250;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const RETURN_START_X = SCREEN_WIDTH * 1.5;

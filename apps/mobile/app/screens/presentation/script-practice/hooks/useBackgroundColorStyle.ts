@@ -1,12 +1,9 @@
-import { Dimensions } from "react-native";
 import {
   interpolateColor,
   SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
-
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const RETURN_START_X = SCREEN_WIDTH * 1.5;
+import { SCREEN_WIDTH, RETURN_START_X } from "../constants";
 
 type SwipeDirection = "left" | "right" | null;
 

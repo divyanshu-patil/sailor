@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import { useLocalSearchParams } from "expo-router";
 import { dummyScriptCards } from "./dummy";
@@ -21,12 +21,9 @@ import { assignColorsByQuantile } from "./utils/colorAssignment";
 import { useSwipeGesture } from "./hooks/useSwipeGesture";
 import { useBackgroundColorStyle } from "./hooks/useBackgroundColorStyle";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
+import { RETURN_START_X, VISIBLE_COUNT } from "./constants";
 
 type ScriptPracticeParams = { id: string; color: string };
-
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const RETURN_START_X = SCREEN_WIDTH * 1.5;
-const VISIBLE_COUNT = 4;
 
 const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
 
