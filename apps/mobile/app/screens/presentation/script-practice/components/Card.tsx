@@ -1,19 +1,12 @@
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Dimensions, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   Extrapolation,
-  FadeInRight,
   interpolate,
   SharedValue,
   useAnimatedStyle,
-  ZoomIn,
 } from "react-native-reanimated";
 import { ScriptLine } from "../../script-text/ScriptLine";
+import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
 
 export type Delivery =
   | "energetic"
@@ -47,17 +40,7 @@ interface CardProps {
   introScale?: SharedValue<number>;
 }
 
-const ROTATION_STEP = -8;
-const ROTATION_CYCLE = 3;
-const MAX_DRAG = 250;
-const ARC_HEIGHT = 50;
-const MAX_ROTATION = 18;
 const RETURN_START_X = Dimensions.get("window").width * 1.5;
-
-const getRotation = (index: number) => {
-  "worklet";
-  return (index % ROTATION_CYCLE) * ROTATION_STEP;
-};
 
 const Card = ({
   text,
@@ -95,47 +78,21 @@ const Card = ({
   });
 
   const normalAnimatedStyle = useAnimatedStyle(() => {
-    const x = drag.translateX.value;
-    const progress = interpolate(
-      x,
-      [-MAX_DRAG, 0, MAX_DRAG],
-      [-1, 0, 1],
-      Extrapolation.CLAMP,
-    );
-    const absProgress = Math.abs(progress);
-    const arcY = absProgress * ARC_HEIGHT;
-
-    const leftProgress = prevDrag
-      ? interpolate(
-          prevDrag.translateX.value,
-          [0, RETURN_START_X],
-          [1, 0],
-          Extrapolation.CLAMP,
-        )
-      : 0;
-    const cascadeProgress = progress >= 0 ? -progress : leftProgress;
-
-    const virtualDepth = currIndex + cascadeProgress;
-    const stackRotation = interpolate(
-      virtualDepth,
-      [0, 1, 2, 3],
-      [getRotation(0), getRotation(1), getRotation(2), getRotation(3)],
-      Extrapolation.CLAMP,
-    );
+    const { translateX, translateY, rotate } = getNormalCardTransform({
+      currIndex,
+      dragTranslateX: drag.translateX.value,
+      prevCardTranslateX: prevDrag?.translateX.value,
+      returnStartX: RETURN_START_X,
+    });
 
     const introOffset = introRotation ? introRotation.value : 0;
     const scale = introScale ? introScale.value : 1;
-    const translateX = currIndex === 0 && progress >= 0 ? x : 0;
-    const translateY = currIndex === 0 && progress >= 0 ? arcY : 0;
-    const rotate =
-      (currIndex === 0 && progress >= 0
-        ? progress * MAX_ROTATION
-        : stackRotation) + introOffset;
+
     return {
       transform: [
         { translateX },
         { translateY },
-        { rotate: `${rotate}deg` },
+        { rotate: `${rotate + introOffset}deg` },
         { scale },
       ],
       zIndex: numOfCards - currIndex,

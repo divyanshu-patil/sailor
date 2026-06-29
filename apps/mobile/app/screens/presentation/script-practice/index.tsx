@@ -4,19 +4,9 @@ import { useLocalSearchParams } from "expo-router";
 import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
-import { useEffect, useState } from "react";
-import Animated, {
-  interpolateColor,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withSequence,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/spring";
-import { scheduleOnRN } from "react-native-worklets";
+import { useState } from "react";
+import Animated, { useSharedValue } from "react-native-reanimated";
+import { GestureDetector } from "react-native-gesture-handler";
 import { fonts } from "@/constants/fonts";
 import { colord } from "colord";
 import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
@@ -27,35 +17,18 @@ import {
   font,
   foregroundStyle,
 } from "@expo/ui/swift-ui/modifiers";
+import { assignColorsByQuantile } from "./utils/colorAssignment";
+import { useSwipeGesture } from "./hooks/useSwipeGesture";
+import { useBackgroundColorStyle } from "./hooks/useBackgroundColorStyle";
+import { useIntroAnimation } from "./hooks/useIntroAnimation";
 
 type ScriptPracticeParams = { id: string; color: string };
 
-const IMPACT_PALETTES = [
-  ["#C9E4DE", "#B8E0D2", "#CDE7E0", "#D6EAE3"],
-  ["#A0D2DB", "#B5E2EE", "#C2E7F0", "#AED9E0"],
-  ["#FFE8B6", "#FFEFC3", "#FCE8A6", "#FFE5A0"],
-  ["#FFC8A2", "#FFD3B0", "#FFCBA4", "#FCC9A6"],
-  ["#F7A7A6", "#F8B4B3", "#F9ACAB", "#F6A0A3"],
-];
-
-const assignColorsByQuantile = (cards: typeof dummyScriptCards) => {
-  const sorted = [...cards].sort((a, b) => a.impact - b.impact);
-  const bucketSize = Math.ceil(sorted.length / 5);
-  const colorById = new Map<string, string>();
-  sorted.forEach((card, i) => {
-    const bucketIndex = Math.min(Math.floor(i / bucketSize), 4);
-    const palette = IMPACT_PALETTES[bucketIndex];
-    colorById.set(card.id, palette[Math.floor(Math.random() * palette.length)]);
-  });
-  return cards.map((card) => ({ ...card, color: colorById.get(card.id)! }));
-};
-
-const SETTLE_SPRING: SpringConfig = { damping: 70, mass: 1 };
-const RIGHT_SWIPE_THRESHOLD = 120;
-const LEFT_SWIPE_THRESHOLD = 250;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const RETURN_START_X = SCREEN_WIDTH * 1.5;
 const VISIBLE_COUNT = 4;
+
+const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
 
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
@@ -104,87 +77,20 @@ const ScriptPracticeScreen = () => {
     });
   };
 
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      if (isAnimating.value) return;
-      if (e.translationX >= 0) {
-        swipeDirection.value = "right";
-        translateX.value = e.translationX;
-        translateY.value = e.translationY;
-        prevCardOpacity.value = withTiming(0, { duration: 80 });
-        prevCardX.value = RETURN_START_X;
-      } else {
-        swipeDirection.value = "left";
-        translateX.value = e.translationX;
-        translateY.value = 0;
-
-        if (currentIndexSV.value > 0) {
-          const progress = Math.abs(e.translationX) / LEFT_SWIPE_THRESHOLD;
-          const clampedProgress = Math.min(progress, 1);
-          prevCardX.value =
-            RETURN_START_X * (1 - clampedProgress) -
-            Math.max(0, progress - 1) * 40;
-          prevCardOpacity.value = clampedProgress;
-          prevCardY.value = (clampedProgress - 1) * 50;
-        }
-      }
-    })
-    .onEnd((e) => {
-      if (isAnimating.value) return;
-      if (swipeDirection.value === "right") {
-        if (
-          translateX.value > RIGHT_SWIPE_THRESHOLD &&
-          currentIndexSV.value < cards.length
-        ) {
-          isAnimating.value = true;
-          translateX.value = withTiming(
-            SCREEN_WIDTH * 1.5,
-            { duration: 250 },
-            (finished) => {
-              if (finished) scheduleOnRN(advanceIndex);
-            },
-          );
-        } else {
-          translateX.value = withSpring(0, SETTLE_SPRING);
-          translateY.value = withSpring(0, SETTLE_SPRING);
-          prevCardOpacity.value = withTiming(0, { duration: 120 });
-        }
-      } else if (swipeDirection.value === "left") {
-        const didExceedThreshold =
-          Math.abs(e.translationX) > LEFT_SWIPE_THRESHOLD &&
-          currentIndexSV.value > 0;
-
-        if (didExceedThreshold) {
-          isAnimating.value = true;
-          isRetreating.value = true;
-          prevCardX.value = withSpring(
-            0,
-            { damping: 22, stiffness: 250, mass: 0.6 },
-            (finished) => {
-              if (finished) scheduleOnRN(retreatIndex);
-            },
-          );
-          prevCardY.value = withSpring(0, {
-            damping: 22,
-            stiffness: 250,
-            mass: 0.6,
-          });
-          prevCardOpacity.value = 1;
-        } else {
-          translateX.value = withSpring(0, SETTLE_SPRING);
-          translateY.value = withSpring(0, SETTLE_SPRING);
-          prevCardX.value = withSpring(RETURN_START_X, {
-            damping: 22,
-            stiffness: 250,
-          });
-          prevCardOpacity.value = withTiming(0, { duration: 100 });
-        }
-      }
-
-      swipeDirection.value = null;
-    });
-
-  const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
+  const panGesture = useSwipeGesture({
+    cardsLength: cards.length,
+    currentIndexSV,
+    translateX,
+    translateY,
+    swipeDirection,
+    prevCardX,
+    prevCardY,
+    prevCardOpacity,
+    isAnimating,
+    isRetreating,
+    onAdvance: advanceIndex,
+    onRetreat: retreatIndex,
+  });
 
   const isExhausted = currentIndex >= cards.length;
 
@@ -202,57 +108,18 @@ const ScriptPracticeScreen = () => {
       ? lightenColor(cards[currentIndex - 1].color)
       : currentColor;
 
-  const animatedScreenStyle = useAnimatedStyle(() => {
-    // right swipe: translateX goes 0 -> SCREEN_WIDTH*1.5 while card exits
-    const rightProgress = Math.min(
-      Math.max(translateX.value, 0) / SCREEN_WIDTH,
-      1,
-    );
-
-    if (
-      isRetreating.value ||
-      (swipeDirection.value === "left" && prevCardOpacity.value > 0)
-    ) {
-      const leftProgress =
-        1 - Math.min(Math.max(prevCardX.value, 0) / RETURN_START_X, 1);
-      return {
-        backgroundColor: interpolateColor(
-          leftProgress,
-          [0, 1],
-          [currentColor, prevColor],
-        ),
-      };
-    }
-
-    return {
-      backgroundColor: interpolateColor(
-        rightProgress,
-        [0, 1],
-        [currentColor, nextColor],
-      ),
-    };
+  const animatedScreenStyle = useBackgroundColorStyle({
+    translateX,
+    prevCardX,
+    prevCardOpacity,
+    swipeDirection,
+    isRetreating,
+    currentColor,
+    nextColor,
+    prevColor,
   });
 
-  // Entrance "chop" rotation, shared by all visible cards on mount.
-  const introRotation = useSharedValue(10);
-  const introScale = useSharedValue(0.5);
-
-  useEffect(() => {
-    introRotation.value = withDelay(
-      100,
-      withSequence(
-        withTiming(8, { duration: 180 }),
-        withTiming(-6, { duration: 160 }),
-        withSpring(0, { damping: 70, mass: 1 }),
-      ),
-    );
-    introScale.value = withDelay(
-      100,
-      withSpring(1, {
-        damping: 50,
-      }),
-    );
-  }, [introRotation, introScale]);
+  const { introRotation, introScale } = useIntroAnimation();
 
   return (
     <Animated.View
