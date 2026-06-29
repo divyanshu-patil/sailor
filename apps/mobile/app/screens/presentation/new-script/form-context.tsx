@@ -15,11 +15,13 @@ type PresentationFormContextValue = {
   // unmounting/remounting as the user moves back and forth.
   descriptionState: ReturnType<typeof useNativeState<string>>;
   linkDraftState: ReturnType<typeof useNativeState<string>>;
+  descriptionValue: string;
   addAttachment: (attachment: Attachment) => void;
   removeAttachment: (id: string) => void;
   setDurationMinutes: (value: number) => void;
   setAudienceIndex: (value: number) => void;
   setCardCount: (value: number) => void;
+  setDescriptionValue: (text: string) => void;
 };
 
 const PresentationFormContext = createContext<
@@ -33,12 +35,14 @@ export function PresentationFormProvider({
 }) {
   const [form, setForm] = useState<PresentationFormState>(DEFAULT_STATE);
   const descriptionState = useNativeState("");
+  const [descriptionValue, setDescriptionValue] = useState("");
   const linkDraftState = useNativeState("");
 
   const value: PresentationFormContextValue = {
     form,
     descriptionState,
     linkDraftState,
+    descriptionValue,
     addAttachment: (attachment) =>
       setForm((prev) => ({
         ...prev,
@@ -54,6 +58,7 @@ export function PresentationFormProvider({
     setAudienceIndex: (audienceIndex) =>
       setForm((prev) => ({ ...prev, audienceIndex })),
     setCardCount: (cardCount) => setForm((prev) => ({ ...prev, cardCount })),
+    setDescriptionValue: (text) => setDescriptionValue(text),
   };
 
   return (

@@ -35,3 +35,11 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+**/.env        
+backend/.env 
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store

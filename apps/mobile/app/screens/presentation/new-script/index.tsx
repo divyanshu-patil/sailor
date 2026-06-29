@@ -28,6 +28,7 @@ import {
   AnimatedHost,
   AnimatedPressable,
 } from "@/components/ui/animated/AnimatedComponents";
+import { colord } from "colord";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const STEP_COUNT = 3;
@@ -153,6 +154,7 @@ function FooterButton({
 
   return (
     <AnimatedPressable
+      disabled={disabled}
       onPress={onPress}
       onPressIn={() => (pressed.value = 1)}
       onPressOut={() => (pressed.value = 0)}
@@ -167,6 +169,12 @@ function FooterButton({
         variant === "primary"
           ? styles.footerButtonPrimary
           : styles.footerButtonSecondary,
+        disabled && {
+          backgroundColor: colord(ACTIVE_COLOR)
+            .lighten(0.12)
+            .desaturate(0.5)
+            .toHex(),
+        },
         animatedStyle,
       ]}
     >
@@ -192,7 +200,7 @@ function FooterButton({
 // ---- Flow content (needs context, so split from provider) ---------------
 
 function FlowContent() {
-  const { form } = usePresentationForm();
+  const { form, descriptionValue } = usePresentationForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
 
@@ -243,6 +251,7 @@ function FlowContent() {
           onPress={goNext}
           variant="primary"
           currentStep={currentStep}
+          disabled={descriptionValue.length <= 0}
         />
       </View>
     </SafeAreaView>
