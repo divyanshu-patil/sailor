@@ -5,7 +5,10 @@ import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
 import { useState } from "react";
-import Animated, { useSharedValue } from "react-native-reanimated";
+import Animated, {
+  createAnimatedComponent,
+  useSharedValue,
+} from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { fonts } from "@/constants/fonts";
 import { colord } from "colord";
@@ -22,10 +25,14 @@ import { useSwipeGesture } from "./hooks/useSwipeGesture";
 import { useBackgroundColorStyle } from "./hooks/useBackgroundColorStyle";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
 import { RETURN_START_X, VISIBLE_COUNT } from "./constants";
+import { getCardsProgressInfoText } from "./utils/getCardsProgressInfoText";
+import { useRecordingTimer } from "./hooks/useRecordingTimer";
 
 type ScriptPracticeParams = { id: string; color: string };
 
 const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
+
+const AnimatedHost = createAnimatedComponent(Host);
 
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
@@ -38,6 +45,7 @@ const ScriptPracticeScreen = () => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const swipeDirection = useSharedValue<"left" | "right" | null>(null);
+  const dragX = useSharedValue(0);
 
   const prevCardX = useSharedValue(RETURN_START_X);
   const prevCardY = useSharedValue(0);
@@ -79,6 +87,7 @@ const ScriptPracticeScreen = () => {
     currentIndexSV,
     translateX,
     translateY,
+    dragX,
     swipeDirection,
     prevCardX,
     prevCardY,
@@ -117,6 +126,11 @@ const ScriptPracticeScreen = () => {
   });
 
   const { introRotation, introScale } = useIntroAnimation();
+
+  const isRecording = useSharedValue(0);
+  const isRecordingBool = useSharedValue(false);
+  const { minutesTens, minutesOnes, secsTens, secsOnes } =
+    useRecordingTimer(isRecordingBool);
 
   return (
     <Animated.View
@@ -162,19 +176,61 @@ const ScriptPracticeScreen = () => {
         </View>
       </GestureDetector>
       <View style={[styles.bottomContainer]}>
-        <Host matchContents>
-          <SwiftUIText
+        <View
+          style={{
+            width: "100%",
+            gap: 36,
+            paddingBottom: 12,
+            alignItems: "center",
+          }}
+        >
+          <Host
+            matchContents
             modifiers={[
-              contentTransition("numericText", {
-                countsDown: true,
-              }),
               animation(Animation.spring({ bounce: 0.25 }), currentIndex),
-              font({ family: fonts.krona }),
-              foregroundStyle("#d9d9d9"),
             ]}
-          >{`${currentIndex + 1}/${cards.length}`}</SwiftUIText>
-        </Host>
+          >
+            <SwiftUIText
+              modifiers={[
+                contentTransition("numericText", {
+                  countsDown: true,
+                }),
+                animation(Animation.spring({ bounce: 0.25 }), currentIndex),
+                font({ family: fonts.krona }),
+                foregroundStyle("#d9d9d9"),
+              ]}
+            >
+              {getCardsProgressInfoText({
+                currentIndex,
+                totalCards: cards.length,
+              })}
+            </SwiftUIText>
+          </Host>
+          <AnimatedHost
+            matchContents
+            modifiers={[
+              animation(Animation.spring({ bounce: 0.25 }), currentIndex),
+            ]}
+          >
+            <SwiftUIText
+              modifiers={[
+                contentTransition("numericText", {
+                  countsDown: true,
+                }),
+                animation(Animation.spring({ bounce: 0.25 }), secsOnes),
+                font({ family: fonts.krona }),
+                foregroundStyle("#d9d9d9"),
+              ]}
+            >
+              {`${String(minutesTens)}${String(minutesOnes)}:${String(secsTens)}${String(secsOnes)}`}
+            </SwiftUIText>
+          </AnimatedHost>
+        </View>
+
         <RecordButton
+          isRecordingBool={isRecordingBool}
+          isRecording={isRecording}
+          dragX={dragX}
           accentColor={colord(params.color)
             .darken(0.25)
             .desaturate(0.5)

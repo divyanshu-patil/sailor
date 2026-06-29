@@ -2,7 +2,6 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 import React, { useMemo } from "react";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
-import { parseInlineMarkdown } from "@/utils/parseInlineMarkdown";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { fonts } from "@/constants/fonts";
 import { ScriptLine } from "./ScriptLine";
@@ -11,8 +10,6 @@ type ScriptTextParams = {
   script: string;
   color: string;
 };
-
-// ---------- Data ----------
 
 type ScriptData = {
   id: string;
@@ -38,8 +35,6 @@ We're not just hitting numbers. We're *building something that lasts*.`,
 function getScriptById(id: string): ScriptData | null {
   return SCRIPTS.find((s) => s.id === id) ?? null;
 }
-
-// ---------- Components ----------
 
 const ScriptTextScreen = () => {
   const params = useLocalSearchParams<ScriptTextParams>();

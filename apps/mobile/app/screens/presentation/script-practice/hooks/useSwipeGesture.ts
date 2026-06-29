@@ -5,8 +5,9 @@ import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/s
 import { scheduleOnRN } from "react-native-worklets";
 
 const SETTLE_SPRING: SpringConfig = { damping: 70, mass: 1 };
-const RIGHT_SWIPE_THRESHOLD = 200;
-const LEFT_SWIPE_THRESHOLD = 250;
+export const RIGHT_SWIPE_THRESHOLD = 200;
+export const LEFT_SWIPE_THRESHOLD = 250;
+export const SWIPE_THRESHOLD = RIGHT_SWIPE_THRESHOLD + LEFT_SWIPE_THRESHOLD / 2;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const RETURN_START_X = SCREEN_WIDTH * 1.5;
 const RETREAT_SPRING = { damping: 22, stiffness: 250, mass: 0.6 };
@@ -18,6 +19,7 @@ interface UseSwipeGestureParams {
   cardsLength: number;
   currentIndexSV: SharedValue<number>;
   translateX: SharedValue<number>;
+  dragX: SharedValue<number>;
   translateY: SharedValue<number>;
   swipeDirection: SharedValue<SwipeDirection>;
   prevCardX: SharedValue<number>;
@@ -37,12 +39,16 @@ const handleRightSwipeUpdate = (
   e: { translationX: number; translationY: number },
   params: Pick<
     UseSwipeGestureParams,
-    "translateX" | "translateY" | "prevCardOpacity" | "prevCardX"
+    "translateX" | "translateY" | "prevCardOpacity" | "prevCardX" | "dragX"
   >,
 ) => {
   "worklet";
   params.translateX.value = e.translationX;
   params.translateY.value = e.translationY;
+  params.dragX.value = Math.min(
+    Math.abs(e.translationX) / RIGHT_SWIPE_THRESHOLD,
+    1,
+  );
   params.prevCardOpacity.value = withTiming(0, { duration: 80 });
   params.prevCardX.value = RETURN_START_X;
 };
@@ -60,6 +66,7 @@ const handleLeftSwipeUpdate = (
     | "translateY"
     | "currentIndexSV"
     | "prevCardX"
+    | "dragX"
     | "prevCardY"
     | "prevCardOpacity"
   >,
@@ -67,6 +74,10 @@ const handleLeftSwipeUpdate = (
   "worklet";
   params.translateX.value = e.translationX;
   params.translateY.value = 0;
+  params.dragX.value = Math.min(
+    Math.abs(e.translationX) / LEFT_SWIPE_THRESHOLD,
+    1,
+  );
 
   if (params.currentIndexSV.value > 0) {
     const progress = Math.abs(e.translationX) / LEFT_SWIPE_THRESHOLD;
@@ -89,6 +100,7 @@ const handleRightSwipeEnd = (
     | "translateY"
     | "prevCardOpacity"
     | "currentIndexSV"
+    | "dragX"
     | "cardsLength"
     | "isAnimating"
     | "onAdvance"
@@ -98,6 +110,8 @@ const handleRightSwipeEnd = (
   const didExceedThreshold =
     params.translateX.value > RIGHT_SWIPE_THRESHOLD &&
     params.currentIndexSV.value < params.cardsLength;
+
+  params.dragX.value = 0;
 
   if (didExceedThreshold) {
     params.isAnimating.value = true;
@@ -128,6 +142,7 @@ const handleLeftSwipeEnd = (
     | "translateY"
     | "prevCardX"
     | "prevCardY"
+    | "dragX"
     | "prevCardOpacity"
     | "currentIndexSV"
     | "isAnimating"
@@ -139,6 +154,8 @@ const handleLeftSwipeEnd = (
   const didExceedThreshold =
     Math.abs(translationX) > LEFT_SWIPE_THRESHOLD &&
     params.currentIndexSV.value > 0;
+
+  params.dragX.value = 0;
 
   if (didExceedThreshold) {
     params.isAnimating.value = true;
@@ -165,6 +182,7 @@ export const useSwipeGesture = ({
   cardsLength,
   currentIndexSV,
   translateX,
+  dragX,
   translateY,
   swipeDirection,
   prevCardX,
@@ -185,6 +203,7 @@ export const useSwipeGesture = ({
           translateY,
           prevCardOpacity,
           prevCardX,
+          dragX,
         });
       } else {
         swipeDirection.value = "left";
@@ -193,6 +212,7 @@ export const useSwipeGesture = ({
           translateY,
           currentIndexSV,
           prevCardX,
+          dragX,
           prevCardY,
           prevCardOpacity,
         });
@@ -207,6 +227,8 @@ export const useSwipeGesture = ({
           prevCardOpacity,
           currentIndexSV,
           cardsLength,
+          dragX,
+
           isAnimating,
           onAdvance,
         });
@@ -217,6 +239,7 @@ export const useSwipeGesture = ({
           prevCardX,
           prevCardY,
           prevCardOpacity,
+          dragX,
           currentIndexSV,
           isAnimating,
           isRetreating,

@@ -1,13 +1,21 @@
-import { Dimensions, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
 import Animated, {
+  createAnimatedComponent,
   Extrapolation,
   interpolate,
   SharedValue,
   useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 import { ScriptLine } from "../../script-text/ScriptLine";
 import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
-
+import Lucide from "@react-native-vector-icons/lucide";
 export type Delivery =
   | "energetic"
   | "confident"
@@ -41,6 +49,8 @@ interface CardProps {
 }
 
 const RETURN_START_X = Dimensions.get("window").width * 1.5;
+
+const AnimatedPressable = createAnimatedComponent(Pressable);
 
 const Card = ({
   text,
@@ -102,11 +112,26 @@ const Card = ({
   const animatedStyle =
     currIndex === -1 ? prevAnimatedStyle : normalAnimatedStyle;
 
+  const pressed = useSharedValue(0);
+
+  const pressedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: withTiming(pressed.value ? 0.97 : 1, { duration: 100 }) },
+    ],
+  }));
+
   return (
     <Animated.View
-      style={[styles.card, { backgroundColor: color }, animatedStyle]}
+      style={[styles.card, { backgroundColor: color }, animatedStyle, ,]}
     >
       <ScriptLine line={text} color={color} />
+      <AnimatedPressable
+        style={[styles.editButton, pressedStyle]}
+        onPressIn={() => (pressed.value = 1)}
+        onPressOut={() => (pressed.value = 0)}
+      >
+        <Lucide name="pen-line" size={32} color={"white"} />
+      </AnimatedPressable>
     </Animated.View>
   );
 };
@@ -125,6 +150,14 @@ const useStyles = () => {
       justifyContent: "center",
       alignItems: "center",
       paddingHorizontal: 24,
+    },
+    editButton: {
+      backgroundColor: "#414141",
+      padding: 20,
+      borderRadius: 24,
+      position: "absolute",
+      bottom: 30,
+      right: 30,
     },
   });
 };
