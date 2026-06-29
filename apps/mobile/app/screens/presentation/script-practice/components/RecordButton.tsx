@@ -15,6 +15,7 @@ import { colord } from "colord";
 import { useRecordButtonSquish } from "../hooks/useRecordSquish";
 import RecordButtonContent, { CLIP_HEIGHT } from "./RecordButtonContent";
 import AudioButtons from "./AudioButtons";
+import { useState } from "react";
 
 const AnimatedPressable = createAnimatedComponent(Pressable);
 
@@ -24,6 +25,7 @@ interface RecordButtonProps {
   dragX: SharedValue<number>;
   isRecording: SharedValue<number>;
   isRecordingBool: SharedValue<boolean>;
+  isPaused: SharedValue<boolean>;
 }
 
 const RecordButton = ({
@@ -32,7 +34,10 @@ const RecordButton = ({
   dragX,
   isRecording,
   isRecordingBool,
+  isPaused,
 }: RecordButtonProps) => {
+  const [paused, setPaused] = useState<boolean>(false);
+
   const buttonHighlightColor = colord(accentColor).lighten(0.025).toHex();
 
   const pressed = useSharedValue(false);
@@ -60,7 +65,7 @@ const RecordButton = ({
   });
 
   const handlePress = () => {
-    if (!isRecordingBool.value) {
+    if (!isRecordingBool.value && !isPaused.value) {
       isRecordingBool.value = true;
       isRecording.value = withTiming(1, {
         duration: 350,
@@ -70,16 +75,32 @@ const RecordButton = ({
     onPress?.();
   };
 
+  const handlePause = () => {
+    setPaused((prev) => {
+      const next = !prev;
+      if (next) {
+        isPaused.value = true;
+        isRecordingBool.value = false;
+      } else {
+        isPaused.value = false;
+        isRecordingBool.value = true;
+      }
+      return next;
+    });
+  };
+
   const handleRecStop = () => {
+    isPaused.value = false;
     isRecordingBool.value = false;
     isRecording.value = withTiming(0, {
       duration: 350,
       easing: Easing.inOut(Easing.ease),
     });
+    setPaused(false); // reset UI state too
   };
+
   return (
     <AnimatedPressable
-      disabled={isRecordingBool.value}
       style={[styles.ctaPill, animatedStyle]}
       layout={LinearTransition.springify()}
       onPress={handlePress}
@@ -93,17 +114,18 @@ const RecordButton = ({
       }}
     >
       <AudioButtons
+        paused={paused}
         recording={isRecording}
         color={accentColor}
         type="play"
-        onPress={() => {}}
+        onPress={handlePause}
       />
 
       <Animated.View
         layout={LinearTransition.springify()}
         style={[styles.waveformContainer]}
       >
-        <RecordButtonContent isRecording={isRecording} />
+        <RecordButtonContent isRecording={isRecording} paused={paused} />
       </Animated.View>
       <AudioButtons
         recording={isRecording}

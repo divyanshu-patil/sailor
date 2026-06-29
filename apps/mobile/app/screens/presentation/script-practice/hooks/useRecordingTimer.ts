@@ -1,36 +1,47 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SharedValue, useAnimatedReaction } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// useRecordingTimer.ts — react to the boolean SV instead
-export const useRecordingTimer = (isRecording: SharedValue<boolean>) => {
+export const useRecordingTimer = (
+  isRecording: SharedValue<boolean>,
+  isPaused: SharedValue<boolean>,
+) => {
   const [seconds, setSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startTimer = () => {
-    setSeconds(0);
+  const startTimer = useCallback(() => {
     intervalRef.current = setInterval(() => {
       setSeconds((s) => s + 1);
     }, 1000);
-  };
+  }, []);
 
-  const stopTimer = () => {
+  const pauseTimer = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  const fullStopTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     setSeconds(0);
-  };
+  }, []);
 
   useAnimatedReaction(
-    () => isRecording.value,
+    () => ({ recording: isRecording.value, paused: isPaused.value }),
     (current, prev) => {
-      if (current && !prev) scheduleOnRN(startTimer);
-      if (!current && prev) scheduleOnRN(stopTimer);
+      if (current.recording && !prev?.recording) scheduleOnRN(startTimer);
+      if (!current.recording && prev?.recording && current.paused)
+        scheduleOnRN(pauseTimer);
+      if (!current.recording && prev?.recording && !current.paused)
+        scheduleOnRN(fullStopTimer);
     },
   );
 
-  useEffect(() => () => stopTimer(), []);
+  useEffect(() => () => fullStopTimer(), [fullStopTimer]);
 
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { Pressable, StyleSheet } from "react-native";
 import Icon from "@react-native-vector-icons/fontawesome6";
 import { colord } from "colord";
@@ -7,16 +8,23 @@ import {
   SharedValue,
   useAnimatedStyle,
   withSpring,
+  withSequence,
+  withTiming,
+  useSharedValue,
+  Easing,
 } from "react-native-reanimated";
+import { useEffect } from "react";
 
 interface RecordingButtonsProps {
   color: string;
   type: "play" | "stop";
   onPress: () => void;
   recording: SharedValue<number>;
+  paused?: boolean;
 }
 
 const AnimatedPressable = createAnimatedComponent(Pressable);
+const AnimatedIcon = createAnimatedComponent(Icon);
 
 const ICON_WIDTH = 44;
 const AudioButtons = ({
@@ -24,42 +32,75 @@ const AudioButtons = ({
   type,
   onPress,
   recording,
+  paused,
 }: RecordingButtonsProps) => {
   const iconColor = colord(color).darken(0.25).desaturate(0.2).toHex();
   const iconBGColor = colord(color).lighten(0.13).toHex();
 
-  const outputTranslation =
-    type === "play"
-      ? [-ICON_WIDTH * 3, 0] // slides in from left: hidden → visible
-      : [ICON_WIDTH * 3, 0];
+  const iconScale = useSharedValue(1);
+  const iconOpacity = useSharedValue(1);
+  const pressed = useSharedValue(0);
 
-  const animatedStyles = useAnimatedStyle(() => {
-    console.log(recording.value);
-    return {
-      transform: [
-        {
-          translateX: withSpring(
-            interpolate(recording.value, [0, 1], outputTranslation),
-            {
-              damping: 70,
-            },
-          ),
-        },
-      ],
-    };
-  });
+  useEffect(() => {
+    if (type !== "play") return;
+    iconScale.value = withSequence(
+      withTiming(0, { duration: 100, easing: Easing.in(Easing.ease) }),
+      withSpring(1, { damping: 70 }),
+    );
+    iconOpacity.value = withSequence(
+      withTiming(0, { duration: 100, easing: Easing.in(Easing.ease) }),
+      withTiming(1, { duration: 150, easing: Easing.out(Easing.ease) }),
+    );
+  }, [iconOpacity, iconScale, paused, type]);
+
+  const outputTranslation =
+    type === "play" ? [-ICON_WIDTH * 3, 0] : [ICON_WIDTH * 3, 0];
+
+  const containerStyles = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: withSpring(
+          interpolate(recording.value, [0, 1], outputTranslation),
+          { damping: 70 },
+        ),
+      },
+      {
+        scale: withSpring(interpolate(pressed.value, [0, 1], [1, 0.85]), {
+          damping: 70,
+        }),
+      },
+    ],
+  }));
+
+  const iconStyles = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+    opacity: iconOpacity.value,
+  }));
 
   return (
     <AnimatedPressable
       onPress={onPress}
-      style={[styles.actions, { backgroundColor: iconBGColor }, animatedStyles]}
+      onPressIn={() => {
+        pressed.value = withTiming(1, { duration: 100 });
+      }}
+      onPressOut={() => {
+        pressed.value = withTiming(0, { duration: 100 });
+      }}
+      style={[
+        styles.actions,
+        { backgroundColor: iconBGColor },
+        containerStyles,
+      ]}
     >
-      <Icon
-        name={type}
+      <AnimatedIcon
+        name={type === "play" && paused ? "pause" : type}
         iconStyle="solid"
         size={24}
         color={iconColor}
-        style={type === "play" && { transform: [{ translateX: 2 }] }} // play button visual shift
+        style={[
+          type === "play" && !paused && { transform: [{ translateX: 2 }] },
+          iconStyles, // ← scale animation on the icon itself
+        ]}
       />
     </AnimatedPressable>
   );

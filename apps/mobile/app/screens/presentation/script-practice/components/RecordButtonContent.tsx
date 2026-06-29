@@ -9,10 +9,14 @@ import WaveForm from "./WaveForm";
 export const CLIP_HEIGHT = 32; // must match waveItem MAX_HEIGHT
 
 interface RecordButtonContentProps {
-  isRecording: SharedValue<number>; // 0 = idle, 1 = recording
+  isRecording: SharedValue<number>;
+  paused?: boolean;
 }
 
-const RecordButtonContent = ({ isRecording }: RecordButtonContentProps) => {
+const RecordButtonContent = ({
+  isRecording,
+  paused,
+}: RecordButtonContentProps) => {
   // Text slides UP and out when recording starts
   const textStyle = useAnimatedStyle(() => ({
     transform: [
@@ -39,7 +43,7 @@ const RecordButtonContent = ({ isRecording }: RecordButtonContentProps) => {
         <Text style={styles.ctaText}>Tap to Record</Text>
       </Animated.View>
       <Animated.View style={[styles.slot, waveStyle]}>
-        <WaveForm />
+        <WaveForm paused={paused} />
       </Animated.View>
     </View>
   );

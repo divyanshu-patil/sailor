@@ -38,6 +38,14 @@ const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
   const params = useLocalSearchParams<ScriptPracticeParams>();
 
+  const isRecording = useSharedValue(0);
+  const isRecordingBool = useSharedValue(false);
+  const isPaused = useSharedValue(false);
+  const { minutesTens, minutesOnes, secsTens, secsOnes } = useRecordingTimer(
+    isRecordingBool,
+    isPaused,
+  );
+
   const [cards] = useState(() => assignColorsByQuantile(dummyScriptCards));
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexSV = useSharedValue(0);
@@ -126,11 +134,6 @@ const ScriptPracticeScreen = () => {
   });
 
   const { introRotation, introScale } = useIntroAnimation();
-
-  const isRecording = useSharedValue(0);
-  const isRecordingBool = useSharedValue(false);
-  const { minutesTens, minutesOnes, secsTens, secsOnes } =
-    useRecordingTimer(isRecordingBool);
 
   return (
     <Animated.View
@@ -229,6 +232,7 @@ const ScriptPracticeScreen = () => {
 
         <RecordButton
           isRecordingBool={isRecordingBool}
+          isPaused={isPaused}
           isRecording={isRecording}
           dragX={dragX}
           accentColor={colord(params.color)
