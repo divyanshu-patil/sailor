@@ -4,11 +4,13 @@ import { useLocalSearchParams } from "expo-router";
 import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
@@ -231,6 +233,27 @@ const ScriptPracticeScreen = () => {
     };
   });
 
+  // Entrance "chop" rotation, shared by all visible cards on mount.
+  const introRotation = useSharedValue(10);
+  const introScale = useSharedValue(0.5);
+
+  useEffect(() => {
+    introRotation.value = withDelay(
+      100,
+      withSequence(
+        withTiming(8, { duration: 180 }),
+        withTiming(-6, { duration: 160 }),
+        withSpring(0, { damping: 70, mass: 1 }),
+      ),
+    );
+    introScale.value = withDelay(
+      100,
+      withSpring(1, {
+        damping: 50,
+      }),
+    );
+  }, [introRotation, introScale]);
+
   return (
     <Animated.View
       style={[styles.screen, { paddingTop: headerHeight }, animatedScreenStyle]}
@@ -259,6 +282,8 @@ const ScriptPracticeScreen = () => {
                   translateY: prevCardY,
                   opacity: prevCardOpacity,
                 }}
+                introRotation={introRotation}
+                introScale={introScale}
               />
             );
           })}

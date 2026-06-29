@@ -7,9 +7,11 @@ import {
 } from "react-native";
 import Animated, {
   Extrapolation,
+  FadeInRight,
   interpolate,
   SharedValue,
   useAnimatedStyle,
+  ZoomIn,
 } from "react-native-reanimated";
 import { ScriptLine } from "../../script-text/ScriptLine";
 
@@ -41,6 +43,8 @@ interface CardProps {
     translateY: SharedValue<number>;
     opacity: SharedValue<number>;
   };
+  introRotation?: SharedValue<number>;
+  introScale?: SharedValue<number>;
 }
 
 const ROTATION_STEP = -8;
@@ -62,6 +66,8 @@ const Card = ({
   drag,
   prevDrag,
   numOfCards,
+  introRotation,
+  introScale,
 }: CardProps) => {
   const styles = useStyles();
 
@@ -74,11 +80,14 @@ const Card = ({
       [0, 1],
       Extrapolation.CLAMP,
     );
+    const introOffset = introRotation ? introRotation.value : 0;
+    const scale = introScale ? introScale.value : 1;
     return {
       transform: [
         { translateX: x },
         { translateY: prevDrag.translateY.value },
-        { rotate: `${progress * MAX_ROTATION}deg` },
+        { rotate: `${progress * MAX_ROTATION + introOffset}deg` },
+        { scale },
       ],
       opacity: 1,
       zIndex: numOfCards + 1,
@@ -114,19 +123,25 @@ const Card = ({
       Extrapolation.CLAMP,
     );
 
+    const introOffset = introRotation ? introRotation.value : 0;
+    const scale = introScale ? introScale.value : 1;
     const translateX = currIndex === 0 && progress >= 0 ? x : 0;
     const translateY = currIndex === 0 && progress >= 0 ? arcY : 0;
     const rotate =
-      currIndex === 0 && progress >= 0
+      (currIndex === 0 && progress >= 0
         ? progress * MAX_ROTATION
-        : stackRotation;
+        : stackRotation) + introOffset;
     return {
-      transform: [{ translateX }, { translateY }, { rotate: `${rotate}deg` }],
+      transform: [
+        { translateX },
+        { translateY },
+        { rotate: `${rotate}deg` },
+        { scale },
+      ],
       zIndex: numOfCards - currIndex,
     };
   });
 
-  const zIndex = currIndex === -1 ? numOfCards + 1 : numOfCards - currIndex;
   const animatedStyle =
     currIndex === -1 ? prevAnimatedStyle : normalAnimatedStyle;
 
