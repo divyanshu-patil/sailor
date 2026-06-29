@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { StyleSheet } from "react-native";
 import React from "react";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
@@ -7,6 +8,7 @@ import {
   SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { deliveryModifier, RETURN_START_X, SCREEN_WIDTH } from "../constants";
@@ -45,7 +47,7 @@ const DeliveryPill = ({
   cardsNextColor,
   cardsPrevColor,
 }: DeliveryPillProps) => {
-  const press = useSharedValue(0);
+  const pressed = useSharedValue(0);
 
   const animatedPillOpacityStyle = useAnimatedStyle(() => {
     if (isExhausted && prevCardX.value >= RETURN_START_X) return { opacity: 0 };
@@ -97,14 +99,27 @@ const DeliveryPill = ({
     prevColor: pillPrevColor,
   });
 
+  const pillPressedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          scale: withSpring(interpolate(pressed.value, [0, 1], [1, 1.1]), {
+            damping: 50,
+          }),
+        },
+      ],
+    };
+  });
+
   return (
     <AnimatedPressable
-      onPressIn={() => (press.value = withTiming(1))}
-      onPressOut={() => (press.value = withTiming(0))}
+      onPressIn={() => (pressed.value = withTiming(1))}
+      onPressOut={() => (pressed.value = withTiming(0))}
       style={[
         styles.deliveryPill,
         animatedPillColorStyle,
         animatedPillOpacityStyle,
+        pillPressedStyle,
       ]}
     >
       <Host matchContents>
