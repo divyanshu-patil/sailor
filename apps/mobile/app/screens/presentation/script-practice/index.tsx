@@ -5,7 +5,9 @@ import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
 import { useState } from "react";
-import {
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
@@ -15,6 +17,14 @@ import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/s
 import { scheduleOnRN } from "react-native-worklets";
 import { fonts } from "@/constants/fonts";
 import { colord } from "colord";
+import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
+import {
+  Animation,
+  animation,
+  contentTransition,
+  font,
+  foregroundStyle,
+} from "@expo/ui/swift-ui/modifiers";
 
 type ScriptPracticeParams = { id: string; color: string };
 
@@ -62,6 +72,7 @@ const ScriptPracticeScreen = () => {
   const prevCardOpacity = useSharedValue(0);
 
   const isAnimating = useSharedValue(false);
+  const isRetreating = useSharedValue(false);
 
   const advanceIndex = () => {
     setCurrentIndex((i) => {
@@ -83,12 +94,11 @@ const ScriptPracticeScreen = () => {
       return next;
     });
     requestAnimationFrame(() => {
-      prevCardX.value = withSpring(RETURN_START_X, SETTLE_SPRING);
-      prevCardY.value = 0;
-      prevCardOpacity.value = 0;
       prevCardX.value = RETURN_START_X;
       prevCardY.value = 0;
+      prevCardOpacity.value = 0;
       isAnimating.value = false;
+      isRetreating.value = false;
     });
   };
 
@@ -144,6 +154,7 @@ const ScriptPracticeScreen = () => {
 
         if (didExceedThreshold) {
           isAnimating.value = true;
+          isRetreating.value = true;
           prevCardX.value = withSpring(
             0,
             { damping: 22, stiffness: 250, mass: 0.6 },
@@ -171,8 +182,59 @@ const ScriptPracticeScreen = () => {
       swipeDirection.value = null;
     });
 
+  const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
+
+  const isExhausted = currentIndex >= cards.length;
+
+  const currentColor = isExhausted
+    ? lightenColor(params.color)
+    : lightenColor(cards[currentIndex].color);
+
+  const nextColor =
+    !isExhausted && currentIndex + 1 < cards.length
+      ? lightenColor(cards[currentIndex + 1].color)
+      : lightenColor(params.color);
+
+  const prevColor =
+    currentIndex - 1 >= 0 && currentIndex - 1 < cards.length
+      ? lightenColor(cards[currentIndex - 1].color)
+      : currentColor;
+
+  const animatedScreenStyle = useAnimatedStyle(() => {
+    // right swipe: translateX goes 0 -> SCREEN_WIDTH*1.5 while card exits
+    const rightProgress = Math.min(
+      Math.max(translateX.value, 0) / SCREEN_WIDTH,
+      1,
+    );
+
+    if (
+      isRetreating.value ||
+      (swipeDirection.value === "left" && prevCardOpacity.value > 0)
+    ) {
+      const leftProgress =
+        1 - Math.min(Math.max(prevCardX.value, 0) / RETURN_START_X, 1);
+      return {
+        backgroundColor: interpolateColor(
+          leftProgress,
+          [0, 1],
+          [currentColor, prevColor],
+        ),
+      };
+    }
+
+    return {
+      backgroundColor: interpolateColor(
+        rightProgress,
+        [0, 1],
+        [currentColor, nextColor],
+      ),
+    };
+  });
+
   return (
-    <View style={[styles.screen, { paddingTop: headerHeight }]}>
+    <Animated.View
+      style={[styles.screen, { paddingTop: headerHeight }, animatedScreenStyle]}
+    >
       <GestureDetector gesture={panGesture}>
         <View style={styles.cardContainer}>
           {cards.map((item, index) => {
@@ -210,10 +272,27 @@ const ScriptPracticeScreen = () => {
           </Text>
         </View>
       </GestureDetector>
-      <View>
-        <RecordButton accentColor={"#7B75E0"} />
+      <View style={[styles.bottomContainer]}>
+        <Host matchContents>
+          <SwiftUIText
+            modifiers={[
+              contentTransition("numericText", {
+                countsDown: true,
+              }),
+              animation(Animation.spring({ bounce: 0.25 }), currentIndex),
+              font({ family: fonts.krona }),
+              foregroundStyle("#d9d9d9"),
+            ]}
+          >{`${currentIndex + 1}/${cards.length}`}</SwiftUIText>
+        </Host>
+        <RecordButton
+          accentColor={colord(params.color)
+            .darken(0.25)
+            .desaturate(0.5)
+            .toHex()}
+        />
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -223,4 +302,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: 32, paddingVertical: 28 },
   cardContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
   emptytext: { fontSize: 36, fontFamily: fonts.amarna.regular },
+  bottomContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    gap: 16,
+  },
 });

@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingVertical: 18,
     alignItems: "center",
+    width: "100%",
   },
   ctaText: {
     color: "white",
