@@ -20,6 +20,11 @@ export const digitModifiers = (animationId: number): ModifierConfig[] => [
   foregroundStyle("#d9d9d9"),
 ];
 
+export const deliveryModifier = (animationId: number): ModifierConfig[] => [
+  contentTransition("numericText", { countsDown: true }),
+  animation(Animation.spring({ bounce: 0.25 }), animationId),
+];
+
 export const separatorModifiers: ModifierConfig[] = [
   font({ family: fonts.krona }),
   foregroundStyle("#d9d9d9"),
