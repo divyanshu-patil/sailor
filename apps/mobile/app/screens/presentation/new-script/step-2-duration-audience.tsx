@@ -1,16 +1,5 @@
 import React from "react";
-import {
-  Host,
-  Form,
-  Section,
-  Slider,
-  Picker,
-  HStack,
-  VStack,
-  Spacer,
-  Text,
-  Image,
-} from "@expo/ui/swift-ui";
+import { Host, Form, Section, Picker, Text } from "@expo/ui/swift-ui";
 import {
   tag,
   pickerStyle,
