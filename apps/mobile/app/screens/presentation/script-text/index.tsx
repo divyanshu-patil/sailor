@@ -5,10 +5,11 @@ import { colord } from "colord";
 import { parseInlineMarkdown } from "@/utils/parseInlineMarkdown";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { fonts } from "@/constants/fonts";
-interface ScriptTextParams {
+
+type ScriptTextParams = {
   script: string;
   color: string;
-}
+};
 
 // ---------- Data ----------
 
@@ -80,7 +81,7 @@ const ScriptLine = ({ line, color }: { line: string; color: string }) => {
 };
 
 const ScriptTextScreen = () => {
-  const params = useLocalSearchParams() as unknown as ScriptTextParams;
+  const params = useLocalSearchParams<ScriptTextParams>();
   const script = useMemo(
     () => ({
       id: params.script,

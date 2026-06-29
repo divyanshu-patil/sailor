@@ -1,5 +1,3 @@
-import { StyleSheet } from "react-native";
-import React from "react";
 import { router, Stack } from "expo-router";
 import CreateNewScriptScreen from "@/screens/presentation/new-script";
 
@@ -18,5 +16,3 @@ const CreateNewScript = () => {
 };
 
 export default CreateNewScript;
-
-const styles = StyleSheet.create({});
