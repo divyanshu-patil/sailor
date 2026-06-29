@@ -18,6 +18,7 @@
     "axios": "^1.18.0",
     "colord": "^2.9.3",
     "expo": "~56.0.8",
+    "expo-audio": "~56.0.12",
     "expo-auth-session": "~56.0.14",
     "expo-constants": "~56.0.16",
     "expo-crypto": "~56.0.4",

@@ -34,16 +34,30 @@ type ScriptPracticeParams = { id: string; color: string };
 
 const lightenColor = (hex: string) => colord(hex).lighten(0.15).toHex();
 
+const formatTime = (totalSeconds: number) => {
+  const m = Math.floor(totalSeconds / 60);
+  const s = Math.floor(totalSeconds % 60);
+  return `${Math.floor(m / 10)}${m % 10}:${Math.floor(s / 10)}${s % 10}`;
+};
+
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
   const params = useLocalSearchParams<ScriptPracticeParams>();
 
+  const [recordingDuration, setRecordingDuration] = useState<string | null>(
+    null,
+  );
+  const [playbackPosition, setPlaybackPosition] = useState(0);
+
   const isRecording = useSharedValue(0);
   const isRecordingBool = useSharedValue(false);
   const isPaused = useSharedValue(false);
+  const isStopped = useSharedValue(false);
+
   const { minutesTens, minutesOnes, secsTens, secsOnes } = useRecordingTimer(
     isRecordingBool,
     isPaused,
+    isStopped,
   );
 
   const [cards] = useState(() => assignColorsByQuantile(dummyScriptCards));
@@ -246,7 +260,9 @@ const ScriptPracticeScreen = () => {
                   foregroundStyle("#d9d9d9"),
                 ]}
               >
-                {`${String(minutesTens)}${String(minutesOnes)}:${String(secsTens)}${String(secsOnes)}`}
+                {recordingDuration
+                  ? `${formatTime(playbackPosition)} / ${recordingDuration}`
+                  : `${minutesTens}${minutesOnes}:${secsTens}${secsOnes}`}{" "}
               </SwiftUIText>
             </Host>
           </Animated.View>
@@ -254,8 +270,18 @@ const ScriptPracticeScreen = () => {
 
         <RecordButton
           isRecordingBool={isRecordingBool}
-          isPaused={isPaused}
           isRecording={isRecording}
+          isPaused={isPaused}
+          isStopped={isStopped}
+          onRecordingFinished={(uri, seconds) => {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            setRecordingDuration(
+              `${String(Math.floor(m / 10))}${String(m % 10)}:${String(Math.floor(s / 10))}${String(s % 10)}`,
+            );
+          }}
+          onPlaybackProgress={setPlaybackPosition}
+          onTrash={() => setRecordingDuration(null)}
           dragX={dragX}
           accentColor={colord(params.color)
             .darken(0.25)

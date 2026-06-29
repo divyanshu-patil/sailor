@@ -5,6 +5,7 @@ import { scheduleOnRN } from "react-native-worklets";
 export const useRecordingTimer = (
   isRecording: SharedValue<boolean>,
   isPaused: SharedValue<boolean>,
+  isStopped: SharedValue<boolean>,
 ) => {
   const [seconds, setSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -31,13 +32,16 @@ export const useRecordingTimer = (
   }, []);
 
   useAnimatedReaction(
-    () => ({ recording: isRecording.value, paused: isPaused.value }),
+    () => ({
+      recording: isRecording.value,
+      paused: isPaused.value,
+      stopped: isStopped.value,
+    }),
     (current, prev) => {
       if (current.recording && !prev?.recording) scheduleOnRN(startTimer);
       if (!current.recording && prev?.recording && current.paused)
         scheduleOnRN(pauseTimer);
-      if (!current.recording && prev?.recording && !current.paused)
-        scheduleOnRN(fullStopTimer);
+      if (current.stopped && !prev?.stopped) scheduleOnRN(fullStopTimer);
     },
   );
 

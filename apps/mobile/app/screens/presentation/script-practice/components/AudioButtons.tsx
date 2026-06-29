@@ -13,7 +13,7 @@ import {
   useSharedValue,
   Easing,
 } from "react-native-reanimated";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 interface RecordingButtonsProps {
   color: string;
@@ -21,11 +21,13 @@ interface RecordingButtonsProps {
   onPress: () => void;
   recording: SharedValue<number>;
   paused?: boolean;
+  finished?: boolean; // stopped
 }
 
 const AnimatedPressable = createAnimatedComponent(Pressable);
 const AnimatedIcon = createAnimatedComponent(Icon);
 
+type TIcon = "play" | "pause" | "stop" | "trash";
 const ICON_WIDTH = 44;
 const AudioButtons = ({
   color,
@@ -33,16 +35,23 @@ const AudioButtons = ({
   onPress,
   recording,
   paused,
+  finished,
 }: RecordingButtonsProps) => {
-  const iconColor = colord(color).darken(0.25).desaturate(0.2).toHex();
-  const iconBGColor = colord(color).lighten(0.13).toHex();
+  const iconColor =
+    finished && type === "stop"
+      ? colord("#ef4444").darken(0.15).toHex()
+      : colord(color).darken(0.25).desaturate(0.2).toHex();
+
+  const iconBGColor =
+    finished && type === "stop"
+      ? colord("#ef4444").lighten(0.3).toHex()
+      : colord(color).lighten(0.13).toHex();
 
   const iconScale = useSharedValue(1);
   const iconOpacity = useSharedValue(1);
   const pressed = useSharedValue(0);
 
   useEffect(() => {
-    if (type !== "play") return;
     iconScale.value = withSequence(
       withTiming(0, { duration: 100, easing: Easing.in(Easing.ease) }),
       withSpring(1, { damping: 70 }),
@@ -77,6 +86,16 @@ const AudioButtons = ({
     opacity: iconOpacity.value,
   }));
 
+  const getIcon = useCallback((): TIcon => {
+    if (type === "play") {
+      if (!paused) return "pause";
+      else return "play";
+    } else {
+      if (finished) return "trash";
+      else return "stop";
+    }
+  }, [finished, paused, type]);
+
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -93,13 +112,13 @@ const AudioButtons = ({
       ]}
     >
       <AnimatedIcon
-        name={type === "play" && paused ? "pause" : type}
+        name={getIcon()}
         iconStyle="solid"
         size={24}
         color={iconColor}
         style={[
           type === "play" && !paused && { transform: [{ translateX: 2 }] },
-          iconStyles, // ← scale animation on the icon itself
+          iconStyles,
         ]}
       />
     </AnimatedPressable>
