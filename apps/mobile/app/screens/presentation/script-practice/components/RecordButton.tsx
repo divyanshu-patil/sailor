@@ -228,6 +228,7 @@ const RecordButton = ({
   };
 
   const handleTrash = () => {
+    audioPlayer.pause();
     Alert.alert(
       "Delete Recording",
       "Are you sure you want to delete this recording?",
@@ -237,22 +238,22 @@ const RecordButton = ({
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            audioPlayer.pause();
+            // single re-render
+            setRecordingUri(null);
+            setFinished(false);
+            setPaused(false);
+
+            recordingUriRef.current = null;
+            awaitingDurationRef.current = false;
+
             await AudioModule.setAudioModeAsync({
               allowsRecording: true,
               playsInSilentMode: true,
             });
-            setRecordingUri(null);
-            recordingUriRef.current = null;
-            awaitingDurationRef.current = false;
-            setFinished(false);
-            setPaused(false);
+
             isRecording.value = withTiming(
               0,
-              {
-                duration: 350,
-                easing: Easing.inOut(Easing.ease),
-              },
+              { duration: 350, easing: Easing.inOut(Easing.ease) },
               () => onTrash && scheduleOnRN(onTrash),
             );
           },
