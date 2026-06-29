@@ -12,7 +12,7 @@ import {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/spring";
-import { scheduleOnRN, scheduleOnUI } from "react-native-worklets";
+import { scheduleOnRN } from "react-native-worklets";
 
 type ScriptPracticeParams = { id: string; color: string };
 

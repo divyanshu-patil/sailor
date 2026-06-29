@@ -79,6 +79,7 @@ const Card = ({
         { rotate: `${progress * MAX_ROTATION}deg` },
       ],
       opacity: prevDrag.opacity.value,
+      zIndex: numOfCards + 1,
     };
   });
 
@@ -119,6 +120,7 @@ const Card = ({
         : stackRotation;
     return {
       transform: [{ translateX }, { translateY }, { rotate: `${rotate}deg` }],
+      zIndex: numOfCards - currIndex,
     };
   });
 
@@ -128,7 +130,7 @@ const Card = ({
 
   return (
     <Animated.View
-      style={[styles.card, { backgroundColor: color, zIndex }, animatedStyle]}
+      style={[styles.card, { backgroundColor: color }, animatedStyle]}
     >
       <Text>{text}</Text>
     </Animated.View>
