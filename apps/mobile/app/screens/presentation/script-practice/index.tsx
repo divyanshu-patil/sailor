@@ -7,6 +7,7 @@ import RecordButton from "./components/RecordButton";
 import { useCallback, useState } from "react";
 import Animated, {
   interpolate,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -14,7 +15,7 @@ import Animated, {
 import { GestureDetector } from "react-native-gesture-handler";
 import { fonts } from "@/constants/fonts";
 import { colord } from "colord";
-import { Host, HStack, Text as SwiftUIText } from "@expo/ui/swift-ui";
+import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
 import {
   Animation,
   animation,
@@ -26,18 +27,13 @@ import { assignColorsByQuantile } from "./utils/colorAssignment";
 import { useSwipeGesture } from "./hooks/useSwipeGesture";
 import { useBackgroundColorStyle } from "./hooks/useBackgroundColorStyle";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
-import {
-  digitModifiers,
-  RETURN_START_X,
-  separatorModifiers,
-  staticModifiers,
-  VISIBLE_COUNT,
-} from "./constants";
+import { RETURN_START_X, VISIBLE_COUNT } from "./constants";
 import { getCardsProgressInfoText } from "./utils/getCardsProgressInfoText";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
 import { getDeliveryEmoji } from "./utils/getDeliveryEmoji";
 import DeliveryPill from "./components/DeliveryPill";
 import { lightenColor } from "./utils/lightenColor";
+import DurationText from "./components/DurationText";
 
 type ScriptPracticeParams = { id: string; color: string };
 
@@ -64,8 +60,6 @@ const ScriptPracticeScreen = () => {
   const [cards] = useState(() => assignColorsByQuantile(dummyScriptCards));
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexSV = useSharedValue(0);
-
-  const containerHeight = useSharedValue(0);
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -272,85 +266,14 @@ const ScriptPracticeScreen = () => {
           </Host>
           <Animated.View
             style={[animatedTimerStyles]}
-            onLayout={(e) => {
-              containerHeight.value = e.nativeEvent.layout.height;
-            }}
+            layout={LinearTransition.springify()}
           >
-            <Host
-              matchContents
-              modifiers={[
-                animation(Animation.spring({ bounce: 0.25 }), currentIndex),
-              ]}
-            >
-              <HStack spacing={0}>
-                {recordingDuration ? (
-                  <>
-                    <SwiftUIText
-                      modifiers={digitModifiers(
-                        Math.floor(playbackPosition / 60 / 10),
-                      )}
-                    >
-                      {String(
-                        Math.floor(Math.floor(playbackPosition / 60) / 10),
-                      )}
-                    </SwiftUIText>
-                    <SwiftUIText
-                      modifiers={digitModifiers(
-                        Math.floor(playbackPosition / 60) % 10,
-                      )}
-                    >
-                      {String(Math.floor(playbackPosition / 60) % 10)}
-                    </SwiftUIText>
-                    <SwiftUIText modifiers={separatorModifiers}>:</SwiftUIText>
-                    <SwiftUIText
-                      modifiers={digitModifiers(
-                        Math.floor((playbackPosition % 60) / 10),
-                      )}
-                    >
-                      {String(Math.floor((playbackPosition % 60) / 10))}
-                    </SwiftUIText>
-                    <SwiftUIText
-                      modifiers={digitModifiers(
-                        Math.floor(playbackPosition % 60) % 10,
-                      )}
-                    >
-                      {String(Math.floor(playbackPosition % 60) % 10)}
-                    </SwiftUIText>
-
-                    <SwiftUIText modifiers={separatorModifiers}>
-                      {" "}
-                      /{" "}
-                    </SwiftUIText>
-
-                    {/* Total duration — static, no transition needed */}
-                    <SwiftUIText modifiers={staticModifiers}>
-                      {recordingDuration}
-                    </SwiftUIText>
-                  </>
-                ) : (
-                  // Recording mode: "01:47"
-                  <>
-                    <SwiftUIText
-                      modifiers={digitModifiers(Number(minutesTens))}
-                    >
-                      {minutesTens}
-                    </SwiftUIText>
-                    <SwiftUIText
-                      modifiers={digitModifiers(Number(minutesOnes))}
-                    >
-                      {minutesOnes}
-                    </SwiftUIText>
-                    <SwiftUIText modifiers={separatorModifiers}>:</SwiftUIText>
-                    <SwiftUIText modifiers={digitModifiers(Number(secsTens))}>
-                      {secsTens}
-                    </SwiftUIText>
-                    <SwiftUIText modifiers={digitModifiers(Number(secsOnes))}>
-                      {secsOnes}
-                    </SwiftUIText>
-                  </>
-                )}
-              </HStack>
-            </Host>
+            <DurationText
+              currentIndex={currentIndex}
+              durationInfo={{ minutesTens, minutesOnes, secsTens, secsOnes }}
+              playbackPosition={playbackPosition}
+              recordingDuration={recordingDuration}
+            />
           </Animated.View>
         </View>
 
