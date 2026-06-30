@@ -42,6 +42,7 @@ def get_current_clerk_user(
             key=public_key,
             algorithms=["RS256"],
             options={"require": ["exp", "sub"]},
+            leeway=10, # token iat issue
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(

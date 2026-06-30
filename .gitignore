@@ -36,10 +36,11 @@ yarn-error.log*
 # turbo
 .turbo
 
+# backend
 **/.env        
 backend/.env 
 .venv/
 __pycache__/
-*.pyc
+**/*.pyc
 *.pyo
 .DS_Store
