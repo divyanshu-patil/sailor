@@ -46,7 +46,7 @@ export default function StepDescription() {
     addAttachment,
     removeAttachment,
     descriptionState,
-    setDescriptionValue,
+    handleSetDescriptionValue,
     linkDraftState,
   } = usePresentationForm();
 
@@ -151,7 +151,7 @@ export default function StepDescription() {
                 text={descriptionState}
                 placeholder="e.g. A persuasive pitch deck for a seed-stage climate tech startup..."
                 modifiers={[padding({ vertical: 4 }), keyboardType("url")]}
-                onTextChange={setDescriptionValue}
+                onTextChange={handleSetDescriptionValue}
               />
             </HStack>
           </Section>

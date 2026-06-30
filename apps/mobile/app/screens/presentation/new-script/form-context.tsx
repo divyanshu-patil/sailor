@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from "react";
 import { useNativeState } from "@expo/ui/swift-ui";
 import {
   PresentationFormState,
@@ -21,7 +28,7 @@ type PresentationFormContextValue = {
   setDurationMinutes: (value: number) => void;
   setAudienceIndex: (value: number) => void;
   setCardCount: (value: number) => void;
-  setDescriptionValue: (text: string) => void;
+  handleSetDescriptionValue: (text: string) => void;
 };
 
 const PresentationFormContext = createContext<
@@ -36,30 +43,65 @@ export function PresentationFormProvider({
   const [form, setForm] = useState<PresentationFormState>(DEFAULT_STATE);
   const descriptionState = useNativeState("");
   const [descriptionValue, setDescriptionValue] = useState("");
+
   const linkDraftState = useNativeState("");
 
-  const value: PresentationFormContextValue = {
-    form,
-    descriptionState,
-    linkDraftState,
-    descriptionValue,
-    addAttachment: (attachment) =>
-      setForm((prev) => ({
-        ...prev,
-        attachments: [...prev.attachments, attachment],
-      })),
-    removeAttachment: (id) =>
-      setForm((prev) => ({
-        ...prev,
-        attachments: prev.attachments.filter((a) => a.id !== id),
-      })),
-    setDurationMinutes: (durationMinutes) =>
-      setForm((prev) => ({ ...prev, durationMinutes })),
-    setAudienceIndex: (audienceIndex) =>
-      setForm((prev) => ({ ...prev, audienceIndex })),
-    setCardCount: (cardCount) => setForm((prev) => ({ ...prev, cardCount })),
-    setDescriptionValue: (text) => setDescriptionValue(text),
-  };
+  const addAttachment = useCallback((attachment: Attachment) => {
+    setForm((prev) => ({
+      ...prev,
+      attachments: [...prev.attachments, attachment],
+    }));
+  }, []);
+
+  const removeAttachment = useCallback((id: string) => {
+    setForm((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((a) => a.id !== id),
+    }));
+  }, []);
+
+  const setDurationMinutes = useCallback((durationMinutes: number) => {
+    setForm((prev) => ({ ...prev, durationMinutes }));
+  }, []);
+
+  const setAudienceIndex = useCallback((audienceIndex: number) => {
+    setForm((prev) => ({ ...prev, audienceIndex }));
+  }, []);
+
+  const setCardCount = useCallback((cardCount: number) => {
+    setForm((prev) => ({ ...prev, cardCount }));
+  }, []);
+
+  const handleSetDescriptionValue = useCallback((text: string) => {
+    setDescriptionValue(text);
+  }, []);
+
+  const value = useMemo<PresentationFormContextValue>(
+    () => ({
+      form,
+      descriptionState,
+      linkDraftState,
+      descriptionValue,
+      addAttachment,
+      removeAttachment,
+      setDurationMinutes,
+      setAudienceIndex,
+      setCardCount,
+      handleSetDescriptionValue,
+    }),
+    [
+      form,
+      descriptionState,
+      linkDraftState,
+      descriptionValue,
+      addAttachment,
+      removeAttachment,
+      setDurationMinutes,
+      setAudienceIndex,
+      setCardCount,
+      handleSetDescriptionValue,
+    ],
+  );
 
   return (
     <PresentationFormContext.Provider value={value}>
