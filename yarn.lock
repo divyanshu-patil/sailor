@@ -1845,6 +1845,13 @@
   dependencies:
     "@react-native-vector-icons/common" "^13.0.1"
 
+"@react-native-vector-icons/lucide@^13.1.2":
+  version "13.1.2"
+  resolved "https://registry.yarnpkg.com/@react-native-vector-icons/lucide/-/lucide-13.1.2.tgz#5f029f640fbe1ffb99404c168ad8693fe263ca5e"
+  integrity sha512-7JG85gyzjumwyOvapf6zE35m4spdkPPRzLdmYqP9fiClDR4wI6tbm1YAbQYftFbtCI/Dnalh3lS2rEXS2nQMTw==
+  dependencies:
+    "@react-native-vector-icons/common" "^13.0.1"
+
 "@react-native-vector-icons/material-design-icons@^13.1.2":
   version "13.1.2"
   resolved "https://registry.yarnpkg.com/@react-native-vector-icons/material-design-icons/-/material-design-icons-13.1.2.tgz#911738dd273e98446f2a070e702bd9c562c29f38"
@@ -4428,6 +4435,11 @@ expo-asset@~56.0.17:
   dependencies:
     "@expo/image-utils" "^0.10.1"
     expo-constants "~56.0.18"
+
+expo-audio@~56.0.12:
+  version "56.0.12"
+  resolved "https://registry.yarnpkg.com/expo-audio/-/expo-audio-56.0.12.tgz#13b9e0dc743ff2a3b44ab397ca409795ae45e474"
+  integrity sha512-ne2UIO/HsQoBL9e+tGs5N9Sf3NyW5sJMm4sDkexbSJRc2IchLDG+9Msu/+l5N4RlZ8SiF42wRyWsh/Usg+SwOw==
 
 expo-auth-session@~56.0.14:
   version "56.0.14"

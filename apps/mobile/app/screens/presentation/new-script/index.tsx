@@ -1,14 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { Dimensions, Pressable, StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import { router, Stack } from "expo-router";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
-  interpolateColor,
   Easing,
-  createAnimatedComponent,
   FadeInLeft,
   FadeOutLeft,
   LinearTransition,
@@ -19,13 +17,17 @@ import { PresentationFormProvider, usePresentationForm } from "./form-context";
 import StepDescription from "./step-1-description";
 import StepDurationAudience from "./step-2-duration-audience";
 import StepCardCount from "./step-3-card-count";
-import { Host, Text } from "@expo/ui/swift-ui";
+import { Text } from "@expo/ui/swift-ui";
 import {
   Animation,
   animation,
   contentTransition,
   foregroundStyle,
 } from "@expo/ui/swift-ui/modifiers";
+import {
+  AnimatedHost,
+  AnimatedPressable,
+} from "@/components/ui/animated/AnimatedComponents";
 import { colord } from "colord";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -34,9 +36,6 @@ const ACTIVE_COLOR = "#c11b5c";
 const INACTIVE_COLOR = "#E5E5EA";
 
 const STEP_TITLES = ["Describe", "Audience", "Cards"];
-
-const AnimatedPressable = createAnimatedComponent(Pressable);
-const AnimatedHost = createAnimatedComponent(Host);
 
 // ---- Top pagination bar -------------------------------------------------
 

@@ -2,15 +2,14 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 import React, { useMemo } from "react";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
-import { parseInlineMarkdown } from "@/utils/parseInlineMarkdown";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { fonts } from "@/constants/fonts";
-interface ScriptTextParams {
+import { ScriptLine } from "./ScriptLine";
+
+type ScriptTextParams = {
   script: string;
   color: string;
-}
-
-// ---------- Data ----------
+};
 
 type ScriptData = {
   id: string;
@@ -37,50 +36,8 @@ function getScriptById(id: string): ScriptData | null {
   return SCRIPTS.find((s) => s.id === id) ?? null;
 }
 
-// ---------- Components ----------
-
-const ScriptLine = ({ line, color }: { line: string; color: string }) => {
-  const segments = parseInlineMarkdown(line);
-  const textColor = colord(color).darken(0.4).desaturate(0.3).toHex();
-  const bgHighlightColor = colord(color).lighten(0.15).toHex();
-
-  return (
-    <Text style={styles.line}>
-      {segments.map((seg, i) => {
-        if (seg.bold) {
-          return (
-            <Text key={i}>
-              <Text
-                style={[
-                  styles.segment,
-                  styles.bold,
-                  { color: textColor, backgroundColor: bgHighlightColor },
-                ]}
-              >
-                {`${seg.text}`}
-              </Text>
-            </Text>
-          );
-        }
-        return (
-          <Text
-            key={i}
-            style={[
-              styles.segment,
-              { color: textColor },
-              seg.italic && styles.italic,
-            ]}
-          >
-            {seg.text}
-          </Text>
-        );
-      })}
-    </Text>
-  );
-};
-
 const ScriptTextScreen = () => {
-  const params = useLocalSearchParams() as unknown as ScriptTextParams;
+  const params = useLocalSearchParams<ScriptTextParams>();
   const script = useMemo(
     () => ({
       id: params.script,
@@ -112,7 +69,12 @@ const ScriptTextScreen = () => {
           <Text style={styles.empty}>No script found.</Text>
         ) : (
           lines.map((line, i) => (
-            <ScriptLine key={i} line={line} color={params.color} />
+            <ScriptLine
+              key={i}
+              line={line}
+              color={params.color}
+              shouldHighlightBold
+            />
           ))
         )}
       </ScrollView>
@@ -128,25 +90,6 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     gap: 28,
     alignItems: "center",
-  },
-  line: {
-    textAlign: "center",
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  segment: {
-    fontFamily: fonts.amarna.regular,
-    fontSize: 30,
-    // lineHeight: 32,
-  },
-  bold: {
-    fontFamily: fonts.amarna.bold,
-    paddingHorizontal: 8,
-    paddingVertical: 14,
-    borderRadius: 15,
-  },
-  italic: {
-    fontStyle: "italic",
   },
   empty: {
     fontFamily: fonts.amarna.regular,

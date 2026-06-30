@@ -1,5 +1,5 @@
 export const fonts = {
-  krona: "KronaOne",
+  krona: "Krona One",
 
   amarna: {
     thin: "Amarna-Thin",

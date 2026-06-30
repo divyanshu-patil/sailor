@@ -47,6 +47,16 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="script-practice"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: true,
+          headerTitle: "",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 };

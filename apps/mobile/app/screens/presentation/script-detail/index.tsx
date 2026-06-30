@@ -200,7 +200,19 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
                 <Text style={[styles.heroTitle, { color: textDarkColor }]}>
                   {script.title}
                 </Text>
-                <CtaButton label="GO" accentColor={script.color} />
+                <CtaButton
+                  label="GO"
+                  accentColor={script.color}
+                  onPress={() =>
+                    router.navigate({
+                      pathname: "/(authenticated)/(script)/script-practice",
+                      params: {
+                        id: script.id,
+                        color: script.color,
+                      },
+                    })
+                  }
+                />
               </View>
             </Animated.View>
           </Link.AppleZoomTarget>
