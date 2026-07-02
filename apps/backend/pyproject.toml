@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings>=2.14.2",
     "pyjwt[crypto]>=2.13.0",
     "python-dotenv>=1.2.2",
+    "sqlalchemy>=2.0.51",
     "supabase>=2.31.0",
     "svix>=1.96.1",
     "uvicorn>=0.48.0",
