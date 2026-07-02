@@ -48,32 +48,30 @@ export const Card = ({ item, index }: { item: ScriptItem; index: number }) => {
   }));
 
   return (
-    <Animated.View
-      style={[styles.card, { backgroundColor: item.color }, animatedStyle]}
+    <Link
+      href={{
+        pathname: "/(authenticated)/(script)/[id]",
+        params: {
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          color: item.color,
+          updatedAt: item.updatedAt.toISOString(),
+          slideCount: String(item.slideCount),
+          durationMins: String(item.durationMins),
+          isFavourite: JSON.stringify(item.isFavourite),
+        },
+      }}
+      asChild
     >
-      <Link
-        style={styles.cardPressable}
-        href={{
-          pathname: "/(authenticated)/(script)/[id]",
-          params: {
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            color: item.color,
-            updatedAt: item.updatedAt.toISOString(),
-            slideCount: String(item.slideCount),
-            durationMins: String(item.durationMins),
-            isFavourite: JSON.stringify(item.isFavourite),
-          },
-        }}
-        asChild
-      >
-        <Link.AppleZoom>
-          <Pressable
-            onPress={() => {}}
-            style={({ pressed }) => [
+      <Link.AppleZoom>
+        <Pressable>
+          <Animated.View
+            style={[
+              styles.card,
+              { backgroundColor: item.color },
+              animatedStyle,
               styles.cardPressable,
-              pressed && styles.cardPressed,
             ]}
           >
             <Text
@@ -138,12 +136,14 @@ export const Card = ({ item, index }: { item: ScriptItem; index: number }) => {
                 {item.durationMins}m
               </Text>
             </View>
-          </Pressable>
-        </Link.AppleZoom>
-      </Link>
-    </Animated.View>
+          </Animated.View>
+        </Pressable>
+      </Link.AppleZoom>
+    </Link>
   );
 };
+
+Card.displayName = "Card";
 
 const styles = StyleSheet.create({
   card: {
@@ -151,12 +151,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginHorizontal: COLUMN_GAP / 2,
     marginBottom: COLUMN_GAP,
-    paddingHorizontal: 8,
-    paddingTop: 12,
-    paddingBottom: 4,
+    // paddingHorizontal: 8,
+    // // paddingTop: 12,
+    // paddingBottom: 4,
   },
   cardPressable: {
-    padding: 14,
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 18,
   },
   cardPressed: {
     opacity: 0.85,
