@@ -7,7 +7,7 @@ export const getCardsProgressInfoText = ({
   totalCards,
 }: CardsProgressInfoTextArgs) => {
   if (currentIndex === totalCards) {
-    return "End";
+    return "";
   }
   return `${currentIndex + 1}/${totalCards}`;
 };
