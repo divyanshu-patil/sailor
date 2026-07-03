@@ -4,11 +4,11 @@ from typing import Optional
 
 from sqlalchemy import DateTime, String, func, Integer
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from apps.backend.app.db.base import Base
+from app.db.base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from apps.backend.app.models.deck_model import Deck
+    from app.models.deck_model import Deck
 
 class User(Base):
     """

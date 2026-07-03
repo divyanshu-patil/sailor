@@ -2,12 +2,12 @@ from datetime import datetime
 
 from sqlalchemy import Integer, String, ForeignKey, DateTime, func, Boolean
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from apps.backend.app.db.base import Base
+from app.db.base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from apps.backend.app.models.user_model import User
-    from apps.backend.app.models.card_model import Card
+    from app.models.user_model import User
+    from app.models.card_model import Card
 
 class Deck(Base):
     """

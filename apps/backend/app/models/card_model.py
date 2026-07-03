@@ -1,14 +1,14 @@
 from datetime import datetime
 from decimal import Decimal
-from apps.backend.app.utils.enums.speaking_style import SpeakingStyle
+from app.utils.enums.speaking_style import SpeakingStyle
 
 from sqlalchemy import Integer, String, ForeignKey, DateTime, func, Boolean, Numeric, Enum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from apps.backend.app.db.base import Base
+from app.db.base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from apps.backend.app.models.deck_model import Deck
+    from app.models.deck_model import Deck
 
 class Card(Base):
     """
