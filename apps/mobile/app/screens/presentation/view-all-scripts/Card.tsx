@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -22,96 +22,112 @@ const JELLY_SPRING = {
   overshootClamping: false,
 };
 
-export const Card = ({ item, index }: { item: ScriptItem; index: number }) => {
-  const scale = useSharedValue(0.55);
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(24);
+export const Card = React.memo(
+  ({ item, index }: { item: ScriptItem; index: number }) => {
+    const scale = useSharedValue(0.55);
+    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(24);
 
-  useEffect(() => {
-    const delay = (index % 8) * 55;
+    useEffect(() => {
+      const delay = (index % 8) * 55;
 
-    // Fade + slide in quickly with a simple timing so they don't linger
-    opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
-    translateY.value = withDelay(
-      delay,
-      withSpring(0, { damping: 30, stiffness: 160 }),
-    );
+      // Fade + slide in quickly with a simple timing so they don't linger
+      opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
+      translateY.value = withDelay(
+        delay,
+        withSpring(0, { damping: 30, stiffness: 160 }),
+      );
 
-    // Scale gets the full jelly treatment
-    scale.value = withDelay(delay, withSpring(1, JELLY_SPRING));
-  }, [index, opacity, scale, translateY]);
+      // Scale gets the full jelly treatment
+      scale.value = withDelay(delay, withSpring(1, JELLY_SPRING));
+    }, [index, opacity, scale, translateY]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transformOrigin: ["50%", "0%", 0],
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
-  }));
+    const animatedStyle = useAnimatedStyle(() => ({
+      opacity: opacity.value,
+      transformOrigin: ["50%", "0%", 0],
+      transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    }));
 
-  return (
-    <Animated.View
-      style={[styles.card, { backgroundColor: item.color }, animatedStyle]}
-    >
-      <Link
-        style={styles.cardPressable}
-        href={{
-          pathname: "/(authenticated)/(script)/[id]",
-          params: {
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            color: item.color,
-            updatedAt: item.updatedAt.toISOString(),
-            slideCount: String(item.slideCount),
-            durationMins: String(item.durationMins),
-            isFavourite: JSON.stringify(item.isFavourite),
-          },
-        }}
-        asChild
+    return (
+      <Animated.View
+        style={[styles.card, { backgroundColor: item.color }, animatedStyle]}
       >
-        <Link.AppleZoom>
-          <Pressable
-            onPress={() => {}}
-            style={({ pressed }) => [
-              styles.cardPressable,
-              pressed && styles.cardPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.cardTitle,
-                {
-                  color: colord(item.color).darken(0.5).toHex(),
-                  marginBottom: getCardTitleMargin(item.slideCount),
-                },
+        <Link
+          style={styles.cardPressable}
+          href={{
+            pathname: "/(authenticated)/(script)/[id]",
+            params: {
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              color: item.color,
+              updatedAt: item.updatedAt.toISOString(),
+              slideCount: String(item.slideCount),
+              durationMins: String(item.durationMins),
+              isFavourite: JSON.stringify(item.isFavourite),
+            },
+          }}
+          asChild
+        >
+          <Link.AppleZoom>
+            <Pressable
+              onPress={() => {}}
+              style={({ pressed }) => [
+                styles.cardPressable,
+                pressed && styles.cardPressed,
               ]}
-              numberOfLines={2}
             >
-              {item.title}
-            </Text>
-
-            <View style={styles.cardFooter}>
-              <View
+              <Text
                 style={[
-                  styles.slideCountPill,
+                  styles.cardTitle,
                   {
-                    backgroundColor: colord(item.color)
-                      .lighten(0.08)
-                      .desaturate(0.08)
-                      .toHex(),
+                    color: colord(item.color).darken(0.5).toHex(),
+                    marginBottom: getCardTitleMargin(item.slideCount),
                   },
                 ]}
+                numberOfLines={2}
               >
-                <MaterialDesignIcons
-                  name="cards-playing"
-                  size={24}
-                  color={colord(item.color)
-                    .darken(0.35)
-                    .desaturate(0.24)
-                    .toHex()}
-                />
+                {item.title}
+              </Text>
+
+              <View style={styles.cardFooter}>
+                <View
+                  style={[
+                    styles.slideCountPill,
+                    {
+                      backgroundColor: colord(item.color)
+                        .lighten(0.08)
+                        .desaturate(0.08)
+                        .toHex(),
+                    },
+                  ]}
+                >
+                  <MaterialDesignIcons
+                    name="cards-playing"
+                    size={24}
+                    color={colord(item.color)
+                      .darken(0.35)
+                      .desaturate(0.24)
+                      .toHex()}
+                  />
+                  <Text
+                    style={[
+                      styles.slideCountText,
+                      {
+                        color: colord(item.color)
+                          .darken(0.35)
+                          .desaturate(0.24)
+                          .toHex(),
+                      },
+                    ]}
+                  >
+                    {item.slideCount}
+                  </Text>
+                </View>
+
                 <Text
                   style={[
-                    styles.slideCountText,
+                    styles.cardTime,
                     {
                       color: colord(item.color)
                         .darken(0.35)
@@ -120,30 +136,18 @@ export const Card = ({ item, index }: { item: ScriptItem; index: number }) => {
                     },
                   ]}
                 >
-                  {item.slideCount}
+                  {item.durationMins}m
                 </Text>
               </View>
+            </Pressable>
+          </Link.AppleZoom>
+        </Link>
+      </Animated.View>
+    );
+  },
+);
 
-              <Text
-                style={[
-                  styles.cardTime,
-                  {
-                    color: colord(item.color)
-                      .darken(0.35)
-                      .desaturate(0.24)
-                      .toHex(),
-                  },
-                ]}
-              >
-                {item.durationMins}m
-              </Text>
-            </View>
-          </Pressable>
-        </Link.AppleZoom>
-      </Link>
-    </Animated.View>
-  );
-};
+Card.displayName = "Card";
 
 const styles = StyleSheet.create({
   card: {

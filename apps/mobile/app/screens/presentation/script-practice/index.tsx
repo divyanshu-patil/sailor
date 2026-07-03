@@ -4,7 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import Animated, {
   interpolate,
   LinearTransition,
@@ -119,19 +119,23 @@ const ScriptPracticeScreen = () => {
 
   const isExhausted = currentIndex >= cards.length;
 
-  const currentColor = isExhausted
-    ? lightenColor(params.color)
-    : lightenColor(cards[currentIndex].color);
+  const { currentColor, nextColor, prevColor } = useMemo(() => {
+    const current = isExhausted
+      ? lightenColor(params.color)
+      : lightenColor(cards[currentIndex].color);
 
-  const nextColor =
-    !isExhausted && currentIndex + 1 < cards.length
-      ? lightenColor(cards[currentIndex + 1].color)
-      : lightenColor(params.color);
+    const next =
+      !isExhausted && currentIndex + 1 < cards.length
+        ? lightenColor(cards[currentIndex + 1].color)
+        : lightenColor(params.color);
 
-  const prevColor =
-    currentIndex - 1 >= 0 && currentIndex - 1 < cards.length
-      ? lightenColor(cards[currentIndex - 1].color)
-      : currentColor;
+    const prev =
+      currentIndex - 1 >= 0 && currentIndex - 1 < cards.length
+        ? lightenColor(cards[currentIndex - 1].color)
+        : current;
+
+    return { currentColor: current, nextColor: next, prevColor: prev };
+  }, [isExhausted, currentIndex, cards, params.color]);
 
   const animatedScreenStyle = useBackgroundColorStyle({
     translateX,

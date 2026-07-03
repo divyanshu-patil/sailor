@@ -3,8 +3,9 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useState,
+  useMemo,
 } from "react";
-import { StyleSheet, View, Dimensions, Platform } from "react-native";
+import { StyleSheet, View, Platform } from "react-native";
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -12,7 +13,6 @@ import Animated, {
   useAnimatedReaction,
   withSpring,
   interpolateColor,
-  runOnJS,
   SharedValue,
   interpolate,
   Extrapolation,
@@ -22,6 +22,8 @@ import RNSystemSounds, {
   AndroidSoundIDs,
   iOSSoundIDs,
 } from "@dashdoc/react-native-system-sounds";
+import { useDebouncedCallback } from "@/hooks/use-debounce";
+import { scheduleOnRN } from "react-native-worklets";
 
 type TSoundId =
   | (typeof AndroidSoundIDs)[keyof typeof AndroidSoundIDs]
@@ -44,14 +46,22 @@ type SliderProps = {
   inactiveColor?: string;
 
   // Behavior / feel
-  sigma?: number; // bell curve spread for height falloff
-  colorFadeDistance?: number; // how many item-widths the color fade spans
-  decelerationRate?: number;
+  sigma?: number;
+  colorFadeDistance?: number;
+  decelerationRate?:
+    | number
+    | "normal"
+    | "fast"
+    | SharedValue<number | "normal" | "fast" | undefined>
+    | undefined;
   trailingSpringConfig?: WithSpringConfig;
 
   // Sound
   playSound?: boolean;
   soundId?: TSoundId;
+
+  // Debouncing
+  debounceMs?: number;
 };
 
 export type SliderRef = {
@@ -83,27 +93,41 @@ const Slider = forwardRef<SliderRef, SliderProps>(
 
       sigma = 7,
       colorFadeDistance = 0.5,
-      decelerationRate = 0.995,
+      decelerationRate = "normal",
       trailingSpringConfig = DEFAULT_TRAILING_SPRING,
 
       playSound = true,
       soundId,
+
+      debounceMs = 20,
     },
     ref,
   ) => {
     const [sliderWidth, setSliderWidth] = useState(0);
     const itemSpacing = itemWidth + itemGap;
 
-    const values = Array.from(
-      { length: Math.floor((max - min) / step) + 1 },
-      (_, i) => min + i * step,
+    // FIX #6: memoize values array — was recreated on every render
+    const values = useMemo(
+      () =>
+        Array.from(
+          { length: Math.floor((max - min) / step) + 1 },
+          (_, i) => min + i * step,
+        ),
+      [min, max, step],
     );
 
     const scrollX = useSharedValue(0);
-    const velocityDirection = useSharedValue(0); // -1 back, 1 forward, 0 idle
+    const velocityDirection = useSharedValue(0);
 
     const listRef = React.useRef<Animated.FlatList<number>>(null);
     const sidePadding = sliderWidth / 2 - itemWidth / 2;
+
+    // FIX #5: memoize contentContainerStyle — sidePadding state change was
+    // causing FlatList to re-render all items on every layout measurement
+    const contentStyle = useMemo(
+      () => [styles.flatlist, { paddingHorizontal: sidePadding, gap: itemGap }],
+      [sidePadding, itemGap],
+    );
 
     const scrollToValue = useCallback(
       (value: number, animated = true) => {
@@ -123,7 +147,7 @@ const Slider = forwardRef<SliderRef, SliderProps>(
 
     React.useEffect(() => {
       requestAnimationFrame(() => scrollToValue(initialValue, false));
-    }, []);
+    }, [initialValue, scrollToValue]);
 
     const lastIndex = useSharedValue(Math.round((initialValue - min) / step));
 
@@ -133,6 +157,16 @@ const Slider = forwardRef<SliderRef, SliderProps>(
         android: AndroidSoundIDs.TONE_CDMA_ABBR_ALERT,
       }) ??
       1104) as TSoundId;
+
+    const debouncedOnChange = useDebouncedCallback((value: number) => {
+      onChange?.(value);
+    }, debounceMs);
+
+    const debouncedPlaySound = useDebouncedCallback(() => {
+      if (playSound) {
+        RNSystemSounds.play(resolvedSoundId);
+      }
+    }, debounceMs);
 
     const reportValue = useCallback(
       (offsetX: number, isFinal: boolean) => {
@@ -145,16 +179,15 @@ const Slider = forwardRef<SliderRef, SliderProps>(
         const value = values[clampedIndex];
 
         if (isFinal) {
+          debouncedOnChange.cancel();
+          debouncedPlaySound.cancel();
           onChangeEnd?.(value);
         } else {
-          onChange?.(value);
-
-          if (playSound) {
-            RNSystemSounds.play(resolvedSoundId);
-          }
+          debouncedOnChange(value);
+          debouncedPlaySound();
         }
       },
-      [values, onChange, onChangeEnd, itemSpacing, playSound, resolvedSoundId],
+      [values, onChangeEnd, itemSpacing, debouncedOnChange, debouncedPlaySound],
     );
 
     const maxOffset = (values.length - 1) * itemSpacing;
@@ -173,14 +206,13 @@ const Slider = forwardRef<SliderRef, SliderProps>(
 
         if (index !== lastIndex.value) {
           lastIndex.value = index;
-
-          runOnJS(reportValue)(newX, false);
+          scheduleOnRN(reportValue, newX, false);
         }
       },
 
       onMomentumEnd: (event) => {
         velocityDirection.value = 0;
-        runOnJS(reportValue)(event.contentOffset.x, true);
+        scheduleOnRN(reportValue, event.contentOffset.x, true);
       },
     });
 
@@ -200,10 +232,7 @@ const Slider = forwardRef<SliderRef, SliderProps>(
       >
         <Animated.FlatList
           ref={listRef}
-          contentContainerStyle={[
-            styles.flatlist,
-            { paddingHorizontal: sidePadding, gap: itemGap },
-          ]}
+          contentContainerStyle={contentStyle}
           data={values}
           keyExtractor={(item) => String(item)}
           horizontal
@@ -237,7 +266,9 @@ const Slider = forwardRef<SliderRef, SliderProps>(
 
 Slider.displayName = "AnimatedSlider";
 
-function SliderBar({
+// FIX #2: wrap in React.memo — renderItem was creating a new element every
+// render, preventing Reanimated from skipping re-renders on stable bars
+const SliderBar = React.memo(function SliderBar({
   index,
   scrollX,
   velocityDirection,
@@ -264,48 +295,60 @@ function SliderBar({
   colorFadeDistance: number;
   trailingSpringConfig: WithSpringConfig;
 }) {
-  // Tracks a per-bar "effective distance" that lags only when this bar
-  // is on the trailing side of scroll direction. The anchor (scrollX)
-  // itself is never lagged, so the peak stays pinned to true center.
   const laggedDistance = useSharedValue(0);
 
+  // Distance threshold beyond which a bar is fully at rest (gaussian ≈ 0).
+  // Anything outside this range gets snapped to its resting value instantly
+  // with no spring work — eliminates N-100+ simultaneous reactions firing
+  // on every frame for out-of-view bars.
+  const activationRadius = sigma * 3;
+
+  // FIX #1 + #3: gate the reaction so distant bars are skipped entirely,
+  // and bundle velocityDirection into the selector so the reaction only
+  // fires when the (distance, direction) pair actually changes — not on
+  // every scrollX tick for every bar regardless of proximity.
   useAnimatedReaction(
     () => {
-      const itemCenter = index * itemSpacing;
-      return (scrollX.value - itemCenter) / itemSpacing;
+      const dist = (scrollX.value - index * itemSpacing) / itemSpacing;
+      return { dist, dir: velocityDirection.value };
     },
-    (distance) => {
-      const direction = velocityDirection.value;
+    ({ dist, dir }) => {
+      const absDist = Math.abs(dist);
 
-      // Trailing = bar sits on the side scroll is moving away from.
-      // Forward (1): bars behind center (distance > 0) trail.
-      // Backward (-1): bars ahead of center (distance < 0) trail.
-      const isTrailing =
-        direction === 1
-          ? distance > 0
-          : direction === -1
-            ? distance < 0
-            : false;
+      // Bar is far from center — snap to fully-resting distance and bail.
+      // No spring allocation, no per-frame work.
+      if (absDist >= activationRadius) {
+        laggedDistance.value = dist > 0 ? activationRadius : -activationRadius;
+        return;
+      }
+
+      // Bar is near center — apply trailing spring logic as before.
+      const isTrailing = dir === 1 ? dist > 0 : dir === -1 ? dist < 0 : false;
 
       if (isTrailing) {
-        laggedDistance.value = withSpring(distance, trailingSpringConfig);
+        laggedDistance.value = withSpring(dist, trailingSpringConfig);
       } else {
-        laggedDistance.value = distance; // leading/centered side: instant
+        laggedDistance.value = dist;
       }
     },
   );
 
   const animatedStyle = useAnimatedStyle(() => {
     const d = laggedDistance.value;
+    const absd = Math.abs(d);
 
     const gaussian = Math.exp(-(d * d) / (2 * sigma * sigma));
     const height = minHeight + (maxHeight - minHeight) * gaussian;
 
-    // Color uses the lagged distance too, so only the bar truly under the
-    // center marker is fully active, and it fades out sharply (not the
-    // wide bell curve used for height) as you scroll.
+    // FIX #4: short-circuit interpolateColor for bars outside the color fade
+    // zone — the vast majority of bars at any given time. interpolateColor
+    // is measurably heavier than a plain backgroundColor assignment.
+    if (absd >= colorFadeDistance) {
+      return { height, backgroundColor: inactiveColor };
+    }
+
     const colorProgress = interpolate(
-      Math.abs(d),
+      absd,
       [0, colorFadeDistance],
       [1, 0],
       Extrapolation.CLAMP,
@@ -324,7 +367,7 @@ function SliderBar({
       style={[styles.sliderBar, { width: itemWidth }, animatedStyle]}
     />
   );
-}
+});
 
 export default Slider;
 
