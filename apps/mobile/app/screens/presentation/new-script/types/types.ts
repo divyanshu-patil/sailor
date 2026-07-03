@@ -9,6 +9,7 @@ export type Attachment = {
 
 export type PresentationFormState = {
   attachments: Attachment[];
+  description: string;
   durationMinutes: number;
   audienceIndex: number;
   cardCount: number;
@@ -28,4 +29,5 @@ export const DEFAULT_STATE: PresentationFormState = {
   durationMinutes: 10,
   audienceIndex: 0,
   cardCount: 8,
+  description: "",
 };
