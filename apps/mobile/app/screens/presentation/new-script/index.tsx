@@ -39,39 +39,37 @@ const STEP_TITLES = ["Describe", "Audience", "Cards"];
 
 // ---- Top pagination bar -------------------------------------------------
 
-function PaginationSegment({
-  index,
-  currentStep,
-}: {
-  index: number;
-  currentStep: number;
-}) {
-  const progress = useSharedValue(index <= currentStep ? 1 : 0);
+const PaginationSegment = React.memo(
+  ({ index, currentStep }: { index: number; currentStep: number }) => {
+    const progress = useSharedValue(index <= currentStep ? 1 : 0);
 
-  // Re-run whenever currentStep changes.
-  React.useEffect(() => {
-    progress.value = withTiming(index <= currentStep ? 1 : 0, {
-      duration: 320,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [currentStep, index, progress]);
+    // Re-run whenever currentStep changes.
+    React.useEffect(() => {
+      progress.value = withTiming(index <= currentStep ? 1 : 0, {
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+      });
+    }, [currentStep, index, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: `${progress.value * 100}%`,
-  }));
+    const animatedStyle = useAnimatedStyle(() => ({
+      width: `${progress.value * 100}%`,
+    }));
 
-  return (
-    <View style={styles.segmentTrack}>
-      <Animated.View
-        style={[
-          styles.segmentFill,
-          { backgroundColor: ACTIVE_COLOR },
-          animatedStyle,
-        ]}
-      />
-    </View>
-  );
-}
+    return (
+      <View style={styles.segmentTrack}>
+        <Animated.View
+          style={[
+            styles.segmentFill,
+            { backgroundColor: ACTIVE_COLOR },
+            animatedStyle,
+          ]}
+        />
+      </View>
+    );
+  },
+);
+
+PaginationSegment.displayName = "PaginationSegment";
 
 function TopPagination({ currentStep }: { currentStep: number }) {
   return (
@@ -90,112 +88,119 @@ function TopPagination({ currentStep }: { currentStep: number }) {
 
 // ---- Animated step transition -------------------------------------------
 
-function AnimatedStep({
-  children,
-  direction,
-  stepKey,
-}: {
-  children: React.ReactNode;
-  direction: "forward" | "back";
-  stepKey: number;
-}) {
-  const translateX = useSharedValue(
-    direction === "forward" ? SCREEN_WIDTH : -SCREEN_WIDTH,
-  );
-  const opacity = useSharedValue(0);
+const AnimatedStep = React.memo(
+  ({
+    children,
+    direction,
+    stepKey,
+  }: {
+    children: React.ReactNode;
+    direction: "forward" | "back";
+    stepKey: number;
+  }) => {
+    const translateX = useSharedValue(
+      direction === "forward" ? SCREEN_WIDTH : -SCREEN_WIDTH,
+    );
+    const opacity = useSharedValue(0);
 
-  React.useEffect(() => {
-    translateX.value =
-      direction === "forward" ? SCREEN_WIDTH * 0.25 : -SCREEN_WIDTH * 0.25;
-    opacity.value = 0;
-    translateX.value = withSpring(0, {
-      damping: 18,
-      stiffness: 160,
-      mass: 0.6,
-    });
-    opacity.value = withTiming(1, { duration: 220 });
-    // stepKey intentionally re-triggers this effect on every step change.
-  }, [stepKey, direction, translateX, opacity]);
+    React.useEffect(() => {
+      translateX.value =
+        direction === "forward" ? SCREEN_WIDTH * 0.25 : -SCREEN_WIDTH * 0.25;
+      opacity.value = 0;
+      translateX.value = withSpring(0, {
+        damping: 18,
+        stiffness: 160,
+        mass: 0.6,
+      });
+      opacity.value = withTiming(1, { duration: 220 });
+      // stepKey intentionally re-triggers this effect on every step change.
+    }, [stepKey, direction, translateX, opacity]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateX: translateX.value }],
-  }));
+    const animatedStyle = useAnimatedStyle(() => ({
+      opacity: opacity.value,
+      transform: [{ translateX: translateX.value }],
+    }));
 
-  return (
-    <Animated.View style={[styles.stepContainer, animatedStyle]}>
-      {children}
-    </Animated.View>
-  );
-}
+    return (
+      <Animated.View style={[styles.stepContainer, animatedStyle]}>
+        {children}
+      </Animated.View>
+    );
+  },
+);
+
+AnimatedStep.displayName = "AnimatedStep";
 
 // ---- Footer nav buttons ---------------------------------------------------
 
-function FooterButton({
-  label,
-  onPress,
-  variant,
-  disabled,
-  currentStep,
-}: {
-  label: string;
-  onPress: () => void;
-  variant: "primary" | "secondary";
-  disabled?: boolean;
-  currentStep: number;
-}) {
-  const pressed = useSharedValue(0);
+const FooterButton = React.memo(
+  ({
+    label,
+    onPress,
+    variant,
+    disabled,
+    currentStep,
+  }: {
+    label: string;
+    onPress: () => void;
+    variant: "primary" | "secondary";
+    disabled?: boolean;
+    currentStep: number;
+  }) => {
+    const pressed = useSharedValue(0);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: withTiming(pressed.value ? 0.97 : 1, { duration: 100 }) },
-    ],
-  }));
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [
+        { scale: withTiming(pressed.value ? 0.97 : 1, { duration: 100 }) },
+      ],
+    }));
 
-  return (
-    <AnimatedPressable
-      disabled={disabled}
-      onPress={onPress}
-      onPressIn={() => (pressed.value = 1)}
-      onPressOut={() => (pressed.value = 0)}
-      entering={FadeInLeft.duration(250).withInitialValues({
-        opacity: 0,
-        transform: [{ translateX: -20 }, { scale: 0.7 }],
-      })}
-      exiting={FadeOutLeft.duration(150)}
-      layout={LinearTransition.springify().damping(75)}
-      style={[
-        styles.footerButton,
-        variant === "primary"
-          ? styles.footerButtonPrimary
-          : styles.footerButtonSecondary,
-        disabled && {
-          backgroundColor: colord(ACTIVE_COLOR)
-            .lighten(0.12)
-            .desaturate(0.5)
-            .toHex(),
-        },
-        animatedStyle,
-      ]}
-    >
-      <AnimatedHost
-        layout={LinearTransition.springify().damping(100)}
-        matchContents
-        modifiers={[animation(Animation.default, currentStep)]}
+    return (
+      <AnimatedPressable
+        disabled={disabled}
+        onPress={onPress}
+        onPressIn={() => (pressed.value = 1)}
+        onPressOut={() => (pressed.value = 0)}
+        entering={FadeInLeft.duration(250).withInitialValues({
+          opacity: 0,
+          transform: [{ translateX: -20 }, { scale: 0.7 }],
+        })}
+        exiting={FadeOutLeft.duration(150)}
+        layout={LinearTransition.springify().damping(75)}
+        style={[
+          styles.footerButton,
+          variant === "primary"
+            ? styles.footerButtonPrimary
+            : styles.footerButtonSecondary,
+          disabled && {
+            backgroundColor: colord(ACTIVE_COLOR)
+              .lighten(0.12)
+              .desaturate(0.5)
+              .toHex(),
+          },
+          animatedStyle,
+        ]}
       >
-        <Text
-          modifiers={[
-            foregroundStyle(variant === "primary" ? "#fff" : "#000"),
-            contentTransition("numericText", { countsDown: false }),
-            animation(Animation.spring(), currentStep),
-          ]}
+        <AnimatedHost
+          layout={LinearTransition.springify().damping(100)}
+          matchContents
+          modifiers={[animation(Animation.default, currentStep)]}
         >
-          {label}
-        </Text>
-      </AnimatedHost>
-    </AnimatedPressable>
-  );
-}
+          <Text
+            modifiers={[
+              foregroundStyle(variant === "primary" ? "#fff" : "#000"),
+              contentTransition("numericText", { countsDown: false }),
+              animation(Animation.spring(), currentStep),
+            ]}
+          >
+            {label}
+          </Text>
+        </AnimatedHost>
+      </AnimatedPressable>
+    );
+  },
+);
+FooterButton.displayName = "FooterButton";
 
 // ---- Flow content (needs context, so split from provider) ---------------
 
@@ -257,6 +262,8 @@ function FlowContent() {
     </SafeAreaView>
   );
 }
+
+FlowContent.displayName = "FlowContent";
 
 export default function CreateNewScriptScreen() {
   return (

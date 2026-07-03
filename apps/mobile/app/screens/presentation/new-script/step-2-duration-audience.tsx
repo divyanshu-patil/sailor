@@ -74,9 +74,9 @@ export default function StepDurationAudience() {
       >
         <AnimatedSlider
           min={2}
-          max={60}
-          // itemGap={15}
-          // sigma={3}
+          max={20}
+          itemGap={15}
+          sigma={4}
           onChange={(v) => setDurationMinutes(Math.round(v))}
         />
       </View>

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/immutability */
 import { StyleSheet } from "react-native";
 import React from "react";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
@@ -32,102 +31,107 @@ interface DeliveryPillProps {
   color: string;
 }
 
-const DeliveryPill = ({
-  currentIndex,
-  totalCards,
-  delivery,
-  isExhausted,
-  isRetreating,
-  prevCardOpacity,
-  prevCardX,
-  swipeDirection,
-  translateX,
-  color,
-  cardsCurrentColor,
-  cardsNextColor,
-  cardsPrevColor,
-}: DeliveryPillProps) => {
-  const pressed = useSharedValue(0);
+const DeliveryPill = React.memo(
+  ({
+    currentIndex,
+    totalCards,
+    delivery,
+    isExhausted,
+    isRetreating,
+    prevCardOpacity,
+    prevCardX,
+    swipeDirection,
+    translateX,
+    color,
+    cardsCurrentColor,
+    cardsNextColor,
+    cardsPrevColor,
+  }: DeliveryPillProps) => {
+    const pressed = useSharedValue(0);
 
-  const animatedPillOpacityStyle = useAnimatedStyle(() => {
-    if (isExhausted && prevCardX.value >= RETURN_START_X) return { opacity: 0 };
+    const animatedPillOpacityStyle = useAnimatedStyle(() => {
+      if (isExhausted && prevCardX.value >= RETURN_START_X)
+        return { opacity: 0 };
 
-    if (currentIndex < totalCards - 1) return { opacity: 1 };
+      if (currentIndex < totalCards - 1) return { opacity: 1 };
 
-    if (isExhausted) {
+      if (isExhausted) {
+        return {
+          opacity: interpolate(
+            prevCardX.value,
+            [RETURN_START_X, RETURN_START_X * 0.6],
+            [0, 1],
+            Extrapolation.CLAMP,
+          ),
+        };
+      }
+
       return {
         opacity: interpolate(
-          prevCardX.value,
-          [RETURN_START_X, RETURN_START_X * 0.6],
-          [0, 1],
+          translateX.value,
+          [0, SCREEN_WIDTH * 0.4],
+          [1, 0],
           Extrapolation.CLAMP,
         ),
       };
-    }
+    });
+    const pillCurrentColor = isExhausted
+      ? lightenColor(color)
+      : lightenColor(cardsCurrentColor, 0.1);
 
-    return {
-      opacity: interpolate(
-        translateX.value,
-        [0, SCREEN_WIDTH * 0.4],
-        [1, 0],
-        Extrapolation.CLAMP,
-      ),
-    };
-  });
-  const pillCurrentColor = isExhausted
-    ? lightenColor(color)
-    : lightenColor(cardsCurrentColor, 0.1);
+    const pillNextColor =
+      !isExhausted && currentIndex + 1 < totalCards
+        ? lightenColor(cardsNextColor, 0.1)
+        : lightenColor(color);
 
-  const pillNextColor =
-    !isExhausted && currentIndex + 1 < totalCards
-      ? lightenColor(cardsNextColor, 0.1)
-      : lightenColor(color);
+    const pillPrevColor =
+      currentIndex - 1 >= 0 && currentIndex - 1 < totalCards
+        ? lightenColor(cardsPrevColor, 0.1)
+        : pillCurrentColor;
 
-  const pillPrevColor =
-    currentIndex - 1 >= 0 && currentIndex - 1 < totalCards
-      ? lightenColor(cardsPrevColor, 0.1)
-      : pillCurrentColor;
+    const animatedPillColorStyle = useBackgroundColorStyle({
+      translateX,
+      prevCardX,
+      prevCardOpacity,
+      swipeDirection,
+      isRetreating,
+      currentColor: pillCurrentColor,
+      nextColor: pillNextColor,
+      prevColor: pillPrevColor,
+    });
 
-  const animatedPillColorStyle = useBackgroundColorStyle({
-    translateX,
-    prevCardX,
-    prevCardOpacity,
-    swipeDirection,
-    isRetreating,
-    currentColor: pillCurrentColor,
-    nextColor: pillNextColor,
-    prevColor: pillPrevColor,
-  });
+    const pillPressedStyle = useAnimatedStyle(() => {
+      return {
+        transform: [
+          {
+            scale: withSpring(interpolate(pressed.value, [0, 1], [1, 1.1]), {
+              damping: 50,
+            }),
+          },
+        ],
+      };
+    });
 
-  const pillPressedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          scale: withSpring(interpolate(pressed.value, [0, 1], [1, 1.1]), {
-            damping: 50,
-          }),
-        },
-      ],
-    };
-  });
+    return (
+      <AnimatedPressable
+        onPressIn={() => (pressed.value = withTiming(1))}
+        onPressOut={() => (pressed.value = withTiming(0))}
+        style={[
+          styles.deliveryPill,
+          animatedPillColorStyle,
+          animatedPillOpacityStyle,
+          pillPressedStyle,
+        ]}
+      >
+        <Host matchContents>
+          <Text modifiers={deliveryModifier(currentIndex)}>{delivery}</Text>
+        </Host>
+      </AnimatedPressable>
+    );
+  },
+);
 
-  return (
-    <AnimatedPressable
-      onPressIn={() => (pressed.value = withTiming(1))}
-      onPressOut={() => (pressed.value = withTiming(0))}
-      style={[
-        styles.deliveryPill,
-        animatedPillColorStyle,
-        animatedPillOpacityStyle,
-        pillPressedStyle,
-      ]}
-    >
-      <Host matchContents>
-        <Text modifiers={deliveryModifier(currentIndex)}>{delivery}</Text>
-      </Host>
-    </AnimatedPressable>
-  );
-};
+DeliveryPill.displayName = "DeliveryPill";
 
 export default DeliveryPill;
 
