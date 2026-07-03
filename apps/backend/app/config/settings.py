@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
     DATABASE_URL: str
 
+    API_KEY: str
+    AI_BASE_URL: str
+    AI_MODEL: str
+    AI_TIMEOUT_SECONDS: float
+    AI_MAX_RETRIES: int
+    AI_MAX_OUTPUT_TOKENS: int = 8192 
+
     class Config:
         env_file = ".env"
 

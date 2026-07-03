@@ -11,6 +11,7 @@ from app.db.base import Base
 from app.models.user_model import User
 from app.models.deck_model import Deck
 from app.models.card_model import Card
+from app.api.v1 import deck_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -36,6 +37,7 @@ app.add_middleware(LoggingMiddleware)
 # ─── Routers ──────────────────────────────────────────────────────────────────
 # All routes are prefixed with /api/v1 for versioning
 app.include_router(user_router.router, prefix="/api/v1")
+app.include_router(deck_router.router, prefix="/api/v1")
 
 # TODO: Uncomment this when we implement webhook verification
 # app.include_router(webhook_router.router)   # no /api/v1 prefix — webhooks are external

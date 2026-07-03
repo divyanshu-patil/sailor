@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, ForeignKey, DateTime, func, Boolean
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db.base import Base
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.models.user_model import User
@@ -22,7 +22,10 @@ class Deck(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     title: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    script: Mapped[str] = mapped_column(String, nullable=True)
+
 
     # hex string representing the color of the deck (e.g., "#FF5733")
     color: Mapped[str] = mapped_column(String, nullable=False)
