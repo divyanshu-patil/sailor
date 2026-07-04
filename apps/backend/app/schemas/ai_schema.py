@@ -85,6 +85,64 @@ class AICardOutput(BaseModel):
         return v.upper()
 
 
+class AIDeckScriptOutput(BaseModel):
+    title: str = Field(..., min_length=1, max_length=150)
+    script: str = Field(..., min_length=1)
+    color: str
+
+    @field_validator("color")
+    @classmethod
+    def validate_hex_color(cls, v: str) -> str:
+        if not HEX_COLOR_RE.match(v):
+            raise ValueError(f"'{v}' is not a valid hex color")
+        return v.upper()
+
+
+class AICardBatchOutput(BaseModel):
+    cards: List[AICardOutput]
+
+
+class AIGeneratedPresentationCardOutput(BaseModel):
+    cardNumber: int = Field(..., ge=1)
+    title: str = Field(..., min_length=1, max_length=120)
+    speakerNotes: str = Field(..., min_length=1)
+    slideContent: List[str] = Field(..., min_length=1)
+    estimatedWordCount: int = Field(..., ge=1)
+    estimatedDurationSeconds: int = Field(..., ge=1)
+    impact: float = Field(..., ge=0.0, le=1.0)
+    delivery: SpeakingStyle
+    color: str
+
+    @field_validator("delivery", mode="before")
+    @classmethod
+    def normalize_delivery(cls, v):
+        if isinstance(v, str) and v not in _VALID_DELIVERY_VALUES:
+            return _normalize_delivery(v)
+        return v
+
+    @field_validator("color")
+    @classmethod
+    def validate_hex_color(cls, v: str) -> str:
+        if not HEX_COLOR_RE.match(v):
+            raise ValueError(f"'{v}' is not a valid hex color")
+        return v.upper()
+
+
+class AIGeneratedPresentationOutput(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=150)
+    color: str | None = None
+    cards: List[AIGeneratedPresentationCardOutput]
+
+    @field_validator("color")
+    @classmethod
+    def validate_hex_color(cls, v: str) -> str:
+        if v is None:
+            return v
+        if not HEX_COLOR_RE.match(v):
+            raise ValueError(f"'{v}' is not a valid hex color")
+        return v.upper()
+
+
 class AIDeckOutput(BaseModel):
     title: str = Field(..., min_length=1, max_length=150)
     script: str = Field(..., min_length=1)

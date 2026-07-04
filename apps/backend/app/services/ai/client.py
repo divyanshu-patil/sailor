@@ -24,37 +24,43 @@ class AIClient:
             timeout=settings.AI_TIMEOUT_SECONDS,
         )
 
-    def generate_json(self, *, system_prompt: str, user_prompt: str, temperature: float = 0.7,max_tokens: int = 4096,) -> str:
+    def generate_json(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> str:
         """Calls the chat completion endpoint in JSON mode, returns the raw JSON string."""
         last_error: Optional[Exception] = None
 
         for attempt in range(1, self._max_retries + 1):
             try:
-                response = self._client.chat.completions.create(
-                    model=self._model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    response_format={"type": "json_object"},
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                )
+                if max_tokens is not None:
+                    response = self._client.chat.completions.create(
+                        model=self._model,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        response_format={"type": "json_object"},
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                    )
+                else:
+                    response = self._client.chat.completions.create(
+                        model=self._model,
+                        temperature=temperature,
+                        response_format={"type": "json_object"},
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                    )
                 content = response.choices[0].message.content
                 if not content:
                     raise AIGenerationError("AI provider returned an empty response")
-
-                # If the model got cut off mid-generation, finish_reason will say so —
-                # catch this before it becomes a confusing downstream JSON/validation error.
-                finish_reason = response.choices[0].finish_reason
-                if finish_reason == "length":
-                    logger.warning(
-                        "AI response was truncated (finish_reason=length, max_tokens=%s)",
-                        max_tokens,
-                    )
-                    raise AIGenerationError(
-                        "AI response was truncated before completion (hit max_tokens)"
-                    )
 
                 return content
             except (APITimeoutError, APIConnectionError, APIError, AIGenerationError) as exc:
