@@ -31,9 +31,8 @@ type PresentationFormContextValue = {
   handleSetDescriptionValue: (text: string) => void;
 };
 
-const PresentationFormContext = createContext<
-  PresentationFormContextValue | undefined
->(undefined);
+const PresentationFormContext =
+  createContext<PresentationFormContextValue | null>(null);
 
 export function PresentationFormProvider({
   children,
@@ -42,9 +41,12 @@ export function PresentationFormProvider({
 }) {
   const [form, setForm] = useState<PresentationFormState>(DEFAULT_STATE);
   const descriptionState = useNativeState("");
-  const [descriptionValue, setDescriptionValue] = useState("");
-
   const linkDraftState = useNativeState("");
+
+  // descriptionState already reactively holds the current text (it's the
+  // native binding for the TextField), so we read from it directly instead
+  // of keeping a separate plain-useState copy in sync.
+  const descriptionValue = descriptionState.value;
 
   const addAttachment = useCallback((attachment: Attachment) => {
     setForm((prev) => ({
@@ -73,7 +75,7 @@ export function PresentationFormProvider({
   }, []);
 
   const handleSetDescriptionValue = useCallback((text: string) => {
-    setDescriptionValue(text);
+    setForm((prev) => ({ ...prev, description: text }));
   }, []);
 
   const value = useMemo<PresentationFormContextValue>(
