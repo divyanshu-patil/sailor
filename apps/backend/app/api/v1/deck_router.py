@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.controllers.deck_controller import create_deck, get_all_decks
+from app.controllers.deck_controller import create_deck, get_all_decks, get_deck_by_id
 from app.db.database import get_db
-from app.schemas.deck_schema import DeckGenerateRequest, DeckGenerateResponse
+from app.schemas.deck_schema import DeckGenerateRequest, DeckGenerateResponse, DeckInfoResponse
 from app.services.deck_generation_service import DeckGenerationService
 from app.auth.dependencies import get_current_user
 from app.models.user_model import User
@@ -35,3 +35,8 @@ def get_all_user_decks(
 ):
     """Get all decks for the current user."""
     return get_all_decks(db, current_user)
+
+@router.get("/{deck_id}", response_model=DeckInfoResponse, status_code=status.HTTP_200_OK)
+def get_deck(deck_id: int, current_user: User = Depends(get_current_user) , db: Session = Depends(get_db) ):
+    # Fetch deck from database
+    return get_deck_by_id(deck_id, current_user, db)

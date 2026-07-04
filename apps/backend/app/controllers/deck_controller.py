@@ -15,6 +15,7 @@ from app.models.user_model import User
 from app.schemas.deck_schema import (
     DeckGenerateRequest,
     DeckGenerateResponse,
+    DeckInfoResponse
 )
 from app.services.deck_generation_service import DeckGenerationService
 
@@ -95,6 +96,33 @@ def get_all_decks(db: Session, current_user: User) -> list[DeckGenerateResponse]
             ) for deck in decks
         ]
     
+    except SQLAlchemyError as exc:
+        logger.exception("Failed to retrieve decks for user %s", current_user.clerk_user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve decks.") from exc
+    
+
+def get_deck_by_id(deck_id: int, current_user: User, db: Session ) -> DeckInfoResponse:
+    """
+    Retrieves info of deck based on provided id
+    """
+    try:
+        deck = db.query(Deck).filter(Deck.id == deck_id).first()
+
+        if deck is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="deck with id not present. ")
+        
+        return DeckInfoResponse(
+            id = deck.id,
+            title= deck.title,
+            description= deck.description,
+            script= deck.script,
+            color= deck.color,
+            duration_mins= deck.duration_mins,
+            card_count= deck.card_count,
+            is_favorite= deck.is_favorite,
+            created_at= deck.created_at
+        )
+
     except SQLAlchemyError as exc:
         logger.exception("Failed to retrieve decks for user %s", current_user.clerk_user_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve decks.") from exc

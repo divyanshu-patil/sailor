@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Literal
+from datetime import datetime
 
 from app.utils.enums.speaking_style import SpeakingStyle
 
@@ -61,3 +62,14 @@ class DeckGenerateResponse(BaseModel):
     title: str
     color: str
     duration_mins: int = Field(..., serialization_alias="durationMinutes")
+
+class DeckInfoResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    script: str
+    color: str
+    duration_mins: int
+    card_count: int
+    is_favorite: bool
+    created_at: datetime
