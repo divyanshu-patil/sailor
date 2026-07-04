@@ -1,9 +1,11 @@
-from sqlalchemy.orm import Session
 
-def get_profile(current_user: dict) -> dict:
+from app.models.user_model import User
+
+
+def get_profile(current_user: User) -> User:
     """
-    Returns the authenticated user's profile.
-    current_user already comes from the DB (via get_current_user dependency),
-    so this is just a pass-through — no extra DB call needed.
+    Returns the current user's profile.
+    FastAPI will serialize this through the response_model (UserProfileResponse)
+    at the route layer, so no manual dict conversion is needed here.
     """
     return current_user

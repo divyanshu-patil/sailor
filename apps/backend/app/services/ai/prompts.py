@@ -2,7 +2,11 @@ import json
 from typing import List, Sequence
 
 from app.schemas.deck_schema import AttachmentRequest, DeckGenerateRequest
-from app.services.ai.presentation_math import calculateTargetWords, calculateWordsPerCard, getWordsPerMinute
+from app.services.ai.presentation_math import (
+    calculateTargetWords,
+    calculateWordsPerCard,
+    getWordsPerMinute,
+)
 from app.utils.enums.speaking_style import SpeakingStyle
 
 
@@ -88,6 +92,7 @@ Output must be a single JSON object with this exact shape:
             "slideContent": [string],
             "estimatedWordCount": number,
             "estimatedDurationSeconds": number,
+            "color": string,
             "impact": number,
             "delivery": string
         }}
@@ -106,6 +111,7 @@ Rules:
 - Do not summarize prior cards.
 - Do not restart the presentation on any card.
 - "delivery" must be exactly one of: {delivery_values}
+- "color" fields must be valid hex strings like "#3B82F6".
 - "impact" must be a number between 0.0 and 1.0.
 - Do not repeat cards already generated in earlier batches.
 - Use the presentation outline as the source of truth for ordering and emphasis.

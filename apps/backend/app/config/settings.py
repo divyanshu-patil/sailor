@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_SERVICE_ROLE_KEY: str
     DATABASE_URL: str
+    CLERK_WEBHOOK_SIGNING_SECRET: str
 
     API_KEY: str
     AI_BASE_URL: str
