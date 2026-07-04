@@ -15,7 +15,8 @@ from app.models.user_model import User
 from app.schemas.deck_schema import (
     DeckGenerateRequest,
     DeckGenerateResponse,
-    DeckInfoResponse
+    DeckInfoResponse,
+    CardResponse,
 )
 from app.services.deck_generation_service import DeckGenerationService
 
@@ -126,3 +127,35 @@ def get_deck_by_id(deck_id: int, current_user: User, db: Session ) -> DeckInfoRe
     except SQLAlchemyError as exc:
         logger.exception("Failed to retrieve decks for user %s", current_user.clerk_user_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve decks.") from exc
+
+
+def get_deck_cards(deck_id: int, current_user: User, db: Session) -> list[CardResponse]:
+    """
+     retrieves all cards for a specific deck.
+    """
+    try:
+        deck = db.query(Deck).filter(Deck.id == deck_id).first()
+
+        if deck is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="deck with id not present. ")
+        
+        cards = db.query(Card).filter(Card.deck_id == deck_id).order_by(Card.position).all()
+
+        if cards is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No cards found for the specified deck.")
+
+        return [
+            CardResponse(
+                id=card.id,
+                position=card.position,
+                title=card.title,
+                description=card.description,
+                color=card.color,
+                impact=card.impact,
+                delivery=card.delivery
+            ) for card in cards
+        ]
+
+    except SQLAlchemyError as exc:
+        logger.exception("Failed to retrieve cards for deck %s and user %s", deck_id, current_user.clerk_user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve cards.") from exc

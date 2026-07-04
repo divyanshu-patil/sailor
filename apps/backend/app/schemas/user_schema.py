@@ -6,7 +6,7 @@ from datetime import datetime
 class UserProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int          # was probably `str` — change to match User.id (Integer PK)
+    id: int
     email: str
     name: str | None = None
     occupation: str | None = None
