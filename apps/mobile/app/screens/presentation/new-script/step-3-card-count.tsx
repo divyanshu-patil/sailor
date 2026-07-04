@@ -1,14 +1,4 @@
-import {
-  Host,
-  Form,
-  Section,
-  Slider,
-  HStack,
-  VStack,
-  Spacer,
-  Text,
-  Image,
-} from "@expo/ui/swift-ui";
+import { Host, Text } from "@expo/ui/swift-ui";
 import {
   animation,
   Animation,

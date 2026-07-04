@@ -57,6 +57,18 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="generating"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: true,
+          headerTitle: "",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+          // animation: "fade",
+          // presentation: "modal",
+        }}
+      />
     </Stack>
   );
 };

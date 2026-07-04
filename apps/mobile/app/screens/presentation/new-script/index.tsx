@@ -216,6 +216,7 @@ function FlowContent() {
     } else {
       // Final step — hand off to your generation pipeline.
       console.log("Generate presentation with:", form);
+      router.navigate("/(authenticated)/(script)/generating");
     }
   }, [currentStep, form]);
 
