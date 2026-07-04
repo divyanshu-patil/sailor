@@ -62,7 +62,3 @@ class DeckGenerateResponse(BaseModel):
     description: str
     color: str
     duration_mins: int = Field(..., serialization_alias="durationMinutes")
-    card_count: int = Field(..., serialization_alias="cardCount")
-    cards: List[CardResponse]
-
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 # from app.auth.dependencies import get_current_user
-from app.schemas.user_schema import UserProfileResponse
-from app.controllers import user_controller
+# from app.schemas.user_schema import UserProfileResponse
+# from app.controllers import user_controller
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

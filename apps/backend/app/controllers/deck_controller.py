@@ -1,89 +1,121 @@
 import logging
-from typing import Optional
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import AIGenerationError, AIResponseParsingError
-from app.schemas.deck_schema import DeckGenerateRequest, DeckGenerateResponse
+from app.auth.clerk import ClerkUser
+from app.core.exceptions import (
+    AIGenerationError,
+    AIResponseParsingError,
+)
+from app.models.card_model import Card
+from app.models.deck_model import Deck
+from app.models.user_model import User
+from app.schemas.deck_schema import (
+    DeckGenerateRequest,
+    DeckGenerateResponse,
+)
 from app.services.deck_generation_service import DeckGenerationService
 
 logger = logging.getLogger(__name__)
 
 
-def create_deck(
+async def create_deck(
     body: DeckGenerateRequest,
     db: Session,
-    generation_service: Optional[DeckGenerationService] = None,
+    generation_service: DeckGenerationService,
+    current_user: ClerkUser,
 ) -> DeckGenerateResponse:
-    """Generates deck + card content via AI, persists it, and returns the created deck."""
+    """
+    Generates a presentation using AI, persists the deck and cards,
+    and returns the created deck.
+    """
 
-    service = generation_service or DeckGenerationService()
+    user = (
+        db.query(User)
+        .filter(User.clerk_user_id == current_user.clerk_user_id)
+        .one_or_none()
+    )
 
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    # Generate AI content
     try:
-        ai_output = service.generate(body)
+        ai_output = await generation_service.generate(body)
     except AIGenerationError as exc:
-        logger.error("AI generation failed: %s", exc)
+        logger.exception(
+            "AI generation failed for user %s",
+            current_user.clerk_user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to generate deck content. Please try again.",
+            detail="Failed to generate deck content.",
         ) from exc
+
     except AIResponseParsingError as exc:
-        logger.error("AI response parsing failed: %s", exc)
+        logger.exception(
+            "Failed to parse AI response for user %s",
+            current_user.clerk_user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI returned an unexpected response. Please try again.",
+            detail="AI returned an invalid response.",
         ) from exc
 
 
-      # deck = Deck(
-    #     user_id=user_id,
-    #     title=ai_output.title,
-    #     description=body.description,
-    #     color=ai_output.color,
-    #     duration_mins=body.duration_minutes,
-    #     card_count=len(ai_output.cards),
-    #     # script=ai_output.script,  # uncomment once you add the `script` column — see below
-    # )
+    # sync deck + cards into db
+    try:
+        with db.begin():
 
-    # deck.cards = [
-    #     Card(
-    #         position=idx,
-    #         title=card.title,
-    #         description=card.description,
-    #         color=card.color,
-    #         impact=card.impact,
-    #         delivery=card.delivery,
-    #     )
-    #     for idx, card in enumerate(ai_output.cards)
-    # ]
+            deck = Deck(
+                title=ai_output.title,
+                user_id=user.id,
+                description=body.description,
+                script=ai_output.script,
+                color=ai_output.color,
+                duration_mins=body.duration_minutes,
+                card_count=len(ai_output.cards),
+            )
 
-    # try:
-    #     db.add(deck)
-    #     db.commit()
-    #     db.refresh(deck)
-    # except SQLAlchemyError:
-    #     db.rollback()
-    #     logger.exception("Failed to persist generated deck")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail="Failed to save the generated deck.",
-    #     )
+            db.add(deck)
+            db.flush()  # Generates deck.id
 
-    return {
-        "message": "Deck generated successfully",
-        "title": ai_output.title,
-        "script": ai_output.script,
-        "color": ai_output.color,
-        "cards": [
-            {
-                "title": card.title,
-                "description": card.description,
-                "color": card.color,
-                "impact": card.impact,
-                "delivery": card.delivery.value,
-            }
-            for card in ai_output.cards
-        ],
-        "cardCount": len(ai_output.cards),
-    }
+            deck.cards = [
+                Card(
+                    title=card.title,
+                    position=index,
+                    description=card.description,
+                    impact=card.impact,
+                    delivery=card.delivery,
+                )
+                for index, card in enumerate(ai_output.cards)
+            ]
+
+        db.refresh(deck)
+
+    except SQLAlchemyError as exc:
+        logger.exception(
+            "Failed to persist deck for user %s",
+            current_user.clerk_user_id,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save generated deck.",
+        ) from exc
+
+    # ------------------------------------------------------------------
+    # Response
+    # ------------------------------------------------------------------
+    return DeckGenerateResponse(
+        id=deck.id,
+        title=deck.title,
+        description=deck.description,
+        color=deck.color,
+        duration_mins=deck.duration_mins,
+    )

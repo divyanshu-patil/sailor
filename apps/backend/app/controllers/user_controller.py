@@ -1,4 +1,4 @@
-
+from sqlalchemy.orm import Session
 
 def get_profile(current_user: dict) -> dict:
     """

@@ -13,7 +13,10 @@
 # #       5. Remove the fallback upsert in auth/dependencies.py get_current_user()
 
 # import logging
+# from app.db.database import get_db
+# from sqlalchemy.orm import Session
 
+# from app.models.user_model import User
 # logger = logging.getLogger("uvicorn")
 
 
@@ -32,7 +35,8 @@
 #     clerk_user_id = data["id"]
 #     email = _extract_primary_email(data) or ""
 
-#     supabase.table("users").upsert(
+#     db = get_db()
+#     db.query(User).filter(User.clerk_user_id == clerk_user_id).first() or db.query(User).create(
 #         {
 #             "clerk_user_id": clerk_user_id,
 #             "email": email,
@@ -49,14 +53,16 @@
 #     email = _extract_primary_email(data)
 
 #     if email:
-#         supabase.table("users").update({"email": email}).eq(
-#             "clerk_user_id", clerk_user_id
-#         ).execute()
+#         db = get_db()
+#         db.query(User).filter(User.clerk_user_id == clerk_user_id).update({"email": email})
+#         db.commit()
 
 #     logger.info(f"[webhook] user.updated → {clerk_user_id}")
 
 
 # def handle_user_deleted(data: dict) -> None:
 #     clerk_user_id = data["id"]
-#     supabase.table("users").delete().eq("clerk_user_id", clerk_user_id).execute()
+#     db = get_db()
+#     db.query(User).filter(User.clerk_user_id == clerk_user_id).delete()
+#     db.commit()
 #     logger.info(f"[webhook] user.deleted → {clerk_user_id}")
