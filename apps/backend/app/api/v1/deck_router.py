@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.controllers.deck_controller import create_deck
+from app.controllers.deck_controller import create_deck, get_all_decks
 from app.db.database import get_db
 from app.schemas.deck_schema import DeckGenerateRequest, DeckGenerateResponse
 from app.services.deck_generation_service import DeckGenerationService
@@ -27,3 +27,11 @@ def generate_deck(
 ):
     """Generate a new deck of cards using AI."""
     return create_deck(body, db, generation_service, current_user)
+
+@router.get("/all", response_model=list[DeckGenerateResponse], status_code=status.HTTP_200_OK)
+def get_all_user_decks(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get all decks for the current user."""
+    return get_all_decks(db, current_user)

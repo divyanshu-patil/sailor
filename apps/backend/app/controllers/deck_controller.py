@@ -78,3 +78,23 @@ def create_deck(
         color=deck.color,
         duration_mins=deck.duration_mins,
     )
+
+def get_all_decks(db: Session, current_user: User) -> list[DeckGenerateResponse]:
+    """
+    Retrieves all decks for the current user.
+    """
+    try:
+        decks = db.query(Deck).filter(Deck.user_id == current_user.id).all()
+        return [
+            DeckGenerateResponse(
+                id = deck.id,
+                title= deck.title,
+                color= deck.color,
+                duration_mins= deck.duration_mins
+
+            ) for deck in decks
+        ]
+    
+    except SQLAlchemyError as exc:
+        logger.exception("Failed to retrieve decks for user %s", current_user.clerk_user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve decks.") from exc

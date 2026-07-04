@@ -59,6 +59,5 @@ class CardResponse(BaseModel):
 class DeckGenerateResponse(BaseModel):
     id: int
     title: str
-    description: str
     color: str
     duration_mins: int = Field(..., serialization_alias="durationMinutes")
