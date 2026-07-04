@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.controllers.deck_controller import create_deck, get_all_decks, get_deck_by_id, get_deck_cards
 from app.db.database import get_db
-from app.schemas.deck_schema import CardResponse, DeckGenerateRequest, DeckGenerateResponse, DeckInfoResponse
+from app.schemas.deck_schema import AllDeckInfoResponse, CardResponse, DeckGenerateRequest, DeckGenerateResponse, DeckInfoResponse
 from app.services.deck_generation_service import DeckGenerationService
 from app.auth.dependencies import get_current_user
 from app.models.user_model import User
@@ -21,7 +21,7 @@ def generate_deck(
     """Generate a new deck of cards using AI."""
     return create_deck(body, db, generation_service, current_user)
 
-@router.get("/", response_model=list[DeckGenerateResponse], status_code=status.HTTP_200_OK)
+@router.get("/", response_model=list[AllDeckInfoResponse], status_code=status.HTTP_200_OK)
 def get_all_user_decks(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

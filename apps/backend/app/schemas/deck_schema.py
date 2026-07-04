@@ -73,3 +73,14 @@ class DeckInfoResponse(BaseModel):
     card_count: int
     is_favorite: bool
     created_at: datetime
+
+
+class AllDeckInfoResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    color: str
+    updatedAt: datetime
+    slideCount: int
+    durationMins: int
+    isFavourite: bool

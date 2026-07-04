@@ -13,6 +13,7 @@ from app.models.card_model import Card
 from app.models.deck_model import Deck
 from app.models.user_model import User
 from app.schemas.deck_schema import (
+    AllDeckInfoResponse,
     DeckGenerateRequest,
     DeckGenerateResponse,
     DeckInfoResponse,
@@ -81,19 +82,22 @@ def create_deck(
         duration_mins=deck.duration_mins,
     )
 
-def get_all_decks(db: Session, current_user: User) -> list[DeckGenerateResponse]:
+def get_all_decks(db: Session, current_user: User) -> list[AllDeckInfoResponse]:
     """
     Retrieves all decks for the current user.
     """
     try:
         decks = db.query(Deck).filter(Deck.user_id == current_user.id).all()
         return [
-            DeckGenerateResponse(
-                id = deck.id,
-                title= deck.title,
-                color= deck.color,
-                duration_mins= deck.duration_mins
-
+            AllDeckInfoResponse(
+                id=deck.id,
+                title=deck.title,
+                description=deck.description,
+                color=deck.color,
+                updatedAt=deck.updated_at,
+                slideCount=deck.card_count,
+                durationMins=deck.duration_mins,
+                isFavourite=deck.is_favorite
             ) for deck in decks
         ]
     
