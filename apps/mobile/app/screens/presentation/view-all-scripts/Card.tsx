@@ -31,14 +31,11 @@ export const Card = React.memo(
     useEffect(() => {
       const delay = (index % 8) * 55;
 
-      // Fade + slide in quickly with a simple timing so they don't linger
       opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
       translateY.value = withDelay(
         delay,
         withSpring(0, { damping: 30, stiffness: 160 }),
       );
-
-      // Scale gets the full jelly treatment
       scale.value = withDelay(delay, withSpring(1, JELLY_SPRING));
     }, [index, opacity, scale, translateY]);
 
@@ -48,51 +45,49 @@ export const Card = React.memo(
       transform: [{ translateY: translateY.value }, { scale: scale.value }],
     }));
 
-  return (
-    <Link
-      href={{
-        pathname: "/(authenticated)/(script)/[id]",
-        params: {
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          color: item.color,
-          updatedAt: item.updatedAt.toISOString(),
-          slideCount: String(item.slideCount),
-          durationMins: String(item.durationMins),
-          isFavourite: JSON.stringify(item.isFavourite),
-        },
-      }}
-      asChild
-    >
-      <Link.AppleZoom>
-        <Pressable>
-          <Animated.View
-            style={[
-              styles.card,
-              { backgroundColor: item.color },
-              animatedStyle,
-              styles.cardPressable,
-            ]}
-          >
-            <Text
+    const titleColor = colord(item.color).darken(0.5).toHex();
+    const accentColor = colord(item.color)
+      .darken(0.35)
+      .desaturate(0.24)
+      .toHex();
+    const pillColor = colord(item.color).lighten(0.08).desaturate(0.08).toHex();
+
+    return (
+      <Link
+        href={{
+          pathname: "/(authenticated)/(script)/[id]",
+          params: {
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            color: item.color,
+            updatedAt: item.updatedAt.toISOString(),
+            slideCount: String(item.slideCount),
+            durationMins: String(item.durationMins),
+            isFavourite: JSON.stringify(item.isFavourite),
+          },
+        }}
+        asChild
+      >
+        <Link.AppleZoom>
+          <Pressable>
+            <Animated.View
               style={[
-                styles.cardTitle,
-                {
-                  color: colord(item.color).darken(0.5).toHex(),
-                  marginBottom: getCardTitleMargin(item.slideCount),
-                },
+                styles.card,
+                { backgroundColor: item.color },
+                styles.cardPressable,
+                animatedStyle,
               ]}
             >
               <Text
+                numberOfLines={2}
                 style={[
                   styles.cardTitle,
                   {
-                    color: colord(item.color).darken(0.5).toHex(),
+                    color: titleColor,
                     marginBottom: getCardTitleMargin(item.slideCount),
                   },
                 ]}
-                numberOfLines={2}
               >
                 {item.title}
               </Text>
@@ -102,29 +97,20 @@ export const Card = React.memo(
                   style={[
                     styles.slideCountPill,
                     {
-                      backgroundColor: colord(item.color)
-                        .lighten(0.08)
-                        .desaturate(0.08)
-                        .toHex(),
+                      backgroundColor: pillColor,
                     },
                   ]}
                 >
                   <MaterialDesignIcons
                     name="cards-playing"
                     size={24}
-                    color={colord(item.color)
-                      .darken(0.35)
-                      .desaturate(0.24)
-                      .toHex()}
+                    color={accentColor}
                   />
                   <Text
                     style={[
                       styles.slideCountText,
                       {
-                        color: colord(item.color)
-                          .darken(0.35)
-                          .desaturate(0.24)
-                          .toHex(),
+                        color: accentColor,
                       },
                     ]}
                   >
@@ -136,44 +122,20 @@ export const Card = React.memo(
                   style={[
                     styles.cardTime,
                     {
-                      color: colord(item.color)
-                        .darken(0.35)
-                        .desaturate(0.24)
-                        .toHex(),
+                      color: accentColor,
                     },
                   ]}
                 >
                   {item.durationMins}m
                 </Text>
               </View>
-            </Pressable>
-          </Link.AppleZoom>
-        </Link>
-      </Animated.View>
+            </Animated.View>
+          </Pressable>
+        </Link.AppleZoom>
+      </Link>
     );
   },
 );
-
-              <Text
-                style={[
-                  styles.cardTime,
-                  {
-                    color: colord(item.color)
-                      .darken(0.35)
-                      .desaturate(0.24)
-                      .toHex(),
-                  },
-                ]}
-              >
-                {item.durationMins}m
-              </Text>
-            </View>
-          </Animated.View>
-        </Pressable>
-      </Link.AppleZoom>
-    </Link>
-  );
-};
 
 Card.displayName = "Card";
 
@@ -183,9 +145,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginHorizontal: COLUMN_GAP / 2,
     marginBottom: COLUMN_GAP,
-    // paddingHorizontal: 8,
-    // // paddingTop: 12,
-    // paddingBottom: 4,
   },
   cardPressable: {
     paddingHorizontal: 22,
