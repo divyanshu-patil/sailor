@@ -69,6 +69,18 @@ const Layout = () => {
           // presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="preview"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: true,
+          headerTitle: "",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+          // animation: "fade",
+          // presentation: "modal",
+        }}
+      />
     </Stack>
   );
 };

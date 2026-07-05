@@ -7,10 +7,10 @@ interface StatusTextProps {
   labels: string[];
   containerStyles?: ViewStyle | ViewStyle[];
   accentColors: string[];
+  interval?: number;
 }
 
 const LINE_HEIGHT = 50;
-const INTERVAL = 2000;
 
 // Fisher-Yates shuffle, returns a new array
 const shuffle = (arr: string[]) => {
@@ -26,6 +26,7 @@ const StatusText = ({
   labels,
   containerStyles,
   accentColors,
+  interval = 2000,
 }: StatusTextProps) => {
   // working copy that gets reshuffled every full cycle
   const [orderedLabels, setOrderedLabels] = useState(labels);
@@ -58,10 +59,10 @@ const StatusText = ({
 
       setStatusText(orderedLabels[nextIndex]);
       setCurrentIndex((prev) => prev + 1);
-    }, INTERVAL);
+    }, interval);
 
     return () => clearInterval(intervalId);
-  }, [currentIndex, orderedLabels]);
+  }, [currentIndex, interval, orderedLabels]);
 
   return (
     // <Host matchContents style={[styles.container, containerStyles]}>

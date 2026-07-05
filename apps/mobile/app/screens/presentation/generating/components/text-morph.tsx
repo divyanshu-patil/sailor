@@ -314,12 +314,12 @@ export function TextMorph({
   maxWidth = Dimensions.get("window").width - 40,
   maxLines = 3,
 }: TextMorphProps) {
+  const [containerWidth, setContainerWidth] = React.useState(maxWidth ?? 0);
+
+  const resolvedMaxWidth = maxWidth ?? containerWidth;
+
   const font = useMemo(
-    () =>
-      matchFont({
-        fontSize,
-        fontFamily,
-      }),
+    () => matchFont({ fontSize, fontFamily }),
     [fontSize, fontFamily],
   );
 
@@ -327,10 +327,9 @@ export function TextMorph({
   const baselineOffset = resolvedLineHeight * 0.7;
 
   const targetCharacters = useMemo<CharEntry[]>(() => {
-    if (!font) return [];
-    return layoutCharacters(text, font, maxWidth);
-  }, [text, font, maxWidth]);
-
+    if (!font || !resolvedMaxWidth) return [];
+    return layoutCharacters(text, font, resolvedMaxWidth);
+  }, [text, font, resolvedMaxWidth]);
   // displayedCharacters = target characters + any still-exiting ones held over,
   // each carrying its own `exiting` flag.
   //
@@ -371,18 +370,28 @@ export function TextMorph({
   const canvasHeight = Math.min(rowsUsed, maxLines) * resolvedLineHeight;
 
   return (
-    <Canvas style={{ width: maxWidth, height: canvasHeight }}>
-      {displayedCharacters.map((c) => (
-        <MorphChar
-          key={c.id}
-          entry={c}
-          font={font}
-          color={color}
-          lineHeight={resolvedLineHeight}
-          baselineOffset={baselineOffset}
-          onExitComplete={handleExitComplete}
-        />
-      ))}
-    </Canvas>
+    <View
+      style={{ width: "100%", alignSelf: "stretch" }}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w && w !== containerWidth) setContainerWidth(w);
+      }}
+    >
+      {font && resolvedMaxWidth ? (
+        <Canvas style={{ width: resolvedMaxWidth, height: canvasHeight }}>
+          {displayedCharacters.map((c) => (
+            <MorphChar
+              key={c.id}
+              entry={c}
+              font={font}
+              color={color}
+              lineHeight={resolvedLineHeight}
+              baselineOffset={baselineOffset}
+              onExitComplete={handleExitComplete}
+            />
+          ))}
+        </Canvas>
+      ) : null}
+    </View>
   );
 }

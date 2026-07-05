@@ -2,30 +2,37 @@ import { StyleSheet, View } from "react-native";
 import CtaButton from "./components/cta-button";
 import StatusText from "./components/status-text";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
-import BlobBackground from "./components/background";
+import { GenerationState } from "../hooks/use-script-generation";
+import { generatingMessages } from "./constants";
 
-const GeneratingScreen = () => {
+interface GeneratingScreenProps {
+  status: GenerationState;
+  error?: string | null;
+  onStop: () => void;
+}
+
+const getGeneratingMessages = (status: GenerationState): string[] => {
+  if (status === "failed") {
+    return ["Failed to Generate Script, try again later"];
+  } else if (status === "generating") {
+    return generatingMessages;
+  } else if (status === "cancelled") {
+    return ["cancelled"];
+  } else return generatingMessages;
+};
+
+const GeneratingScreen = ({ onStop, status }: GeneratingScreenProps) => {
   const headerHeight = useHeaderHeight();
   return (
     <View style={[{ paddingTop: headerHeight + 20 }, styles.container]}>
-      <BlobBackground />
       <StatusText
-        labels={[
-          "Hii lol",
-          "Witch crafting words just\nfor you",
-          "Sprinkling charisma on your intro",
-          "Summoning the perfect hook",
-          "Brewing your opening line",
-          "Conjuring talking points from thin air",
-          "Casting a spell on your bullet points",
-          "Cooking the script",
-          "Tuning the rhythm of your pitch",
-          "Stitching your outline into a script",
-        ]}
+        labels={getGeneratingMessages(status)}
         containerStyles={[styles.textStyles]}
         accentColors={["#B75C5C"]}
       />
-      <CtaButton containerStyles={styles.ctaStyle}>Stop</CtaButton>
+      <CtaButton containerStyles={styles.ctaStyle} onPress={onStop}>
+        {status === "cancelled" ? "Stopped" : "Stop"}
+      </CtaButton>
     </View>
   );
 };
@@ -40,7 +47,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     // paddingVertical: 80,
-    backgroundColor: "#FFF4E8",
   },
   text: {
     fontSize: 36,
