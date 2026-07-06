@@ -1,10 +1,6 @@
 /* eslint-disable react-hooks/immutability */
 import { StyleSheet, ViewStyle } from "react-native";
-import { useState } from "react";
-import {
-  AnimatedHost,
-  AnimatedPressable,
-} from "@/components/ui/animated/AnimatedComponents";
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import { fonts } from "@/constants/fonts";
 import Animated, {
   useAnimatedStyle,
@@ -16,32 +12,19 @@ import Animated, {
   LinearTransition,
 } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
-import { Text } from "@expo/ui/swift-ui";
-import {
-  Animation,
-  animation,
-  contentTransition,
-  font,
-  foregroundStyle,
-} from "@expo/ui/swift-ui/modifiers";
+import FadeInDownText from "@/components/ui/text/fade-in-down";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 interface CtaButtonProps {
   onPress?: () => void;
-  label?: string;
-  children?: string;
+  children: string;
   containerStyles?: ViewStyle;
 }
 
 const EXIT_DURATION = 350;
 
-const CtaButton = ({
-  label,
-  children,
-  onPress,
-  containerStyles,
-}: CtaButtonProps) => {
+const CtaButton = ({ children, onPress, containerStyles }: CtaButtonProps) => {
   const pressed = useSharedValue(0);
   const blurIntensity = useSharedValue(0);
 
@@ -88,42 +71,23 @@ const CtaButton = ({
     };
   };
 
-  const [labelTick, setLabelTick] = useState(0);
-
-  const handleOnPress = () => {
-    if ((label ?? children)?.toLowerCase() !== "stopped")
-      setLabelTick((prev) => prev + 1);
-    onPress?.();
-  };
-
   return (
     <Animated.View exiting={exiting} style={[styles.wrapper, containerStyles]}>
       <AnimatedPressable
-        onPress={handleOnPress}
+        onPress={onPress}
         onPressIn={() => (pressed.value = 1)}
         onPressOut={() => (pressed.value = 0)}
         style={[styles.pressable, pressStyle]}
         layout={LinearTransition.springify()}
       >
-        <AnimatedHost
-          layout={LinearTransition.springify().damping(100)}
-          matchContents
-          modifiers={[animation(Animation.default, labelTick)]}
+        <FadeInDownText
+          textStyle={styles.text}
+          springConfig={{
+            damping: 50,
+          }}
         >
-          <Text
-            modifiers={[
-              foregroundStyle("#fff"),
-              font({
-                family: fonts.krona,
-                size: 28,
-              }),
-              contentTransition("numericText", { countsDown: true }),
-              animation(Animation.spring(), labelTick),
-            ]}
-          >
-            {label ?? children}
-          </Text>
-        </AnimatedHost>
+          {children}
+        </FadeInDownText>
         <AnimatedBlurView
           animatedProps={blurAnimatedProps}
           tint="dark"
@@ -142,6 +106,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   pressable: {
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 48,
     backgroundColor: "#313131",
