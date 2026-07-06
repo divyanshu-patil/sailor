@@ -66,7 +66,7 @@ interface AppStore {
   _hasHydrated: boolean;
   appUser: AppUserProfile | null;
 
-  completeOnboarding: () => void;
+  completeOnboarding: (val: boolean) => void;
   resetOnboarding: () => void;
   setHasHydrated: (state: boolean) => void;
   setAppUser: (user: AppUserProfile | null) => void;
@@ -82,8 +82,8 @@ export const useAppStore = create<AppStore>()(
       appUser: null,
  
       // Actions
-      completeOnboarding: () => {
-        set({ hasSeenOnboarding: true });
+      completeOnboarding: (val) => {
+        set({ hasSeenOnboarding: val });
       },
  
       resetOnboarding: () => {

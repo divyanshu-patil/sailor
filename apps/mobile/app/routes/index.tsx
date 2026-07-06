@@ -98,7 +98,7 @@ export default function Index() {
     } else if (isSignedIn) {
       router.replace("/(authenticated)");
     } else {
-      router.replace("/(unauthenticated)/login");
+      router.replace("/(unauthenticated)");
     }
   }, [isHydrated, isSignedIn, hasSeenOnboarding, fontsLoaded, router]);
 
