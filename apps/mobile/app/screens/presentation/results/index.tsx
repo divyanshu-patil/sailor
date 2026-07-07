@@ -1,22 +1,22 @@
 import { fonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
+import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-interface ResultsScreenProps {
-  title: string;
-  script: string;
-}
+type ResultsScreenParams = {
+  jobId: string;
+};
 
-const ResultsScreen = ({ title, script }: ResultsScreenProps) => {
+const ResultsScreen = () => {
   const { colors } = useColors();
+  const { jobId } = useLocalSearchParams<ResultsScreenParams>();
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.container}
     >
-      <Text style={[styles.title, { color: colors.rust }]}>{title}</Text>
-      <Text style={[styles.script]}>{script}</Text>
+      <Text style={[styles.title, { color: colors.rust }]}>{jobId}</Text>
     </ScrollView>
   );
 };

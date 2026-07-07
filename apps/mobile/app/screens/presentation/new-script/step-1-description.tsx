@@ -28,7 +28,6 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { usePresentationForm } from "./form-context";
 import { AttachmentKind, Attachment } from "@/types/presentation";
-import ReviseBar from "../preview/components/revise-bar";
 
 function iconForKind(kind: AttachmentKind) {
   switch (kind) {

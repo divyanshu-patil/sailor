@@ -99,7 +99,7 @@ const PreviewScreen = () => {
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={"square.and.pencil"}
-          hidden={!script}
+          hidden={state !== "completed" && !result?.script}
           tintColor={colors.rust}
           onPress={() => {
             router.push({
@@ -108,11 +108,25 @@ const PreviewScreen = () => {
             });
           }}
         />
+        <Stack.Toolbar.Button
+          // icon={"square.and.pencil"}
+          hidden={state !== "completed" && !result?.script}
+          tintColor={colors.rust}
+          variant="prominent"
+          onPress={() => {
+            router.push({
+              pathname: "/(authenticated)/(script)/results",
+              params: { jobId },
+            });
+          }}
+        >
+          Create
+        </Stack.Toolbar.Button>
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
         <BlobBackground />
         <ScrollView
-          style={[{ paddingTop: headerHeight }, styles.container]}
+          style={[{ paddingTop: headerHeight + 20 }, styles.container]}
           scrollEnabled={state === "completed" && !!script}
           keyboardDismissMode="on-drag"
         >

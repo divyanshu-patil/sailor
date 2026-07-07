@@ -58,7 +58,7 @@ const Layout = () => {
         }}
       />
       <Stack.Screen
-        name="generating"
+        name="results"
         options={{
           // headerLargeTitleEnabled: true,
           headerShown: true,
