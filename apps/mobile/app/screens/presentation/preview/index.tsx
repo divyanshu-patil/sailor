@@ -76,6 +76,7 @@ const PreviewScreen = () => {
 
   useEffect(() => {
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       if (stateRef.current === "generating") {
         stopGeneration();
       }

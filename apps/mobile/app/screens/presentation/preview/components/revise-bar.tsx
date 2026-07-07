@@ -22,6 +22,7 @@ import {
   cornerRadius,
   controlSize,
   clipShape,
+  shadow,
 } from "@expo/ui/swift-ui/modifiers";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 
@@ -71,6 +72,13 @@ const ReviseBar = ({
           flex: 1,
         }}
         ignoreSafeArea="all"
+        modifiers={[
+          shadow({
+            radius: 10,
+            color: "#fff",
+            y: 5,
+          }),
+        ]}
       >
         <Namespace id="1234">
           <GlassEffectContainer>
