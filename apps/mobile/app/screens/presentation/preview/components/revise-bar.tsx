@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/immutability */
 // components/revise-bar.tsx
-import React, { useCallback, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Host,
   HStack,
@@ -29,26 +28,19 @@ import { KeyboardStickyView } from "react-native-keyboard-controller";
 type ReviseBarProps = {
   onSubmit: (instruction: string) => Promise<void>;
   disabled?: boolean;
+  accentColor?: string;
 };
 
 const ReviseBar = ({
   onSubmit,
   disabled: isDisabled = false,
+  accentColor = "#B75C5C",
 }: ReviseBarProps) => {
   const text = useNativeState("");
   const fieldRef = useRef<TextFieldRef>(null);
   const [sending, setSending] = useState(false);
-  const [textValue, setTextValue] = useState("");
 
-  const isSendDisabled = sending || isDisabled || textValue.trim().length === 0;
-
-  const handleTextChange = useCallback(
-    (value: string) => {
-      text.value = value; // keep native state as source of truth for the field
-      setTextValue(value); // mirror into React state so derived UI updates
-    },
-    [text],
-  );
+  const isSendDisabled = sending || isDisabled;
 
   const handleSend = async () => {
     const value = text.value.trim();
@@ -86,7 +78,6 @@ const ReviseBar = ({
               <TextField
                 ref={fieldRef}
                 text={text}
-                onTextChange={handleTextChange}
                 placeholder="Edit With AI"
                 axis="vertical"
                 modifiers={[
@@ -108,7 +99,7 @@ const ReviseBar = ({
                   buttonStyle("glassProminent"),
                   controlSize("large"),
                   buttonBorderShape("circle"),
-                  tint("#B75C5C"),
+                  tint(accentColor),
                   clipShape("circle"),
                   disabled(isSendDisabled),
                 ]}

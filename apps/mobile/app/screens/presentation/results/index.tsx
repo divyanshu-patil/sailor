@@ -1,4 +1,5 @@
 import { fonts } from "@/constants/fonts";
+import { useColors } from "@/constants/theme";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
 interface ResultsScreenProps {
@@ -7,12 +8,14 @@ interface ResultsScreenProps {
 }
 
 const ResultsScreen = ({ title, script }: ResultsScreenProps) => {
+  const { colors } = useColors();
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.container}
     >
-      <Text style={[styles.title]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.rust }]}>{title}</Text>
       <Text style={[styles.script]}>{script}</Text>
     </ScrollView>
   );
@@ -28,7 +31,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.krona,
     fontSize: 28,
     textAlign: "center",
-    color: "#B75C5C",
   },
   script: {
     marginTop: 20,

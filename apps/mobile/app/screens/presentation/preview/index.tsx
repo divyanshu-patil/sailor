@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { useLocalSearchParams, Stack, router } from "expo-router";
+import {
+  useLocalSearchParams,
+  Stack,
+  router,
+  useFocusEffect,
+} from "expo-router";
 import { useScriptGeneration } from "../hooks/use-script-generation";
 import { PresentationFormState } from "../new-script/types/types";
 import GeneratingScreen from "../generating";
@@ -13,6 +18,8 @@ import Animated, { LinearTransition } from "react-native-reanimated";
 import ReviseBar from "./components/revise-bar";
 import { useScriptStore } from "@/store/script-store";
 import { scriptService } from "@/services/script.debug.service";
+import { useColors } from "@/constants/theme";
+import { KeyboardController } from "react-native-keyboard-controller";
 
 type GeneratePreviewParams = {
   form: string;
@@ -80,6 +87,11 @@ const PreviewScreen = () => {
     const revised = await scriptService.revise(jobId, instruction);
     setResult(revised);
   };
+  const { colors } = useColors();
+
+  useFocusEffect(() => {
+    KeyboardController.dismiss();
+  });
 
   return (
     <>
@@ -87,13 +99,13 @@ const PreviewScreen = () => {
         <Stack.Toolbar.Button
           icon={"square.and.pencil"}
           hidden={!script}
-          tintColor={"#B75C5C"}
-          onPress={() =>
+          tintColor={colors.rust}
+          onPress={() => {
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
               params: { jobId },
-            })
-          }
+            });
+          }}
         />
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
@@ -105,7 +117,7 @@ const PreviewScreen = () => {
         >
           <StatusText
             labels={getGeneratingMessages(state, title)}
-            accentColors={["#B75C5C"]}
+            accentColor={colors.rust}
           />
 
           {state === "completed" && !!script && (
@@ -119,7 +131,7 @@ const PreviewScreen = () => {
         </ScrollView>
 
         {state === "completed" && !!script && (
-          <ReviseBar onSubmit={handleRevise} />
+          <ReviseBar onSubmit={handleRevise} accentColor={colors.rust} />
         )}
 
         {state !== "completed" && (

@@ -6,7 +6,7 @@ import { TextMorph } from "./text-morph";
 interface StatusTextProps {
   labels: string[];
   containerStyles?: ViewStyle | ViewStyle[];
-  accentColors: string[];
+  accentColor: string;
   interval?: number;
   fontSize?: number;
 }
@@ -26,7 +26,7 @@ const shuffle = (arr: string[]) => {
 const StatusText = ({
   labels,
   containerStyles,
-  accentColors,
+  accentColor,
   interval = 2000,
   fontSize = 40,
 }: StatusTextProps) => {
@@ -85,11 +85,7 @@ const StatusText = ({
     //   </Text>
     // </Host>
     <View style={[styles.container, containerStyles]}>
-      <TextMorph
-        text={statusText}
-        color={accentColors[0]}
-        fontSize={fontSize}
-      />
+      <TextMorph text={statusText} color={accentColor} fontSize={fontSize} />
     </View>
   );
 };

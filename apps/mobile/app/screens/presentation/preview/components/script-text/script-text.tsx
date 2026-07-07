@@ -7,6 +7,7 @@ import { Paragraph } from "./paragraph";
 import { Quote } from "./quote";
 import { Block, parseBlocks } from "@/utils/parseInlineMarkdown";
 import { FontSet } from "./text-layout";
+import { useColors } from "@/constants/theme";
 
 export interface ScriptTextProps {
   script: string;
@@ -67,6 +68,8 @@ export default function ScriptText({
 
   const blocks = useMemo(() => parseBlocks(script), [script]);
 
+  const { colors } = useColors();
+
   return (
     <View style={[styles.container, style]}>
       <FlashList
@@ -102,7 +105,7 @@ export default function ScriptText({
               color={color}
               paragraphSpacing={paragraphSpacing}
               justify={justify}
-              boldColor="#B75C5C"
+              boldColor={colors.rust}
             />
           );
         }}
