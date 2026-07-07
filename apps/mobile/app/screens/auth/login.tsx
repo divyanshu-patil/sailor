@@ -1,5 +1,3 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
 import { useSignIn } from "@clerk/expo";
 import { type Href, Link, useRouter } from "expo-router";
