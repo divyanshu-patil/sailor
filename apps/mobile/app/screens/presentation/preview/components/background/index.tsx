@@ -21,7 +21,10 @@ interface BlobBackgroundProps {
 
 const BlobBackground = ({ speed = 2, blur = 150 }: BlobBackgroundProps) => {
   return (
-    <Animated.View style={StyleSheet.absoluteFill} layout={LinearTransition}>
+    <Animated.View
+      style={[StyleSheet.absoluteFill, { backgroundColor: "#FFF4E8" }]}
+      layout={LinearTransition}
+    >
       <Canvas style={StyleSheet.absoluteFill}>
         <BlobLayer
           blobs={BLOBS}

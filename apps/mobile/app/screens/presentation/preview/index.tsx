@@ -1,17 +1,25 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useScriptGeneration } from "../hooks/use-script-generation";
 import { PresentationFormState } from "../new-script/types/types";
 import GeneratingScreen from "../generating";
-import ScriptResultScreen from "../results";
 import BlobBackground from "./components/background";
+import StatusText from "../generating/components/status-text";
+import { getGeneratingMessages } from "../generating/utils/get-generation-messages";
+import { useHeaderHeight } from "expo-router/build/react-navigation";
+import ScriptText from "./components/script-text/script-text";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 type GeneratePreviewParams = {
   form: string;
 };
 
+// const ANIMATION_DURATION = 300; // depends on the TextMorph component's morph animation
+
 const PreviewScreen = () => {
+  const headerHeight = useHeaderHeight();
   const { form } = useLocalSearchParams<GeneratePreviewParams>();
 
   const formState: PresentationFormState = JSON.parse(form);
@@ -20,10 +28,6 @@ const PreviewScreen = () => {
 
   const startedRef = useRef(false);
   const stateRef = useRef(state);
-
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -36,27 +40,38 @@ const PreviewScreen = () => {
       audienceIndex: formState.audienceIndex,
       cardCount: formState.cardCount,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fire cancel on unmount if a job was in flight — no blocking, no bounce.
-  // Covers gesture back, header back, and hardware back all at once,
-  // since all of them ultimately unmount this screen.
   useEffect(() => {
     return () => {
       if (stateRef.current === "generating") {
         stopGeneration(); // fire-and-forget, not awaited
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <BlobBackground />
-      {state === "completed" && result ? (
-        <ScriptResultScreen title={result.title} script={result.script} />
-      ) : (
+      <ScrollView
+        style={[{ paddingTop: headerHeight }, styles.container]}
+        scrollEnabled={state === "completed" && !!result}
+      >
+        <StatusText
+          labels={getGeneratingMessages(state, result?.title)}
+          accentColors={["#B75C5C"]}
+        />
+
+        {state === "completed" && !!result && (
+          <Animated.View
+            layout={LinearTransition.springify()}
+            style={styles.scriptContainer}
+          >
+            <ScriptText script={result?.script} fontSize={20} />
+          </Animated.View>
+        )}
+      </ScrollView>
+      {state !== "completed" && (
         <GeneratingScreen
           status={state}
           error={error}
@@ -70,5 +85,6 @@ const PreviewScreen = () => {
 export default PreviewScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF4E8" },
+  scriptContainer: { marginTop: 30 },
+  container: { flex: 1, paddingHorizontal: 20 },
 });

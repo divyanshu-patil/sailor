@@ -1,4 +1,5 @@
 import { Attachment } from "@/types/presentation";
+import { script } from "./script";
 
 export type ScriptJobStatus =
   | "pending"
@@ -130,11 +131,7 @@ export const scriptService = {
             id: `result-${jobId}`,
             job_id: jobId,
             title: "The Future of Renewable Energy",
-            script:
-              "Imagine a world powered entirely by the sun and wind.\n" +
-              "That future isn't decades away — it's already being built today.\n" +
-              "Solar and wind costs have dropped over 80% in the last ten years.\n" +
-              "The only thing standing between us and that future is how fast we choose to move.",
+            script: script,
             created_at: new Date().toISOString(),
           });
         }, 400); // simulate GET latency

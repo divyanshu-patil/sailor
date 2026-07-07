@@ -8,6 +8,7 @@ interface StatusTextProps {
   containerStyles?: ViewStyle | ViewStyle[];
   accentColors: string[];
   interval?: number;
+  fontSize?: number;
 }
 
 const LINE_HEIGHT = 50;
@@ -27,6 +28,7 @@ const StatusText = ({
   containerStyles,
   accentColors,
   interval = 2000,
+  fontSize = 40,
 }: StatusTextProps) => {
   // working copy that gets reshuffled every full cycle
   const [orderedLabels, setOrderedLabels] = useState(labels);
@@ -83,7 +85,11 @@ const StatusText = ({
     //   </Text>
     // </Host>
     <View style={[styles.container, containerStyles]}>
-      <TextMorph text={statusText} color={accentColors[0]} fontSize={40} />
+      <TextMorph
+        text={statusText}
+        color={accentColors[0]}
+        fontSize={fontSize}
+      />
     </View>
   );
 };

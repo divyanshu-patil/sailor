@@ -1,20 +1,15 @@
-/* eslint-disable react-hooks/immutability */
 import { StyleSheet, ViewStyle } from "react-native";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import { fonts } from "@/constants/fonts";
 import Animated, {
   useAnimatedStyle,
-  useAnimatedProps,
   useSharedValue,
   withSpring,
   withTiming,
   Easing,
   LinearTransition,
 } from "react-native-reanimated";
-import { BlurView } from "expo-blur";
 import FadeInDownText from "@/components/ui/text/fade-in-down";
-
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 interface CtaButtonProps {
   onPress?: () => void;
@@ -22,7 +17,7 @@ interface CtaButtonProps {
   containerStyles?: ViewStyle;
 }
 
-const EXIT_DURATION = 350;
+const EXIT_DURATION = 500;
 
 const CtaButton = ({ children, onPress, containerStyles }: CtaButtonProps) => {
   const pressed = useSharedValue(0);
@@ -35,13 +30,6 @@ const CtaButton = ({ children, onPress, containerStyles }: CtaButtonProps) => {
     borderRadius: withSpring(pressed.value ? 20 : 36),
   }));
 
-  const blurAnimatedProps = useAnimatedProps(() => ({
-    intensity: blurIntensity.value,
-  }));
-
-  // Custom "exiting" animation. Reanimated keeps the native view mounted
-  // (as a snapshot) while this runs, so the blurIntensity shared value we
-  // mutate here still drives the nested AnimatedBlurView's animated props.
   const exiting = () => {
     "worklet";
     blurIntensity.value = withTiming(40, {
@@ -88,12 +76,6 @@ const CtaButton = ({ children, onPress, containerStyles }: CtaButtonProps) => {
         >
           {children}
         </FadeInDownText>
-        <AnimatedBlurView
-          animatedProps={blurAnimatedProps}
-          tint="dark"
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
       </AnimatedPressable>
     </Animated.View>
   );

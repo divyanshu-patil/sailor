@@ -1,9 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import CtaButton from "./components/cta-button";
-import StatusText from "./components/status-text";
-import { useHeaderHeight } from "expo-router/build/react-navigation";
 import { GenerationState } from "../hooks/use-script-generation";
-import { generatingMessages } from "./constants";
 
 interface GeneratingScreenProps {
   status: GenerationState;
@@ -11,28 +8,18 @@ interface GeneratingScreenProps {
   onStop: () => void;
 }
 
-const getGeneratingMessages = (status: GenerationState): string[] => {
-  if (status === "failed") {
-    return ["Failed to Generate Script, try again later"];
-  } else if (status === "generating") {
-    return generatingMessages;
-  } else if (status === "cancelled") {
-    return ["cancelled"];
-  } else return generatingMessages;
-};
-
+/**
+ * @description
+ * mascot and stop button will be placed here
+ */
 const GeneratingScreen = ({ onStop, status }: GeneratingScreenProps) => {
-  const headerHeight = useHeaderHeight();
   return (
-    <View style={[{ paddingTop: headerHeight + 20 }, styles.container]}>
-      <StatusText
-        labels={getGeneratingMessages(status)}
-        containerStyles={[styles.textStyles]}
-        accentColors={["#B75C5C"]}
-      />
-      <CtaButton containerStyles={styles.ctaStyle} onPress={onStop}>
-        {status === "cancelled" ? "Stopped" : "Stop"}
-      </CtaButton>
+    <View style={[styles.container]}>
+      {status !== "completed" && (
+        <CtaButton containerStyles={styles.ctaStyle} onPress={onStop}>
+          {status === "cancelled" ? "Stopped" : "Stop"}
+        </CtaButton>
+      )}
     </View>
   );
 };
@@ -45,7 +32,7 @@ const styles = StyleSheet.create({
     // justifyContent: "center",
     alignItems: "flex-start",
     flex: 1,
-    paddingHorizontal: 20,
+    // paddingHorizontal: 20,
     // paddingVertical: 80,
   },
   text: {
