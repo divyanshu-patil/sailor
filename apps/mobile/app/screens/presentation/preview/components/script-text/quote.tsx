@@ -15,6 +15,8 @@ interface QuoteProps {
   borderWidth?: number;
   borderColor?: string;
   justify?: boolean;
+  index: number;
+  delay?: number;
 }
 
 export const Quote = React.memo(
@@ -29,9 +31,13 @@ export const Quote = React.memo(
     borderWidth = 3,
     borderColor = "#B75C5C",
     justify = false,
+    delay,
+    index,
   }: QuoteProps) => {
     return (
       <WrappedText
+        index={index}
+        delay={delay}
         lines={lines}
         fonts={fonts}
         fontSize={fontSize}

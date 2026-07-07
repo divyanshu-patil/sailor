@@ -92,4 +92,31 @@ export const scriptService = {
       throw e;
     }
   },
+
+  revise: async (jobId: string, instruction: string): Promise<ScriptResult> => {
+    try {
+      const response = await apiClient.post<ScriptResult>(
+        `/api/v1/scripts/jobs/${jobId}/revise`,
+        { instruction },
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log("script revise error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  // 6. Manual edit — full replacement text from the edit screen
+  edit: async (jobId: string, script: string): Promise<ScriptResult> => {
+    try {
+      const response = await apiClient.post<ScriptResult>(
+        `/api/v1/scripts/jobs/${jobId}/edit`,
+        { script },
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log("script edit error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
 };

@@ -44,6 +44,11 @@ export interface ScriptResult {
 const DEV_JOB_START_TIMES = new Map<string, number>();
 const DEV_CANCELLED_JOBS = new Set<string>();
 const DEV_STATUS_CHANGE_MS = 4000;
+const DEV_SCRIPT_OVERRIDES = new Map<
+  string,
+  { title: string; script: string }
+>();
+
 // -------------------------------------------------------------------
 
 export const scriptService = {
@@ -154,6 +159,53 @@ export const scriptService = {
       });
     } catch (e: any) {
       console.log("script cancel error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  revise: async (jobId: string, instruction: string): Promise<ScriptResult> => {
+    try {
+      return await new Promise<ScriptResult>((resolve) => {
+        setTimeout(() => {
+          const prev = DEV_SCRIPT_OVERRIDES.get(jobId);
+          const base = prev?.script ?? script;
+          const title = prev?.title ?? "The Future of Renewable Energy";
+          const revised = `${base}\n\n[Revised: "${instruction}"]`;
+          DEV_SCRIPT_OVERRIDES.set(jobId, { title, script: revised });
+          resolve({
+            id: `result-${jobId}`,
+            job_id: jobId,
+            title,
+            script: revised,
+            created_at: new Date().toISOString(),
+          });
+        }, 900); // simulate AI latency, longer than a plain edit
+      });
+    } catch (e: any) {
+      console.log("script revise error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  edit: async (jobId: string, newScript: string): Promise<ScriptResult> => {
+    try {
+      return await new Promise<ScriptResult>((resolve) => {
+        setTimeout(() => {
+          const title =
+            DEV_SCRIPT_OVERRIDES.get(jobId)?.title ??
+            "The Future of Renewable Energy";
+          DEV_SCRIPT_OVERRIDES.set(jobId, { title, script: newScript });
+          resolve({
+            id: `result-${jobId}`,
+            job_id: jobId,
+            title,
+            script: newScript,
+            created_at: new Date().toISOString(),
+          });
+        }, 250);
+      });
+    } catch (e: any) {
+      console.log("script edit error", e.response?.data, e.response?.status);
       throw e;
     }
   },

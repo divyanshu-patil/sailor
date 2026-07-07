@@ -11,6 +11,8 @@ interface ParagraphProps {
   boldColor?: string;
   paragraphSpacing: number;
   justify?: boolean;
+  index: number;
+  delay?: number;
 }
 
 export const Paragraph = React.memo(
@@ -23,8 +25,12 @@ export const Paragraph = React.memo(
     boldColor,
     paragraphSpacing,
     justify = false,
+    index,
+    delay,
   }: ParagraphProps) => (
     <WrappedText
+      index={index}
+      delay={delay}
       lines={[segments]}
       fonts={fonts}
       fontSize={fontSize}

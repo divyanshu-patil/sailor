@@ -21,6 +21,7 @@ export interface ScriptTextProps {
   quoteColor?: string;
   quoteIndent?: number;
   quoteBorderColor?: string;
+  staggerDelay?: number;
 }
 
 export default function ScriptText({
@@ -36,6 +37,7 @@ export default function ScriptText({
   quoteColor = "#B75C5C",
   quoteIndent = 16,
   quoteBorderColor = "#B75C5C66",
+  staggerDelay = 50,
 }: ScriptTextProps) {
   const fonts: FontSet = useMemo(
     () => ({
@@ -71,10 +73,12 @@ export default function ScriptText({
         data={blocks}
         keyExtractor={(_, index) => index.toString()}
         removeClippedSubviews
-        renderItem={({ item }: { item: Block }) => {
+        renderItem={({ item, index }: { item: Block; index: number }) => {
           if (item.type === "quote") {
             return (
               <Quote
+                delay={staggerDelay}
+                index={index}
                 lines={item.lines}
                 fonts={fonts}
                 fontSize={fontSize}
@@ -89,6 +93,8 @@ export default function ScriptText({
 
           return (
             <Paragraph
+              delay={staggerDelay}
+              index={index}
               segments={item.segments}
               fonts={fonts}
               fontSize={fontSize}

@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useScriptGeneration } from "../hooks/use-script-generation";
@@ -11,20 +10,28 @@ import { getGeneratingMessages } from "../generating/utils/get-generation-messag
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import ScriptText from "./components/script-text/script-text";
 import Animated, { LinearTransition } from "react-native-reanimated";
+import ReviseBar from "./components/revise-bar";
+import { useScriptStore } from "@/store/script-store";
+import { scriptService } from "@/services/script.debug.service";
 
 type GeneratePreviewParams = {
   form: string;
 };
 
-// const ANIMATION_DURATION = 300; // depends on the TextMorph component's morph animation
-
 const PreviewScreen = () => {
   const headerHeight = useHeaderHeight();
   const { form } = useLocalSearchParams<GeneratePreviewParams>();
-
-  const formState: PresentationFormState = JSON.parse(form);
+  const formState: PresentationFormState = useMemo(
+    () => JSON.parse(form),
+    [form],
+  );
   const { state, result, error, startGeneration, stopGeneration } =
     useScriptGeneration();
+
+  const jobId = useScriptStore((s) => s.jobId);
+  const title = useScriptStore((s) => s.title);
+  const script = useScriptStore((s) => s.script);
+  const setResult = useScriptStore((s) => s.setResult);
 
   const startedRef = useRef(false);
   const stateRef = useRef(state);
@@ -40,29 +47,51 @@ const PreviewScreen = () => {
       audienceIndex: formState.audienceIndex,
       cardCount: formState.cardCount,
     });
-  }, []);
+  }, [
+    formState.attachments,
+    formState.audienceIndex,
+    formState.cardCount,
+    formState.description,
+    formState.durationMinutes,
+    startGeneration,
+  ]);
+
+  // sync completed generation into the store — single source of truth from here on
+  useEffect(() => {
+    if (state === "completed" && result) {
+      setResult({
+        job_id: result.job_id,
+        title: result.title,
+        script: result.script,
+      });
+    }
+  }, [state, result, setResult]);
 
   useEffect(() => {
     return () => {
       if (stateRef.current === "generating") {
-        stopGeneration(); // fire-and-forget, not awaited
+        stopGeneration();
       }
     };
-  }, []);
+  }, [stopGeneration]);
+
+  const handleRevise = async (instruction: string) => {
+    if (!jobId) return;
+    const revised = await scriptService.revise(jobId, instruction);
+    setResult(revised);
+  };
 
   return (
     <>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={"square.and.pencil"}
-          hidden={!result?.script}
+          hidden={!script}
           tintColor={"#B75C5C"}
           onPress={() =>
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
-              params: {
-                script: result?.script,
-              },
+              params: { jobId },
             })
           }
         />
@@ -71,22 +100,28 @@ const PreviewScreen = () => {
         <BlobBackground />
         <ScrollView
           style={[{ paddingTop: headerHeight }, styles.container]}
-          scrollEnabled={state === "completed" && !!result}
+          scrollEnabled={state === "completed" && !!script}
+          keyboardDismissMode="on-drag"
         >
           <StatusText
-            labels={getGeneratingMessages(state, result?.title)}
+            labels={getGeneratingMessages(state, title)}
             accentColors={["#B75C5C"]}
           />
 
-          {state === "completed" && !!result && (
+          {state === "completed" && !!script && (
             <Animated.View
               layout={LinearTransition.springify()}
               style={styles.scriptContainer}
             >
-              <ScriptText script={result?.script} fontSize={20} />
+              <ScriptText script={script} fontSize={20} />
             </Animated.View>
           )}
         </ScrollView>
+
+        {state === "completed" && !!script && (
+          <ReviseBar onSubmit={handleRevise} />
+        )}
+
         {state !== "completed" && (
           <GeneratingScreen
             status={state}

@@ -1,7 +1,8 @@
 import { Canvas, Text } from "@shopify/react-native-skia";
 import React, { useCallback, useMemo, useState } from "react";
-import { LayoutChangeEvent, StyleProp, View, ViewStyle } from "react-native";
+import { LayoutChangeEvent, StyleProp, ViewStyle } from "react-native";
 import { FontSet, layoutText, Segment } from "./text-layout";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 export interface WrappedTextProps {
   /** One or more source lines, each an array of styled segments. */
@@ -15,6 +16,8 @@ export interface WrappedTextProps {
   spacing?: number;
   contentWidthOffset?: number;
   style?: StyleProp<ViewStyle>;
+  index: number;
+  delay?: number;
 }
 
 export const WrappedText = React.memo(
@@ -29,6 +32,8 @@ export const WrappedText = React.memo(
     spacing = 0,
     contentWidthOffset = 0,
     style,
+    index,
+    delay = 50,
   }: WrappedTextProps) => {
     const [width, setWidth] = useState(0);
     const lineHeight = fontSize * lineHeightMultiplier;
@@ -53,7 +58,13 @@ export const WrappedText = React.memo(
     }, []);
 
     return (
-      <View onLayout={onLayout} style={[{ marginBottom: spacing }, style]}>
+      <Animated.View
+        entering={FadeInDown.springify()
+          .damping(100)
+          .delay(index * delay)}
+        onLayout={onLayout}
+        style={[{ marginBottom: spacing }, style]}
+      >
         {contentWidth > 0 && (
           <Canvas style={{ width: contentWidth, height }}>
             {words.map((word, index) => (
@@ -68,7 +79,7 @@ export const WrappedText = React.memo(
             ))}
           </Canvas>
         )}
-      </View>
+      </Animated.View>
     );
   },
 );
