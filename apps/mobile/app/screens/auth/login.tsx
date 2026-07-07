@@ -3,25 +3,71 @@ import { ThemedView } from "@/components/themed-view";
 import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
 import { useSignIn } from "@clerk/expo";
 import { type Href, Link, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+
+import {
+  Host,
+  HStack,
+  Section,
+  SecureField,
+  Text,
+  TextField,
+  useNativeState,
+  VStack,
+  Image as IconImage,
+  Button,
+  Divider,
+  Rectangle,
+} from "@expo/ui/swift-ui";
+import {
+  autocorrectionDisabled,
+  border,
+  buttonBorderShape,
+  buttonStyle,
+  controlSize,
+  cornerRadius,
+  disabled,
+  font,
+  foregroundStyle,
+  frame,
+  keyboardType,
+  multilineTextAlignment,
+  onSubmit,
+  padding,
+  submitLabel,
+  textContentType,
+  textInputAutocapitalization,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
 
 export default function Page() {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
 
-  const [emailAddress, setEmailAddress] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [code, setCode] = React.useState("");
+  // const [emailAddress, setEmailAddress] = React.useState("");
+  const emailAddress = useNativeState("");
+  const password = useNativeState("");
+  // const [password, setPassword] = React.useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isSubmitting = fetchStatus === "fetching";
+  const [canSubmit, setCanSubmit] = useState<boolean>(false);
 
   const handleSubmit = async () => {
+    setErrorMessage(null);
+
     const { error } = await signIn.password({
-      emailAddress,
-      password,
+      emailAddress: emailAddress.value,
+      password: password.value,
     });
     if (error) {
       console.error(JSON.stringify(error, null, 2));
+      setErrorMessage(
+        errors.fields.identifier?.message ??
+          errors.fields.password?.message ??
+          "Something went wrong. Please check your details and try again.",
+      );
       return;
     }
 
@@ -56,176 +102,222 @@ export default function Page() {
       if (emailCodeFactor) {
         await signIn.mfa.sendEmailCode();
       }
+      router.push("/(unauthenticated)/verify");
     } else {
       // Check why the sign-in is not complete
       console.error("Sign-in attempt not complete:", signIn);
     }
   };
-
-  const handleVerify = async () => {
-    await signIn.mfa.verifyEmailCode({ code });
-
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ session, decorateUrl }) => {
-          // Handle session tasks
-          // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
-          if (session?.currentTask) {
-            console.log(session?.currentTask);
-            return;
-          }
-
-          // If no session tasks, navigate the signed-in user to the home page
-          const url = decorateUrl("/");
-          if (url.startsWith("http")) {
-            window.location.href = url;
-          } else {
-            router.push(url as Href);
-          }
-        },
-      });
-    } else {
-      // Check why the sign-in is not complete
-      console.error("Sign-in attempt not complete:", signIn);
-    }
-  };
-
-  if (signIn.status === "needs_client_trust") {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-        <ThemedView style={styles.container}>
-          <ThemedText
-            type="title"
-            style={[styles.title, { fontSize: 24, fontWeight: "bold" }]}
-          >
-            Verify your account
-          </ThemedText>
-          <TextInput
-            style={styles.input}
-            value={code}
-            placeholder="Enter your verification code"
-            placeholderTextColor="#666666"
-            onChangeText={(code) => setCode(code)}
-            keyboardType="numeric"
-          />
-          {errors.fields.code && (
-            <ThemedText style={styles.error}>
-              {errors.fields.code.message}
-            </ThemedText>
-          )}
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              fetchStatus === "fetching" && styles.buttonDisabled,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleVerify}
-            disabled={fetchStatus === "fetching"}
-          >
-            <ThemedText style={styles.buttonText}>Verify</ThemedText>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={() => signIn.mfa.sendEmailCode()}
-          >
-            <ThemedText style={styles.secondaryButtonText}>
-              I need a new code
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={() => signIn.reset()}
-          >
-            <ThemedText style={styles.secondaryButtonText}>
-              Start over
-            </ThemedText>
-          </Pressable>
-        </ThemedView>
-      </SafeAreaView>
-    );
-  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Sign in
-        </ThemedText>
-
-        <ThemedText style={styles.label}>Email address</ThemedText>
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
-          value={emailAddress}
-          placeholder="Enter email"
-          placeholderTextColor="#666666"
-          onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-          keyboardType="email-address"
+    <View style={{ flex: 1, backgroundColor: "#FFFEFE" }}>
+      <View style={styles.hero}>
+        <Image
+          source={require("@/assets/images/temp-with-icon.png")}
+          style={styles.image}
+          contentFit="cover"
+          contentPosition={{ bottom: "20%" }}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
         />
-        {errors.fields.identifier && (
-          <ThemedText style={styles.error}>
-            {errors.fields.identifier.message}
-          </ThemedText>
-        )}
-        <ThemedText style={styles.label}>Password</ThemedText>
-        <TextInput
-          style={styles.input}
-          value={password}
-          placeholder="Enter password"
-          placeholderTextColor="#666666"
-          secureTextEntry={true}
-          onChangeText={(password) => setPassword(password)}
-        />
-        {errors.fields.password && (
-          <ThemedText style={styles.error}>
-            {errors.fields.password.message}
-          </ThemedText>
-        )}
+      </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            (!emailAddress || !password || fetchStatus === "fetching") &&
-              styles.buttonDisabled,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={handleSubmit}
-          disabled={!emailAddress || !password || fetchStatus === "fetching"}
-        >
-          <ThemedText style={styles.buttonText}>Continue</ThemedText>
-        </Pressable>
+      <Host matchContents={{ vertical: true }} style={styles.container}>
+        <VStack spacing={24}>
+          <VStack spacing={8}>
+            <Text
+              modifiers={[
+                font({ size: 32, weight: "bold", design: "rounded" }),
+                multilineTextAlignment("center"),
+              ]}
+            >
+              Welcome back!
+            </Text>
 
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <ThemedText style={styles.dividerText}>OR</ThemedText>
-          <View style={styles.dividerLine} />
-        </View>
+            <Text
+              modifiers={[
+                font({ size: 16 }),
+                foregroundStyle("#666"),
+                multilineTextAlignment("center"),
+              ]}
+            >
+              Sign in to continue your presentation journey.
+            </Text>
+          </VStack>
+          <VStack spacing={5}>
+            <VStack spacing={15}>
+              <HStack
+                spacing={5}
+                modifiers={[
+                  border({ width: 1.5, color: "#E5E7EB" }),
+                  cornerRadius(2),
+                ]}
+              >
+                <IconImage
+                  systemName="envelope"
+                  modifiers={[
+                    padding({ horizontal: 12 }),
+                    frame({
+                      width: 50,
+                      alignment: "center",
+                    }),
+                  ]}
+                />
+                <TextField
+                  placeholder="name@example.com"
+                  text={emailAddress}
+                  modifiers={[
+                    keyboardType("email-address"),
+                    textInputAutocapitalization("never"),
+                    textContentType("emailAddress"),
+                    autocorrectionDisabled(),
+                    submitLabel("next"),
 
-        <GoogleSignInButton />
+                    padding({ vertical: 10 }),
+                  ]}
+                />
+              </HStack>
+              <HStack
+                spacing={5}
+                modifiers={[
+                  border({ width: 1.5, color: "#E5E7EB" }),
+                  cornerRadius(2),
+                ]}
+              >
+                <IconImage
+                  systemName="lock.fill"
+                  modifiers={[
+                    padding({ horizontal: 12 }),
+                    frame({
+                      width: 50,
+                      alignment: "center",
+                    }),
+                  ]}
+                />
+                <SecureField
+                  placeholder="Password"
+                  text={password}
+                  modifiers={[
+                    textContentType("password"),
+                    submitLabel("done"),
+                    onSubmit(handleSubmit),
+                    padding({ vertical: 10 }),
+                  ]}
+                />
+              </HStack>
+            </VStack>
+            {errorMessage && (
+              <Text
+                modifiers={[
+                  frame({
+                    maxWidth: Infinity,
+                    alignment: "topLeading",
+                  }),
+                  font({ size: 14 }),
+                  padding({ leading: 12 }),
+                  foregroundStyle("#d32f2f"),
+                ]}
+              >
+                {errorMessage}
+              </Text>
+            )}
+            <Text
+              modifiers={[
+                frame({
+                  maxWidth: Infinity,
+                  alignment: "trailing",
+                }),
+                font({ size: 14 }),
+                foregroundStyle("#FF6347"),
+              ]}
+            >
+              forgot Password?
+            </Text>
+          </VStack>
+          <Button
+            modifiers={[
+              buttonStyle("glassProminent"),
+              controlSize("extraLarge"),
+              tint("#FF6347"),
+              buttonBorderShape("capsule"),
+            ]}
+            onPress={handleSubmit}
+          >
+            <Text
+              modifiers={[
+                frame({
+                  maxWidth: Infinity,
+                  alignment: "center",
+                }),
+              ]}
+            >
+              {isSubmitting ? "Signing in…" : "Sign In"}
+            </Text>
+          </Button>
+          <HStack spacing={12} alignment="center">
+            <Rectangle
+              modifiers={[
+                frame({ maxWidth: Infinity, height: 1 }),
+                foregroundStyle("#E5E7EB"),
+              ]}
+            />
 
-        <View style={styles.linkContainer}>
-          <ThemedText>Don't have an account? </ThemedText>
-          <Link href="/(unauthenticated)/signup">
-            <ThemedText type="link">Sign up</ThemedText>
-          </Link>
-        </View>
-      </ThemedView>
-    </SafeAreaView>
+            <Text
+              modifiers={[
+                font({ size: 14, weight: "medium" }),
+                foregroundStyle("#6B7280"),
+              ]}
+            >
+              OR
+            </Text>
+
+            <Rectangle
+              modifiers={[
+                frame({ maxWidth: Infinity, height: 1 }),
+                foregroundStyle("#E5E7EB"),
+              ]}
+            />
+          </HStack>
+          <VStack>
+            <GoogleSignInButton />
+          </VStack>
+          <VStack spacing={4}>
+            <Text modifiers={[font({ size: 14 }), foregroundStyle("#666")]}>
+              Don&apos;t have an account?
+            </Text>
+            <Link href="/(unauthenticated)/signup" asChild>
+              <Button
+                label="Sign up"
+                modifiers={[
+                  buttonStyle("plain"),
+                  font({ size: 14, weight: "semibold" }),
+                ]}
+              />
+            </Link>
+          </VStack>
+        </VStack>
+      </Host>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
-    gap: 12,
+    marginTop: -30,
+    marginHorizontal: 30,
   },
+
+  hero: {
+    flex: 0.8,
+    overflow: "visible",
+  },
+
+  image: {
+    width: "100%",
+    height: "100%",
+    alignSelf: "center",
+  },
+
   title: {
     marginBottom: 8,
   },
@@ -303,5 +395,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     fontWeight: "500",
+  },
+
+  signupButton: {
+    width: "100%",
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "#FF6347",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

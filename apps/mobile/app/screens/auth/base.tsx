@@ -19,7 +19,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { useAnimatedRef } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FONT_SIZE = 16;
@@ -39,7 +39,6 @@ export default function Base() {
   const insets = useSafeAreaInsets();
   const contentWidth = windowWidth - HORIZONTAL_PADDING * 2;
   const router = useRouter();
-  const buttonRef = useAnimatedRef<View>();
   const [headlineIndex1, setHeadlineIndex1] = useState(0);
   const [headlineIndex2, setHeadlineIndex2] = useState(0);
 
@@ -131,19 +130,20 @@ export default function Base() {
             { paddingBottom: ACTIONS_BASE_BOTTOM_SPACING + insets.bottom },
           ]}
         >
-          <Pressable
-            onPress={handleLogin}
-            ref={buttonRef}
-            accessibilityRole="button"
-            accessibilityLabel="Log in"
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.loginButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <RNText style={styles.loginText}>Login</RNText>
-          </Pressable>
+          <Animated.View sharedTransitionTag="login-button">
+            <Pressable
+              onPress={handleLogin}
+              accessibilityRole="button"
+              accessibilityLabel="Log in"
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.loginButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <RNText style={styles.loginText}>Login</RNText>
+            </Pressable>
+          </Animated.View>
 
           <Pressable
             onPress={handleSignUp}

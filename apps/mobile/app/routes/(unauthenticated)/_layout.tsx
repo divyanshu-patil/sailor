@@ -5,6 +5,7 @@ export default function UnauthenticatedLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        animation: "fade",
       }}
     />
   );

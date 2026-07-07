@@ -1,10 +1,21 @@
 import { useSignInWithGoogle } from "@clerk/expo/google";
+import { Button, HStack, Image, Text } from "@expo/ui/swift-ui";
+import {
+  border,
+  buttonBorderShape,
+  buttonStyle,
+  controlSize,
+  cornerRadius,
+  frame,
+  labelStyle,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 import {
   Alert,
   Platform,
   StyleSheet,
-  Text,
+  Text as RNText,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -43,12 +54,36 @@ export function GoogleSignInButton({
 
   return (
     <>
-      <TouchableOpacity
+      {/* <Button label="Sign In With Google" /> */}
+      <Button
+        onPress={handleGoogleSignIn}
+        modifiers={[
+          labelStyle("titleAndIcon"),
+          buttonStyle("glassProminent"),
+          controlSize("extraLarge"),
+          buttonBorderShape("capsule"),
+        ]}
+      >
+        <HStack>
+          <Image systemName="g.circle.fill" />
+          <Text
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "center",
+              }),
+            ]}
+          >
+            Sign In With Google
+          </Text>
+        </HStack>
+      </Button>
+      {/* <TouchableOpacity
         style={styles.googleButton}
         onPress={handleGoogleSignIn}
       >
         <Text style={styles.googleButtonText}>Sign in with Google</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </>
   );
 }

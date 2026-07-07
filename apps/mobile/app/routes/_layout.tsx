@@ -26,14 +26,14 @@ function InitialLayout() {
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
   const { isSignedIn, isLoaded } = useAuth();
 
-  if (!isHydrated || !isLoaded) {
-    return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null
-  }
-
   useEffect(() => {
     if (!isHydrated) return;
     completeOnboarding(ENV.EXPO_PUBLIC_SHOW_ONBOARDING === "true");
   }, [isHydrated]);
+
+  if (!isHydrated || !isLoaded) {
+    return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null
+  }
 
   return (
     <Stack
