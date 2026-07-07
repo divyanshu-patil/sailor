@@ -22,23 +22,6 @@ import {
   Amarna_700Bold_Italic,
 } from "@expo-google-fonts/amarna";
 
-import {
-  Newsreader_200ExtraLight,
-  Newsreader_300Light,
-  Newsreader_400Regular,
-  Newsreader_500Medium,
-  Newsreader_600SemiBold,
-  Newsreader_700Bold,
-  Newsreader_800ExtraBold,
-  Newsreader_200ExtraLight_Italic,
-  Newsreader_300Light_Italic,
-  Newsreader_400Regular_Italic,
-  Newsreader_500Medium_Italic,
-  Newsreader_600SemiBold_Italic,
-  Newsreader_700Bold_Italic,
-  Newsreader_800ExtraBold_Italic,
-} from "@expo-google-fonts/newsreader";
-
 export default function Index() {
   const router = useRouter();
   // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
@@ -63,27 +46,6 @@ export default function Index() {
     "Amarna-SemiBoldItalic": Amarna_600SemiBold_Italic,
     "Amarna-Bold": Amarna_700Bold,
     "Amarna-BoldItalic": Amarna_700Bold_Italic,
-
-    Newsreader: Newsreader_400Regular,
-    "Newsreader-Italic": Newsreader_400Regular_Italic,
-
-    "Newsreader-ExtraLight": Newsreader_200ExtraLight,
-    "Newsreader-ExtraLightItalic": Newsreader_200ExtraLight_Italic,
-
-    "Newsreader-Light": Newsreader_300Light,
-    "Newsreader-LightItalic": Newsreader_300Light_Italic,
-
-    "Newsreader-Medium": Newsreader_500Medium,
-    "Newsreader-MediumItalic": Newsreader_500Medium_Italic,
-
-    "Newsreader-SemiBold": Newsreader_600SemiBold,
-    "Newsreader-SemiBoldItalic": Newsreader_600SemiBold_Italic,
-
-    "Newsreader-Bold": Newsreader_700Bold,
-    "Newsreader-BoldItalic": Newsreader_700Bold_Italic,
-
-    "Newsreader-ExtraBold": Newsreader_800ExtraBold,
-    "Newsreader-ExtraBoldItalic": Newsreader_800ExtraBold_Italic,
   });
 
   useEffect(() => {

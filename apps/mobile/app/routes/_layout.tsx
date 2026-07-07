@@ -6,7 +6,6 @@ import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { View } from "react-native";
 import { setupApiAuth } from "@/lib/api/client";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 
 function ApiAuthSetup() {
   const { getToken, isSignedIn } = useAuth();
@@ -60,10 +59,8 @@ export default function RootLayout() {
       tokenCache={tokenCache}
     >
       <ClerkLoaded>
-        <KeyboardProvider>
-          <ApiAuthSetup />
-          <InitialLayout />
-        </KeyboardProvider>
+        <ApiAuthSetup />
+        <InitialLayout />
       </ClerkLoaded>
     </ClerkProvider>
   );

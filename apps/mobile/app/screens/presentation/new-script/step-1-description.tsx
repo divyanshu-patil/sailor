@@ -27,7 +27,7 @@ import {
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { usePresentationForm } from "./form-context";
-import { AttachmentKind, Attachment } from "@/types/presentation";
+import { AttachmentKind, Attachment } from "./types/types";
 
 function iconForKind(kind: AttachmentKind) {
   switch (kind) {

@@ -17,21 +17,4 @@ export const fonts = {
     bold: "Amarna-Bold",
     boldItalic: "Amarna-BoldItalic",
   },
-
-  newsreader: {
-    extraLight: "Newsreader-ExtraLight",
-    extraLightItalic: "Newsreader-ExtraLightItalic",
-    light: "Newsreader-Light",
-    lightItalic: "Newsreader-LightItalic",
-    regular: "Newsreader",
-    italic: "Newsreader-Italic",
-    medium: "Newsreader-Medium",
-    mediumItalic: "Newsreader-MediumItalic",
-    semiBold: "Newsreader-SemiBold",
-    semiBoldItalic: "Newsreader-SemiBoldItalic",
-    bold: "Newsreader-Bold",
-    boldItalic: "Newsreader-BoldItalic",
-    extraBold: "Newsreader-ExtraBold",
-    extraBoldItalic: "Newsreader-ExtraBoldItalic",
-  },
 };

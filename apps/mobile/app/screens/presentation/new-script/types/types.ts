@@ -1,4 +1,11 @@
-import { Attachment } from "@/types/presentation";
+export type AttachmentKind = "image" | "document" | "link";
+
+export type Attachment = {
+  id: string;
+  kind: AttachmentKind;
+  name: string;
+  uri?: string;
+};
 
 export type PresentationFormState = {
   attachments: Attachment[];

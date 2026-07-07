@@ -7,8 +7,11 @@ import {
   useCallback,
 } from "react";
 import { useNativeState } from "@expo/ui/swift-ui";
-import { PresentationFormState, DEFAULT_STATE } from "./types/types";
-import { Attachment } from "@/types/presentation";
+import {
+  PresentationFormState,
+  Attachment,
+  DEFAULT_STATE,
+} from "./types/types";
 
 // ---- Context -----------------------------------------------------------
 
