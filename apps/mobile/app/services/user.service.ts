@@ -1,4 +1,4 @@
-import apiClient from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 
 export interface UserProfile {
   id: string;
@@ -11,7 +11,9 @@ export interface UserProfile {
 export const userService = {
   getProfile: async (): Promise<UserProfile> => {
     try {
-      const response = await apiClient.get<UserProfile>("/api/v1/users/profile");
+      const response = await apiClient.get<UserProfile>(
+        "/api/v1/users/profile",
+      );
       console.log("profile response", response.data);
       return response.data;
     } catch (e: any) {
@@ -20,12 +22,10 @@ export const userService = {
     }
   },
 
-  updateProfile: async (
-    payload: { email?: string }
-  ): Promise<UserProfile> => {
+  updateProfile: async (payload: { email?: string }): Promise<UserProfile> => {
     const response = await apiClient.patch<UserProfile>(
       "/api/v1/users/profile",
-      payload
+      payload,
     );
     return response.data;
   },
