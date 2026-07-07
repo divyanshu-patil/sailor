@@ -81,6 +81,13 @@ const Layout = () => {
           // presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="modals"
+        options={{
+          headerShown: false,
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 };

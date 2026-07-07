@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useScriptGeneration } from "../hooks/use-script-generation";
 import { PresentationFormState } from "../new-script/types/types";
 import GeneratingScreen from "../generating";
@@ -51,34 +51,51 @@ const PreviewScreen = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>
-      <BlobBackground />
-      <ScrollView
-        style={[{ paddingTop: headerHeight }, styles.container]}
-        scrollEnabled={state === "completed" && !!result}
-      >
-        <StatusText
-          labels={getGeneratingMessages(state, result?.title)}
-          accentColors={["#B75C5C"]}
+    <>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon={"square.and.pencil"}
+          hidden={!result?.script}
+          tintColor={"#B75C5C"}
+          onPress={() =>
+            router.push({
+              pathname: "/(authenticated)/(script)/modals/edit-script",
+              params: {
+                script: result?.script,
+              },
+            })
+          }
         />
+      </Stack.Toolbar>
+      <View style={{ flex: 1 }}>
+        <BlobBackground />
+        <ScrollView
+          style={[{ paddingTop: headerHeight }, styles.container]}
+          scrollEnabled={state === "completed" && !!result}
+        >
+          <StatusText
+            labels={getGeneratingMessages(state, result?.title)}
+            accentColors={["#B75C5C"]}
+          />
 
-        {state === "completed" && !!result && (
-          <Animated.View
-            layout={LinearTransition.springify()}
-            style={styles.scriptContainer}
-          >
-            <ScriptText script={result?.script} fontSize={20} />
-          </Animated.View>
+          {state === "completed" && !!result && (
+            <Animated.View
+              layout={LinearTransition.springify()}
+              style={styles.scriptContainer}
+            >
+              <ScriptText script={result?.script} fontSize={20} />
+            </Animated.View>
+          )}
+        </ScrollView>
+        {state !== "completed" && (
+          <GeneratingScreen
+            status={state}
+            error={error}
+            onStop={stopGeneration}
+          />
         )}
-      </ScrollView>
-      {state !== "completed" && (
-        <GeneratingScreen
-          status={state}
-          error={error}
-          onStop={stopGeneration}
-        />
-      )}
-    </View>
+      </View>
+    </>
   );
 };
 

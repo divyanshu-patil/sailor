@@ -40,27 +40,27 @@ export default function ScriptText({
   const fonts: FontSet = useMemo(
     () => ({
       regular: matchFont({
-        fontFamily: fontFiles.newsreader.regular,
+        fontFamily,
         fontSize,
       }),
       bold: matchFont({
-        fontFamily: fontFiles.newsreader.regular,
+        fontFamily,
         fontWeight: "600",
         fontSize,
       }),
       italic: matchFont({
-        fontFamily: fontFiles.newsreader.regular,
+        fontFamily,
         fontStyle: "italic",
         fontSize,
       }),
       boldItalic: matchFont({
-        fontFamily: fontFiles.newsreader.regular,
+        fontFamily,
         fontStyle: "italic",
         fontWeight: "600",
         fontSize,
       }),
     }),
-    [fontSize],
+    [fontFamily, fontSize],
   );
 
   const blocks = useMemo(() => parseBlocks(script), [script]);
