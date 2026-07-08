@@ -1,10 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import { useLocalSearchParams } from "expo-router";
-import { dummyScriptCards } from "./dummy";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import Animated, {
   interpolate,
   LinearTransition,
@@ -34,12 +33,35 @@ import { getDeliveryEmoji } from "./utils/getDeliveryEmoji";
 import DeliveryPill from "./components/DeliveryPill";
 import { lightenColor } from "./utils/lightenColor";
 import DurationText from "./components/DurationText";
+import { CardItem, cardService } from "@/services/card.debug.service";
 
 type ScriptPracticeParams = { id: string; color: string };
 
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
   const params = useLocalSearchParams<ScriptPracticeParams>();
+  const [rawCards, setRawCards] = useState<CardItem[]>([]);
+  const [isLoadingCards, setIsLoadingCards] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setIsLoadingCards(true);
+        const data = await cardService.getCards(params.id);
+        if (!cancelled) setRawCards(data);
+      } catch {
+        if (!cancelled) setCardsError("Couldn't load this script's cards.");
+      } finally {
+        if (!cancelled) setIsLoadingCards(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
+  const cards = useMemo(() => assignColorsByQuantile(rawCards), [rawCards]);
 
   const [recordingDuration, setRecordingDuration] = useState<string | null>(
     null,
@@ -57,7 +79,6 @@ const ScriptPracticeScreen = () => {
     isStopped,
   );
 
-  const [cards] = useState(() => assignColorsByQuantile(dummyScriptCards));
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexSV = useSharedValue(0);
 
@@ -162,18 +183,38 @@ const ScriptPracticeScreen = () => {
     ],
     opacity: interpolate(isRecording.value, [0, 1], [0, 1]),
   }));
+
   const getDeliveryText = useCallback(
     (currIndex: number) => {
-      if (currentIndex < cards.length) {
-        const delivery = cards[currIndex].delivery;
-        return `${getDeliveryEmoji(delivery)} ${delivery}`;
-      }
-      const delivery = cards[currIndex - 1].delivery;
-
-      return `${getDeliveryEmoji(delivery)} ${delivery}`;
+      const safeIndex = Math.min(currIndex, cards.length - 1);
+      const card = cards[safeIndex];
+      if (!card) return "";
+      return `${getDeliveryEmoji(card.delivery)} ${card.delivery}`;
     },
-    [cards, currentIndex],
+    [cards],
   );
+
+  if (isLoadingCards) {
+    return (
+      <View
+        style={[styles.screen, { paddingTop: headerHeight }, styles.centered]}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (cardsError || cards.length === 0) {
+    return (
+      <View
+        style={[styles.screen, { paddingTop: headerHeight }, styles.centered]}
+      >
+        <Text style={{ color: "#666" }}>
+          {cardsError ?? "No cards in this script yet."}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <Animated.View
@@ -330,4 +371,5 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 16,
   },
+  centered: { justifyContent: "center", alignItems: "center" },
 });

@@ -1,4 +1,4 @@
-import { script } from "./script";
+import { script } from "./dummyData/script";
 import {
   DeckResult,
   GenerateScriptPayload,

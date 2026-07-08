@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Link, router, Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
-import { DeckItem } from "@/services/deck.service";
 import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
 import {
   Animation,
@@ -21,6 +20,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
+import { deckService, DeckItem } from "@/services/deck.debug.service";
 
 type ScriptDetailParams = {
   id: string;
@@ -51,7 +51,7 @@ export default function ScriptDetailScreen() {
   const shadowOffsetX = useSharedValue(0);
   const shadowOffsetY = useSharedValue(0);
 
-  const script: DeckItem = useMemo(
+  const paramScript: DeckItem = useMemo(
     () => ({
       id: params.id,
       title: params.title,
@@ -65,6 +65,53 @@ export default function ScriptDetailScreen() {
     }),
     [params],
   );
+
+  const [script, setScript] = useState<DeckItem>(paramScript);
+  const [isFavourite, setIsFavourite] = useState(paramScript.isFavourite);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const fresh = await deckService.getDeck(paramScript.id);
+        if (!cancelled) {
+          setScript(fresh);
+          setIsFavourite(fresh.isFavourite);
+        }
+      } catch (e) {
+        // keep showing param-derived data if the refresh fails
+        console.log("getDeck refresh error", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [paramScript.id]);
+
+  const handleToggleFavourite = async () => {
+    const next = !isFavourite;
+    setIsFavourite(next); // optimistic
+    try {
+      const updated = await deckService.toggleFavourite(script.id);
+      setIsFavourite(updated.isFavourite);
+    } catch (e) {
+      setIsFavourite(!next); // revert on failure
+      console.log("toggleFavourite error", e);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await deckService.deleteDeck(script.id);
+      router.back();
+    } catch (e) {
+      setIsDeleting(false);
+      console.log("deleteDeck error", e);
+    }
+  };
 
   useEffect(() => {
     setTimeout(() => {
@@ -132,8 +179,6 @@ export default function ScriptDetailScreen() {
   const scriptText = `Your CPU speaks at the speed of light. Your hard disk speaks at the speed of a bicycle. And somehow — they have to talk to each other. 
 Every single time you open a file, plug in a keyboard, or save your work. The system that makes that conversation possible — without crashing, without data loss, without freezing your processor — is the *Advanced I/O System*. And understanding it is understanding the backbone of every computer ever built.`;
 
-  const [isFavourite, setIsFavourite] = useState(script.isFavourite);
-
   const textDarkColor = colord(script.color)
     .darken(0.35)
     .desaturate(0.5)
@@ -149,11 +194,12 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={isFavourite ? "heart.fill" : "heart"}
           tintColor={"#EB6B83"}
-          onPress={() => setIsFavourite((prev) => !prev)}
+          onPress={handleToggleFavourite}
         />
         <Stack.Toolbar.Button icon={"square.and.arrow.up"} />
       </Stack.Toolbar>
@@ -163,6 +209,8 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
           icon={"trash"}
           variant="prominent"
           tintColor={"#f55c53"}
+          disabled={isDeleting}
+          onPress={handleDelete}
         />
       </Stack.Toolbar>
       <ScrollView

@@ -1,6 +1,6 @@
 // ---------- Mock data ----------
 
-import { DeckItem } from "./deck.service";
+import { DeckItem } from "@/types/presentation/deck";
 
 export const DATA: DeckItem[] = [
   {

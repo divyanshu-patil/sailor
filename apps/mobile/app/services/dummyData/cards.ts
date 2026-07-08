@@ -1,4 +1,4 @@
-import { Delivery } from "./components/Card";
+import { Delivery } from "../card.service";
 
 interface Card {
   id: string;
