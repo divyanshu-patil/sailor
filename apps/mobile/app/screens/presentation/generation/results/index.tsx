@@ -2,11 +2,15 @@ import { fonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
-import GeneratingScreen from "./components/generating";
+import { Pressable, View, StyleSheet, Text } from "react-native";
+import GeneratingScreen from "../preview/components/generating";
 import { useDeckGeneration } from "../../hooks/use-script-generation";
 import { deckService } from "@/services/deck.debug.service";
 import BlobBackground from "../components/background";
+
+import { useHeaderHeight } from "expo-router/build/react-navigation";
+import StatusText from "../preview/components/generating/components/status-text";
+import { getGeneratingMessages } from "../preview/components/generating/utils/get-generation-messages";
 
 type ResultsScreenParams = {
   jobId: string; // deck job id, handed off from PreviewScreen's handleCreate
@@ -69,34 +73,33 @@ const ResultsScreen = () => {
     }
   };
 
+  const headerHeight = useHeaderHeight();
   return (
     <>
       <BlobBackground />
-      {state !== "idle" ? (
+
+      <View style={[{ paddingTop: headerHeight }, styles.container]}>
+        <StatusText
+          labels={getGeneratingMessages(state, "Your Script is Ready")}
+          accentColor={colors.rust}
+        />
+
+        <Pressable
+          style={[styles.button, { backgroundColor: colors.rust }]}
+          onPress={handleOpenCard}
+          disabled={isOpening}
+        >
+          <Text style={styles.buttonText}>
+            {isOpening ? "Opening…" : "Open"}
+          </Text>
+        </Pressable>
+      </View>
+      {state !== "completed" && (
         <GeneratingScreen
           status={state}
           error={error}
           onStop={stopDeckGeneration}
         />
-      ) : (
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={styles.container}
-        >
-          <Text style={[styles.title, { color: colors.rust }]}>
-            Your deck is ready
-          </Text>
-
-          <Pressable
-            style={[styles.button, { backgroundColor: colors.rust }]}
-            onPress={handleOpenCard}
-            disabled={isOpening}
-          >
-            <Text style={styles.buttonText}>
-              {isOpening ? "Opening…" : "Open"}
-            </Text>
-          </Pressable>
-        </ScrollView>
       )}
     </>
   );
