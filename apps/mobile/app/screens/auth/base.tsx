@@ -1,13 +1,19 @@
-import { Host, Text, VStack } from "@expo/ui/swift-ui";
+import { Button, Host, HStack, Text, VStack } from "@expo/ui/swift-ui";
 import {
   Animation,
   animation,
+  buttonBorderShape,
+  buttonStyle,
   contentTransition,
+  controlSize,
   font,
+  foregroundStyle,
   frame,
+  labelStyle,
   lineLimit,
   lineSpacing,
   multilineTextAlignment,
+  tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -21,6 +27,8 @@ import {
 } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { fonts } from "@/constants/fonts";
+import { useColors } from "@/constants/theme";
 
 const FONT_SIZE = 16;
 const LINE_HEIGHT = 22;
@@ -41,6 +49,7 @@ export default function Base() {
   const router = useRouter();
   const [headlineIndex1, setHeadlineIndex1] = useState(0);
   const [headlineIndex2, setHeadlineIndex2] = useState(0);
+  const colors = useColors();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -79,12 +88,23 @@ export default function Base() {
       </View>
 
       <View style={styles.content}>
-        <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
+        <Host
+          matchContents={{ vertical: true }}
+          modifiers={[
+            animation(Animation.default, headlineIndex1),
+            animation(Animation.default, headlineIndex2),
+          ]}
+          style={{ width: "100%" }}
+        >
           <VStack spacing={12}>
             <VStack spacing={6}>
               <Text
                 modifiers={[
-                  font({ weight: "bold", design: "rounded", size: 30 }),
+                  font({
+                    family: fonts.alanSans.bold,
+                    design: "rounded",
+                    size: 30,
+                  }),
                   contentTransition("numericText", { countsDown: true }),
                   animation(Animation.default, headlineIndex1),
                   multilineTextAlignment("center"),
@@ -95,7 +115,11 @@ export default function Base() {
 
               <Text
                 modifiers={[
-                  font({ design: "rounded", weight: "bold", size: 25 }),
+                  font({
+                    family: fonts.alanSans.semiBold,
+                    design: "rounded",
+                    size: 25,
+                  }),
                   contentTransition("numericText", { countsDown: true }),
                   animation(Animation.default, headlineIndex2),
                   multilineTextAlignment("center"),
@@ -107,13 +131,18 @@ export default function Base() {
 
             <Text
               modifiers={[
-                font({ size: FONT_SIZE }),
+                font({
+                  family: fonts.alanSans.medium,
+                  size: FONT_SIZE,
+                  design: "rounded",
+                }),
                 lineSpacing(LINE_HEIGHT - FONT_SIZE),
                 frame({
                   width: contentWidth,
                   height: LINE_HEIGHT * MAX_LINES,
                   alignment: "top",
                 }),
+                foregroundStyle("#44444ec5"),
                 lineLimit(MAX_LINES),
                 multilineTextAlignment("center"),
               ]}
@@ -121,43 +150,58 @@ export default function Base() {
               Create stunning presentations, craft compelling speeches, and
               practice with confidence all in one place.
             </Text>
+            <VStack spacing={12}>
+              <Button
+                onPress={handleSignUp}
+                modifiers={[
+                  buttonStyle("glassProminent"),
+                  controlSize("extraLarge"),
+                  buttonBorderShape("capsule"),
+                  tint(colors.colors.rust),
+                ]}
+              >
+                <Text
+                  modifiers={[
+                    frame({
+                      maxWidth: Infinity,
+                      alignment: "center",
+                    }),
+                    font({
+                      family: fonts.alanSans.semiBold,
+                      design: "rounded",
+                    }),
+                  ]}
+                >
+                  create an account
+                </Text>
+              </Button>
+              <Button
+                onPress={handleLogin}
+                modifiers={[
+                  buttonStyle("bordered"),
+                  controlSize("extraLarge"),
+                  buttonBorderShape("capsule"),
+                  tint(colors.colors.rust),
+                ]}
+              >
+                <Text
+                  modifiers={[
+                    frame({
+                      maxWidth: Infinity,
+                      alignment: "center",
+                    }),
+                    font({
+                      family: fonts.alanSans.semiBold,
+                      design: "rounded",
+                    }),
+                  ]}
+                >
+                  Log in
+                </Text>
+              </Button>
+            </VStack>
           </VStack>
         </Host>
-
-        <View
-          style={[
-            styles.actions,
-            { paddingBottom: ACTIONS_BASE_BOTTOM_SPACING + insets.bottom },
-          ]}
-        >
-          <Animated.View sharedTransitionTag="login-button">
-            <Pressable
-              onPress={handleLogin}
-              accessibilityRole="button"
-              accessibilityLabel="Log in"
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.loginButton,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <RNText style={styles.loginText}>Login</RNText>
-            </Pressable>
-          </Animated.View>
-
-          <Pressable
-            onPress={handleSignUp}
-            accessibilityRole="button"
-            accessibilityLabel="Sign up"
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.signupButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <RNText style={styles.signupText}>Sign Up</RNText>
-          </Pressable>
-        </View>
       </View>
     </View>
   );
@@ -183,7 +227,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 0.55,
     paddingHorizontal: HORIZONTAL_PADDING,
-    marginTop: -50,
     justifyContent: "space-between",
   },
 

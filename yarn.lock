@@ -1066,6 +1066,11 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
+"@expo-google-fonts/alan-sans@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/alan-sans/-/alan-sans-0.4.1.tgz#4eb2b04a9855ed3eae4323d87fca278dfbb22a20"
+  integrity sha512-v/4QiVezF7fmbhUsSJ9EJEXiKXqDaPEzWyLO9rIHw4ymjg7dCfjleoiBqcr9/x3RsQDqJQ5tAhVtOZRVltw3Bw==
+
 "@expo-google-fonts/amarna@^0.4.1":
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/@expo-google-fonts/amarna/-/amarna-0.4.1.tgz#083106070890546ef1f9a858d7778ee7592d6ca8"

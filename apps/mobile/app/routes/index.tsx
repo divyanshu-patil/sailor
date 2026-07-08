@@ -3,8 +3,17 @@ import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAppStore } from "@/store/auth-store";
 import { useAuth } from "@clerk/expo";
-import { useFonts } from "@expo-google-fonts/krona-one/useFonts";
+import { useFonts } from "expo-font";
 import { KronaOne_400Regular } from "@expo-google-fonts/krona-one/400Regular";
+import {
+  AlanSans_300Light,
+  AlanSans_400Regular,
+  AlanSans_500Medium,
+  AlanSans_600SemiBold,
+  AlanSans_700Bold,
+  AlanSans_800ExtraBold,
+  AlanSans_900Black,
+} from "@expo-google-fonts/alan-sans";
 import {
   Amarna_100Thin,
   Amarna_100Thin_Italic,
@@ -48,6 +57,13 @@ export default function Index() {
 
   const [fontsLoaded] = useFonts({
     KronaOne: KronaOne_400Regular,
+    "AlanSans-Light": AlanSans_300Light,
+    "AlanSans-Regular": AlanSans_400Regular,
+    "AlanSans-Medium": AlanSans_500Medium,
+    "AlanSans-SemiBold": AlanSans_600SemiBold,
+    "AlanSans-Bold": AlanSans_700Bold,
+    "AlanSans-ExtraBold": AlanSans_800ExtraBold,
+    "AlanSans-Black": AlanSans_900Black,
 
     Amarna: Amarna_400Regular,
     "Amarna-Italic": Amarna_400Regular_Italic,
