@@ -122,6 +122,20 @@ export function useJobPoller<TResult>({
     [],
   );
 
+  /**
+   * Attach to a job that's already running server-side (e.g. a screen
+   * mounted after another screen already called `start`). Same as `start`
+   * but skips the kickoff call — just begins polling an existing job_id.
+   */
+  const attach = useCallback((jobId: string) => {
+    stoppedRef.current = false;
+    setError(null);
+    setResult(null);
+    setState("generating");
+    jobIdRef.current = jobId;
+    pollRef.current?.(jobId);
+  }, []);
+
   const stop = useCallback(async () => {
     stoppedRef.current = true;
     clearPoll();
@@ -141,5 +155,5 @@ export function useJobPoller<TResult>({
     return () => clearPoll(); // cleanup on unmount
   }, []);
 
-  return { state, result, error, jobIdRef, start, stop };
+  return { state, result, error, jobIdRef, start, attach, stop };
 }

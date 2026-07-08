@@ -65,14 +65,19 @@ export function useDeckGeneration() {
     [poller],
   );
 
+  const resumeDeckGeneration = useCallback(
+    (deckJobId: string) => poller.attach(deckJobId),
+    [poller],
+  );
+
   const stopDeckGeneration = useCallback(() => poller.stop(), [poller]);
 
   return {
     state: poller.state,
-    // result.id / result.job_id is the deck id to navigate with
     result: poller.result,
     error: poller.error,
     startDeckGeneration,
+    resumeDeckGeneration,
     stopDeckGeneration,
   };
 }

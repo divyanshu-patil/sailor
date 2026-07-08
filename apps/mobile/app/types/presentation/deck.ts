@@ -20,6 +20,8 @@ export interface DeckUpdateParams {
   description?: string;
   color?: string;
   isFavourite?: boolean;
+  slideCount?: number;
+  durationMins?: number;
 }
 
 // Both `deckService` (real) and `dummyDeckService` (mock) implement this,

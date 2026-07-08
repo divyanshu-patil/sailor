@@ -9,10 +9,10 @@ import {
 import {
   useScriptGeneration,
   useDeckGeneration,
-} from "../hooks/use-script-generation";
-import { PresentationFormState } from "../new-script/types/types";
+} from "../../hooks/use-script-generation";
+import { PresentationFormState } from "../../new-script/types/types";
 import GeneratingScreen from "./components/generating";
-import BlobBackground from "./components/background";
+import BlobBackground from "../components/background";
 import StatusText from "./components/generating/components/status-text";
 import { getGeneratingMessages } from "./components/generating/utils/get-generation-messages";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
@@ -48,11 +48,6 @@ const PreviewScreen = () => {
     try {
       setIsConfirming(true);
       const deckJobId = await startDeckGeneration(jobId);
-      // startDeckGeneration resolves as soon as the job is kicked off (not
-      // once it's done). If you want to block navigation until the deck is
-      // actually ready, poll `deckState` here instead of navigating right away —
-      // e.g. show a spinner on the button and navigate in a useEffect that
-      // watches deckState === "completed".
       router.push({
         pathname: "/(authenticated)/(script)/results",
         params: { jobId: deckJobId },

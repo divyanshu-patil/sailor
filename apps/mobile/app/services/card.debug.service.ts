@@ -4,7 +4,7 @@ import {
   CardUpdateParams,
   ICardService,
 } from "@/types/presentation/card";
-import { dummyScriptCards } from "./dummyData/cards"; // adjust path to your actual dummy.ts location
+import { dummyScriptCards } from "./dummyData/cards";
 export * from "@/types/presentation/card";
 
 const DUMMY_DELAY_MS = 400;

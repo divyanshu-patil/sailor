@@ -1,4 +1,4 @@
-import { GenerationState } from "../../../../hooks/use-script-generation";
+import { GenerationState } from "../../../../../hooks/use-script-generation";
 import { generatingMessages } from "../constants";
 
 export const getGeneratingMessages = (

@@ -1,4 +1,6 @@
+import { deckService } from "./deck.debug.service";
 import { script } from "./dummyData/script";
+import { dummyScriptCards } from "./dummyData/cards";
 import {
   DeckResult,
   GenerateScriptPayload,
@@ -6,6 +8,7 @@ import {
   ScriptJobStatusResponse,
   ScriptResult,
 } from "./script.service";
+import { CardItem } from "./card.debug.service";
 
 // --- DEV-ONLY MOCK STATE -----------------------------------------
 // Tracks when each job "started" so getJobStatus can fake a delay
@@ -15,14 +18,21 @@ import {
 // ready — swap the bodies back to apiClient calls.
 const DEV_JOB_START_TIMES = new Map<string, number>();
 const DEV_CANCELLED_JOBS = new Set<string>();
-const DEV_STATUS_CHANGE_MS = 4000;
+const DEV_STATUS_CHANGE_MS = 1500;
 const DEV_SCRIPT_OVERRIDES = new Map<
   string,
   { title: string; script: string }
 >();
 
-const DECK_STATUS_CHANGE_MS = 6000;
+const DECK_STATUS_CHANGE_MS = 2000;
+
 const deckJobStore = new Map<string, { startedAt: number }>();
+
+// Colors for cards (same as card.debug.service.ts)
+const FALLBACK_COLORS = ["#F4D35E", "#EE964B", "#F95738", "#0D3B66", "#5FA8D3"];
+
+// Card store keyed by deckId
+const cardStore = new Map<string, CardItem[]>();
 
 // -------------------------------------------------------------------
 
@@ -251,25 +261,46 @@ export const scriptService = {
 
   getDeckResult: async (jobId: string): Promise<DeckResult> => {
     try {
-      // const response = await apiClient.get<DeckResult>(
-      //   `/api/v1/scripts/jobs/${jobId}/deck-result`,
-      // );
-      // return response.data;
-
       if (!deckJobStore.has(jobId)) {
         throw new Error(`Unknown deck job: ${jobId}`);
       }
 
-      return await new Promise<DeckResult>((resolve) => {
-        setTimeout(() => {
-          resolve({
-            id: `deck-result-${jobId}`,
-            job_id: jobId,
-            title: "The Future of Renewable Energy",
-            created_at: new Date().toISOString(),
-          });
-        }, 400); // simulate GET latency
+      // First create the deck
+      const deck = await deckService.createDeck({
+        title: "The Future of Renewable Energy",
+        description: "",
+        color: "#F4D35E",
       });
+
+      // Now create cards for this deck to get proper slideCount/durationMins
+      // (Same logic as card.debug.service.ts uses)
+      const cards = dummyScriptCards.map((card, index) => ({
+        ...card,
+        id: `${deck.id}-card-${index + 1}`,
+        color: FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+      }));
+
+      // Store the cards for this deck
+      cardStore.set(deck.id, cards);
+
+      // Calculate slideCount and estimate duration (assuming ~15-30 sec per card)
+      const slideCount = cards.length;
+      const durationMins = Math.ceil(slideCount * 0.5); // ~30 sec per card average
+
+      // Update the deck with calculated values
+      await deckService.updateDeck(deck.id, {
+        slideCount,
+        durationMins,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 400)); // simulate GET latency
+
+      return {
+        id: deck.id,
+        job_id: jobId,
+        title: deck.title,
+        created_at: deck.updatedAt.toISOString(),
+      };
     } catch (e: any) {
       console.log("deck result error", e.response?.data, e.response?.status);
       throw e;

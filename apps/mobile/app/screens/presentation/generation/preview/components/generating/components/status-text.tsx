@@ -1,7 +1,7 @@
 import { fonts } from "@/constants/fonts";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
-import { TextMorph } from "./text-morph";
+import { TextMorph } from "../../../../components/text-morph";
 
 interface StatusTextProps {
   labels: string[];

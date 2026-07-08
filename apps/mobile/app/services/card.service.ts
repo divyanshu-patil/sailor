@@ -6,8 +6,6 @@ import {
   ICardService,
 } from "@/types/presentation/card";
 
-// Re-exported so `import { CardItem } from "@/services/card.service"`
-// call sites work unchanged, same convention as deck.service.ts.
 export * from "@/types/presentation/card";
 
 export const cardService: ICardService = {
@@ -83,7 +81,6 @@ export const cardService: ICardService = {
   ): Promise<CardItem[]> => {
     try {
       // Assumes backend accepts an ordered id list and returns cards re-sorted.
-      // Adjust the payload shape once your teammate finalizes this endpoint.
       const response = await apiClient.patch<CardItem[]>(
         `/api/v1/decks/${deckId}/cards/reorder`,
         { orderedIds },
