@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import CtaButton from "./components/cta-button";
-import { GenerationState } from "../hooks/use-script-generation";
+import { GenerationState } from "../../../hooks/use-script-generation";
 
 interface GeneratingScreenProps {
   status: GenerationState;

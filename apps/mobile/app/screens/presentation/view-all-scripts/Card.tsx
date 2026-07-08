@@ -12,7 +12,7 @@ import { Link } from "expo-router";
 
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { getCardTitleMargin } from "@/utils/getCardTitleMargin";
-import { ScriptItem } from ".";
+import { DeckItem } from "@/services/deck.service";
 import { COLUMN_GAP } from "./constants";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
@@ -24,7 +24,7 @@ const JELLY_SPRING = {
 };
 
 export const Card = React.memo(
-  ({ item, index }: { item: ScriptItem; index: number }) => {
+  ({ item, index }: { item: DeckItem; index: number }) => {
     const scale = useSharedValue(0.55);
     const opacity = useSharedValue(0);
     const translateY = useSharedValue(24);

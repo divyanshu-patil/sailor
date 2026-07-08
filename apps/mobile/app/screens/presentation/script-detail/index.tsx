@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Link, router, Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
-import { ScriptItem } from "../view-all-scripts";
+import { DeckItem } from "@/services/deck.service";
 import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
 import {
   Animation,
@@ -51,7 +51,7 @@ export default function ScriptDetailScreen() {
   const shadowOffsetX = useSharedValue(0);
   const shadowOffsetY = useSharedValue(0);
 
-  const script: ScriptItem = useMemo(
+  const script: DeckItem = useMemo(
     () => ({
       id: params.id,
       title: params.title,

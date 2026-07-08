@@ -19,11 +19,13 @@ export interface GenerateScriptPayload {
 export interface GenerateScriptResponse {
   job_id: string;
   status: ScriptJobStatus;
+  type: "script" | "deck";
 }
 
 export interface ScriptJobStatusResponse {
   job_id: string;
   status: ScriptJobStatus;
+  type: "script" | "deck";
   progress?: number; // 0-100, optional if backend supports it
   error?: string;
 }
@@ -34,6 +36,14 @@ export interface ScriptResult {
   title: string; // AI-generated title
   script: string; // full generated script content
   created_at: string;
+}
+
+export interface DeckResult {
+  id: string;
+  job_id: string;
+  title: string;
+  created_at: string;
+  // TODO: fill in actual deck fields (slides, cardCount, etc.)
 }
 
 export const scriptService = {
@@ -116,6 +126,29 @@ export const scriptService = {
       return response.data;
     } catch (e: any) {
       console.log("script edit error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+  confirm: async (jobId: string): Promise<GenerateScriptResponse> => {
+    try {
+      const response = await apiClient.post<GenerateScriptResponse>(
+        `/api/v1/scripts/jobs/${jobId}/confirm`,
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log("script confirm error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  getDeckResult: async (jobId: string): Promise<DeckResult> => {
+    try {
+      const response = await apiClient.get<DeckResult>(
+        `/api/v1/scripts/jobs/${jobId}/deck-result`,
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log("deck result error", e.response?.data, e.response?.status);
       throw e;
     }
   },
