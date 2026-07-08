@@ -44,7 +44,23 @@
             "../../node_modules/@expo-google-fonts/amarna/400Regular_Italic/Amarna_400Regular_Italic.ttf",
             "../../node_modules/@expo-google-fonts/amarna/500Medium_Italic/Amarna_500Medium_Italic.ttf",
             "../../node_modules/@expo-google-fonts/amarna/600SemiBold_Italic/Amarna_600SemiBold_Italic.ttf",
-            "../../node_modules/@expo-google-fonts/amarna/700Bold_Italic/Amarna_700Bold_Italic.ttf"
+
+            "../../node_modules/@expo-google-fonts/amarna/700Bold_Italic/Amarna_700Bold_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/200ExtraLight/Newsreader_200ExtraLight.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/300Light/Newsreader_300Light.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/400Regular/Newsreader_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/500Medium/Newsreader_500Medium.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/600SemiBold/Newsreader_600SemiBold.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/700Bold/Newsreader_700Bold.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/800ExtraBold/Newsreader_800ExtraBold.ttf",
+
+            "../../node_modules/@expo-google-fonts/newsreader/200ExtraLight_Italic/Newsreader_200ExtraLight_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/300Light_Italic/Newsreader_300Light_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/400Regular_Italic/Newsreader_400Regular_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/500Medium_Italic/Newsreader_500Medium_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/600SemiBold_Italic/Newsreader_600SemiBold_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/700Bold_Italic/Newsreader_700Bold_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/800ExtraBold_Italic/Newsreader_800ExtraBold_Italic.ttf"
           ]
         }
       ],

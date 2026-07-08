@@ -57,6 +57,37 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="results"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: true,
+          headerTitle: "",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+          // animation: "fade",
+          // presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="preview"
+        options={{
+          // headerLargeTitleEnabled: true,
+          headerShown: true,
+          headerTitle: "",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+          // animation: "fade",
+          // presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="modals"
+        options={{
+          headerShown: false,
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 };
