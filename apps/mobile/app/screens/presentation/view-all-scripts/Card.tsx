@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,6 +14,7 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { getCardTitleMargin } from "@/utils/getCardTitleMargin";
 import { ScriptItem } from ".";
 import { COLUMN_GAP } from "./constants";
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
 const JELLY_SPRING = {
   damping: 8,
@@ -43,6 +44,10 @@ export const Card = React.memo(
       opacity: opacity.value,
       transformOrigin: ["50%", "0%", 0],
       transform: [{ translateY: translateY.value }, { scale: scale.value }],
+      borderRadius: 40,
+      overflow: "hidden",
+      marginHorizontal: COLUMN_GAP / 2,
+      marginBottom: COLUMN_GAP,
     }));
 
     const titleColor = colord(item.color).darken(0.5).toHex();
@@ -70,10 +75,9 @@ export const Card = React.memo(
         asChild
       >
         <Link.AppleZoom>
-          <Pressable>
+          <AnimatedPressable style={animatedStyle}>
             <Animated.View
               style={[
-                styles.card,
                 { backgroundColor: item.color },
                 styles.cardPressable,
                 animatedStyle,
@@ -130,7 +134,7 @@ export const Card = React.memo(
                 </Text>
               </View>
             </Animated.View>
-          </Pressable>
+          </AnimatedPressable>
         </Link.AppleZoom>
       </Link>
     );
