@@ -1,8 +1,6 @@
-import { View, Pressable, StyleSheet, TextInput } from "react-native";
+import { View, Pressable, StyleSheet, TextInput, Text } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ThemedView } from "@/components/themed-view";
-import { ThemedText } from "@/components/themed-text";
 import { useSignIn, useSignUp } from "@clerk/expo";
 import { Href, useRouter } from "expo-router";
 
@@ -86,13 +84,10 @@ export default function Verify() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ThemedView style={styles.container}>
-        <ThemedText
-          type="title"
-          style={[styles.title, { fontSize: 24, fontWeight: "bold" }]}
-        >
+      <View style={styles.container}>
+        <Text style={[styles.title, { fontSize: 24, fontWeight: "bold" }]}>
           Verify your account
-        </ThemedText>
+        </Text>
         <TextInput
           style={styles.input}
           value={code}
@@ -101,9 +96,7 @@ export default function Verify() {
           onChangeText={setCode}
           keyboardType="numeric"
         />
-        {codeError && (
-          <ThemedText style={styles.error}>{codeError.message}</ThemedText>
-        )}
+        {codeError && <Text style={styles.error}>{codeError.message}</Text>}
         <Pressable
           style={({ pressed }) => [
             styles.button,
@@ -113,7 +106,7 @@ export default function Verify() {
           onPress={handleVerify}
           disabled={fetchStatus === "fetching"}
         >
-          <ThemedText style={styles.buttonText}>Verify</ThemedText>
+          <Text style={styles.buttonText}>Verify</Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [
@@ -122,9 +115,7 @@ export default function Verify() {
           ]}
           onPress={handleResend}
         >
-          <ThemedText style={styles.secondaryButtonText}>
-            I need a new code
-          </ThemedText>
+          <Text style={styles.secondaryButtonText}>I need a new code</Text>
         </Pressable>
         {mode === "signIn" && (
           <Pressable
@@ -134,12 +125,10 @@ export default function Verify() {
             ]}
             onPress={() => signIn.reset()}
           >
-            <ThemedText style={styles.secondaryButtonText}>
-              Start over
-            </ThemedText>
+            <Text style={styles.secondaryButtonText}>Start over</Text>
           </Pressable>
         )}
-      </ThemedView>
+      </View>
     </SafeAreaView>
   );
 }

@@ -72,7 +72,7 @@ export default function Base() {
   };
 
   const handleSignUp = () => {
-    router.push("/(unauthenticated)/signup");
+    router.push("/(unauthenticated)/(signup)/signup");
   };
 
   return (
