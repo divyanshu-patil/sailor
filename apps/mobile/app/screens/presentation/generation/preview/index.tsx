@@ -126,6 +126,7 @@ const PreviewScreen = () => {
           icon={"square.and.pencil"}
           hidden={state !== "completed" && !result?.script}
           tintColor={colors.rust}
+          disabled={isConfirming}
           onPress={() => {
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
