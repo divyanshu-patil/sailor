@@ -42,6 +42,7 @@ interface CardProps {
   };
   introRotation?: SharedValue<number>;
   introScale?: SharedValue<number>;
+  introOpacity?: SharedValue<number>;
 }
 
 const RETURN_START_X = Dimensions.get("window").width * 1.5;
@@ -56,6 +57,7 @@ const Card = React.memo(
     numOfCards,
     introRotation,
     introScale,
+    introOpacity,
   }: CardProps) => {
     const styles = useStyles();
 
@@ -70,6 +72,7 @@ const Card = React.memo(
       );
       const introOffset = introRotation ? introRotation.value : 0;
       const scale = introScale ? introScale.value : 1;
+      const opacity = introOpacity ? introOpacity.value : 1;
       return {
         transform: [
           { translateX: x },
@@ -77,7 +80,7 @@ const Card = React.memo(
           { rotate: `${progress * MAX_ROTATION + introOffset}deg` },
           { scale },
         ],
-        opacity: 1,
+        opacity,
         zIndex: numOfCards + 1,
       };
     });
@@ -92,7 +95,7 @@ const Card = React.memo(
 
       const introOffset = introRotation ? introRotation.value : 0;
       const scale = introScale ? introScale.value : 1;
-
+      const opacity = introOpacity ? introOpacity.value : 1;
       return {
         transform: [
           { translateX },
@@ -100,6 +103,7 @@ const Card = React.memo(
           { rotate: `${rotate + introOffset}deg` },
           { scale },
         ],
+        opacity,
         zIndex: numOfCards - currIndex,
       };
     });
@@ -117,7 +121,7 @@ const Card = React.memo(
 
     return (
       <Animated.View
-        style={[styles.card, { backgroundColor: color }, animatedStyle, ,]}
+        style={[styles.card, { backgroundColor: color }, animatedStyle]}
       >
         <ScriptLine line={text} color={color} />
         <AnimatedPressable
