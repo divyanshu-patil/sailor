@@ -1,15 +1,14 @@
 import { useCallback } from "react";
 import { useJobPoller } from "./use-job-poller";
 import { scriptService } from "@/services/script.debug.service";
-import { GenerateScriptPayload, ScriptResult } from "@/services/script.service";
+import {
+  GenerateScriptPayload,
+  ScriptResult,
+  DeckResult,
+} from "@/services/script.service";
 
 export type { JobState as GenerationState } from "./use-job-poller";
 
-/**
- * Unchanged public API — PreviewScreen keeps working exactly as before.
- * Internally this now just configures the generic poller with the
- * script-specific service calls.
- */
 export function useScriptGeneration() {
   const poller = useJobPoller<ScriptResult>({
     getStatus: scriptService.getJobStatus,
@@ -40,18 +39,13 @@ export function useScriptGeneration() {
 }
 
 /**
- * Deck generation kicked off from a *ready* script via the new
- * /confirm route. Reuses the exact same poll/status/result machinery —
- * just wired to different endpoints.
- *
- * NOTE / ASSUMPTION: `scriptService.getDeckResult` doesn't exist yet in
- * your service file — I'm assuming the deck's final payload comes from
- * a separate endpoint (stubbed below as `/deck-result`). If deck results
- * actually come back from the same `/result` endpoint, just point
- * getResult at `scriptService.getResult` instead and drop the stub.
+ * Deck generation kicked off from a *ready* script via the /confirm route.
+ * `getDeckResult` now returns the full deck payload (title, color,
+ * slideCount, etc.) so ResultsScreen can build its Link params directly
+ * off `result` without a second `deckService.getDeck()` fetch.
  */
 export function useDeckGeneration() {
-  const poller = useJobPoller<{ id: string; job_id: string }>({
+  const poller = useJobPoller<DeckResult>({
     getStatus: scriptService.getJobStatus,
     getResult: scriptService.getDeckResult,
     cancelJob: scriptService.cancelJob,

@@ -2,6 +2,7 @@ import { fonts } from "@/constants/fonts";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
 import { TextMorph } from "../../../../components/text-morph";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 interface StatusTextProps {
   labels: string[];
@@ -84,9 +85,12 @@ const StatusText = ({
     //     {statusText}
     //   </Text>
     // </Host>
-    <View style={[styles.container, containerStyles]}>
+    <Animated.View
+      style={[styles.container, containerStyles]}
+      layout={LinearTransition.springify()}
+    >
       <TextMorph text={statusText} color={accentColor} fontSize={fontSize} />
-    </View>
+    </Animated.View>
   );
 };
 

@@ -8,7 +8,7 @@ import {
   Group,
   matchFont,
 } from "@shopify/react-native-skia";
-import {
+import Animated, {
   useSharedValue,
   useDerivedValue,
   withSpring,
@@ -370,7 +370,7 @@ export function TextMorph({
   const canvasHeight = Math.min(rowsUsed, maxLines) * resolvedLineHeight;
 
   return (
-    <View
+    <Animated.View
       style={{ width: "100%", alignSelf: "stretch" }}
       onLayout={(e) => {
         const w = e.nativeEvent.layout.width;
@@ -392,6 +392,6 @@ export function TextMorph({
           ))}
         </Canvas>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }

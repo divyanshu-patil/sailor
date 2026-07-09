@@ -265,41 +265,40 @@ export const scriptService = {
         throw new Error(`Unknown deck job: ${jobId}`);
       }
 
-      // First create the deck
       const deck = await deckService.createDeck({
         title: "The Future of Renewable Energy",
         description: "",
         color: "#F4D35E",
       });
 
-      // Now create cards for this deck to get proper slideCount/durationMins
-      // (Same logic as card.debug.service.ts uses)
       const cards = dummyScriptCards.map((card, index) => ({
         ...card,
         id: `${deck.id}-card-${index + 1}`,
         color: FALLBACK_COLORS[index % FALLBACK_COLORS.length],
       }));
-
-      // Store the cards for this deck
       cardStore.set(deck.id, cards);
 
-      // Calculate slideCount and estimate duration (assuming ~15-30 sec per card)
       const slideCount = cards.length;
-      const durationMins = Math.ceil(slideCount * 0.5); // ~30 sec per card average
+      const durationMins = Math.ceil(slideCount * 0.5);
 
-      // Update the deck with calculated values
-      await deckService.updateDeck(deck.id, {
+      const updatedDeck = await deckService.updateDeck(deck.id, {
         slideCount,
         durationMins,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 400)); // simulate GET latency
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       return {
-        id: deck.id,
+        id: updatedDeck.id,
         job_id: jobId,
-        title: deck.title,
-        created_at: deck.updatedAt.toISOString(),
+        title: updatedDeck.title,
+        description: updatedDeck.description,
+        color: updatedDeck.color,
+        slideCount: updatedDeck.slideCount,
+        durationMins: updatedDeck.durationMins,
+        isFavourite: updatedDeck.isFavourite || false,
+        updatedAt: updatedDeck.updatedAt.toISOString(),
+        created_at: updatedDeck.updatedAt.toISOString(),
       };
     } catch (e: any) {
       console.log("deck result error", e.response?.data, e.response?.status);

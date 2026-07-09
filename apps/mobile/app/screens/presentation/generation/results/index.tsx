@@ -11,6 +11,9 @@ import BlobBackground from "../components/background";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import StatusText from "../preview/components/generating/components/status-text";
 import { getGeneratingMessages } from "../preview/components/generating/utils/get-generation-messages";
+import Card from "./components/card";
+import Spacer from "@/components/ui/shared/spacer";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 type ResultsScreenParams = {
   jobId: string; // deck job id, handed off from PreviewScreen's handleCreate
@@ -22,8 +25,6 @@ const ResultsScreen = () => {
 
   const { state, result, error, resumeDeckGeneration, stopDeckGeneration } =
     useDeckGeneration();
-
-  const [isOpening, setIsOpening] = useState(false);
 
   const startedRef = useRef(false);
 
@@ -42,58 +43,35 @@ const ResultsScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleOpenCard = async () => {
-    if (!result?.id || isOpening) return;
-
-    console.log(result);
-    try {
-      setIsOpening(true);
-      // Detail screen renders from route params first (for the AppleZoom
-      // transition), same as when opened from AllScriptsScreen's Card —
-      // so fetch the full deck now rather than passing a bare id.
-      const deck = await deckService.getDeck(result.id);
-
-      router.push({
-        pathname: "/(authenticated)/(script)/[id]",
-        params: {
-          id: deck.id,
-          title: deck.title,
-          description: deck.description,
-          color: deck.color,
-          updatedAt: deck.updatedAt.toISOString(),
-          slideCount: String(deck.slideCount),
-          durationMins: String(deck.durationMins),
-          isFavourite: JSON.stringify(deck.isFavourite),
-        },
-      });
-    } catch {
-      // best-effort — surface however you show errors elsewhere on this screen
-    } finally {
-      setIsOpening(false);
-    }
-  };
-
   const headerHeight = useHeaderHeight();
   return (
     <>
       <BlobBackground />
 
-      <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        <StatusText
-          labels={getGeneratingMessages(state, "Your Script is Ready")}
-          accentColor={colors.rust}
-        />
-
-        <Pressable
-          style={[styles.button, { backgroundColor: colors.rust }]}
-          onPress={handleOpenCard}
-          disabled={isOpening}
+      <Animated.View
+        style={[{ paddingTop: headerHeight }, styles.container]}
+        layout={LinearTransition.springify().damping(20)}
+      >
+        <Animated.View
+          style={[styles.statusText, { top: headerHeight + 20 }]}
+          layout={LinearTransition.springify()}
         >
-          <Text style={styles.buttonText}>
-            {isOpening ? "Opening…" : "Open"}
-          </Text>
-        </Pressable>
-      </View>
+          <StatusText
+            labels={getGeneratingMessages(state, "Your Script is Ready")}
+            accentColor={colors.rust}
+          />
+        </Animated.View>
+        <Spacer />
+        {result && (
+          <Card
+            item={{
+              ...result,
+              updatedAt: new Date(result.updatedAt),
+            }}
+          />
+        )}
+        <Spacer />
+      </Animated.View>
       {state !== "completed" && (
         <GeneratingScreen
           status={state}
@@ -109,9 +87,10 @@ export default ResultsScreen;
 
 const styles = StyleSheet.create({
   container: {
+    height: "100%",
     paddingHorizontal: 30,
     alignItems: "center",
-    gap: 24,
+    position: "relative",
   },
   title: {
     fontFamily: fonts.krona,
@@ -127,5 +106,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.krona,
     fontSize: 18,
     color: "#fff",
+  },
+  statusText: {
+    position: "absolute",
+    // left: 0,
   },
 });

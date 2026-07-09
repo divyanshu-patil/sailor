@@ -42,8 +42,13 @@ export interface DeckResult {
   id: string;
   job_id: string;
   title: string;
+  description: string;
+  color: string;
+  slideCount: number;
+  durationMins: number;
+  isFavourite: boolean;
+  updatedAt: string; // ISO string from API
   created_at: string;
-  // TODO: fill in actual deck fields (slides, cardCount, etc.)
 }
 
 export const scriptService = {
