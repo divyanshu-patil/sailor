@@ -1,8 +1,8 @@
-import { StyleSheet, TextInput } from "react-native";
-import React, { useCallback, useRef, useState } from "react";
+import { Keyboard, StyleSheet, TextInput } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useScriptStore } from "@/store/script-store";
-import { scriptService } from "@/services/script.debug.service";
+import { useScriptGeneration } from "../hooks/use-script-generation";
 import { useColors } from "@/constants/theme";
 import {
   KeyboardAvoidingView,
@@ -20,7 +20,16 @@ const EditScriptScreen = () => {
   const { jobId } = useLocalSearchParams<EditScriptScreenParams>();
   const { script, setResult } = useScriptStore();
   const [scriptValue, setScriptValue] = useState<string>(script);
-  const [saving, setSaving] = useState(false);
+
+  // Use the presentation hook which uses debug service
+  const { edit, isRevising: saving, attach } = useScriptGeneration();
+
+  // Attach to the job when jobId is available
+  useEffect(() => {
+    if (jobId) {
+      attach(jobId);
+    }
+  }, [jobId, attach]);
 
   // undo/redo history
   const historyRef = useRef<string[]>([script]);
@@ -86,16 +95,22 @@ const EditScriptScreen = () => {
 
   const handleConfirm = async () => {
     if (saving) return;
-    setSaving(true);
     try {
-      const updated = await scriptService.edit(jobId, scriptValue);
-      setResult(updated);
-      KeyboardController.dismiss();
-      router.dismiss();
+      // Pass the jobId and script value to the edit function
+      const updated = await edit(scriptValue);
+      if (updated) {
+        setResult({
+          job_id: updated.job_id,
+          title: updated.title,
+          script: updated.script,
+        });
+        KeyboardController.dismiss();
+        Keyboard.dismiss();
+
+        router.dismiss();
+      }
     } catch {
       // surface a toast/snackbar here in your existing error pattern
-    } finally {
-      setSaving(false);
     }
   };
 

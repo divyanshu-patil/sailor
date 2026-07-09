@@ -5,10 +5,7 @@ import { router, Stack } from "expo-router";
 
 const ViewAllScript = () => {
   return (
-    <ScrollView
-      contentContainerStyle={{ flex: 1 }}
-      contentInsetAdjustmentBehavior="automatic"
-    >
+    <>
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
           icon={"chevron.backward"}
@@ -16,7 +13,7 @@ const ViewAllScript = () => {
         ></Stack.Toolbar.Button>
       </Stack.Toolbar>
       <AllScriptsScreen />
-    </ScrollView>
+    </>
   );
 };
 

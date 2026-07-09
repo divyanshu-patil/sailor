@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useJobPoller } from "./use-job-poller";
 import { scriptService } from "@/services/script.debug.service";
 import {
@@ -16,6 +16,8 @@ export function useScriptGeneration() {
     cancelJob: scriptService.cancelJob,
   });
 
+  const [isRevising, setIsRevising] = useState(false);
+
   const startGeneration = useCallback(
     (payload: GenerateScriptPayload) => {
       console.log("started generation");
@@ -29,12 +31,64 @@ export function useScriptGeneration() {
     return poller.stop();
   }, [poller]);
 
+  const revise = useCallback(
+    async (instruction: string): Promise<ScriptResult | undefined> => {
+      const jobId = poller.jobIdRef.current;
+      if (!jobId) return undefined;
+
+      setIsRevising(true);
+      try {
+        const result = await scriptService.revise(jobId, instruction);
+        poller.setResult(result);
+        return result;
+      } catch {
+        // Error is handled by the caller
+        return undefined;
+      } finally {
+        setIsRevising(false);
+      }
+    },
+    [poller],
+  );
+
+  const edit = useCallback(
+    async (script: string): Promise<ScriptResult | undefined> => {
+      const jobId = poller.jobIdRef.current;
+      if (!jobId) return undefined;
+
+      setIsRevising(true);
+      try {
+        const result = await scriptService.edit(jobId, script);
+        poller.setResult(result);
+        return result;
+      } catch {
+        // Error is handled by the caller
+        return undefined;
+      } finally {
+        setIsRevising(false);
+      }
+    },
+    [poller],
+  );
+
+  // Expose attach for editing existing jobs
+  const attach = useCallback(
+    (jobId: string) => {
+      poller.attach(jobId);
+    },
+    [poller],
+  );
+
   return {
     state: poller.state,
     result: poller.result,
     error: poller.error,
     startGeneration,
     stopGeneration,
+    revise,
+    edit,
+    attach,
+    isRevising,
   };
 }
 

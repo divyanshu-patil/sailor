@@ -20,7 +20,8 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { deckService, DeckItem } from "@/services/deck.debug.service";
+import { DeckItem } from "@/services/deck.debug.service";
+import { useDeck } from "@/hooks";
 
 type ScriptDetailParams = {
   id: string;
@@ -66,57 +67,32 @@ export default function ScriptDetailScreen() {
     [params],
   );
 
-  const [script, setScript] = useState<DeckItem>(paramScript);
-  const [isFavourite, setIsFavourite] = useState(paramScript.isFavourite);
-  const [isDeleting, setIsDeleting] = useState(false);
+  // Use initial data from params, then refresh from API
+  const { data: script, isMutating: isDeleting, toggleFavourite, deleteDeck } = useDeck({
+    deckId: paramScript.id,
+    initialData: paramScript,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const fresh = await deckService.getDeck(paramScript.id);
-        if (!cancelled) {
-          setScript(fresh);
-          setIsFavourite(fresh.isFavourite);
-        }
-      } catch (e) {
-        // keep showing param-derived data if the refresh fails
-        console.log("getDeck refresh error", e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [paramScript.id]);
+  // Use the fetched data if available, otherwise fall back to params
+  const currentScript = script ?? paramScript;
+  const isFavourite = currentScript.isFavourite ?? false;
 
   const handleToggleFavourite = async () => {
-    const next = !isFavourite;
-    setIsFavourite(next); // optimistic
-    try {
-      const updated = await deckService.toggleFavourite(script.id);
-      setIsFavourite(updated.isFavourite);
-    } catch (e) {
-      setIsFavourite(!next); // revert on failure
-      console.log("toggleFavourite error", e);
-    }
+    await toggleFavourite();
   };
 
   const handleDelete = async () => {
     if (isDeleting) return;
-    setIsDeleting(true);
-    try {
-      await deckService.deleteDeck(script.id);
+    const success = await deleteDeck();
+    if (success !== undefined) {
       router.back();
-    } catch (e) {
-      setIsDeleting(false);
-      console.log("deleteDeck error", e);
     }
   };
 
   useEffect(() => {
     setTimeout(() => {
-      setCardCountNum1(Number(script.slideCount.toString().charAt(0)));
-      setCardCountNum2(Number(script.slideCount.toString().charAt(1)));
+      setCardCountNum1(Number(currentScript.slideCount.toString().charAt(0)));
+      setCardCountNum2(Number(currentScript.slideCount.toString().charAt(1)));
     }, 500);
 
     cardScale.value = withDelay(
@@ -158,7 +134,7 @@ export default function ScriptDetailScreen() {
       setCardCountNum1(0);
       setCardCountNum2(0);
     };
-  }, [cardRotate, cardScale, script.slideCount, shadowOffsetX, shadowOffsetY]);
+  }, [cardRotate, cardScale, currentScript.slideCount, shadowOffsetX, shadowOffsetY]);
 
   const animatedCardStyle = useAnimatedStyle(() => ({
     transform: [
@@ -176,20 +152,20 @@ export default function ScriptDetailScreen() {
     ],
   }));
 
-  const scriptText = `Your CPU speaks at the speed of light. Your hard disk speaks at the speed of a bicycle. And somehow — they have to talk to each other. 
+  const scriptText = `Your CPU speaks at the speed of light. Your hard disk speaks at the speed of a bicycle. And somehow — they have to talk to each other.
 Every single time you open a file, plug in a keyboard, or save your work. The system that makes that conversation possible — without crashing, without data loss, without freezing your processor — is the *Advanced I/O System*. And understanding it is understanding the backbone of every computer ever built.`;
 
-  const textDarkColor = colord(script.color)
+  const textDarkColor = colord(currentScript.color)
     .darken(0.35)
     .desaturate(0.5)
     .toHex();
-  const textTitleColor = colord(script.color)
+  const textTitleColor = colord(currentScript.color)
     .darken(0.25)
     .desaturate(0.6)
     .toHex();
-  const cardColor = script.color;
-  const scriptCardColor = script.color;
-  const screenColor = colord(script.color).lighten(0.18).toHex();
+  const cardColor = currentScript.color;
+  const scriptCardColor = currentScript.color;
+  const screenColor = colord(currentScript.color).lighten(0.18).toHex();
 
   return (
     <>
@@ -246,17 +222,17 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
             >
               <View style={styles.heroContent}>
                 <Text style={[styles.heroTitle, { color: textDarkColor }]}>
-                  {script.title}
+                  {currentScript.title}
                 </Text>
                 <CtaButton
                   label="GO"
-                  accentColor={script.color}
+                  accentColor={currentScript.color}
                   onPress={() =>
                     router.navigate({
                       pathname: "/(authenticated)/(script)/script-practice",
                       params: {
-                        id: script.id,
-                        color: script.color,
+                        id: currentScript.id,
+                        color: currentScript.color,
                       },
                     })
                   }
@@ -301,11 +277,11 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
           </View>
           <View style={styles.pillContainer}>
             <Pill
-              color={script.color}
+              color={currentScript.color}
               variant="duration"
-              durationMins={script.durationMins}
+              durationMins={currentScript.durationMins}
             />
-            <Pill color={script.color} variant="date" date={script.updatedAt} />
+            <Pill color={currentScript.color} variant="date" date={currentScript.updatedAt} />
           </View>
         </View>
 
@@ -321,7 +297,7 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
             onPress={() =>
               router.navigate({
                 pathname: "/(authenticated)/(script)/script",
-                params: { script: script.id, color: script.color },
+                params: { script: currentScript.id, color: currentScript.color },
               })
             }
           >
@@ -333,11 +309,11 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
             </Text>
             <CtaButton
               label="View"
-              accentColor={script.color}
+              accentColor={currentScript.color}
               onPress={() =>
                 router.navigate({
                   pathname: "/(authenticated)/(script)/script",
-                  params: { script: script.id, color: script.color },
+                  params: { script: currentScript.id, color: currentScript.color },
                 })
               }
             />
