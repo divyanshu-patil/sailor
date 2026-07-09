@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
   useLocalSearchParams,
@@ -6,12 +6,15 @@ import {
   router,
   useFocusEffect,
 } from "expo-router";
-import { useScriptGeneration } from "../hooks/use-script-generation";
-import { PresentationFormState } from "../new-script/types/types";
-import GeneratingScreen from "../generating";
-import BlobBackground from "./components/background";
-import StatusText from "../generating/components/status-text";
-import { getGeneratingMessages } from "../generating/utils/get-generation-messages";
+import {
+  useScriptGeneration,
+  useDeckGeneration,
+} from "../../hooks/use-script-generation";
+import { PresentationFormState } from "../../new-script/types/types";
+import GeneratingScreen from "./components/generating";
+import BlobBackground from "../components/background";
+import StatusText from "./components/generating/components/status-text";
+import { getGeneratingMessages } from "./components/generating/utils/get-generation-messages";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import ScriptText from "./components/script-text/script-text";
 import Animated, { LinearTransition } from "react-native-reanimated";
@@ -32,8 +35,30 @@ const PreviewScreen = () => {
     () => JSON.parse(form),
     [form],
   );
+
   const { state, result, error, startGeneration, stopGeneration } =
     useScriptGeneration();
+
+  const [isConfirming, setIsConfirming] = useState(false);
+  const { startDeckGeneration } = useDeckGeneration();
+
+  const handleCreate = async () => {
+    if (state !== "completed" || !jobId) return;
+
+    try {
+      setIsConfirming(true);
+      const deckJobId = await startDeckGeneration(jobId);
+      router.push({
+        pathname: "/(authenticated)/(script)/results",
+        params: { jobId: deckJobId },
+      });
+    } catch {
+      // deckError will already be set by the hook; surface it however you
+      // show errors elsewhere on this screen (toast, inline text, etc.)
+    } finally {
+      setIsConfirming(false);
+    }
+  };
 
   const jobId = useScriptStore((s) => s.jobId);
   const title = useScriptStore((s) => s.title);
@@ -101,6 +126,7 @@ const PreviewScreen = () => {
           icon={"square.and.pencil"}
           hidden={state !== "completed" && !result?.script}
           tintColor={colors.rust}
+          disabled={isConfirming}
           onPress={() => {
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
@@ -109,16 +135,11 @@ const PreviewScreen = () => {
           }}
         />
         <Stack.Toolbar.Button
-          // icon={"square.and.pencil"}
           hidden={state !== "completed" && !result?.script}
           tintColor={colors.rust}
           variant="prominent"
-          onPress={() => {
-            router.push({
-              pathname: "/(authenticated)/(script)/results",
-              params: { jobId },
-            });
-          }}
+          disabled={isConfirming}
+          onPress={handleCreate}
         >
           Create
         </Stack.Toolbar.Button>

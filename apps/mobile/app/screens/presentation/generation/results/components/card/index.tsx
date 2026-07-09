@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
@@ -11,53 +10,40 @@ import { colord } from "colord";
 import { Link } from "expo-router";
 
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
-import { getCardTitleMargin } from "@/utils/getCardTitleMargin";
 import { DeckItem } from "@/services/deck.service";
-import { COLUMN_GAP } from "./constants";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import Spacer from "@/components/ui/shared/spacer";
 
 const JELLY_SPRING = {
   damping: 8,
   stiffness: 120,
   mass: 0.6,
-  overshootClamping: false,
 };
 
-export const Card = React.memo(
-  ({ item, index }: { item: DeckItem; index: number }) => {
-    const scale = useSharedValue(0.55);
-    const opacity = useSharedValue(0);
-    const translateY = useSharedValue(24);
+const Card = React.memo(({ item }: { item: DeckItem }) => {
+  const titleColor = colord(item.color).darken(0.5).toHex();
+  const accentColor = colord(item.color).darken(0.35).desaturate(0.24).toHex();
+  const pillColor = colord(item.color).lighten(0.08).desaturate(0.08).toHex();
 
-    useEffect(() => {
-      const delay = (index % 8) * 55;
+  const scale = useSharedValue(0.55);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(24);
 
-      opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
-      translateY.value = withDelay(
-        delay,
-        withSpring(0, { damping: 30, stiffness: 160 }),
-      );
-      scale.value = withDelay(delay, withSpring(1, JELLY_SPRING));
-    }, [index, opacity, scale, translateY]);
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 180 });
+    translateY.value = withSpring(0, { damping: 30, stiffness: 160 });
+    scale.value = withSpring(1, JELLY_SPRING);
+  }, [opacity, scale, translateY]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-      opacity: opacity.value,
-      transformOrigin: ["50%", "0%", 0],
-      transform: [{ translateY: translateY.value }, { scale: scale.value }],
-      borderRadius: 40,
-      overflow: "hidden",
-      marginHorizontal: COLUMN_GAP / 2,
-      marginBottom: COLUMN_GAP,
-    }));
-
-    const titleColor = colord(item.color).darken(0.5).toHex();
-    const accentColor = colord(item.color)
-      .darken(0.35)
-      .desaturate(0.24)
-      .toHex();
-    const pillColor = colord(item.color).lighten(0.08).desaturate(0.08).toHex();
-
-    return (
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transformOrigin: ["50%", "0%", 0],
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    borderRadius: 40,
+    overflow: "hidden",
+  }));
+  return (
+    <Animated.View style={[styles.container]}>
       <Link
         href={{
           pathname: "/(authenticated)/(script)/[id]",
@@ -77,24 +63,21 @@ export const Card = React.memo(
         <Link.AppleZoom>
           <AnimatedPressable style={animatedStyle}>
             <Animated.View
-              style={[
-                { backgroundColor: item.color },
-                styles.cardPressable,
-                animatedStyle,
-              ]}
+              style={[{ backgroundColor: item.color }, styles.cardPressable]}
             >
               <Text
-                numberOfLines={2}
+                numberOfLines={3}
                 style={[
                   styles.cardTitle,
                   {
                     color: titleColor,
-                    marginBottom: getCardTitleMargin(item.slideCount),
                   },
                 ]}
               >
                 {item.title}
               </Text>
+
+              <Spacer />
 
               <View style={styles.cardFooter}>
                 <View
@@ -107,7 +90,7 @@ export const Card = React.memo(
                 >
                   <MaterialDesignIcons
                     name="cards-playing"
-                    size={24}
+                    size={32}
                     color={accentColor}
                   />
                   <Text
@@ -137,31 +120,34 @@ export const Card = React.memo(
           </AnimatedPressable>
         </Link.AppleZoom>
       </Link>
-    );
-  },
-);
-
+    </Animated.View>
+  );
+});
+export default Card;
 Card.displayName = "Card";
 
 const styles = StyleSheet.create({
+  spacer: { flex: 1 },
+  container: {
+    paddingHorizontal: 20,
+  },
   card: {
     borderRadius: 40,
     overflow: "hidden",
-    marginHorizontal: COLUMN_GAP / 2,
-    marginBottom: COLUMN_GAP,
   },
   cardPressable: {
-    paddingHorizontal: 22,
-    paddingTop: 26,
-    paddingBottom: 18,
+    paddingHorizontal: 30,
+    paddingVertical: 26,
+
+    width: "100%",
+    aspectRatio: 3 / 4,
   },
   cardPressed: {
     opacity: 0.85,
   },
   cardTitle: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: "700",
-    marginBottom: 6,
     fontFamily: "KronaOne",
   },
   cardDescription: {
@@ -170,7 +156,6 @@ const styles = StyleSheet.create({
     color: "#3C3C43",
   },
   cardFooter: {
-    marginTop: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -182,7 +167,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   metaPillText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "500",
     color: "#1C1C1E",
   },
@@ -192,6 +177,8 @@ const styles = StyleSheet.create({
     transform: [{ translateY: 12 }, { translateX: -5 }],
   },
   slideCountPill: {
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     flexDirection: "row",
@@ -200,7 +187,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -5 }],
   },
   slideCountText: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "700",
   },
 });

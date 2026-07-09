@@ -1,4 +1,4 @@
-import PreviewScreen from "@/screens/presentation/preview";
+import PreviewScreen from "@/screens/presentation/generation/preview";
 
 const Preview = () => {
   return (

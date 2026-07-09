@@ -1,109 +1,74 @@
-import { useCallback } from "react";
-import { StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 
 import { Card } from "./Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "./constants";
-
-// ---------- Types ----------
-
-export type ScriptItem = {
-  id: string;
-  title: string;
-  description: string;
-  color: string;
-  updatedAt: Date;
-  slideCount: number;
-  durationMins: number;
-  mb?: number;
-  isFavourite?: boolean;
-};
-
-// ---------- Mock data ----------
-
-const DATA: ScriptItem[] = [
-  {
-    id: "1",
-    title: "Product Launch",
-    description:
-      "Opening hook, problem framing, three feature highlights, and a closing CTA slide.",
-    color: "#A0A3FF",
-    updatedAt: new Date(2026, 5, 23, 12, 34),
-    slideCount: 65,
-    durationMins: 8,
-    isFavourite: false,
-  },
-  {
-    id: "2",
-    title: "Q3 Investor Update",
-    description: "Revenue, churn, roadmap.",
-    color: "#FFC88A",
-    updatedAt: new Date(2026, 5, 21, 9, 10),
-    slideCount: 45,
-    durationMins: 5,
-    isFavourite: true,
-  },
-  {
-    id: "3",
-    title: "Team Onboarding Deck",
-    description:
-      "Company values, org chart walkthrough, tools setup, first-week expectations, and where to find help when you're stuck.",
-    color: "#EFC1FF",
-    updatedAt: new Date(2026, 5, 20, 16, 2),
-    slideCount: 37,
-    durationMins: 14,
-    isFavourite: false,
-  },
-  {
-    id: "4",
-    title: "Design Review",
-    description: "Wireframes for the onboarding flow.",
-    color: "#A1AFDE",
-    updatedAt: new Date(2026, 5, 18, 11, 45),
-    slideCount: 56,
-    durationMins: 6,
-    isFavourite: false,
-  },
-  {
-    id: "5",
-    title: "Conference Talk",
-    description: "Intro, three case studies, takeaways.",
-    color: "#F78199",
-    updatedAt: new Date(2026, 5, 15, 14, 0),
-    slideCount: 35,
-    durationMins: 20,
-    isFavourite: true,
-  },
-  {
-    id: "6",
-    title: "Sales Pitch v2",
-    description:
-      "Updated pricing tiers, competitor comparison table, and customer testimonial slide added after last week's feedback.",
-    color: "#ACCCC0",
-    updatedAt: new Date(2026, 5, 12, 17, 30),
-    slideCount: 28,
-    durationMins: 7,
-    isFavourite: false,
-  },
-];
-
-// ---------- Jelly spring config ----------
-// Low damping = lots of bounce. Mass adds weight to the wobble.
-
-// ---------- Card ----------
-
-// ---------- Screen ----------
+import { DeckItem, deckService } from "@/services/deck.debug.service";
 
 const AllScriptsScreen = () => {
-  const renderItem: ListRenderItem<ScriptItem> = useCallback(
+  const [decks, setDecks] = useState<DeckItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDecks = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await deckService.getDecks();
+      setDecks(data);
+    } catch {
+      setError("Couldn't load your scripts. Pull to try again.");
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setIsLoading(true);
+      await fetchDecks();
+      setIsLoading(false);
+    })();
+  }, [fetchDecks]);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchDecks();
+    setIsRefreshing(false);
+  }, [fetchDecks]);
+
+  const renderItem: ListRenderItem<DeckItem> = useCallback(
     ({ item, index }) => <Card item={item} index={index} />,
     [],
   );
 
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (error && decks.length === 0) {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <Text style={styles.messageText}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (decks.length === 0) {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <Text style={styles.messageText}>No scripts yet.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <FlashList
-        data={DATA}
+        data={decks}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         masonry
@@ -111,6 +76,8 @@ const AllScriptsScreen = () => {
         optimizeItemArrangement
         contentContainerStyle={styles.screenContent}
         showsVerticalScrollIndicator={false}
+        refreshing={isRefreshing}
+        onRefresh={onRefresh}
       />
     </View>
   );
@@ -121,6 +88,16 @@ export default AllScriptsScreen;
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  messageText: {
+    fontSize: 16,
+    fontWeight: "500",
+    textAlign: "center",
   },
   screenContent: {
     paddingHorizontal: SCREEN_PADDING - COLUMN_GAP / 2,

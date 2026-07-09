@@ -1,53 +1,38 @@
-import { Attachment } from "@/types/presentation";
-import { script } from "./script";
-
-export type ScriptJobStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "cancelled";
-
-export interface GenerateScriptPayload {
-  attachments: Attachment[];
-  description: string;
-  durationMinutes: number;
-  audienceIndex: number;
-  cardCount: number;
-}
-
-export interface GenerateScriptResponse {
-  job_id: string;
-  status: ScriptJobStatus;
-}
-
-export interface ScriptJobStatusResponse {
-  job_id: string;
-  status: ScriptJobStatus;
-  progress?: number;
-  error?: string;
-}
-
-export interface ScriptResult {
-  id: string;
-  job_id: string;
-  title: string;
-  script: string;
-  created_at: string;
-}
+import { deckService } from "./deck.debug.service";
+import { script } from "./dummyData/script";
+import { dummyScriptCards } from "./dummyData/cards";
+import {
+  DeckResult,
+  GenerateScriptPayload,
+  GenerateScriptResponse,
+  ScriptJobStatusResponse,
+  ScriptResult,
+} from "./script.service";
+import { CardItem } from "./card.debug.service";
 
 // --- DEV-ONLY MOCK STATE -----------------------------------------
 // Tracks when each job "started" so getJobStatus can fake a delay
 // before flipping to "completed". Delete this whole block once the
 // real backend endpoints (/generate, /jobs/:id, /jobs/:id/result,
-// /jobs/:id/cancel) are ready — swap the bodies back to apiClient calls.
+// /jobs/:id/cancel, /jobs/:id/confirm, /jobs/:id/deck-result) are
+// ready — swap the bodies back to apiClient calls.
 const DEV_JOB_START_TIMES = new Map<string, number>();
 const DEV_CANCELLED_JOBS = new Set<string>();
-const DEV_STATUS_CHANGE_MS = 4000;
+const DEV_STATUS_CHANGE_MS = 1500;
 const DEV_SCRIPT_OVERRIDES = new Map<
   string,
   { title: string; script: string }
 >();
+
+const DECK_STATUS_CHANGE_MS = 2000;
+
+const deckJobStore = new Map<string, { startedAt: number }>();
+
+// Colors for cards (same as card.debug.service.ts)
+const FALLBACK_COLORS = ["#F4D35E", "#EE964B", "#F95738", "#0D3B66", "#5FA8D3"];
+
+// Card store keyed by deckId
+const cardStore = new Map<string, CardItem[]>();
 
 // -------------------------------------------------------------------
 
@@ -67,7 +52,7 @@ export const scriptService = {
       const response = await new Promise<GenerateScriptResponse>((resolve) => {
         setTimeout(() => {
           DEV_JOB_START_TIMES.set(jobId, Date.now());
-          resolve({ job_id: jobId, status: "pending" });
+          resolve({ job_id: jobId, status: "pending", type: "script" });
         }, 500); // simulate initial POST latency
       });
 
@@ -89,8 +74,44 @@ export const scriptService = {
       // );
       // return response.data;
 
+      const isDeckJob = deckJobStore.has(jobId);
+      const type: "script" | "deck" = isDeckJob ? "deck" : "script";
+
       if (DEV_CANCELLED_JOBS.has(jobId)) {
-        return { job_id: jobId, status: "cancelled" };
+        return { job_id: jobId, status: "cancelled", type };
+      }
+
+      if (isDeckJob) {
+        const { startedAt } = deckJobStore.get(jobId)!;
+        const elapsed = Date.now() - startedAt;
+
+        return await new Promise<ScriptJobStatusResponse>((resolve) => {
+          setTimeout(() => {
+            if (DEV_CANCELLED_JOBS.has(jobId)) {
+              resolve({ job_id: jobId, status: "cancelled", type });
+              return;
+            }
+
+            if (elapsed >= DECK_STATUS_CHANGE_MS) {
+              resolve({
+                job_id: jobId,
+                status: "completed",
+                progress: 100,
+                type,
+              });
+            } else {
+              resolve({
+                job_id: jobId,
+                status: "processing",
+                progress: Math.min(
+                  90,
+                  Math.round((elapsed / DECK_STATUS_CHANGE_MS) * 100),
+                ),
+                type,
+              });
+            }
+          }, 300); // simulate GET latency
+        });
       }
 
       const startedAt = DEV_JOB_START_TIMES.get(jobId) ?? Date.now();
@@ -99,12 +120,17 @@ export const scriptService = {
       return await new Promise<ScriptJobStatusResponse>((resolve) => {
         setTimeout(() => {
           if (DEV_CANCELLED_JOBS.has(jobId)) {
-            resolve({ job_id: jobId, status: "cancelled" });
+            resolve({ job_id: jobId, status: "cancelled", type });
             return;
           }
 
           if (elapsed >= DEV_STATUS_CHANGE_MS) {
-            resolve({ job_id: jobId, status: "completed", progress: 100 });
+            resolve({
+              job_id: jobId,
+              status: "completed",
+              progress: 100,
+              type,
+            });
           } else {
             resolve({
               job_id: jobId,
@@ -113,6 +139,7 @@ export const scriptService = {
                 90,
                 Math.round((elapsed / DEV_STATUS_CHANGE_MS) * 100),
               ),
+              type,
             });
           }
         }, 300); // simulate GET latency
@@ -206,6 +233,75 @@ export const scriptService = {
       });
     } catch (e: any) {
       console.log("script edit error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  confirm: async (jobId: string): Promise<GenerateScriptResponse> => {
+    try {
+      // const response = await apiClient.post<GenerateScriptResponse>(
+      //   `/api/v1/scripts/jobs/${jobId}/confirm`,
+      // );
+      // return response.data;
+
+      // Confirm mints a new "deck job" derived from the script job.
+      const deckJobId = `deck-${jobId}-${Date.now()}`;
+
+      return await new Promise<GenerateScriptResponse>((resolve) => {
+        setTimeout(() => {
+          deckJobStore.set(deckJobId, { startedAt: Date.now() });
+          resolve({ job_id: deckJobId, status: "pending", type: "deck" });
+        }, 500); // simulate initial POST latency
+      });
+    } catch (e: any) {
+      console.log("script confirm error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  getDeckResult: async (jobId: string): Promise<DeckResult> => {
+    try {
+      if (!deckJobStore.has(jobId)) {
+        throw new Error(`Unknown deck job: ${jobId}`);
+      }
+
+      const deck = await deckService.createDeck({
+        title: "The Future of Renewable Energy",
+        description: "",
+        color: "#F4D35E",
+      });
+
+      const cards = dummyScriptCards.map((card, index) => ({
+        ...card,
+        id: `${deck.id}-card-${index + 1}`,
+        color: FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+      }));
+      cardStore.set(deck.id, cards);
+
+      const slideCount = cards.length;
+      const durationMins = Math.ceil(slideCount * 0.5);
+
+      const updatedDeck = await deckService.updateDeck(deck.id, {
+        slideCount,
+        durationMins,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      return {
+        id: updatedDeck.id,
+        job_id: jobId,
+        title: updatedDeck.title,
+        description: updatedDeck.description,
+        color: updatedDeck.color,
+        slideCount: updatedDeck.slideCount,
+        durationMins: updatedDeck.durationMins,
+        isFavourite: updatedDeck.isFavourite || false,
+        updatedAt: updatedDeck.updatedAt.toISOString(),
+        created_at: updatedDeck.updatedAt.toISOString(),
+      };
+    } catch (e: any) {
+      console.log("deck result error", e.response?.data, e.response?.status);
       throw e;
     }
   },
