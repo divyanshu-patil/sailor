@@ -1,6 +1,6 @@
 import { fonts } from "@/constants/fonts";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { StyleSheet, ViewStyle } from "react-native";
 import { TextMorph } from "../../../../components/text-morph";
 import Animated, { LinearTransition } from "react-native-reanimated";
 

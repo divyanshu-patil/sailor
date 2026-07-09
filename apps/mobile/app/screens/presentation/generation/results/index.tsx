@@ -1,11 +1,10 @@
 import { fonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Pressable, View, StyleSheet, Text } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useRef } from "react";
+import { StyleSheet } from "react-native";
 import GeneratingScreen from "../preview/components/generating";
 import { useDeckGeneration } from "../../hooks/use-script-generation";
-import { deckService } from "@/services/deck.debug.service";
 import BlobBackground from "../components/background";
 
 import { useHeaderHeight } from "expo-router/build/react-navigation";
