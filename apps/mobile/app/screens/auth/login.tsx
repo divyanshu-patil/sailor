@@ -39,15 +39,18 @@ import {
   textInputAutocapitalization,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
+import { ThemedView } from "@/components/themed-view";
+import FloatingLabelInput from "@/components/ui/auth/FloatingLabelInput";
+import { useColors } from "@/constants/theme";
+import { AppleSignInButton } from "@/components/ui/auth/AppleSignInButton";
 
 export default function Page() {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
+  const colors = useColors();
 
-  // const [emailAddress, setEmailAddress] = React.useState("");
-  const emailAddress = useNativeState("");
-  const password = useNativeState("");
-  // const [password, setPassword] = React.useState("");
+  const [emailAddress, setEmailAddress] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isSubmitting = fetchStatus === "fetching";
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
@@ -56,8 +59,8 @@ export default function Page() {
     setErrorMessage(null);
 
     const { error } = await signIn.password({
-      emailAddress: emailAddress.value,
-      password: password.value,
+      emailAddress,
+      password,
     });
     if (error) {
       console.error(JSON.stringify(error, null, 2));
@@ -142,101 +145,36 @@ export default function Page() {
               Sign in to continue your presentation journey.
             </Text>
           </VStack>
-          <VStack spacing={5}>
-            <VStack spacing={15}>
-              <HStack
-                spacing={5}
-                modifiers={[
-                  border({ width: 1.5, color: "#E5E7EB" }),
-                  cornerRadius(2),
-                ]}
-              >
-                <IconImage
-                  systemName="envelope"
-                  modifiers={[
-                    padding({ horizontal: 12 }),
-                    frame({
-                      width: 50,
-                      alignment: "center",
-                    }),
-                  ]}
-                />
-                <TextField
-                  placeholder="name@example.com"
-                  text={emailAddress}
-                  modifiers={[
-                    keyboardType("email-address"),
-                    textInputAutocapitalization("never"),
-                    textContentType("emailAddress"),
-                    autocorrectionDisabled(),
-                    submitLabel("next"),
+        </VStack>
+      </Host>
 
-                    padding({ vertical: 10 }),
-                  ]}
-                />
-              </HStack>
-              <HStack
-                spacing={5}
-                modifiers={[
-                  border({ width: 1.5, color: "#E5E7EB" }),
-                  cornerRadius(2),
-                ]}
-              >
-                <IconImage
-                  systemName="lock.fill"
-                  modifiers={[
-                    padding({ horizontal: 12 }),
-                    frame({
-                      width: 50,
-                      alignment: "center",
-                    }),
-                  ]}
-                />
-                <SecureField
-                  placeholder="Password"
-                  text={password}
-                  modifiers={[
-                    textContentType("password"),
-                    submitLabel("done"),
-                    onSubmit(handleSubmit),
-                    padding({ vertical: 10 }),
-                  ]}
-                />
-              </HStack>
-            </VStack>
-            {errorMessage && (
-              <Text
-                modifiers={[
-                  frame({
-                    maxWidth: Infinity,
-                    alignment: "topLeading",
-                  }),
-                  font({ size: 14 }),
-                  padding({ leading: 12 }),
-                  foregroundStyle("#d32f2f"),
-                ]}
-              >
-                {errorMessage}
-              </Text>
-            )}
-            <Text
-              modifiers={[
-                frame({
-                  maxWidth: Infinity,
-                  alignment: "trailing",
-                }),
-                font({ size: 14 }),
-                foregroundStyle("#FF6347"),
-              ]}
-            >
-              forgot Password?
-            </Text>
-          </VStack>
+      <View style={{ padding: 20 }}>
+        <FloatingLabelInput
+          label="Email"
+          value={emailAddress}
+          onChangeText={setEmailAddress}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          focusedBorderColor={colors.colors.rust}
+          focusedLabelColor={colors.colors.rust}
+        />
+        <FloatingLabelInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          isPassword
+          focusedBorderColor={colors.colors.rust}
+          focusedLabelColor={colors.colors.rust}
+        />
+      </View>
+
+      <Host matchContents={{ vertical: true }} style={styles.wrapper}>
+        <VStack spacing={20}>
           <Button
             modifiers={[
               buttonStyle("glassProminent"),
               controlSize("extraLarge"),
-              tint("#FF6347"),
+              tint(colors.colors.rust),
               buttonBorderShape("capsule"),
             ]}
             onPress={handleSubmit}
@@ -252,6 +190,7 @@ export default function Page() {
               {isSubmitting ? "Signing in…" : "Sign In"}
             </Text>
           </Button>
+
           <HStack spacing={12} alignment="center">
             <Rectangle
               modifiers={[
@@ -276,23 +215,27 @@ export default function Page() {
               ]}
             />
           </HStack>
-          <VStack>
-            <GoogleSignInButton />
-          </VStack>
-          <VStack spacing={4}>
-            <Text modifiers={[font({ size: 14 }), foregroundStyle("#666")]}>
-              Don&apos;t have an account?
-            </Text>
-            <Link href="/(unauthenticated)/signup" asChild>
-              <Button
-                label="Sign up"
-                modifiers={[
-                  buttonStyle("plain"),
-                  font({ size: 14, weight: "semibold" }),
-                ]}
-              />
-            </Link>
-          </VStack>
+        </VStack>
+      </Host>
+      <View style={{ paddingHorizontal: 30, marginTop: 20 }}>
+        <GoogleSignInButton logoSource={require("@/assets/icons/google.png")} />
+        <AppleSignInButton />
+      </View>
+      <Host matchContents={{ vertical: true }} style={styles.wrapper}>
+        <VStack spacing={4}>
+          <Text modifiers={[font({ size: 14 }), foregroundStyle("#666")]}>
+            Don&apos;t have an account?
+          </Text>
+
+          <Link href="/(unauthenticated)/signup" asChild>
+            <Button
+              label="Sign up"
+              modifiers={[
+                buttonStyle("plain"),
+                font({ size: 14, weight: "semibold" }),
+              ]}
+            />
+          </Link>
         </VStack>
       </Host>
     </View>
@@ -305,8 +248,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 30,
   },
 
+  wrapper: {
+    marginHorizontal: 20,
+  },
+
   hero: {
-    flex: 0.8,
+    flex: 0.9,
     overflow: "visible",
   },
 
@@ -330,35 +277,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: "#fff",
-  },
-  button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonPressed: {
-    opacity: 0.7,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  secondaryButtonText: {
-    color: "#0a7ea4",
-    fontWeight: "600",
   },
   linkContainer: {
     flexDirection: "row",
@@ -393,14 +311,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     fontWeight: "500",
-  },
-
-  signupButton: {
-    width: "100%",
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "#FF6347",
-    justifyContent: "center",
-    alignItems: "center",
   },
 });
