@@ -5,7 +5,7 @@ import {
   MIN_PASSWORD_LENGTH,
   SignupFormState,
 } from "./types/types";
-
+const COMMON_TLD_REGEX = /\.(com|in|co|org|net|edu|gov|io|ai|dev|app|me)$/i;
 type SignupFormContextValue = {
   firstNameState: string;
   lastNameState: string;
@@ -18,6 +18,8 @@ type SignupFormContextValue = {
   isNameValid: boolean;
   isEmailValid: boolean;
   isPasswordValid: boolean;
+  emailValidationRequested: boolean;
+  setEmailValidationRequested: React.Dispatch<React.SetStateAction<boolean>>;
   errorMessage: string | null;
   setErrorMessage: (message: string | null) => void;
   getSnapshot: () => SignupFormState;
@@ -31,9 +33,11 @@ export function SignupFormProvider({ children }: { children: ReactNode }) {
   const [emailState, setEmailState] = useState("");
   const [passwordState, setPasswordState] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  const [emailValidationRequested, setEmailValidationRequested] =
+    useState(false);
   const isNameValid = firstNameState.trim().length > 0;
-  const isEmailValid = EMAIL_REGEX.test(emailState.trim());
+  const email = emailState.trim();
+  const isEmailValid = EMAIL_REGEX.test(email) && COMMON_TLD_REGEX.test(email);
   const isPasswordValid = passwordState.length >= MIN_PASSWORD_LENGTH;
 
   const getSnapshot = (): SignupFormState => ({
@@ -57,6 +61,8 @@ export function SignupFormProvider({ children }: { children: ReactNode }) {
       isEmailValid,
       isPasswordValid,
       errorMessage,
+      emailValidationRequested,
+      setEmailValidationRequested,
       setErrorMessage,
       getSnapshot,
     }),
@@ -69,6 +75,8 @@ export function SignupFormProvider({ children }: { children: ReactNode }) {
       setLastNameState,
       setEmailState,
       setPasswordState,
+      emailValidationRequested,
+      setEmailValidationRequested,
       isNameValid,
       isEmailValid,
       isPasswordValid,

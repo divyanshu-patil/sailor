@@ -199,6 +199,7 @@ function FlowContent() {
     isPasswordValid,
     getSnapshot,
     setErrorMessage,
+    setEmailValidationRequested,
   } = useSignupForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
@@ -259,13 +260,27 @@ function FlowContent() {
   }, [signUp, errors, getSnapshot, setErrorMessage]);
 
   const goNext = useCallback(() => {
+    if (currentStep === 1) {
+      setEmailValidationRequested(true);
+
+      if (!isEmailValid) {
+        return;
+      }
+    }
+
     if (currentStep < STEP_COUNT - 1) {
       setDirection("forward");
       setCurrentStep((s) => s + 1);
       return;
     }
+
     handleCreateAccount();
-  }, [currentStep, handleCreateAccount]);
+  }, [
+    currentStep,
+    handleCreateAccount,
+    isEmailValid,
+    setEmailValidationRequested,
+  ]);
 
   return (
     <SafeAreaView style={styles.flex} edges={["bottom"]}>

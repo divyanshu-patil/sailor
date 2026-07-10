@@ -1,25 +1,80 @@
 import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View, Text as RNText } from "react-native";
 import { useSignupForm } from "./form-context";
+import { Host, Text, VStack } from "@expo/ui/swift-ui";
+import { font, foregroundStyle, frame } from "@expo/ui/swift-ui/modifiers";
+import { fonts } from "@/constants/fonts";
 
 export default function StepEmail() {
-  const { emailState, setEmailState, isEmailValid } = useSignupForm();
+  const {
+    emailState,
+    setEmailState,
+    isEmailValid,
+    emailValidationRequested,
+    setEmailValidationRequested,
+  } = useSignupForm();
 
-  const showError = emailState.length > 0 && !isEmailValid;
+  const showError =
+    emailValidationRequested && emailState.length > 0 && !isEmailValid;
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>What's your email?</Text>
-        <Text style={styles.subtitle}>
-          We'll send a verification code here.
-        </Text>
-      </View>
+      <Host matchContents={{ vertical: true }}>
+        <VStack>
+          <VStack
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "leading",
+              }),
+            ]}
+          >
+            <Text
+              modifiers={[
+                font({
+                  family: fonts.alanSans.bold,
+                  design: "rounded",
+                  size: 30,
+                }),
+              ]}
+            >
+              What's your email?
+            </Text>
+          </VStack>
+          <VStack
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "leading",
+              }),
+            ]}
+          >
+            <Text
+              modifiers={[
+                foregroundStyle("#44444ec5"),
+                font({
+                  family: fonts.alanSans.semiBold,
+                  design: "rounded",
+                  size: 22,
+                }),
+              ]}
+            >
+              We'll send a verification code to this email.
+            </Text>
+          </VStack>
+        </VStack>
+      </Host>
 
       <TextInput
         placeholder="name@example.com"
         value={emailState}
-        onChangeText={setEmailState}
+        onChangeText={(text) => {
+          setEmailState(text);
+
+          if (emailValidationRequested) {
+            setEmailValidationRequested(false);
+          }
+        }}
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
@@ -27,10 +82,6 @@ export default function StepEmail() {
         returnKeyType="next"
         style={[styles.input, showError && styles.inputError]}
       />
-
-      {showError && (
-        <Text style={styles.error}>Enter a valid email address.</Text>
-      )}
     </View>
   );
 }
@@ -40,6 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 30,
     paddingTop: 40,
+    gap: 16,
   },
   header: {
     marginBottom: 24,
@@ -55,12 +107,10 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 52,
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: "#FFF",
+    fontSize: 20,
+    fontFamily: fonts.alanSans.regular,
   },
   inputError: {
     borderColor: "#d32f2f",
@@ -69,5 +119,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 13,
     color: "#d32f2f",
+    borderRadius: 50,
+    paddingHorizontal: 15,
+    fontFamily: fonts.alanSans.regular,
+    backgroundColor: "#f8d7da",
+    paddingVertical: 10,
+    alignSelf: "flex-start",
   },
 });

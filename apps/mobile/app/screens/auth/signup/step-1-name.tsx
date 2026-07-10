@@ -1,6 +1,17 @@
 import React from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 import { useSignupForm } from "./form-context";
+import { Host, Text, VStack } from "@expo/ui/swift-ui";
+import {
+  Animation,
+  animation,
+  contentTransition,
+  font,
+  foregroundStyle,
+  frame,
+  multilineTextAlignment,
+} from "@expo/ui/swift-ui/modifiers";
+import { fonts } from "@/constants/fonts";
 
 export default function StepName() {
   const { firstNameState, lastNameState, setFirstNameState, setLastNameState } =
@@ -8,7 +19,7 @@ export default function StepName() {
 
   return (
     <View style={styles.container}>
-      <TextInput
+      {/* <TextInput
         placeholder="First name"
         value={firstNameState}
         onChangeText={setFirstNameState}
@@ -26,6 +37,70 @@ export default function StepName() {
         autoCorrect={false}
         autoComplete="family-name"
         returnKeyType="done"
+      /> */}
+
+      <Host matchContents={{ vertical: true }}>
+        <VStack>
+          <VStack
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "leading",
+              }),
+            ]}
+          >
+            <Text
+              modifiers={[
+                font({
+                  family: fonts.alanSans.bold,
+                  design: "rounded",
+                  size: 30,
+                }),
+              ]}
+            >
+              What's your name?
+            </Text>
+          </VStack>
+          <VStack
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "leading",
+              }),
+            ]}
+          >
+            <Text
+              modifiers={[
+                foregroundStyle("#44444ec5"),
+                font({
+                  family: fonts.alanSans.semiBold,
+                  design: "rounded",
+                  size: 22,
+                }),
+              ]}
+            >
+              Please enter your first and last name.
+            </Text>
+          </VStack>
+        </VStack>
+      </Host>
+      <TextInput
+        placeholder="First name"
+        value={firstNameState}
+        onChangeText={setFirstNameState}
+        style={styles.input}
+        autoCorrect={false}
+        autoComplete="given-name"
+        returnKeyType="done"
+      />
+      <TextInput
+        placeholder="Last name (Optional)"
+        value={lastNameState}
+        onChangeText={setLastNameState}
+        style={[styles.input, styles.extra]}
+        autoCorrect={false}
+        autoComplete="family-name"
+        returnKeyType="done"
       />
     </View>
   );
@@ -40,11 +115,12 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 52,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: "#FFF",
+    fontSize: 20,
+    fontFamily: fonts.alanSans.regular,
+  },
+  extra: {
+    height: 30,
   },
 });
