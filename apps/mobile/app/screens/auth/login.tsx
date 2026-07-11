@@ -103,7 +103,12 @@ export default function Page() {
       if (emailCodeFactor) {
         await signIn.mfa.sendEmailCode();
       }
-      router.push("/(unauthenticated)/verify");
+      router.push({
+        pathname: "/(unauthenticated)/verify",
+        params: {
+          flow: "signIn",
+        },
+      });
     } else {
       // Check why the sign-in is not complete
       console.error("Sign-in attempt not complete:", signIn);

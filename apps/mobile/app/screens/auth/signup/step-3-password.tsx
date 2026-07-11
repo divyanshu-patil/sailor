@@ -1,7 +1,9 @@
-import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 import { useSignupForm } from "./form-context";
 import { MIN_PASSWORD_LENGTH } from "./types/types";
+import { Host, Text, VStack } from "@expo/ui/swift-ui";
+import { font, foregroundStyle, frame } from "@expo/ui/swift-ui/modifiers";
+import { fonts } from "@/constants/fonts";
 
 export default function StepPassword() {
   const { passwordState, setPasswordState, isPasswordValid, errorMessage } =
@@ -11,12 +13,51 @@ export default function StepPassword() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Set a password</Text>
-        <Text style={styles.subtitle}>
-          At least {MIN_PASSWORD_LENGTH} characters.
-        </Text>
-      </View>
+      <Host matchContents={{ vertical: true }}>
+        <VStack>
+          <VStack
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "leading",
+              }),
+            ]}
+          >
+            <Text
+              modifiers={[
+                font({
+                  family: fonts.alanSans.bold,
+                  design: "rounded",
+                  size: 30,
+                }),
+              ]}
+            >
+              Set a password
+            </Text>
+          </VStack>
+          <VStack
+            modifiers={[
+              frame({
+                maxWidth: Infinity,
+                alignment: "leading",
+              }),
+            ]}
+          >
+            <Text
+              modifiers={[
+                foregroundStyle("#44444ec5"),
+                font({
+                  family: fonts.alanSans.semiBold,
+                  design: "rounded",
+                  size: 22,
+                }),
+              ]}
+            >
+              At least {MIN_PASSWORD_LENGTH} characters.
+            </Text>
+          </VStack>
+        </VStack>
+      </Host>
 
       <TextInput
         placeholder="Password"
@@ -27,16 +68,8 @@ export default function StepPassword() {
         autoCorrect={false}
         autoComplete="new-password"
         returnKeyType="done"
-        style={[styles.input, showHint && styles.inputError]}
+        style={styles.input}
       />
-
-      {showHint && (
-        <Text style={styles.error}>
-          Password must be at least {MIN_PASSWORD_LENGTH} characters.
-        </Text>
-      )}
-
-      {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
       {/* Clerk CAPTCHA */}
       <View nativeID="clerk-captcha" />
@@ -64,19 +97,9 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 52,
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: "#FFF",
-  },
-  inputError: {
-    borderColor: "#d32f2f",
-  },
-  error: {
-    marginTop: 8,
-    fontSize: 13,
-    color: "#d32f2f",
+    fontSize: 20,
+    fontFamily: fonts.alanSans.regular,
   },
 });

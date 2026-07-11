@@ -9,13 +9,9 @@ export default function StepEmail() {
   const {
     emailState,
     setEmailState,
-    isEmailValid,
     emailValidationRequested,
     setEmailValidationRequested,
   } = useSignupForm();
-
-  const showError =
-    emailValidationRequested && emailState.length > 0 && !isEmailValid;
 
   return (
     <View style={styles.container}>
@@ -80,7 +76,7 @@ export default function StepEmail() {
         autoCorrect={false}
         autoComplete="email"
         returnKeyType="next"
-        style={[styles.input, showError && styles.inputError]}
+        style={styles.input}
       />
     </View>
   );
@@ -112,18 +108,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: fonts.alanSans.regular,
   },
-  inputError: {
-    borderColor: "#d32f2f",
-  },
-  error: {
-    marginTop: 8,
-    fontSize: 13,
-    color: "#d32f2f",
-    borderRadius: 50,
-    paddingHorizontal: 15,
-    fontFamily: fonts.alanSans.regular,
-    backgroundColor: "#f8d7da",
-    paddingVertical: 10,
-    alignSelf: "flex-start",
-  },
+  // inputError: {
+  //   borderColor: "#d32f2f",
+  // },
+  // error: {
+  //   marginTop: 8,
+  //   fontSize: 13,
+  //   color: "#d32f2f",
+  //   borderRadius: 50,
+  //   paddingHorizontal: 15,
+  //   fontFamily: fonts.alanSans.regular,
+  //   backgroundColor: "#f8d7da",
+  //   paddingVertical: 10,
+  //   alignSelf: "flex-start",
+  // },
 });

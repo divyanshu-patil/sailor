@@ -252,7 +252,12 @@ function FlowContent() {
       // Reuses the same verification screen as sign-in — Clerk decides which
       // flow is active. See "Wiring" below for the redirect change needed
       // inside verify.tsx once the code is confirmed.
-      router.push("/(unauthenticated)/verify");
+      router.push({
+        pathname: "/(unauthenticated)/verify",
+        params: {
+          flow: "signUp",
+        },
+      });
     } catch (err) {
       console.error("Sign up error:", JSON.stringify(err, null, 2));
       setErrorMessage("Something went wrong. Please try again.");
