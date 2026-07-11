@@ -46,8 +46,10 @@ import {
   pickerStyle,
   tag,
   scrollDismissesKeyboard,
+  buttonBorderShape,
 } from "@expo/ui/swift-ui/modifiers";
 import HeaderTitlePill from "./components/header-title";
+import { fonts } from "@/constants/fonts";
 
 // ---------------------------------------------------------------------------
 // Types + dummy data — swap DEFAULT_PROFILE for whatever the Profile screen

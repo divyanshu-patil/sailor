@@ -20,6 +20,13 @@ const Layout = () => {
           headerTitle: "Edit Profile",
         }}
       />
+      <Stack.Screen
+        name="settings"
+        options={{
+          presentation: "modal",
+          headerTitle: "Settings",
+        }}
+      />
     </Stack>
   );
 };

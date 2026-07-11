@@ -47,13 +47,25 @@ const ProfileScreen = () => {
   const { signOut } = useClerk();
   const { clearAppState } = useAppStore();
   const handleSignOut = async () => {
-    try {
-      clearAppState();
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-      Alert.alert("Error", "An error occurred while signing out.");
-    }
+    Alert.alert("Logout", "Are you Sure you want to Logout of the Sailor?", [
+      {
+        text: "Cancle",
+        style: "cancel",
+      },
+      {
+        onPress: async () => {
+          try {
+            clearAppState();
+            await signOut();
+          } catch (error) {
+            console.error("Error signing out:", error);
+            Alert.alert("Error", "An error occurred while signing out.");
+          }
+        },
+        text: "Logout",
+        style: "destructive",
+      },
+    ]);
   };
 
   return (
@@ -130,6 +142,11 @@ const ProfileScreen = () => {
             icon={<Ionicons name="settings-sharp" size={22} />}
             iconBgColor="#d9d9d9"
             label="Settings"
+            onPress={() =>
+              router.navigate({
+                pathname: "/(authenticated)/(tabs)/(profile)/settings",
+              })
+            }
           />
         </Section>
         <AnimatedPressable
