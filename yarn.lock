@@ -1858,6 +1858,13 @@
   dependencies:
     "@react-native-vector-icons/common" "^13.0.1"
 
+"@react-native-vector-icons/ionicons@^13.1.2":
+  version "13.1.2"
+  resolved "https://registry.yarnpkg.com/@react-native-vector-icons/ionicons/-/ionicons-13.1.2.tgz#89372a159c120d6711d4264875b0a1ee1f614776"
+  integrity sha512-8TaXKw41MgKADeesrrbUpA3FR81JNy96ogiGRjWgtE1djSEevDsOKMij7Jq/3TfiGaE0prEshU0TcW5qwsf0Ug==
+  dependencies:
+    "@react-native-vector-icons/common" "^13.0.1"
+
 "@react-native-vector-icons/lucide@^13.1.2":
   version "13.1.2"
   resolved "https://registry.yarnpkg.com/@react-native-vector-icons/lucide/-/lucide-13.1.2.tgz#5f029f640fbe1ffb99404c168ad8693fe263ca5e"
@@ -4540,6 +4547,11 @@ expo-keep-awake@~56.0.3:
   version "56.0.3"
   resolved "https://registry.yarnpkg.com/expo-keep-awake/-/expo-keep-awake-56.0.3.tgz#88991b4859c77af73cf68c500839a18fe5d8febe"
   integrity sha512-CLMJXtEiMKknD3Rpm8CRwE6ZJUzu2yCEmRk1sgfHAJ1zIbuEWY3dpPDubtsnuzWm+2k6Sru+yaFbYsvPWmTiBA==
+
+expo-linear-gradient@~56.0.4:
+  version "56.0.4"
+  resolved "https://registry.yarnpkg.com/expo-linear-gradient/-/expo-linear-gradient-56.0.4.tgz#80560824dfedf23934cff4cfb8017c78ecc158e3"
+  integrity sha512-KUp1dNSRtuMyiExhf6FJf5YUtmw2cRaPytl10HQi7isj5Yac38udmD55T2tglNYTZlvgT5+oflpyFoH15hmOcw==
 
 expo-linking@~56.0.15:
   version "56.0.15"
