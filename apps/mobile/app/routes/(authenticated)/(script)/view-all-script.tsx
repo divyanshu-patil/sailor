@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView } from "react-native";
 import React from "react";
 import AllScriptsScreen from "@/screens/presentation/view-all-scripts";
 import { router, Stack } from "expo-router";
@@ -21,5 +21,3 @@ const ViewAllScript = () => {
 };
 
 export default ViewAllScript;
-
-const styles = StyleSheet.create({});

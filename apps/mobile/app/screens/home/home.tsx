@@ -13,6 +13,7 @@ import {
   HStack,
   Image,
   Spacer,
+  SwipeActions,
 } from "@expo/ui/swift-ui";
 import {
   Animation,
@@ -70,6 +71,7 @@ const HomeScreen = () => {
             <Spacer />
             <Toggle isOn={notifications} onIsOnChange={setNotifications} />
           </HStack>
+
           {/* <Button
             role="destructive"
             // modifiers={[buttonStyle("glassProminent")]}
@@ -99,8 +101,29 @@ const HomeScreen = () => {
           </Button>
         </Section>
         <Section>
-          <Text>firstName: {user?.firstName}</Text>
-          <Text>lastName: {user?.lastName}</Text>
+          <SwipeActions>
+            <Text>firstName: {user?.firstName}</Text>
+            <SwipeActions.Actions edge="leading" allowsFullSwipe={false}>
+              <Button
+                label="Verify"
+                systemImage="checkmark"
+                modifiers={[tint("#34c759")]}
+                onPress={() => Alert.alert("Verified", "First name confirmed")}
+              />
+            </SwipeActions.Actions>
+          </SwipeActions>
+
+          <SwipeActions>
+            <Text>lastName: {user?.lastName}</Text>
+            <SwipeActions.Actions edge="leading">
+              <Button
+                label="delete"
+                systemImage="checkmark"
+                modifiers={[tint("#dd0e61")]}
+                onPress={() => Alert.alert("Verified", "Last name confirmed")}
+              />
+            </SwipeActions.Actions>
+          </SwipeActions>
         </Section>
         <Section>
           <Button onPress={handleSignOut}>
