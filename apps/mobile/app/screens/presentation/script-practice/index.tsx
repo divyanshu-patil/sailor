@@ -3,7 +3,7 @@ import { useHeaderHeight } from "expo-router/build/react-navigation";
 import { useLocalSearchParams } from "expo-router";
 import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
-import { useCallback, useState, useMemo, useEffect } from "react";
+import { useCallback, useState, useMemo } from "react";
 import Animated, {
   interpolate,
   LinearTransition,
@@ -33,35 +33,29 @@ import { getDeliveryEmoji } from "./utils/getDeliveryEmoji";
 import DeliveryPill from "./components/DeliveryPill";
 import { lightenColor } from "./utils/lightenColor";
 import DurationText from "./components/DurationText";
-import { CardItem, cardService } from "@/services/card.debug.service";
+import { useCards } from "@/hooks";
 
 type ScriptPracticeParams = { id: string; color: string };
 
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
   const params = useLocalSearchParams<ScriptPracticeParams>();
-  const [rawCards, setRawCards] = useState<CardItem[]>([]);
-  const [isLoadingCards, setIsLoadingCards] = useState(true);
-  const [cardsError, setCardsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setIsLoadingCards(true);
-        const data = await cardService.getCards(params.id);
-        if (!cancelled) setRawCards(data);
-      } catch {
-        if (!cancelled) setCardsError("Couldn't load this script's cards.");
-      } finally {
-        if (!cancelled) setIsLoadingCards(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [params.id]);
-  const cards = useMemo(() => assignColorsByQuantile(rawCards), [rawCards]);
+  const {
+    data: rawCards,
+    isLoading: isLoadingCards,
+    error: cardsError,
+  } = useCards({
+    deckId: params.id,
+    onError: () => {
+      // Error is handled by the hook
+    },
+  });
+
+  const cards = useMemo(
+    () => assignColorsByQuantile(rawCards ?? []),
+    [rawCards],
+  );
 
   const [recordingDuration, setRecordingDuration] = useState<string | null>(
     null,

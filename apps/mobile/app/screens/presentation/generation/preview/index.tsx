@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, Keyboard } from "react-native";
 import {
   useLocalSearchParams,
   Stack,
@@ -18,9 +18,8 @@ import { getGeneratingMessages } from "./components/generating/utils/get-generat
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import ScriptText from "./components/script-text/script-text";
 import Animated, { LinearTransition } from "react-native-reanimated";
-import ReviseBar from "./components/revise-bar";
+import ReviseBar, { ReviseBarRef } from "./components/revise-bar";
 import { useScriptStore } from "@/store/script-store";
-import { scriptService } from "@/services/script.debug.service";
 import { useColors } from "@/constants/theme";
 import { KeyboardController } from "react-native-keyboard-controller";
 
@@ -29,6 +28,8 @@ type GeneratePreviewParams = {
 };
 
 const PreviewScreen = () => {
+  const reviseBarRef = useRef<ReviseBarRef>(null);
+
   const headerHeight = useHeaderHeight();
   const { form } = useLocalSearchParams<GeneratePreviewParams>();
   const formState: PresentationFormState = useMemo(
@@ -36,7 +37,7 @@ const PreviewScreen = () => {
     [form],
   );
 
-  const { state, result, error, startGeneration, stopGeneration } =
+  const { state, result, error, startGeneration, stopGeneration, revise } =
     useScriptGeneration();
 
   const [isConfirming, setIsConfirming] = useState(false);
@@ -110,13 +111,26 @@ const PreviewScreen = () => {
 
   const handleRevise = async (instruction: string) => {
     if (!jobId) return;
-    const revised = await scriptService.revise(jobId, instruction);
-    setResult(revised);
+    const revised = await revise(instruction);
+    if (revised) {
+      setResult({
+        job_id: revised.job_id,
+        title: revised.title,
+        script: revised.script,
+      });
+    }
   };
   const { colors } = useColors();
 
+  // Dismiss keyboard when screen mounts or comes into focus
+  useEffect(() => {
+    KeyboardController.dismiss();
+    Keyboard.dismiss();
+  }, []);
+
   useFocusEffect(() => {
     KeyboardController.dismiss();
+    Keyboard.dismiss();
   });
 
   return (
@@ -128,6 +142,7 @@ const PreviewScreen = () => {
           tintColor={colors.rust}
           disabled={isConfirming}
           onPress={() => {
+            reviseBarRef.current?.blur();
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
               params: { jobId },
@@ -167,7 +182,11 @@ const PreviewScreen = () => {
         </ScrollView>
 
         {state === "completed" && !!script && (
-          <ReviseBar onSubmit={handleRevise} accentColor={colors.rust} />
+          <ReviseBar
+            ref={reviseBarRef}
+            onSubmit={handleRevise}
+            accentColor={colors.rust}
+          />
         )}
 
         {state !== "completed" && (
