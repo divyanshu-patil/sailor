@@ -1,15 +1,15 @@
+export interface AppearanceOption {
+  id: string;
+  name: string;
+  hex: string;
+}
+
 export interface UserPreferences {
-  appearanceId: string;
+  appearance: AppearanceOption;
   emotionHapticsEnabled: boolean;
   practiceRemindersEnabled: boolean;
-  /** 24h local time, "HH:mm" */
   practiceReminderTime: string;
   defaultMood: ScriptMood;
 }
 
-export type ScriptMood =
-  | "confident"
-  | "calm"
-  | "playful"
-  | "reflective"
-  | "energetic";
+export type ScriptMood = "confident" | "calm" | "playful" | "reflective" | "energetic";

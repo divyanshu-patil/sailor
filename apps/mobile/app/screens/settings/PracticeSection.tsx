@@ -1,7 +1,7 @@
 import React from "react";
 import { Section, Toggle, DatePicker } from "@expo/ui/swift-ui";
 import { tint } from "@expo/ui/swift-ui/modifiers";
-import { UserPreferences } from "@/services/preferences.service";
+import { UserPreferences } from "@/types/settings/preferences";
 
 const ACCENT = "#6C5CE7";
 

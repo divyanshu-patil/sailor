@@ -4,7 +4,7 @@ import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 import {
   ScriptMood,
   UserPreferences,
-} from "@/services/preferences.debug.service";
+} from "@/types/settings/preferences";
 
 const MOOD_OPTIONS: { tag: ScriptMood; label: string }[] = [
   { tag: "confident", label: "Confident" },

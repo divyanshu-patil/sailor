@@ -1,92 +1,75 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   preferencesService,
   UserPreferences,
 } from "@/services/preferences.debug.service";
-// Swap to "./preferences.debug.service" while the backend endpoint isn't live yet.
-import { useApiState, UseApiStateReturn } from "./use-api-state";
+import { usePreferenceStore } from "@/store/preference-store";
+import { useApiMutation } from "./use-api-state";
 
 export interface UsePreferencesOptions {
-  initialData?: UserPreferences;
+  onSync?: () => void;
   onError?: (error: Error) => void;
-  retryCount?: number;
-  retryDelay?: number;
-  immediate?: boolean;
 }
 
-export interface UsePreferencesReturn extends UseApiStateReturn<UserPreferences> {
-  fetchPreferences: () => Promise<void>;
+export interface UsePreferencesReturn {
+  isLoading: boolean;
   updatePreference: <K extends keyof UserPreferences>(
     key: K,
     value: UserPreferences[K],
   ) => Promise<void>;
 }
 
-/**
- * Owns the user's preferences: fetching them and persisting field-level
- * updates optimistically (with rollback on failure). Any screen/section
- * that needs to read or change a preference goes through this hook —
- * never preferencesService directly.
- */
 export function usePreferences(
   options: UsePreferencesOptions = {},
 ): UsePreferencesReturn {
-  const {
-    initialData,
-    onError,
-    retryCount = 3,
-    retryDelay = 1000,
-    immediate = true,
-  } = options;
+  const { onSync, onError } = options;
+  const store = usePreferenceStore();
+  const hasSyncedRef = useRef(false);
 
-  const state = useApiState<UserPreferences>({
-    initialData,
-    onError,
-    retryCount,
-    retryDelay,
+  const { mutate, isMutating } = useApiMutation({
+    onError: (error) => onError?.(error as Error),
   });
-  const { execute, setData } = state;
 
-  const fetchPreferences = useCallback(async () => {
-    await execute(preferencesService.getPreferences());
-  }, [execute]);
+  const hydrate = useCallback(async () => {
+    if (hasSyncedRef.current) return;
+    hasSyncedRef.current = true;
+
+    try {
+      const serverPreferences = await preferencesService.getPreferences();
+      store.setPreferences(serverPreferences);
+      onSync?.();
+    } catch (error) {
+      onError?.(error as Error);
+    }
+  }, [store, onSync, onError]);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   const updatePreference = useCallback(
     async <K extends keyof UserPreferences>(
       key: K,
       value: UserPreferences[K],
     ) => {
-      let previous: UserPreferences[K] | undefined;
-      setData((prev) => {
-        if (!prev) return prev;
-        previous = prev[key];
-        return { ...prev, [key]: value };
-      });
+      const previousValue = store.preferences[key];
+      store.setPreference(key, value);
 
       try {
-        await preferencesService.updatePreferences({
-          [key]: value,
-        } as Partial<UserPreferences>);
-      } catch (err) {
-        // Roll back the optimistic update on failure.
-        setData((prev) =>
-          prev ? { ...prev, [key]: previous as UserPreferences[K] } : prev,
+        await mutate(
+          preferencesService.updatePreferences({
+            [key]: value,
+          } as Partial<UserPreferences>),
         );
-        onError?.(err as Error);
+        onSync?.();
+      } catch (error) {
+        store.setPreference(key, previousValue);
+        onError?.(error as Error);
+        throw error;
       }
     },
-    [setData, onError],
+    [store, mutate, onSync, onError],
   );
 
-  useEffect(() => {
-    if (immediate) fetchPreferences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [immediate]);
-
-  return {
-    ...state,
-    refresh: fetchPreferences,
-    fetchPreferences,
-    updatePreference,
-  };
+  return { isLoading: isMutating, updatePreference };
 }
