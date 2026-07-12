@@ -29,4 +29,13 @@ export const userService = {
     );
     return response.data;
   },
+
+  deleteAccount: async (): Promise<void> => {
+    try {
+      await apiClient.delete("/api/v1/users/profile");
+    } catch (e: any) {
+      console.log("delete account error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
 };

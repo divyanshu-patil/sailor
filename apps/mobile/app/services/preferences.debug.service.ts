@@ -1,5 +1,5 @@
-import { UserPreferences } from "./preferences.service";
-
+import { UserPreferences } from "@/types/settings/preferences";
+export * from "@/types/settings/preferences";
 // --- DEV-ONLY MOCK STATE -------------------------------------------------
 // In-memory stand-in for GET/PATCH /api/v1/users/preferences. Same shape
 // and export name as preferences.service.ts. Swap the import in

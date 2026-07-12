@@ -27,6 +27,20 @@ const Layout = () => {
           headerTitle: "Settings",
         }}
       />
+      <Stack.Screen
+        name="terms-of-service"
+        options={{
+          presentation: "modal",
+          headerTitle: "Terms of Service",
+        }}
+      />
+      <Stack.Screen
+        name="privacy-policy"
+        options={{
+          presentation: "modal",
+          headerTitle: "Privacy Policy",
+        }}
+      />
     </Stack>
   );
 };

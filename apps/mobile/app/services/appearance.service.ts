@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import { AppearanceOption } from "./appearance.service";
 
 // ---------------------------------------------------------------------------
 // Predefined appearance/accent-color options. The backend owns this list so
@@ -6,12 +7,7 @@ import { apiClient } from "@/lib/api/client";
 // whatever comes back.
 // ---------------------------------------------------------------------------
 
-export interface AppearanceOption {
-  id: string;
-  name: string;
-  /** Hex color, e.g. "#6C5CE7" */
-  hex: string;
-}
+export * from "@/types/settings/appearance";
 
 export const appearanceService = {
   getOptions: async (): Promise<AppearanceOption[]> => {

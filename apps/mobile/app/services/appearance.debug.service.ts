@@ -1,5 +1,7 @@
 import { AppearanceOption } from "./appearance.service";
 
+export * from "@/types/settings/appearance";
+
 // --- DEV-ONLY MOCK -----------------------------------------------------
 // Same shape/export name as appearance.service.ts's real apiClient call.
 // Swap the import in SettingsScreen.tsx from "./appearance.debug.service"

@@ -1,21 +1,11 @@
 import { apiClient } from "@/lib/api/client";
+import { UserPreferences } from "@/types/settings/preferences";
+export * from "@/types/settings/preferences";
 
 // ---------------------------------------------------------------------------
 // User-level app preferences: appearance choice, haptics, practice reminders,
 // and the default emotional mood used when generating a script.
 // ---------------------------------------------------------------------------
-
-export type ScriptMood =
-  "confident" | "calm" | "playful" | "reflective" | "energetic";
-
-export interface UserPreferences {
-  appearanceId: string;
-  emotionHapticsEnabled: boolean;
-  practiceRemindersEnabled: boolean;
-  /** 24h local time, "HH:mm" */
-  practiceReminderTime: string;
-  defaultMood: ScriptMood;
-}
 
 export const preferencesService = {
   getPreferences: async (): Promise<UserPreferences> => {
