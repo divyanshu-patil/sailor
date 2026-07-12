@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import React from "react";
 import { useRouter } from "expo-router";
 
 const ForgotPasswordScreen = () => {
@@ -14,7 +13,9 @@ const ForgotPasswordScreen = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Forgot Password</Text>
       <Text style={styles.subtitle}>
-        {"Enter your email address and we'll send you a link to reset your password."}
+        {
+          "Enter your email address and we'll send you a link to reset your password."
+        }
       </Text>
 
       <TouchableOpacity

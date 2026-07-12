@@ -6,7 +6,7 @@ import {
   Platform,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSignIn, useSignUp } from "@clerk/expo";
 
@@ -69,8 +69,6 @@ export default function Verify() {
     const url = decorateUrl("/");
     if (url.startsWith("http")) {
       window.location.href = url;
-    } else {
-      router.push(url as Href);
     }
   };
 

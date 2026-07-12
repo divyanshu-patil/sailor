@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48, // Google's recommended minimum touch target
+    minHeight: 46, // Google's recommended minimum touch target
     marginBottom: 10,
     gap: 5,
   },

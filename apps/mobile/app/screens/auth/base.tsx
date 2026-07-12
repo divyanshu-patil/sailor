@@ -1,4 +1,4 @@
-import { Button, Host, HStack, Text, VStack } from "@expo/ui/swift-ui";
+import { Button, Host, Text, VStack } from "@expo/ui/swift-ui";
 import {
   Animation,
   animation,
@@ -9,7 +9,6 @@ import {
   font,
   foregroundStyle,
   frame,
-  labelStyle,
   lineLimit,
   lineSpacing,
   multilineTextAlignment,
@@ -17,15 +16,7 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text as RNText,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import Animated from "react-native-reanimated";
+import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
@@ -34,7 +25,6 @@ const FONT_SIZE = 16;
 const LINE_HEIGHT = 22;
 const MAX_LINES = 4;
 const HORIZONTAL_PADDING = 24;
-const ACTIONS_BASE_BOTTOM_SPACING = 24;
 
 const HEADLINES = [
   { line1: "Your ideas", line2: "Your stage." },
@@ -72,7 +62,7 @@ export default function Base() {
   };
 
   const handleSignUp = () => {
-    router.push("/(unauthenticated)/(signup)/signup");
+    router.push("/(unauthenticated)/create-account");
   };
 
   return (
