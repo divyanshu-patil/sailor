@@ -1,5 +1,5 @@
 import React from "react";
-import SettingsScreen from "@/screens/profile/settings";
+import SettingsScreen from "@/screens/settings";
 
 const Settings = () => {
   return <SettingsScreen />;

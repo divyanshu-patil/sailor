@@ -1,5 +1,5 @@
 import React from "react";
-import PrivacyPolicyScreen from "@/screens/profile/privacy-policy";
+import PrivacyPolicyScreen from "@/screens/privacy-policy";
 
 const PrivacyPolicy = () => {
   return <PrivacyPolicyScreen />;
