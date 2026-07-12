@@ -63,7 +63,10 @@ export const usePreferenceStore = create<PreferenceStore>()(
       setAppearance: (appearance) =>
         set((state) => ({ preferences: { ...state.preferences, appearance } })),
       setAppearanceOptions: (appearanceOptions) => set({ appearanceOptions }),
-      resetPreferences: () => set({ preferences: { ...defaultPreferences } }),
+      resetPreferences: () =>
+        set({
+          preferences: { ...defaultPreferences },
+        }),
     }),
     {
       name: "preference-store",

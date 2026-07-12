@@ -38,7 +38,6 @@ import {
   buttonStyle,
   controlSize,
   tint,
-  disabled,
   keyboardType,
   textInputAutocapitalization,
   textContentType,
@@ -46,10 +45,9 @@ import {
   pickerStyle,
   tag,
   scrollDismissesKeyboard,
-  buttonBorderShape,
 } from "@expo/ui/swift-ui/modifiers";
-import HeaderTitlePill from "./components/header-title";
-import { fonts } from "@/constants/fonts";
+import { usePreferenceStore } from "@/hooks";
+import { colord } from "colord";
 
 // ---------------------------------------------------------------------------
 // Types + dummy data — swap DEFAULT_PROFILE for whatever the Profile screen
@@ -102,7 +100,6 @@ async function saveProfile(values: ProfileFormValues): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 500));
 }
 
-const ACCENT = "#6C5CE7"; // swap for the Sailors brand accent
 const DESTRUCTIVE_RED = "#FF3B30"; // iOS system red
 
 const EditProfileScreen = () => {
@@ -198,13 +195,16 @@ const EditProfileScreen = () => {
     }),
   ];
 
+  const { hex } = usePreferenceStore((state) => state.preferences.appearance);
+
+  const appearanceColor = colord(hex).darken(0.15).toHex();
   return (
     <>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           onPress={handleSave}
           hidden={isSaving}
-          tintColor={ACCENT}
+          tintColor={appearanceColor}
           variant="prominent"
         >
           Save
@@ -212,7 +212,7 @@ const EditProfileScreen = () => {
         <Stack.Toolbar.Button
           hidden={!isSaving}
           onPress={() => {}}
-          tintColor={ACCENT}
+          tintColor={appearanceColor}
           variant="prominent"
         >
           Saving…
@@ -258,7 +258,7 @@ const EditProfileScreen = () => {
                       modifiers={[
                         buttonStyle("borderedProminent"),
                         controlSize("mini"),
-                        tint(ACCENT),
+                        tint(appearanceColor),
                         clipShape("circle"),
                       ]}
                     >
@@ -272,7 +272,7 @@ const EditProfileScreen = () => {
                   modifiers={[
                     buttonStyle("plain"),
                     font({ size: 15, weight: "semibold" }),
-                    foregroundStyle(ACCENT),
+                    foregroundStyle(appearanceColor),
                   ]}
                 />
               </VStack>

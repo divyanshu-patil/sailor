@@ -7,7 +7,6 @@ import {
   defaultPreferences,
   usePreferenceStore,
 } from "@/store/preference-store";
-import { AppearanceOption } from "@/types/settings/preferences";
 import { AppearanceSection } from "./AppearanceSection";
 import { PracticeSection } from "./PracticeSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
