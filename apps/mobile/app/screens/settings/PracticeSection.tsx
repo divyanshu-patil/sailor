@@ -2,8 +2,8 @@ import React from "react";
 import { Section, Toggle, DatePicker } from "@expo/ui/swift-ui";
 import { tint } from "@expo/ui/swift-ui/modifiers";
 import { UserPreferences } from "@/types/settings/preferences";
-
-const ACCENT = "#6C5CE7";
+import { usePreferenceStore } from "@/hooks";
+import { colord } from "colord";
 
 function timeStringToDate(time: string): Date {
   const [hours, minutes] = time.split(":").map(Number);
@@ -35,19 +35,23 @@ export function PracticeSection({
   practiceReminderTime,
   onUpdate,
 }: PracticeSectionProps) {
+  const { hex } = usePreferenceStore((s) => s.preferences.appearance);
+
+  const appearanceColor = colord(hex).darken(0.15).toHex();
+
   return (
     <Section title="Practice">
       <Toggle
         isOn={emotionHapticsEnabled}
         onIsOnChange={(value) => onUpdate("emotionHapticsEnabled", value)}
         label="Emotion Haptics"
-        modifiers={[tint(ACCENT)]}
+        modifiers={[tint(appearanceColor)]}
       />
       <Toggle
         isOn={practiceRemindersEnabled}
         onIsOnChange={(value) => onUpdate("practiceRemindersEnabled", value)}
         label="Practice Reminders"
-        modifiers={[tint(ACCENT)]}
+        modifiers={[tint(appearanceColor)]}
       />
       {practiceRemindersEnabled && (
         <DatePicker

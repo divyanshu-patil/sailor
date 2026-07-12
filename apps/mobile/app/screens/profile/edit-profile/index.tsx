@@ -197,7 +197,7 @@ const EditProfileScreen = () => {
 
   const { hex } = usePreferenceStore((state) => state.preferences.appearance);
 
-  const appearanceColor = colord(hex).darken(0.15).toHex();
+  const appearanceColor = colord(hex).darken(0.15).desaturate(0.35).toHex();
   return (
     <>
       <Stack.Toolbar placement="right">
