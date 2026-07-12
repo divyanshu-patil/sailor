@@ -66,6 +66,7 @@ export const usePreferenceStore = create<PreferenceStore>()(
       resetPreferences: () =>
         set({
           preferences: { ...defaultPreferences },
+          appearanceOptions: [...defaultAppearanceOptions],
         }),
     }),
     {

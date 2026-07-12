@@ -1,6 +1,5 @@
-import { AppearanceOption } from "./appearance.service";
-
-export * from "@/types/settings/appearance";
+import { AppearanceOption } from "@/types/settings/preferences";
+export * from "@/types/settings/preferences";
 
 // --- DEV-ONLY MOCK -----------------------------------------------------
 // Same shape/export name as appearance.service.ts's real apiClient call.
@@ -10,12 +9,12 @@ export * from "@/types/settings/appearance";
 // -------------------------------------------------------------------------
 
 const DUMMY_APPEARANCE_OPTIONS: AppearanceOption[] = [
-  { id: "lavender", name: "Lavender", hex: "#6C5CE7" },
-  { id: "coral", name: "Coral", hex: "#F95738" },
-  { id: "sunflower", name: "Sunflower", hex: "#F4D35E" },
-  { id: "sky", name: "Sky", hex: "#5FA8D3" },
-  { id: "forest", name: "Forest", hex: "#0D3B66" },
-  { id: "tangerine", name: "Tangerine", hex: "#EE964B" },
+  { id: "lavender", name: "Lavender", hex: "#8442E1" },
+  { id: "ocean", name: "Ocean", hex: "#4299E1" },
+  { id: "forest", name: "Forest", hex: "#42E19C" },
+  { id: "sunset", name: "Sunset", hex: "#E17F42" },
+  { id: "rose", name: "Rose", hex: "#E14242" },
+  { id: "midnight", name: "Midnight", hex: "#CE42E1" },
 ];
 
 export const appearanceService = {

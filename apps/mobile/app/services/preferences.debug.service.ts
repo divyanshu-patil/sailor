@@ -1,15 +1,15 @@
-// preferences-service.ts
 import { usePreferenceStore } from "@/store/preference-store";
 import { UserPreferences } from "@/types/settings/preferences";
+import { debugService } from "@/services/debug.service";
 export * from "@/types/settings/preferences";
 
 export const preferencesService = {
   getPreferences: async (): Promise<UserPreferences> => {
     return await new Promise((resolve) => {
       setTimeout(() => {
-        // read straight from the zustand/MMKV-backed store —
-        // no separate in-memory default to drift out of sync
-        resolve({ ...usePreferenceStore.getState().preferences });
+        const prefs = { ...usePreferenceStore.getState().preferences };
+        debugService.log("preferences-service", "getPreferences", prefs);
+        resolve(prefs);
       }, 300);
     });
   },
@@ -22,10 +22,12 @@ export const preferencesService = {
         const current = usePreferenceStore.getState().preferences;
         const updated = { ...current, ...payload };
 
-        // write back through the store's own setter so persist +
-        // any subscribers stay consistent, rather than mutating state directly
-        usePreferenceStore.getState().setPreferences(updated);
+        debugService.log("preferences-service", "updatePreferences", {
+          payload,
+          updated,
+        });
 
+        usePreferenceStore.getState().setPreferences(updated);
         resolve({ ...updated });
       }, 300);
     });

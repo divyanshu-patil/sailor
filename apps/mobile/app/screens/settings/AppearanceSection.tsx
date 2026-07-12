@@ -13,9 +13,11 @@ import {
   foregroundStyle,
   buttonStyle,
   padding,
+  frame,
 } from "@expo/ui/swift-ui/modifiers";
-import { usePreferenceStore } from "@/store/preference-store";
+
 import { AppearanceOption } from "@/types/settings/preferences";
+import { useAppearanceOptions } from "@/hooks";
 
 function chunk<T>(items: T[], size: number): T[][] {
   const result: T[][] = [];
@@ -33,15 +35,17 @@ export function AppearanceSection({
   selectedAppearance,
   onSelect,
 }: AppearanceSectionProps) {
-  const appearanceOptions = usePreferenceStore(
-    (state) => state.appearanceOptions,
-  );
+  const { data: appearanceOptions = [] } = useAppearanceOptions();
   const selected = selectedAppearance;
 
   return (
     <Section title="Appearance">
-      <VStack spacing={16} modifiers={[padding({ vertical: 8 })]}>
-        {chunk(appearanceOptions, 3).map((row, rowIndex) => (
+      <VStack
+        spacing={16}
+        modifiers={[padding({ vertical: 8 }), frame({ maxWidth: Infinity })]}
+        alignment="center"
+      >
+        {chunk(appearanceOptions, 4).map((row, rowIndex) => (
           <HStack key={rowIndex} spacing={24}>
             {row.map((option) => {
               const isSelected = option.id === selected.id;

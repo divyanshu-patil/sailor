@@ -7,6 +7,7 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import { View } from "react-native";
 import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 
 function ApiAuthSetup() {
   const { getToken, isSignedIn } = useAuth();
@@ -24,6 +25,10 @@ function InitialLayout() {
   const isHydrated = useAppStore((s) => s._hasHydrated);
   const hasSeenOnboarding = useAppStore((s) => s.hasSeenOnboarding);
   const { isSignedIn, isLoaded } = useAuth();
+
+  useEffect(() => {
+    syncAppearanceOptionsOnce();
+  }, []);
 
   if (!isHydrated || !isLoaded) {
     return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null

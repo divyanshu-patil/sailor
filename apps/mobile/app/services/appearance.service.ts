@@ -1,13 +1,12 @@
 import { apiClient } from "@/lib/api/client";
-import { AppearanceOption } from "./appearance.service";
+import { AppearanceOption } from "@/types/settings/preferences";
+export * from "@/types/settings/preferences";
 
 // ---------------------------------------------------------------------------
 // Predefined appearance/accent-color options. The backend owns this list so
 // new colors can ship without an app update — the client just renders
 // whatever comes back.
 // ---------------------------------------------------------------------------
-
-export * from "@/types/settings/appearance";
 
 export const appearanceService = {
   getOptions: async (): Promise<AppearanceOption[]> => {
