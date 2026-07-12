@@ -155,5 +155,10 @@ export function useJobPoller<TResult>({
     return () => clearPoll(); // cleanup on unmount
   }, []);
 
-  return { state, result, error, jobIdRef, start, attach, stop };
+  // Expose setResult for external use (e.g., for revise operations)
+  const handleSetResult = useCallback((newResult: TResult) => {
+    setResult(newResult);
+  }, []);
+
+  return { state, result, error, jobIdRef, start, attach, stop, setResult: handleSetResult };
 }

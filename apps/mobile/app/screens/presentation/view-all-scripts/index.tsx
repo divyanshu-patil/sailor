@@ -1,40 +1,27 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 
 import { Card } from "./Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "./constants";
-import { DeckItem, deckService } from "@/services/deck.debug.service";
+import { DeckItem } from "@/services/deck.debug.service";
+import { useDecks } from "@/hooks";
+import { useHeaderHeight } from "expo-router/build/react-navigation";
 
 const AllScriptsScreen = () => {
-  const [decks, setDecks] = useState<DeckItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const headerHeight = useHeaderHeight();
 
-  const fetchDecks = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await deckService.getDecks();
-      setDecks(data);
-    } catch {
-      setError("Couldn't load your scripts. Pull to try again.");
-    }
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      await fetchDecks();
-      setIsLoading(false);
-    })();
-  }, [fetchDecks]);
-
-  const onRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await fetchDecks();
-    setIsRefreshing(false);
-  }, [fetchDecks]);
+  const {
+    data: decks,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh: onRefresh,
+  } = useDecks({
+    onError: () => {
+      // Error is handled by the hook
+    },
+  });
 
   const renderItem: ListRenderItem<DeckItem> = useCallback(
     ({ item, index }) => <Card item={item} index={index} />,
@@ -49,7 +36,7 @@ const AllScriptsScreen = () => {
     );
   }
 
-  if (error && decks.length === 0) {
+  if (error && (!decks || decks.length === 0)) {
     return (
       <View style={[styles.screen, styles.centered]}>
         <Text style={styles.messageText}>{error}</Text>
@@ -57,24 +44,26 @@ const AllScriptsScreen = () => {
     );
   }
 
-  if (decks.length === 0) {
+  if (!decks || decks.length === 0) {
     return (
       <View style={[styles.screen, styles.centered]}>
         <Text style={styles.messageText}>No scripts yet.</Text>
       </View>
     );
   }
-
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen]}>
       <FlashList
-        data={decks}
+        data={decks ?? []}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         masonry
         numColumns={2}
         optimizeItemArrangement
-        contentContainerStyle={styles.screenContent}
+        contentContainerStyle={[
+          styles.screenContent,
+          { paddingTop: headerHeight },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshing={isRefreshing}
         onRefresh={onRefresh}
