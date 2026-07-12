@@ -1,26 +1,32 @@
-import { UserPreferences, AppearanceOption } from "@/types/settings/preferences";
+// preferences-service.ts
+import { usePreferenceStore } from "@/store/preference-store";
+import { UserPreferences } from "@/types/settings/preferences";
 export * from "@/types/settings/preferences";
-
-let DEV_PREFERENCES: UserPreferences = {
-  appearance: { id: "lavender", name: "Lavender", hex: "#B794F4" },
-  emotionHapticsEnabled: true,
-  practiceRemindersEnabled: true,
-  practiceReminderTime: "18:00",
-  defaultMood: "confident",
-};
 
 export const preferencesService = {
   getPreferences: async (): Promise<UserPreferences> => {
     return await new Promise((resolve) => {
-      setTimeout(() => resolve({ ...DEV_PREFERENCES }), 300);
+      setTimeout(() => {
+        // read straight from the zustand/MMKV-backed store —
+        // no separate in-memory default to drift out of sync
+        resolve({ ...usePreferenceStore.getState().preferences });
+      }, 300);
     });
   },
 
-  updatePreferences: async (payload: Partial<UserPreferences>): Promise<UserPreferences> => {
+  updatePreferences: async (
+    payload: Partial<UserPreferences>,
+  ): Promise<UserPreferences> => {
     return await new Promise((resolve) => {
       setTimeout(() => {
-        DEV_PREFERENCES = { ...DEV_PREFERENCES, ...payload };
-        resolve({ ...DEV_PREFERENCES });
+        const current = usePreferenceStore.getState().preferences;
+        const updated = { ...current, ...payload };
+
+        // write back through the store's own setter so persist +
+        // any subscribers stay consistent, rather than mutating state directly
+        usePreferenceStore.getState().setPreferences(updated);
+
+        resolve({ ...updated });
       }, 300);
     });
   },

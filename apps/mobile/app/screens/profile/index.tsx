@@ -2,7 +2,6 @@ import {
   Alert,
   Dimensions,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -15,7 +14,6 @@ import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { fonts } from "@/constants/fonts";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import Section from "./components/section";
-import { SymbolView } from "expo-symbols";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import {
   useAnimatedStyle,
@@ -26,6 +24,8 @@ import {
 import { useClerk } from "@clerk/expo";
 import { useAppStore } from "@/store/auth-store";
 import { router } from "expo-router";
+import { colord } from "colord";
+import { usePreferenceStore } from "@/hooks";
 
 const SCREEN_WIDTH = Dimensions.get("screen").width;
 
@@ -68,8 +68,23 @@ const ProfileScreen = () => {
     ]);
   };
 
+  const appearanceColor = usePreferenceStore(
+    (state) => state.preferences.appearance.hex,
+  );
+  // const appearanceColor = "#6D32BF";
+
+  const backgroundColor = colord(appearanceColor).lighten(0.4).toHex();
+  const backCicleColor = colord(appearanceColor).lighten(0.32).toHex();
+  const planCardColor = colord(appearanceColor).lighten(0.25).toHex();
+
+  const pillColor = colord(appearanceColor).lighten(0.33).toHex();
+  const textColor = colord(appearanceColor)
+    .darken(0.2)
+    .desaturate(0.35)
+    .toHex();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: backgroundColor }]}>
       <View style={styles.canvasContainer}>
         <Canvas style={styles.canvas}>
           <Oval
@@ -77,7 +92,7 @@ const ProfileScreen = () => {
             y={-OVAL_HEIGHT / 3}
             width={OVAL_WIDTH}
             height={OVAL_HEIGHT}
-            color={"#CDE7FF"}
+            color={backCicleColor}
           />
         </Canvas>
       </View>
@@ -87,39 +102,49 @@ const ProfileScreen = () => {
       />
       <View style={styles.actioncontainer}>
         <View style={styles.nameContainer}>
-          <Text style={styles.name}>Divyanshu</Text>
-          <View style={styles.badgePill}>
+          <Text style={[styles.name, { color: textColor }]}>Divyanshu</Text>
+          <View style={[styles.badgePill, { backgroundColor: pillColor }]}>
             <FontAwesome6
               name="graduation-cap"
               size={16}
-              color="#5B7C99"
+              color={textColor}
               iconStyle="solid"
             />
-            <Text style={styles.badgeText}>Student</Text>
+            <Text style={[styles.badgeText, { color: textColor }]}>
+              Student
+            </Text>
           </View>
         </View>
         <Text style={styles.headerText}>Plan</Text>
-        <View style={styles.planCard}>
+        <View style={[styles.planCard, { backgroundColor: planCardColor }]}>
           <View style={styles.planTopRow}>
             <View style={styles.planTitleRow}>
               <FontAwesome6
                 name="crown"
                 iconStyle="solid"
                 size={24}
-                color="#3B5F7D"
+                color={textColor}
               />
-              <Text style={styles.planTitle}>Hestia</Text>
+              <Text style={[styles.planTitle, { color: textColor }]}>
+                Hestia
+              </Text>
             </View>
             <View style={styles.usedRow}>
-              <Ionicons name="sparkles-sharp" size={13} color="#3B5F7D" />
-              <Text style={styles.usedText}>90% used today</Text>
+              <Ionicons name="sparkles-sharp" size={13} color={textColor} />
+              <Text style={[styles.usedText, { color: textColor }]}>
+                90% used today
+              </Text>
             </View>
           </View>
 
           <View style={styles.planBottomRow}>
-            <View style={styles.remainingPill}>
-              <MaterialDesignIcons name="cards" size={20} color="#3B5F7D" />
-              <Text style={styles.remainingText}>5 remaining</Text>
+            <View
+              style={[styles.remainingPill, { backgroundColor: pillColor }]}
+            >
+              <MaterialDesignIcons name="cards" size={20} color={textColor} />
+              <Text style={[styles.remainingText, { color: textColor }]}>
+                5 remaining
+              </Text>
             </View>
             <Pressable style={styles.manageButton}>
               <Text style={styles.manageButtonText}>Manage</Text>
@@ -129,7 +154,7 @@ const ProfileScreen = () => {
         <Section style={styles.section}>
           <Section.Row
             icon={<Ionicons name="person" size={22} />}
-            iconBgColor="#A9D3F5"
+            iconBgColor={planCardColor}
             label="Edit Profile"
             onPress={() =>
               router.navigate({
@@ -168,7 +193,6 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F0F8FF",
     overflow: "visible",
   },
   canvasContainer: {
@@ -199,21 +223,19 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 36,
     fontFamily: fonts.krona,
-    color: "#4A7391",
     marginTop: 12,
   },
   badgePill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#D9EBF9",
+
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
     marginTop: 10,
   },
   badgeText: {
-    color: "#5B7C99",
     fontSize: 15,
     fontWeight: "500",
     fontFamily: fonts.amarna.regular,
@@ -230,7 +252,7 @@ const styles = StyleSheet.create({
   },
   planCard: {
     width: "100%",
-    backgroundColor: "#A9D3F5",
+
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -250,7 +272,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: fonts.krona,
     fontWeight: "700",
-    color: "#3B5F7D",
   },
   usedRow: {
     flexDirection: "row",
@@ -258,7 +279,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   usedText: {
-    color: "#3B5F7D",
     fontSize: 14,
     fontFamily: fonts.amarna.regular,
   },
@@ -273,7 +293,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#CDE6FB",
+
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 100,
@@ -284,7 +304,6 @@ const styles = StyleSheet.create({
     ],
   },
   remainingText: {
-    color: "#3B5F7D",
     fontSize: 16,
     fontWeight: "500",
     fontFamily: fonts.newsreader.regular,
@@ -299,52 +318,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   manageButtonText: {
-    color: "#FFFFFF",
+    color: "white",
     fontSize: 16,
     // fontWeight: "600",
     fontFamily: fonts.newsreader.regular,
   },
-  listCard: {
-    width: "88%",
-    backgroundColor: "#DCEDFA",
-    borderRadius: 16,
-    marginTop: 20,
-    overflow: "hidden",
-  },
-  listRow: {
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-  },
-  listRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#C6DEF0",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
-  },
-  logoutButton: {
-    width: "88%",
-    backgroundColor: "#F4897E",
-    paddingVertical: 16,
-    borderRadius: 28,
-    alignItems: "center",
-    marginTop: 24,
-  },
+
   logoutText: {
     fontSize: 17,
     color: "#E44141",
   },
-  homeIndicator: {
-    width: 120,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#1F2937",
-    marginTop: "auto",
-    marginBottom: 8,
-  },
+
   section: {
     marginTop: 30,
   },

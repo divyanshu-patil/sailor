@@ -3,17 +3,19 @@ import { Stack, useRouter } from "expo-router";
 import { Host, Form, Alert, Button, Text } from "@expo/ui/swift-ui";
 
 import { usePreferences } from "@/hooks";
-import { usePreferenceStore } from "@/store/preference-store";
+import {
+  defaultPreferences,
+  usePreferenceStore,
+} from "@/store/preference-store";
 import { AppearanceOption } from "@/types/settings/preferences";
 import { AppearanceSection } from "./AppearanceSection";
 import { PracticeSection } from "./PracticeSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
+import { CacheSection } from "./CacheSection";
 import { SubscriptionSection } from "./SubscriptionSection";
 import { LegalSection } from "./LegalSection";
 import { VersionSection } from "./VersionSection";
 import { AccountSecuritySection } from "./AccountSecuritySection";
-
-const defaultAppearance: AppearanceOption = { id: "lavender", name: "Lavender", hex: "#B794F4" };
 
 const SettingsScreen = () => {
   const router = useRouter();
@@ -21,17 +23,24 @@ const SettingsScreen = () => {
   const [alertMessage, setAlertMessage] = useState("");
 
   const preferences = usePreferenceStore((state) => state.preferences);
-  const appearance = preferences?.appearance ?? defaultAppearance;
+  const appearance = preferences?.appearance ?? defaultPreferences.appearance;
 
   const { updatePreference } = usePreferences({
     onError: () => {
-      setAlertMessage("That change didn't save. Check your connection and try again.");
+      setAlertMessage(
+        "That change didn't save. Check your connection and try again.",
+      );
       setAlertVisible(true);
     },
   });
 
   const showAlert = useCallback((message: string) => {
     setAlertMessage(message);
+    setAlertVisible(true);
+  }, []);
+
+  const handleCacheCleared = useCallback(() => {
+    setAlertMessage("Cache cleared. Data will refetch automatically.");
     setAlertVisible(true);
   }, []);
 
@@ -46,7 +55,9 @@ const SettingsScreen = () => {
           />
           <PracticeSection
             emotionHapticsEnabled={preferences?.emotionHapticsEnabled ?? true}
-            practiceRemindersEnabled={preferences?.practiceRemindersEnabled ?? true}
+            practiceRemindersEnabled={
+              preferences?.practiceRemindersEnabled ?? true
+            }
             practiceReminderTime={preferences?.practiceReminderTime ?? "18:00"}
             onUpdate={updatePreference}
           />
@@ -54,6 +65,7 @@ const SettingsScreen = () => {
             selectedMood={preferences?.defaultMood ?? "confident"}
             onUpdate={updatePreference}
           />
+          <CacheSection onCleared={handleCacheCleared} />
           <SubscriptionSection />
           <LegalSection />
           <VersionSection />

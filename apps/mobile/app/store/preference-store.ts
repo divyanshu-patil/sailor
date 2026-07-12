@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { createMMKV } from "react-native-mmkv";
-import { UserPreferences, AppearanceOption } from "@/types/settings/preferences";
+import {
+  UserPreferences,
+  AppearanceOption,
+} from "@/types/settings/preferences";
 
 const mmkv = createMMKV({ id: "preference-storage" });
 
@@ -11,18 +14,22 @@ const mmkvStorage: StateStorage = {
   removeItem: (name: string) => mmkv.remove(name),
 };
 
-const defaultAppearance: AppearanceOption = { id: "lavender", name: "Lavender", hex: "#B794F4" };
+const defaultAppearance: AppearanceOption = {
+  id: "ocean",
+  name: "Ocean",
+  hex: "#4299E1",
+};
 
 const defaultAppearanceOptions: AppearanceOption[] = [
-  { id: "lavender", name: "Lavender", hex: "#B794F4" },
+  { id: "lavender", name: "Lavender", hex: "#8442E1" },
   { id: "ocean", name: "Ocean", hex: "#4299E1" },
-  { id: "forest", name: "Forest", hex: "#48BB78" },
-  { id: "sunset", name: "Sunset", hex: "#ED8936" },
-  { id: "rose", name: "Rose", hex: "#F56565" },
-  { id: "midnight", name: "Midnight", hex: "#667EEA" },
+  { id: "forest", name: "Forest", hex: "#42E19C" },
+  { id: "sunset", name: "Sunset", hex: "#E17F42" },
+  { id: "rose", name: "Rose", hex: "#E14242" },
+  { id: "midnight", name: "Midnight", hex: "#CE42E1" },
 ];
 
-const defaultPreferences: UserPreferences = {
+export const defaultPreferences: UserPreferences = {
   appearance: defaultAppearance,
   emotionHapticsEnabled: true,
   practiceRemindersEnabled: true,
@@ -34,7 +41,10 @@ interface PreferenceStore {
   preferences: UserPreferences;
   appearanceOptions: AppearanceOption[];
   setPreferences: (preferences: UserPreferences) => void;
-  setPreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
+  setPreference: <K extends keyof UserPreferences>(
+    key: K,
+    value: UserPreferences[K],
+  ) => void;
   setAppearance: (appearance: AppearanceOption) => void;
   setAppearanceOptions: (options: AppearanceOption[]) => void;
   resetPreferences: () => void;
@@ -47,7 +57,9 @@ export const usePreferenceStore = create<PreferenceStore>()(
       appearanceOptions: defaultAppearanceOptions,
       setPreferences: (preferences) => set({ preferences }),
       setPreference: (key, value) =>
-        set((state) => ({ preferences: { ...state.preferences, [key]: value } })),
+        set((state) => ({
+          preferences: { ...state.preferences, [key]: value },
+        })),
       setAppearance: (appearance) =>
         set((state) => ({ preferences: { ...state.preferences, appearance } })),
       setAppearanceOptions: (appearanceOptions) => set({ appearanceOptions }),
@@ -56,7 +68,10 @@ export const usePreferenceStore = create<PreferenceStore>()(
     {
       name: "preference-store",
       storage: createJSONStorage(() => mmkvStorage),
-      partialize: (state) => ({ preferences: state.preferences, appearanceOptions: state.appearanceOptions }),
+      partialize: (state) => ({
+        preferences: state.preferences,
+        appearanceOptions: state.appearanceOptions,
+      }),
     },
   ),
 );
