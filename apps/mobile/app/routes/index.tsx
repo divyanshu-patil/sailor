@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useAppStore } from "@/store/auth-store";
 import { useAuth } from "@clerk/expo";
 import { useFonts } from "@expo-google-fonts/krona-one/useFonts";
 import { KronaOne_400Regular } from "@expo-google-fonts/krona-one/400Regular";
@@ -38,13 +37,14 @@ import {
   Newsreader_700Bold_Italic,
   Newsreader_800ExtraBold_Italic,
 } from "@expo-google-fonts/newsreader";
+import { useOnboardingStore } from "@/store/onboarding.store";
 
 export default function Index() {
   const router = useRouter();
-  // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  // const isAuthenticated = useAppUserStore((s) => s.isAuthenticated);
   const { isSignedIn } = useAuth();
-  const hasSeenOnboarding = useAppStore((s) => s.hasSeenOnboarding);
-  const isHydrated = useAppStore((s) => s._hasHydrated);
+  const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
+  const isHydrated = useOnboardingStore((s) => s._hasHydrated);
 
   const [fontsLoaded] = useFonts({
     KronaOne: KronaOne_400Regular,

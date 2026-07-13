@@ -1,4 +1,5 @@
-import { UserProfile } from "@/services/user.service";
+import { UpdateProfilePayload, UserProfile } from "./user.service";
+export * from "@/types/user";
 
 // In-memory only — resets on reload. Mirrors userService's interface
 // exactly so screens/hooks never need to know which one they're using.
@@ -6,6 +7,10 @@ let mockProfile: UserProfile = {
   id: "debug-user-1",
   clerk_user_id: "clerk_debug_1",
   email: "debug@example.com",
+  full_name: "Div Patil",
+  nickname: "div",
+  experience_level: "intermediate",
+  avatar_url: null,
   role: "user",
   created_at: new Date().toISOString(),
 };
@@ -29,7 +34,9 @@ export const userService = {
     return delay(mockProfile);
   },
 
-  updateProfile: async (payload: { email?: string }): Promise<UserProfile> => {
+  updateProfile: async (
+    payload: UpdateProfilePayload,
+  ): Promise<UserProfile> => {
     if (deleted) {
       throw new Error("Account has been deleted");
     }

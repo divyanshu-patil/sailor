@@ -2,12 +2,13 @@ import { AppearanceOption } from "@/types/settings/preferences";
 export * from "@/types/settings/preferences";
 
 const DUMMY_APPEARANCE_OPTIONS: AppearanceOption[] = [
-  { id: "lavender", name: "Lavender", hex: "#8442E1" },
   { id: "ocean", name: "Ocean", hex: "#4299E1" },
-  { id: "forest", name: "Forest", hex: "#42E19C" },
+  { id: "rust", name: "Rust", hex: "#B75C5C" },
   { id: "sunset", name: "Sunset", hex: "#E17F42" },
+  { id: "lavender", name: "Lavender", hex: "#8442E1" },
   { id: "rose", name: "Rose", hex: "#E14242" },
   { id: "midnight", name: "Midnight", hex: "#CE42E1" },
+  { id: "forest", name: "Forest", hex: "#42E19C" },
 ];
 
 export const appearanceService = {

@@ -7,7 +7,8 @@ import {
 } from "react-native";
 import React from "react";
 import { useRouter } from "expo-router";
-import { useAppStore } from "@/store/auth-store";
+import { useAppUserStore } from "@/store/app-user.store";
+import { useOnboardingStore } from "@/store/onboarding.store";
 
 const { width } = Dimensions.get("window");
 
@@ -31,7 +32,7 @@ const features = [
 
 const FeaturesScreen = () => {
   const router = useRouter();
-  const { completeOnboarding } = useAppStore();
+  const { completeOnboarding } = useOnboardingStore();
 
   const handleContinue = () => {
     completeOnboarding();

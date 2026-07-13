@@ -6,11 +6,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import React, { useEffect } from "react";
-import { useAppStore } from "@/store/auth-store";
+import { useAppUserStore } from "@/store/app-user.store";
 import { userService } from "@/services/user.service";
 
 const ProfileScreen = () => {
-  const { appUser, setAppUser } = useAppStore();
+  const { appUser, setAppUser } = useAppUserStore();
   const [loading, setLoading] = React.useState(!appUser); // skip load if cached
   const [error, setError] = React.useState<string | null>(null);
 

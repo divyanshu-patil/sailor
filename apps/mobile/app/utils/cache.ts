@@ -1,7 +1,7 @@
 import { createMMKV } from "react-native-mmkv";
 import { usePreferenceStore } from "@/store/preference-store";
 
-const mmkvIds = ["preference-storage", "script-store"];
+const mmkvIds = ["preference-storage", "script-store", "app-user-storage"];
 
 export function getCacheSizeBytes(): number {
   return mmkvIds.reduce((total, id) => {

@@ -22,7 +22,7 @@ import {
   withTiming,
 } from "react-native-reanimated";
 import { useClerk } from "@clerk/expo";
-import { useAppStore } from "@/store/auth-store";
+import { useAppUserStore } from "@/store/app-user.store";
 import { router } from "expo-router";
 import { colord } from "colord";
 import { usePreferenceStore } from "@/hooks";
@@ -45,7 +45,7 @@ const ProfileScreen = () => {
   }));
 
   const { signOut } = useClerk();
-  const { clearAppState } = useAppStore();
+  const { clearAppState } = useAppUserStore();
   const handleSignOut = async () => {
     Alert.alert("Logout", "Are you Sure you want to Logout of the Sailor?", [
       {

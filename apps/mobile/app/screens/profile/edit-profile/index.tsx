@@ -1,209 +1,125 @@
-// EditProfileScreen.tsx
-// Built entirely with @expo/ui/swift-ui (SwiftUI bridge, Expo UI ~56.x).
-// No React Native <View>/<Text> are used for layout — Host is the single
-// root and everything below it is a real SwiftUI view tree.
+// EditProfileScreen — SwiftUI bridge (@expo/ui/swift-ui, Expo UI ~56.x).
+// No React Native <View>/<Text> for layout — Host is the single root and
+// everything below it is a real SwiftUI view tree. iOS only.
 //
-// Requires a dev client (Expo UI ships in Expo Go as of SDK 56, but a dev
-// client is still recommended). iOS only — this file has no Android path.
+// Avatar editing is intentionally not here right now — see
+// components/AvatarPicker.tsx, which was extracted out of this screen but
+// isn't wired back in yet (a different avatar picker is coming instead of
+// a photo-library upload).
 
-import React, { useCallback, useState } from "react";
-import { Stack, useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-// TODO: wire up the real Clerk hook here, e.g.:
-//   import { useUser } from "@clerk/clerk-expo";
+import React, { useEffect, useState } from "react";
+import { Stack } from "expo-router";
 import {
   Host,
   Form,
   Section,
+  HStack,
   TextField,
   Picker,
-  Button,
   Text,
-  Image,
-  HStack,
-  VStack,
-  Spacer,
-  Overlay,
-  Alert,
-  useNativeState,
 } from "@expo/ui/swift-ui";
 import {
-  font,
-  foregroundStyle,
-  padding,
-  frame,
-  clipShape,
-  resizable,
-  aspectRatio,
-  buttonStyle,
-  controlSize,
-  tint,
-  keyboardType,
   textInputAutocapitalization,
   textContentType,
+  keyboardType,
   submitLabel,
   pickerStyle,
   tag,
   scrollDismissesKeyboard,
+  foregroundStyle,
 } from "@expo/ui/swift-ui/modifiers";
-import { usePreferenceStore } from "@/hooks";
-import { colord } from "colord";
+import { EXPERIENCE_LEVELS, ROW_LABEL_MODIFIERS } from "./components/constants";
+import { DeleteAccountSection } from "./components/delete-account-section";
+import { useEditProfileForm } from "./hooks/use-edit-profile-form";
+import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
+import { userService, UserProfile } from "@/services/user.debug.service";
 
-// ---------------------------------------------------------------------------
-// Types + dummy data — swap DEFAULT_PROFILE for whatever the Profile screen
-// already loaded (pass it in via route params / a store) and swap
-// `saveProfile` for the real profileService, following the same
-// typed-interface + dummy-in-memory pattern used elsewhere in the app.
-// ---------------------------------------------------------------------------
-
-type ExperienceLevel = "beginner" | "intermediate" | "advanced" | "pro";
-
-interface ProfileFormValues {
-  avatarUri: string | null;
-  fullName: string;
-  username: string;
-  email: string;
-  experienceLevel: ExperienceLevel;
+function toAppUserProfile(profile: UserProfile): AppUserProfile {
+  return {
+    id: profile.id,
+    clerkUserId: profile.clerk_user_id,
+    email: profile.email,
+    fullName: profile.full_name,
+    nickname: profile.nickname,
+    experienceLevel: profile.experience_level,
+    avatarUrl: profile.avatar_url,
+    role: profile.role as AppUserProfile["role"],
+  };
 }
 
-const DEFAULT_PROFILE: ProfileFormValues = {
-  avatarUri: null,
-  fullName: "Div Patel",
-  username: "divp",
-  email: "div@example.com",
-  experienceLevel: "intermediate",
-};
-
-// TODO: replace with the real Clerk hook, e.g.:
-//   const { user } = useUser();
-//   const googleAccount = user?.externalAccounts.find(
-//     (a) => a.provider === "oauth_google",
-//   );
-//   const isEmailGoogleLinked = !!googleAccount;
-//   const linkedEmail =
-//     googleAccount?.emailAddress ?? user?.primaryEmailAddress?.emailAddress;
-// This is a dummy in-memory stand-in following the same pattern as
-// `saveProfile` below — swap it out once Clerk is wired in.
-const CLERK_GOOGLE_LINK = {
-  isEmailGoogleLinked: true,
-};
-
-const EXPERIENCE_LEVELS: { tag: ExperienceLevel; label: string }[] = [
-  { tag: "beginner", label: "Beginner" },
-  { tag: "intermediate", label: "Intermediate" },
-  { tag: "advanced", label: "Advanced" },
-  { tag: "pro", label: "Pro speaker" },
-];
-
-async function saveProfile(values: ProfileFormValues): Promise<void> {
-  // TODO: replace with profileService.updateProfile(values)
-  await new Promise((resolve) => setTimeout(resolve, 500));
-}
-
-const DESTRUCTIVE_RED = "#FF3B30"; // iOS system red
-
-const EditProfileScreen = () => {
-  const router = useRouter();
-  const initial = DEFAULT_PROFILE;
-  const isEmailGoogleLinked = CLERK_GOOGLE_LINK.isEmailGoogleLinked;
-
-  // Regular RN state for anything that drives conditional rendering or JS logic.
-  const [avatarUri, setAvatarUri] = useState<string | null>(initial.avatarUri);
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
-    initial.experienceLevel,
+function FieldRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <HStack>
+      <Text modifiers={ROW_LABEL_MODIFIERS}>{label}</Text>
+      {children}
+    </HStack>
   );
-  const [isSaving, setIsSaving] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [errorVisible, setErrorVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+}
 
-  // Native-state-backed text fields. initialValue is only read on the first
-  // render, so `initial` needs to already be the real profile by the time
-  // this component mounts (i.e. loaded by the screen that navigates here).
-  const nameState = useNativeState(initial.fullName);
-  const usernameState = useNativeState(initial.username);
-  // When email is linked via Google (through Clerk), it's managed on the
-  // Google side and shown read-only here rather than as an editable field.
-  const emailState = useNativeState(initial.email);
+export default function EditProfileScreen() {
+  const appUser = useAppUserStore((s) => s.appUser);
+  const setAppUser = useAppUserStore((s) => s.setAppUser);
 
-  const showError = useCallback((message: string) => {
-    setErrorMessage(message);
-    setErrorVisible(true);
-  }, []);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const pickAvatar = useCallback(async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showError(
-        "Allow photo library access in Settings to change your avatar.",
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]?.uri) {
-      setAvatarUri(result.assets[0].uri);
-    }
-  }, [showError]);
+  useEffect(() => {
+    if (appUser) return; // no setState here anymore
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await userService.getProfile();
+        if (!cancelled) setAppUser(toAppUserProfile(profile));
+      } catch {
+        if (!cancelled) setLoadError("Couldn't load your profile. Try again.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [appUser, setAppUser]);
 
-  const handleSave = useCallback(async () => {
-    setIsSaving(true);
-    try {
-      await saveProfile({
-        avatarUri,
-        fullName: nameState.value.trim(),
-        username: usernameState.value.trim(),
-        // If the email is Google-linked, it isn't editable here, so send the
-        // original value through untouched rather than whatever's in the
-        // (disabled) field.
-        email: isEmailGoogleLinked ? initial.email : emailState.value.trim(),
-        experienceLevel,
-      });
-      router.back();
-    } catch {
-      showError("Something went wrong saving your profile. Try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    avatarUri,
-    experienceLevel,
-    isEmailGoogleLinked,
-    initial.email,
-    nameState,
-    usernameState,
-    emailState,
+  if (!appUser && !loadError) return null; // loading
+  if (!appUser) return null; // error, using loadError
+
+  // Keyed by appUser.id so EditProfileForm always mounts fresh with the
+  // real profile values already in hand — see useEditProfileForm.ts for why
+  // that matters for the native-state-backed text fields.
+  return <EditProfileForm key={appUser.id} appUser={appUser} />;
+}
+
+function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
+  const {
     router,
-    showError,
-  ]);
+    isSaving,
+    externalLinked,
+    email,
+    nameState,
+    nicknameState,
+    handleNameChange,
+    handleNicknameChange,
+    experienceLevel,
+    setExperienceLevel,
+    hasChanges,
+    handleSave,
+    showDeleteConfirm,
+    setShowDeleteConfirm,
+    handleDeleteAccount,
+    appearanceColor,
+  } = useEditProfileForm(appUser);
 
-  const handleDeleteAccount = useCallback(() => {
-    setShowDeleteConfirm(false);
-    // TODO: wire up to the real delete-account flow
-    console.log("Account deletion requested");
-  }, []);
-
-  const rowLabelModifiers = [
-    frame({ width: 92, alignment: "leading" as const }),
-    foregroundStyle({
-      type: "hierarchical" as const,
-      style: "secondary" as const,
-    }),
-  ];
-
-  const { hex } = usePreferenceStore((state) => state.preferences.appearance);
-
-  const appearanceColor = colord(hex).darken(0.15).desaturate(0.35).toHex();
   return (
     <>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           onPress={handleSave}
           hidden={isSaving}
+          disabled={!hasChanges}
           tintColor={appearanceColor}
           variant="prominent"
         >
@@ -221,7 +137,7 @@ const EditProfileScreen = () => {
 
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
-          icon={"xmark"}
+          icon="xmark"
           onPress={() => router.dismiss()}
           hidden={isSaving}
         />
@@ -229,63 +145,12 @@ const EditProfileScreen = () => {
 
       <Host style={{ flex: 1 }}>
         <Form modifiers={[scrollDismissesKeyboard("interactively")]}>
-          {/* Avatar */}
-          <Section>
-            <HStack>
-              <Spacer />
-              <VStack spacing={10} modifiers={[padding({ vertical: 12 })]}>
-                <Overlay alignment="bottomTrailing">
-                  {avatarUri ? (
-                    <Image
-                      uiImage={avatarUri}
-                      modifiers={[
-                        resizable(),
-                        aspectRatio({ contentMode: "fill" }),
-                        frame({ width: 96, height: 96 }),
-                        clipShape("circle"),
-                      ]}
-                    />
-                  ) : (
-                    <Image
-                      systemName="person.crop.circle.fill"
-                      size={96}
-                      color="#C7C7CC"
-                    />
-                  )}
-                  <Overlay.Content>
-                    <Button
-                      onPress={pickAvatar}
-                      modifiers={[
-                        buttonStyle("borderedProminent"),
-                        controlSize("mini"),
-                        tint(appearanceColor),
-                        clipShape("circle"),
-                      ]}
-                    >
-                      <Image systemName="pencil" size={12} color="white" />
-                    </Button>
-                  </Overlay.Content>
-                </Overlay>
-                <Button
-                  label="Change Photo"
-                  onPress={pickAvatar}
-                  modifiers={[
-                    buttonStyle("plain"),
-                    font({ size: 15, weight: "semibold" }),
-                    foregroundStyle(appearanceColor),
-                  ]}
-                />
-              </VStack>
-              <Spacer />
-            </HStack>
-          </Section>
-
           {/* Basic info */}
           <Section title="Basic Info">
-            <HStack>
-              <Text modifiers={rowLabelModifiers}>Name</Text>
+            <FieldRow label="Name">
               <TextField
                 text={nameState}
+                onTextChange={handleNameChange}
                 placeholder="Your name"
                 modifiers={[
                   textInputAutocapitalization("words"),
@@ -293,27 +158,27 @@ const EditProfileScreen = () => {
                   submitLabel("next"),
                 ]}
               />
-            </HStack>
-            <HStack>
-              <Text modifiers={rowLabelModifiers}>Username</Text>
+            </FieldRow>
+            <FieldRow label="Nickname">
               <TextField
-                text={usernameState}
-                placeholder="username"
+                text={nicknameState}
+                onTextChange={handleNicknameChange}
+                placeholder="nickname"
                 modifiers={[
                   textInputAutocapitalization("never"),
-                  textContentType("username"),
+                  textContentType("nickname"),
                   keyboardType("ascii-capable"),
                   submitLabel("next"),
                 ]}
               />
-            </HStack>
+            </FieldRow>
           </Section>
 
           {/* Contact */}
           <Section
             title="Contact"
             footer={
-              isEmailGoogleLinked ? (
+              externalLinked.isExternalLinked ? (
                 <Text
                   modifiers={[
                     foregroundStyle({
@@ -322,16 +187,15 @@ const EditProfileScreen = () => {
                     }),
                   ]}
                 >
-                  Your email is managed by your linked Google account. Update it
-                  there to change it here.
+                  Your email is managed by your linked {externalLinked.provider}{" "}
+                  account.
                 </Text>
               ) : undefined
             }
           >
-            <HStack>
-              <Text modifiers={rowLabelModifiers}>Email</Text>
-              <Text>{emailState.value}</Text>
-            </HStack>
+            <FieldRow label="Email">
+              <Text>{email}</Text>
+            </FieldRow>
           </Section>
 
           {/* Speaking profile */}
@@ -340,7 +204,7 @@ const EditProfileScreen = () => {
               label="Experience Level"
               selection={experienceLevel}
               onSelectionChange={(value) =>
-                setExperienceLevel(value as ExperienceLevel)
+                setExperienceLevel(value as typeof experienceLevel)
               }
               modifiers={[pickerStyle("menu")]}
             >
@@ -352,52 +216,13 @@ const EditProfileScreen = () => {
             </Picker>
           </Section>
 
-          {/* Account management */}
-          <Section
-            title="Account Management"
-            footer={
-              <Text>
-                This permanently deletes your account, scripts, and practice
-                history.
-              </Text>
-            }
-          >
-            <Alert
-              title="Delete account?"
-              isPresented={showDeleteConfirm}
-              onIsPresentedChange={setShowDeleteConfirm}
-            >
-              <Alert.Trigger>
-                <Button
-                  label="Delete Account"
-                  role="destructive"
-                  onPress={() => setShowDeleteConfirm(true)}
-                  modifiers={[
-                    buttonStyle("plain"),
-                    foregroundStyle(DESTRUCTIVE_RED),
-                  ]}
-                />
-              </Alert.Trigger>
-              <Alert.Actions>
-                <Button
-                  label="Delete"
-                  role="destructive"
-                  onPress={handleDeleteAccount}
-                />
-                <Button label="Cancel" role="cancel" />
-              </Alert.Actions>
-              <Alert.Message>
-                <Text>
-                  This permanently deletes your account and all data. This
-                  cannot be undone.
-                </Text>
-              </Alert.Message>
-            </Alert>
-          </Section>
+          <DeleteAccountSection
+            isPresented={showDeleteConfirm}
+            onIsPresentedChange={setShowDeleteConfirm}
+            onConfirmDelete={handleDeleteAccount}
+          />
         </Form>
       </Host>
     </>
   );
-};
-
-export default EditProfileScreen;
+}

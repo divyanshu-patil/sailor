@@ -1,11 +1,12 @@
 import { apiClient } from "@/lib/api/client";
+import { ExperienceLevel, UserProfile } from "@/types/user";
+export * from "@/types/user";
 
-export interface UserProfile {
-  id: string;
-  clerk_user_id: string;
-  email: string;
-  role: "user" | "admin";
-  created_at: string;
+export interface UpdateProfilePayload {
+  email?: string;
+  full_name?: string;
+  nickname?: string;
+  experience_level?: ExperienceLevel;
 }
 
 export const userService = {
@@ -14,7 +15,6 @@ export const userService = {
       const response = await apiClient.get<UserProfile>(
         "/api/v1/users/profile",
       );
-      console.log("profile response", response.data);
       return response.data;
     } catch (e: any) {
       console.log("profile error", e.response?.data, e.response?.status);
@@ -22,12 +22,19 @@ export const userService = {
     }
   },
 
-  updateProfile: async (payload: { email?: string }): Promise<UserProfile> => {
-    const response = await apiClient.patch<UserProfile>(
-      "/api/v1/users/profile",
-      payload,
-    );
-    return response.data;
+  updateProfile: async (
+    payload: UpdateProfilePayload,
+  ): Promise<UserProfile> => {
+    try {
+      const response = await apiClient.patch<UserProfile>(
+        "/api/v1/users/profile",
+        payload,
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log("update profile error", e.response?.data, e.response?.status);
+      throw e;
+    }
   },
 
   deleteAccount: async (): Promise<void> => {

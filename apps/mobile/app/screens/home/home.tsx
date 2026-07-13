@@ -1,7 +1,7 @@
 import { Alert, StyleSheet } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { useAppStore } from "@/store/auth-store";
+import { useAppUserStore } from "@/store/app-user.store";
 // import useAuthenticated from "@/hooks/use-authenticated";
 import {
   Host,
@@ -31,7 +31,7 @@ const HomeScreen = () => {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
-  const { clearAppState } = useAppStore();
+  const { clearAppState } = useAppUserStore();
 
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
