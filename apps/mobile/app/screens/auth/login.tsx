@@ -1,27 +1,74 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
 import { useSignIn } from "@clerk/expo";
 import { type Href, Link, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+
+import {
+  Host,
+  HStack,
+  Section,
+  SecureField,
+  Text,
+  TextField,
+  useNativeState,
+  VStack,
+  Image as IconImage,
+  Button,
+  Divider,
+  Rectangle,
+} from "@expo/ui/swift-ui";
+import {
+  autocorrectionDisabled,
+  border,
+  buttonBorderShape,
+  buttonStyle,
+  controlSize,
+  cornerRadius,
+  disabled,
+  font,
+  foregroundStyle,
+  frame,
+  keyboardType,
+  multilineTextAlignment,
+  onSubmit,
+  padding,
+  submitLabel,
+  textContentType,
+  textInputAutocapitalization,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
+import { ThemedView } from "@/components/themed-view";
+import FloatingLabelInput from "@/components/ui/auth/FloatingLabelInput";
+import { useColors } from "@/constants/theme";
+import { AppleSignInButton } from "@/components/ui/auth/AppleSignInButton";
 
 export default function Page() {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
+  const colors = useColors();
 
   const [emailAddress, setEmailAddress] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [code, setCode] = React.useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isSubmitting = fetchStatus === "fetching";
+  const [canSubmit, setCanSubmit] = useState<boolean>(false);
 
   const handleSubmit = async () => {
+    setErrorMessage(null);
+
     const { error } = await signIn.password({
       emailAddress,
       password,
     });
     if (error) {
       console.error(JSON.stringify(error, null, 2));
+      setErrorMessage(
+        errors.fields.identifier?.message ??
+          errors.fields.password?.message ??
+          "Something went wrong. Please check your details and try again.",
+      );
       return;
     }
 
@@ -39,8 +86,6 @@ export default function Page() {
           const url = decorateUrl("/");
           if (url.startsWith("http")) {
             window.location.href = url;
-          } else {
-            router.push(url as Href);
           }
         },
       });
@@ -56,32 +101,10 @@ export default function Page() {
       if (emailCodeFactor) {
         await signIn.mfa.sendEmailCode();
       }
-    } else {
-      // Check why the sign-in is not complete
-      console.error("Sign-in attempt not complete:", signIn);
-    }
-  };
-
-  const handleVerify = async () => {
-    await signIn.mfa.verifyEmailCode({ code });
-
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ session, decorateUrl }) => {
-          // Handle session tasks
-          // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
-          if (session?.currentTask) {
-            console.log(session?.currentTask);
-            return;
-          }
-
-          // If no session tasks, navigate the signed-in user to the home page
-          const url = decorateUrl("/");
-          if (url.startsWith("http")) {
-            window.location.href = url;
-          } else {
-            router.push(url as Href);
-          }
+      router.push({
+        pathname: "/(unauthenticated)/verify",
+        params: {
+          flow: "signIn",
         },
       });
     } else {
@@ -90,142 +113,159 @@ export default function Page() {
     }
   };
 
-  if (signIn.status === "needs_client_trust") {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-        <ThemedView style={styles.container}>
-          <ThemedText
-            type="title"
-            style={[styles.title, { fontSize: 24, fontWeight: "bold" }]}
-          >
-            Verify your account
-          </ThemedText>
-          <TextInput
-            style={styles.input}
-            value={code}
-            placeholder="Enter your verification code"
-            placeholderTextColor="#666666"
-            onChangeText={(code) => setCode(code)}
-            keyboardType="numeric"
-          />
-          {errors.fields.code && (
-            <ThemedText style={styles.error}>
-              {errors.fields.code.message}
-            </ThemedText>
-          )}
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              fetchStatus === "fetching" && styles.buttonDisabled,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleVerify}
-            disabled={fetchStatus === "fetching"}
-          >
-            <ThemedText style={styles.buttonText}>Verify</ThemedText>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={() => signIn.mfa.sendEmailCode()}
-          >
-            <ThemedText style={styles.secondaryButtonText}>
-              I need a new code
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={() => signIn.reset()}
-          >
-            <ThemedText style={styles.secondaryButtonText}>
-              Start over
-            </ThemedText>
-          </Pressable>
-        </ThemedView>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Sign in
-        </ThemedText>
+    <View style={{ flex: 1, backgroundColor: "#FFFEFE" }}>
+      <View style={styles.hero}>
+        <Image
+          source={require("@/assets/images/temp-with-icon.png")}
+          style={styles.image}
+          contentFit="cover"
+          contentPosition={{ bottom: "20%" }}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+        />
+      </View>
 
-        <ThemedText style={styles.label}>Email address</ThemedText>
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
+      <Host matchContents={{ vertical: true }} style={styles.container}>
+        <VStack spacing={24}>
+          <VStack spacing={8}>
+            <Text
+              modifiers={[
+                font({ size: 32, weight: "bold", design: "rounded" }),
+                multilineTextAlignment("center"),
+              ]}
+            >
+              Welcome back!
+            </Text>
+
+            <Text
+              modifiers={[
+                font({ size: 16 }),
+                foregroundStyle("#666"),
+                multilineTextAlignment("center"),
+              ]}
+            >
+              Sign in to continue your presentation journey.
+            </Text>
+          </VStack>
+        </VStack>
+      </Host>
+
+      <View style={{ padding: 20 }}>
+        <FloatingLabelInput
+          label="Email"
           value={emailAddress}
-          placeholder="Enter email"
-          placeholderTextColor="#666666"
-          onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+          onChangeText={setEmailAddress}
           keyboardType="email-address"
+          autoCapitalize="none"
+          focusedBorderColor={colors.colors.rust}
+          focusedLabelColor={colors.colors.rust}
         />
-        {errors.fields.identifier && (
-          <ThemedText style={styles.error}>
-            {errors.fields.identifier.message}
-          </ThemedText>
-        )}
-        <ThemedText style={styles.label}>Password</ThemedText>
-        <TextInput
-          style={styles.input}
+        <FloatingLabelInput
+          label="Password"
           value={password}
-          placeholder="Enter password"
-          placeholderTextColor="#666666"
-          secureTextEntry={true}
-          onChangeText={(password) => setPassword(password)}
+          onChangeText={setPassword}
+          isPassword
+          focusedBorderColor={colors.colors.rust}
+          focusedLabelColor={colors.colors.rust}
         />
-        {errors.fields.password && (
-          <ThemedText style={styles.error}>
-            {errors.fields.password.message}
-          </ThemedText>
-        )}
+      </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            (!emailAddress || !password || fetchStatus === "fetching") &&
-              styles.buttonDisabled,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={handleSubmit}
-          disabled={!emailAddress || !password || fetchStatus === "fetching"}
-        >
-          <ThemedText style={styles.buttonText}>Continue</ThemedText>
-        </Pressable>
+      <Host matchContents={{ vertical: true }} style={styles.wrapper}>
+        <VStack spacing={20}>
+          <Button
+            modifiers={[
+              buttonStyle("glassProminent"),
+              controlSize("extraLarge"),
+              tint(colors.colors.rust),
+              buttonBorderShape("capsule"),
+            ]}
+            onPress={handleSubmit}
+          >
+            <Text
+              modifiers={[
+                frame({
+                  maxWidth: Infinity,
+                  alignment: "center",
+                }),
+              ]}
+            >
+              {isSubmitting ? "Signing in…" : "Sign In"}
+            </Text>
+          </Button>
 
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <ThemedText style={styles.dividerText}>OR</ThemedText>
-          <View style={styles.dividerLine} />
-        </View>
+          <HStack spacing={12} alignment="center">
+            <Rectangle
+              modifiers={[
+                frame({ maxWidth: Infinity, height: 1 }),
+                foregroundStyle("#E5E7EB"),
+              ]}
+            />
 
-        <GoogleSignInButton />
+            <Text
+              modifiers={[
+                font({ size: 14, weight: "medium" }),
+                foregroundStyle("#6B7280"),
+              ]}
+            >
+              OR
+            </Text>
 
-        <View style={styles.linkContainer}>
-          <ThemedText>Don't have an account? </ThemedText>
-          <Link href="/(unauthenticated)/signup">
-            <ThemedText type="link">Sign up</ThemedText>
+            <Rectangle
+              modifiers={[
+                frame({ maxWidth: Infinity, height: 1 }),
+                foregroundStyle("#E5E7EB"),
+              ]}
+            />
+          </HStack>
+        </VStack>
+      </Host>
+      <View style={{ paddingHorizontal: 30, marginTop: 20 }}>
+        <GoogleSignInButton logoSource={require("@/assets/icons/google.png")} />
+        <AppleSignInButton />
+      </View>
+      <Host matchContents={{ vertical: true }} style={styles.wrapper}>
+        <VStack spacing={4}>
+          <Text modifiers={[font({ size: 14 }), foregroundStyle("#666")]}>
+            Don&apos;t have an account?
+          </Text>
+
+          <Link href="/(unauthenticated)/signup" asChild>
+            <Button
+              label="Sign up"
+              modifiers={[
+                buttonStyle("plain"),
+                font({ size: 14, weight: "semibold" }),
+              ]}
+            />
           </Link>
-        </View>
-      </ThemedView>
-    </SafeAreaView>
+        </VStack>
+      </Host>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
-    gap: 12,
+    marginTop: -30,
+    marginHorizontal: 30,
   },
+
+  wrapper: {
+    marginHorizontal: 20,
+  },
+
+  hero: {
+    flex: 0.9,
+    overflow: "visible",
+  },
+
+  image: {
+    width: "100%",
+    height: "100%",
+    alignSelf: "center",
+  },
+
   title: {
     marginBottom: 8,
   },
@@ -240,35 +280,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: "#fff",
-  },
-  button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonPressed: {
-    opacity: 0.7,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  secondaryButtonText: {
-    color: "#0a7ea4",
-    fontWeight: "600",
   },
   linkContainer: {
     flexDirection: "row",

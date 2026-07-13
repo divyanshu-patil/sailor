@@ -15,4 +15,8 @@ export const ENV = {
     "EXPO_PUBLIC_API_URL",
     process.env.EXPO_PUBLIC_API_URL,
   ),
+  EXPO_PUBLIC_SHOW_ONBOARDING: getEnvVar(
+    "EXPO_PUBLIC_SHOW_ONBOARDING",
+    process.env.EXPO_PUBLIC_SHOW_ONBOARDING,
+  ),
 } as const;

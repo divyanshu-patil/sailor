@@ -1,6 +1,14 @@
 export const fonts = {
   krona: "Krona One",
-
+   alanSans: {
+  light: "AlanSans-Light",
+  regular: "AlanSans-Regular",
+  medium: "AlanSans-Medium",
+  semiBold: "AlanSans-SemiBold",
+  bold: "AlanSans-Bold",
+  extraBold: "AlanSans-ExtraBold",
+  black: "AlanSans-Black",
+},
   amarna: {
     thin: "Amarna-Thin",
     thinItalic: "Amarna-ThinItalic",
