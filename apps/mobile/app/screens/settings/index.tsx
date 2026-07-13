@@ -64,9 +64,9 @@ const SettingsScreen = () => {
             selectedMood={preferences?.defaultMood ?? "confident"}
             onUpdate={updatePreference}
           />
-          <CacheSection onCleared={handleCacheCleared} />
           <SubscriptionSection />
           <LegalSection />
+          <CacheSection onCleared={handleCacheCleared} />
           <VersionSection />
           <AccountSecuritySection
             onDeleted={() => router.replace("/")}

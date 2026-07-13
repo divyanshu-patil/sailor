@@ -1,13 +1,6 @@
 import { AppearanceOption } from "@/types/settings/preferences";
 export * from "@/types/settings/preferences";
 
-// --- DEV-ONLY MOCK -----------------------------------------------------
-// Same shape/export name as appearance.service.ts's real apiClient call.
-// Swap the import in SettingsScreen.tsx from "./appearance.debug.service"
-// to "./appearance.service" once GET /api/v1/appearance/options is live.
-// Delete this file at that point.
-// -------------------------------------------------------------------------
-
 const DUMMY_APPEARANCE_OPTIONS: AppearanceOption[] = [
   { id: "lavender", name: "Lavender", hex: "#8442E1" },
   { id: "ocean", name: "Ocean", hex: "#4299E1" },
@@ -27,7 +20,7 @@ export const appearanceService = {
     return await new Promise((resolve) => {
       setTimeout(() => {
         resolve(DUMMY_APPEARANCE_OPTIONS);
-      }, 300); // simulate GET latency
+      }, 7000); // simulate GET latency
     });
   },
 };
