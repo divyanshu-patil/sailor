@@ -1,5 +1,5 @@
 // utils/dev-tools.ts
-import { useAppStore } from "@/store/auth-store";
+import { useAppUserStore } from "@/store/app-user.store";
 
 /**
  * Wipes all persisted app storage (auth store + any other MMKV-backed
@@ -9,10 +9,10 @@ import { useAppStore } from "@/store/auth-store";
 export async function clearAppStorage() {
   try {
     // Clears the persisted MMKV entry for this store
-    await useAppStore.persist.clearStorage();
+    await useAppUserStore.persist.clearStorage();
 
     // Reset in-memory state back to initial values
-    useAppStore.setState({
+    useAppUserStore.setState({
       appUser: null,
       hasSeenOnboarding: false,
       _hasHydrated: true, // keep true so UI doesn't re-show a loading spinner

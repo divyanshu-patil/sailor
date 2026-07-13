@@ -6,10 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sailor",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/sailor.icon",
-      "bundleIdentifier": "com.sailor.presentation"
+      "bundleIdentifier": "com.sailor.presentation",
+      "appleTeamId": "MY2RYL82UV"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +20,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.sailor.presentation"
+      "package": "com.sailor.presentation",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "output": "static",
@@ -45,7 +52,6 @@
             "../../node_modules/@expo-google-fonts/amarna/400Regular_Italic/Amarna_400Regular_Italic.ttf",
             "../../node_modules/@expo-google-fonts/amarna/500Medium_Italic/Amarna_500Medium_Italic.ttf",
             "../../node_modules/@expo-google-fonts/amarna/600SemiBold_Italic/Amarna_600SemiBold_Italic.ttf",
-
             "../../node_modules/@expo-google-fonts/amarna/700Bold_Italic/Amarna_700Bold_Italic.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/200ExtraLight/Newsreader_200ExtraLight.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/300Light/Newsreader_300Light.ttf",
@@ -54,7 +60,6 @@
             "../../node_modules/@expo-google-fonts/newsreader/600SemiBold/Newsreader_600SemiBold.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/700Bold/Newsreader_700Bold.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/800ExtraBold/Newsreader_800ExtraBold.ttf",
-
             "../../node_modules/@expo-google-fonts/newsreader/200ExtraLight_Italic/Newsreader_200ExtraLight_Italic.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/300Light_Italic/Newsreader_300Light_Italic.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/400Regular_Italic/Newsreader_400Regular_Italic.ttf",

@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
 import { Stack } from "expo-router";
-import { useAppStore } from "@/store/auth-store";
 import { ENV } from "@/lib/config/env";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { View } from "react-native";
 import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
+import { useOnboardingStore } from "@/store/onboarding.store";
 
 function ApiAuthSetup() {
   const { getToken, isSignedIn } = useAuth();
@@ -21,15 +22,13 @@ function ApiAuthSetup() {
 }
 
 function InitialLayout() {
-  const isHydrated = useAppStore((s) => s._hasHydrated);
-  const hasSeenOnboarding = useAppStore((s) => s.hasSeenOnboarding);
-  const completeOnboarding = useAppStore((s) => s.completeOnboarding);
+  const isHydrated = useOnboardingStore((s) => s._hasHydrated);
+  const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const { isSignedIn, isLoaded } = useAuth();
 
   useEffect(() => {
-    if (!isHydrated) return;
-    completeOnboarding(ENV.EXPO_PUBLIC_SHOW_ONBOARDING === "true");
-  }, [isHydrated]);
+    syncAppearanceOptionsOnce();
+  }, []);
 
   if (!isHydrated || !isLoaded) {
     return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null

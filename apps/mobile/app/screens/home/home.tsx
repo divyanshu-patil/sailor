@@ -1,7 +1,7 @@
 import { Alert, StyleSheet } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { useAppStore } from "@/store/auth-store";
+import { useAppUserStore } from "@/store/app-user.store";
 // import useAuthenticated from "@/hooks/use-authenticated";
 import {
   Host,
@@ -13,6 +13,7 @@ import {
   HStack,
   Image,
   Spacer,
+  SwipeActions,
 } from "@expo/ui/swift-ui";
 import {
   Animation,
@@ -30,7 +31,7 @@ const HomeScreen = () => {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
-  const { clearAppState } = useAppStore();
+  const { clearAppState } = useAppUserStore();
 
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -70,6 +71,7 @@ const HomeScreen = () => {
             <Spacer />
             <Toggle isOn={notifications} onIsOnChange={setNotifications} />
           </HStack>
+
           {/* <Button
             role="destructive"
             // modifiers={[buttonStyle("glassProminent")]}
@@ -99,8 +101,29 @@ const HomeScreen = () => {
           </Button>
         </Section>
         <Section>
-          <Text>firstName: {user?.firstName}</Text>
-          <Text>lastName: {user?.lastName}</Text>
+          <SwipeActions>
+            <Text>firstName: {user?.firstName}</Text>
+            <SwipeActions.Actions edge="leading" allowsFullSwipe={false}>
+              <Button
+                label="Verify"
+                systemImage="checkmark"
+                modifiers={[tint("#34c759")]}
+                onPress={() => Alert.alert("Verified", "First name confirmed")}
+              />
+            </SwipeActions.Actions>
+          </SwipeActions>
+
+          <SwipeActions>
+            <Text>lastName: {user?.lastName}</Text>
+            <SwipeActions.Actions edge="leading">
+              <Button
+                label="delete"
+                systemImage="checkmark"
+                modifiers={[tint("#dd0e61")]}
+                onPress={() => Alert.alert("Verified", "Last name confirmed")}
+              />
+            </SwipeActions.Actions>
+          </SwipeActions>
         </Section>
         <Section>
           <Button onPress={handleSignOut}>

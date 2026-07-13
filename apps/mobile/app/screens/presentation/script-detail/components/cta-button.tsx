@@ -1,13 +1,8 @@
 import { StyleSheet, Text } from "react-native";
 import EntypoIcons from "@react-native-vector-icons/entypo";
 import { colord } from "colord";
-import {
-  LinearTransition,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+
+import PressableScale from "@/components/ui/animated/PressableScale";
 
 interface CtaButtonProps {
   onPress?: () => void;
@@ -17,24 +12,12 @@ interface CtaButtonProps {
 
 const CtaButton = ({ accentColor, label, onPress }: CtaButtonProps) => {
   const textLightColor = colord(accentColor).lighten(0.13).toHex();
-  const pressed = useSharedValue(0);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: withTiming(pressed.value ? 0.97 : 1, { duration: 100 }) },
-    ],
-  }));
   return (
-    <AnimatedPressable
-      style={[styles.ctaPill, animatedStyle]}
-      layout={LinearTransition.springify()}
-      onPress={onPress}
-      onPressIn={() => (pressed.value = 1)}
-      onPressOut={() => (pressed.value = 0)}
-    >
+    <PressableScale style={[styles.ctaPill]} onPress={onPress}>
       <Text style={[styles.ctaText, { color: textLightColor }]}>{label}</Text>
       <EntypoIcons name="chevron-right" size={54} color={textLightColor} />
-    </AnimatedPressable>
+    </PressableScale>
   );
 };
 

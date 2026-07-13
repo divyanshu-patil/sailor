@@ -1,4 +1,3 @@
-import { View, Text } from "react-native";
 import React from "react";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
