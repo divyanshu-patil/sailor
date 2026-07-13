@@ -5,6 +5,7 @@ import Card from "./components/Card";
 import RecordButton from "./components/RecordButton";
 import { useCallback, useState, useMemo } from "react";
 import Animated, {
+  FadeIn,
   interpolate,
   LinearTransition,
   useAnimatedStyle,
@@ -163,7 +164,9 @@ const ScriptPracticeScreen = () => {
     prevColor,
   });
 
-  const { introRotation, introScale } = useIntroAnimation();
+  const { introRotation, introScale, introOpacity } = useIntroAnimation(
+    !isLoadingCards && !cardsError && cards.length > 0,
+  );
 
   const TIMER_TRANSLATE_Y = 100;
   const animatedTimerStyles = useAnimatedStyle(() => ({
@@ -259,17 +262,19 @@ const ScriptPracticeScreen = () => {
                 }}
                 introRotation={introRotation}
                 introScale={introScale}
+                introOpacity={introOpacity}
               />
             );
           })}
-          <Text
+          <Animated.Text
+            entering={FadeIn.delay(100)}
             style={[
               styles.emptytext,
               { color: colord(params.color).darken(0.5).toHex() },
             ]}
           >
             No Cards Left
-          </Text>
+          </Animated.Text>
         </View>
       </GestureDetector>
       <View style={[styles.bottomContainer]}>
