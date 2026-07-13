@@ -1,4 +1,11 @@
-import { View, Text, Pressable, StyleSheet, ViewStyle } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ViewStyle,
+  StyleProp,
+} from "react-native";
 import React, { Children, isValidElement, cloneElement } from "react";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,7 +14,7 @@ import { fonts } from "@/constants/fonts";
 type SectionProps = {
   title?: string;
   footer?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
 };
 

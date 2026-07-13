@@ -1,12 +1,3 @@
-// EditProfileScreen — SwiftUI bridge (@expo/ui/swift-ui, Expo UI ~56.x).
-// No React Native <View>/<Text> for layout — Host is the single root and
-// everything below it is a real SwiftUI view tree. iOS only.
-//
-// Avatar editing is intentionally not here right now — see
-// components/AvatarPicker.tsx, which was extracted out of this screen but
-// isn't wired back in yet (a different avatar picker is coming instead of
-// a photo-library upload).
-
 import React, { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import {
