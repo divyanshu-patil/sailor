@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { FlashList, type ListRenderItem } from "@shopify/flash-list";
 
@@ -6,10 +6,22 @@ import { Card } from "./Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "./constants";
 import { DeckItem } from "@/services/deck.debug.service";
 import { useDecks } from "@/hooks";
-import { useHeaderHeight } from "expo-router/build/react-navigation";
+import {
+  useFocusEffect,
+  useHeaderHeight,
+} from "expo-router/build/react-navigation";
+// import { useBottomTabBarHeight } from "expo-router/build/react-navigation/bottom-tabs";
 
 const AllScriptsScreen = () => {
   const headerHeight = useHeaderHeight();
+  // const bottomTabHeight = useBottomTabBarHeight();
+  const [hasActivated, setHasActivated] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setHasActivated(true);
+    }, []),
+  );
 
   const {
     data: decks,
@@ -28,7 +40,7 @@ const AllScriptsScreen = () => {
     [],
   );
 
-  if (isLoading) {
+  if (isLoading || !hasActivated) {
     return (
       <View style={[styles.screen, styles.centered]}>
         <ActivityIndicator />
@@ -62,7 +74,7 @@ const AllScriptsScreen = () => {
         optimizeItemArrangement
         contentContainerStyle={[
           styles.screenContent,
-          { paddingTop: headerHeight },
+          { paddingTop: headerHeight, paddingBottom: 100 },
         ]}
         showsVerticalScrollIndicator={false}
         refreshing={isRefreshing}

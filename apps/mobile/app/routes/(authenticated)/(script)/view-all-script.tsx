@@ -1,4 +1,3 @@
-import { ScrollView } from "react-native";
 import React from "react";
 import AllScriptsScreen from "@/screens/presentation/view-all-scripts";
 import { router, Stack } from "expo-router";
