@@ -1,9 +1,10 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { fonts } from "@/constants/fonts";
+import PressableScale from "@/components/ui/animated/PressableScale";
 
 interface PlanCardProps {
   planName: string;
@@ -31,7 +32,10 @@ const PlanCard = ({
   onManagePress,
 }: PlanCardProps) => {
   return (
-    <View style={[styles.planCard, { backgroundColor: cardColor }]}>
+    <PressableScale
+      onPress={onManagePress}
+      style={[styles.planCard, { backgroundColor: cardColor }]}
+    >
       <View style={styles.planTopRow}>
         <View style={styles.planTitleRow}>
           <FontAwesome6
@@ -59,11 +63,11 @@ const PlanCard = ({
             {remainingCount} remaining
           </Text>
         </View>
-        <Pressable style={styles.manageButton} onPress={onManagePress}>
+        <PressableScale style={styles.manageButton} onPress={onManagePress}>
           <Text style={styles.manageButtonText}>Manage</Text>
-        </Pressable>
+        </PressableScale>
       </View>
-    </View>
+    </PressableScale>
   );
 };
 

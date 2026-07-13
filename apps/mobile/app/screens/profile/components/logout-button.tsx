@@ -1,13 +1,7 @@
 import React from "react";
 import { StyleSheet, Text } from "react-native";
 import { Ionicons } from "@react-native-vector-icons/ionicons";
-import {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
-import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import PressableScale from "@/components/ui/animated/PressableScale";
 
 interface LogoutButtonProps {
   onPress: () => void;
@@ -19,25 +13,17 @@ interface LogoutButtonProps {
  * (useLogout) stays completely decoupled from the animation.
  */
 const LogoutButton = ({ onPress }: LogoutButtonProps) => {
-  const pressed = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: withSpring(pressed.value ? 0.97 : 1, { damping: 50 }) },
-    ],
-    opacity: withTiming(pressed.value ? 0.5 : 1),
-  }));
-
   return (
-    <AnimatedPressable
-      style={[styles.logoutContainer, animatedStyle]}
+    <PressableScale
+      style={[styles.logoutContainer]}
       onPress={onPress}
-      onPressIn={() => (pressed.value = 1)}
-      onPressOut={() => (pressed.value = 0)}
+      opacity={{
+        pressedOpacity: 0.5,
+      }}
     >
       <Ionicons name="exit-outline" size={28} color="#E44141" />
       <Text style={styles.logoutText}>Logout</Text>
-    </AnimatedPressable>
+    </PressableScale>
   );
 };
 
