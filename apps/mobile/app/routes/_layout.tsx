@@ -25,12 +25,10 @@ function InitialLayout() {
   const isHydrated = useOnboardingStore((s) => s._hasHydrated);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const { isSignedIn, isLoaded } = useAuth();
-  const completeOnboarding = useOnboardingStore((s) => s.completeOnboarding);
 
   useEffect(() => {
-    completeOnboarding(ENV.EXPO_PUBLIC_SHOW_ONBOARDING === "true");
     syncAppearanceOptionsOnce();
-  }, [completeOnboarding]);
+  }, []);
 
   if (!isHydrated || !isLoaded) {
     return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null

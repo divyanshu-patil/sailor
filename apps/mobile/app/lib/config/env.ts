@@ -1,4 +1,3 @@
-
 function getEnvVar(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(`Missing required env var: ${name}`);
@@ -11,12 +10,5 @@ export const ENV = {
     "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
     process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
   ),
-  API_URL: getEnvVar(
-    "EXPO_PUBLIC_API_URL",
-    process.env.EXPO_PUBLIC_API_URL,
-  ),
-  EXPO_PUBLIC_SHOW_ONBOARDING: getEnvVar(
-    "EXPO_PUBLIC_SHOW_ONBOARDING",
-    process.env.EXPO_PUBLIC_SHOW_ONBOARDING,
-  ),
+  API_URL: getEnvVar("EXPO_PUBLIC_API_URL", process.env.EXPO_PUBLIC_API_URL),
 } as const;
