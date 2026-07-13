@@ -18,7 +18,7 @@ const WelcomeScreen = () => {
   };
 
   const handleSkip = () => {
-    router.push("/(unauthenticated)/login" as any);
+    router.push("/(unauthenticated)" as any);
   };
 
   return (

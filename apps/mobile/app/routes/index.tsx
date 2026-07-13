@@ -1,9 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@clerk/expo";
-import { useFonts } from "@expo-google-fonts/krona-one/useFonts";
+import { useFonts } from "expo-font";
 import { KronaOne_400Regular } from "@expo-google-fonts/krona-one/400Regular";
+import {
+  AlanSans_300Light,
+  AlanSans_400Regular,
+  AlanSans_500Medium,
+  AlanSans_600SemiBold,
+  AlanSans_700Bold,
+  AlanSans_800ExtraBold,
+  AlanSans_900Black,
+} from "@expo-google-fonts/alan-sans";
 import {
   Amarna_100Thin,
   Amarna_100Thin_Italic,
@@ -38,16 +47,26 @@ import {
   Newsreader_800ExtraBold_Italic,
 } from "@expo-google-fonts/newsreader";
 import { useOnboardingStore } from "@/store/onboarding.store";
+import { useAppUserStore } from "@/store/app-user.store";
 
 export default function Index() {
   const router = useRouter();
   // const isAuthenticated = useAppUserStore((s) => s.isAuthenticated);
-  const { isSignedIn } = useAuth();
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
-  const isHydrated = useOnboardingStore((s) => s._hasHydrated);
+  const isHydrated = useAppUserStore((s) => s._hasHydrated);
+  // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const { isSignedIn, isLoaded } = useAuth();
+  const hasNavigated = useRef(false);
 
   const [fontsLoaded] = useFonts({
     KronaOne: KronaOne_400Regular,
+    "AlanSans-Light": AlanSans_300Light,
+    "AlanSans-Regular": AlanSans_400Regular,
+    "AlanSans-Medium": AlanSans_500Medium,
+    "AlanSans-SemiBold": AlanSans_600SemiBold,
+    "AlanSans-Bold": AlanSans_700Bold,
+    "AlanSans-ExtraBold": AlanSans_800ExtraBold,
+    "AlanSans-Black": AlanSans_900Black,
 
     Amarna: Amarna_400Regular,
     "Amarna-Italic": Amarna_400Regular_Italic,
@@ -87,20 +106,26 @@ export default function Index() {
   });
 
   useEffect(() => {
-    if (!fontsLoaded) {
-      return;
-    }
+    if (!fontsLoaded || !isHydrated || !isLoaded) return;
+    if (hasNavigated.current) return;
 
-    if (!isHydrated) return;
+    hasNavigated.current = true;
 
     if (!hasSeenOnboarding) {
       router.replace("/(onboarding)/welcome");
     } else if (isSignedIn) {
       router.replace("/(authenticated)");
     } else {
-      router.replace("/(unauthenticated)/login");
+      router.replace("/(unauthenticated)");
     }
-  }, [isHydrated, isSignedIn, hasSeenOnboarding, fontsLoaded, router]);
+  }, [
+    isHydrated,
+    isSignedIn,
+    isLoaded,
+    hasSeenOnboarding,
+    fontsLoaded,
+    router,
+  ]);
 
   if (!isHydrated) {
     return (

@@ -1,67 +1,77 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
 import { useAuth, useSignUp } from "@clerk/expo";
 import { type Href, Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
+
+import {
+  Host,
+  HStack,
+  SecureField,
+  Text,
+  TextField,
+  useNativeState,
+  VStack,
+  Image as IconImage,
+  Button,
+  Rectangle,
+} from "@expo/ui/swift-ui";
+import {
+  autocorrectionDisabled,
+  border,
+  buttonBorderShape,
+  buttonStyle,
+  controlSize,
+  cornerRadius,
+  font,
+  foregroundStyle,
+  frame,
+  keyboardType,
+  multilineTextAlignment,
+  onSubmit,
+  padding,
+  submitLabel,
+  textContentType,
+  textInputAutocapitalization,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
 
 export default function Page() {
   const { signUp, errors, fetchStatus } = useSignUp();
   const { isSignedIn } = useAuth();
   const router = useRouter();
 
-  const [emailAddress, setEmailAddress] = useState("");
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
+  const emailAddress = useNativeState("");
+  const password = useNativeState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isSubmitting = fetchStatus === "fetching";
 
-const handleSubmit = async () => {
-  try {
-    // Always start fresh — this creates a new sign-up resource
-    // instead of reusing the stale one from a previous failed attempt
-    const { error } = await signUp.create({
-      emailAddress,
-      password,
-    });
-
-    if (error) {
-      console.error(JSON.stringify(error, null, 2));
-      return;
-    }
-
-    await signUp.verifications.sendEmailCode();
-  } catch (err) {
-    console.error('Sign up error:', JSON.stringify(err, null, 2));
-    Alert.alert('Error', 'Something went wrong. Please try again.');
-  }
-};
-  const handleVerify = async () => {
-    await signUp.verifications.verifyEmailCode({
-      code,
-    });
-    if (signUp.status === "complete") {
-      await signUp.finalize({
-        // Redirect the user to the home page after signing up
-        navigate: ({ session, decorateUrl }) => {
-          // Handle session tasks
-          // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
-          if (session?.currentTask) {
-            console.log(session?.currentTask);
-            return;
-          }
-
-          // If no session tasks, navigate the signed-in user to the home page
-          const url = decorateUrl("/");
-          if (url.startsWith("http")) {
-            window.location.href = url;
-          } else {
-            router.push(url as Href);
-          }
-        },
+  const handleSubmit = async () => {
+    setErrorMessage(null);
+    try {
+      const { error } = await signUp.create({
+        emailAddress: emailAddress.value,
+        password: password.value,
       });
-    } else {
-      // Check why the sign-up is not complete
-      console.error("Sign-up attempt not complete:", signUp);
+
+      if (error) {
+        console.error(JSON.stringify(error, null, 2));
+        setErrorMessage(
+          errors.fields.emailAddress?.message ??
+            errors.fields.password?.message ??
+            "Something went wrong. Please check your details and try again.",
+        );
+        return;
+      }
+
+      await signUp.verifications.sendEmailCode();
+      // Reuse the same verification screen for both sign-in and sign-up.
+      // Clerk decides which flow is currently active.
+      router.push("/(unauthenticated)/verify" as Href);
+    } catch (err) {
+      console.error("Sign up error:", JSON.stringify(err, null, 2));
+      setErrorMessage("Something went wrong. Please try again.");
     }
   };
 
@@ -69,184 +79,189 @@ const handleSubmit = async () => {
     return null;
   }
 
-  if (
-    signUp.status === "missing_requirements" &&
-    signUp.unverifiedFields.includes("email_address") &&
-    signUp.missingFields.length === 0
-  ) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-        <ThemedView style={styles.container}>
-          <ThemedText type="title" style={styles.title}>
-            Verify your account
-          </ThemedText>
-          <TextInput
-            style={styles.input}
-            value={code}
-            placeholder="Enter your verification code"
-            placeholderTextColor="#666666"
-            onChangeText={(code) => setCode(code)}
-            keyboardType="numeric"
-          />
-          {errors.fields.code && (
-            <ThemedText style={styles.error}>
-              {errors.fields.code.message}
-            </ThemedText>
-          )}
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              fetchStatus === "fetching" && styles.buttonDisabled,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleVerify}
-            disabled={fetchStatus === "fetching"}
-          >
-            <ThemedText style={styles.buttonText}>Verify</ThemedText>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={() => signUp.verifications.sendEmailCode()}
-          >
-            <ThemedText style={styles.secondaryButtonText}>
-              I need a new code
-            </ThemedText>
-          </Pressable>
-        </ThemedView>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Sign up
-        </ThemedText>
-
-        <ThemedText style={styles.label}>Email address</ThemedText>
-        <TextInput
-          style={styles.input}
-          autoCapitalize="none"
-          value={emailAddress}
-          placeholder="Enter email"
-          placeholderTextColor="#666666"
-          onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-          keyboardType="email-address"
+    <View style={{ flex: 1, backgroundColor: "#FFFEFE" }}>
+      <View style={styles.hero}>
+        <Image
+          source={require("@/assets/images/temp-script-hold.png")}
+          style={styles.image}
+          contentFit="cover"
+          contentPosition={{ bottom: "20%" }}
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
         />
-        {errors.fields.emailAddress && (
-          <ThemedText style={styles.error}>
-            {errors.fields.emailAddress.message}
-          </ThemedText>
-        )}
-        <ThemedText style={styles.label}>Password</ThemedText>
-        <TextInput
-          style={styles.input}
-          value={password}
-          placeholder="Enter password"
-          placeholderTextColor="#666666"
-          secureTextEntry={true}
-          onChangeText={(password) => setPassword(password)}
-        />
-        {errors.fields.password && (
-          <ThemedText style={styles.error}>
-            {errors.fields.password.message}
-          </ThemedText>
-        )}
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            (!emailAddress || !password || fetchStatus === "fetching") &&
-              styles.buttonDisabled,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={handleSubmit}
-          disabled={!emailAddress || !password || fetchStatus === "fetching"}
-        >
-          <ThemedText style={styles.buttonText}>Sign up</ThemedText>
-        </Pressable>
+      </View>
 
-        <View style={styles.linkContainer}>
-          <ThemedText>Already have an account? </ThemedText>
-          <Link href="/(unauthenticated)/login">
-            <ThemedText type="link">Sign in</ThemedText>
-          </Link>
-        </View>
+      <Host matchContents={{ vertical: true }} style={styles.container}>
+        <VStack spacing={24}>
+          <VStack spacing={8}>
+            <Text
+              modifiers={[
+                font({ size: 32, weight: "bold", design: "rounded" }),
+                multilineTextAlignment("center"),
+              ]}
+            >
+              Create account!
+            </Text>
 
-        {/* Required for sign-up flows. Clerk's bot sign-up protection is enabled by default */}
-        <View nativeID="clerk-captcha" />
-      </ThemedView>
-    </SafeAreaView>
+            <Text
+              modifiers={[
+                font({ size: 16 }),
+                foregroundStyle("#666"),
+                multilineTextAlignment("center"),
+              ]}
+            >
+              Sign up to start your presentation journey.
+            </Text>
+          </VStack>
+
+          <VStack spacing={5}>
+            <VStack spacing={15}>
+              <HStack
+                spacing={5}
+                modifiers={[
+                  border({ width: 1.5, color: "#E5E7EB" }),
+                  cornerRadius(2),
+                ]}
+              >
+                <IconImage
+                  systemName="envelope"
+                  modifiers={[
+                    padding({ horizontal: 12 }),
+                    frame({ width: 50, alignment: "center" }),
+                  ]}
+                />
+                <TextField
+                  placeholder="name@example.com"
+                  text={emailAddress}
+                  modifiers={[
+                    keyboardType("email-address"),
+                    textInputAutocapitalization("never"),
+                    textContentType("emailAddress"),
+                    autocorrectionDisabled(),
+                    submitLabel("next"),
+                    padding({ vertical: 10 }),
+                  ]}
+                />
+              </HStack>
+              <HStack
+                spacing={5}
+                modifiers={[
+                  border({ width: 1.5, color: "#E5E7EB" }),
+                  cornerRadius(2),
+                ]}
+              >
+                <IconImage
+                  systemName="lock.fill"
+                  modifiers={[
+                    padding({ horizontal: 12 }),
+                    frame({ width: 50, alignment: "center" }),
+                  ]}
+                />
+                <SecureField
+                  placeholder="Password"
+                  text={password}
+                  modifiers={[
+                    textContentType("newPassword"),
+                    submitLabel("done"),
+                    onSubmit(handleSubmit),
+                    padding({ vertical: 10 }),
+                  ]}
+                />
+              </HStack>
+            </VStack>
+            {errorMessage && (
+              <Text
+                modifiers={[
+                  frame({ maxWidth: Infinity, alignment: "topLeading" }),
+                  font({ size: 14 }),
+                  padding({ leading: 12 }),
+                  foregroundStyle("#d32f2f"),
+                ]}
+              >
+                {errorMessage}
+              </Text>
+            )}
+          </VStack>
+
+          <Button
+            modifiers={[
+              buttonStyle("glassProminent"),
+              controlSize("extraLarge"),
+              tint("#FF6347"),
+              buttonBorderShape("capsule"),
+            ]}
+            onPress={handleSubmit}
+          >
+            <Text
+              modifiers={[frame({ maxWidth: Infinity, alignment: "center" })]}
+            >
+              {isSubmitting ? "Creating account…" : "Sign Up"}
+            </Text>
+          </Button>
+
+          <HStack spacing={12} alignment="center">
+            <Rectangle
+              modifiers={[
+                frame({ maxWidth: Infinity, height: 1 }),
+                foregroundStyle("#E5E7EB"),
+              ]}
+            />
+            <Text
+              modifiers={[
+                font({ size: 14, weight: "medium" }),
+                foregroundStyle("#6B7280"),
+              ]}
+            >
+              OR
+            </Text>
+            <Rectangle
+              modifiers={[
+                frame({ maxWidth: Infinity, height: 1 }),
+                foregroundStyle("#E5E7EB"),
+              ]}
+            />
+          </HStack>
+
+          <VStack>
+            <GoogleSignInButton />
+          </VStack>
+
+          <VStack spacing={4}>
+            <Text modifiers={[font({ size: 14 }), foregroundStyle("#666")]}>
+              Already have an account?
+            </Text>
+            <Link href="/(unauthenticated)/login" asChild>
+              <Button
+                label="Sign in"
+                modifiers={[
+                  buttonStyle("plain"),
+                  font({ size: 14, weight: "semibold" }),
+                ]}
+              />
+            </Link>
+          </VStack>
+        </VStack>
+      </Host>
+
+      {/* Required for sign-up flows. Clerk's bot sign-up protection is enabled by default */}
+      <View nativeID="clerk-captcha" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
-    gap: 12,
+    marginTop: -30,
+    marginHorizontal: 30,
   },
-  title: {
-    marginBottom: 8,
+  hero: {
+    flex: 0.8,
+    overflow: "visible",
   },
-  label: {
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  button: {
-    backgroundColor: "#0a7ea4",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonPressed: {
-    opacity: 0.7,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  secondaryButtonText: {
-    color: "#0a7ea4",
-    fontWeight: "600",
-  },
-  linkContainer: {
-    flexDirection: "row",
-    gap: 4,
-    marginTop: 12,
-    alignItems: "center",
-  },
-  error: {
-    color: "#d32f2f",
-    fontSize: 12,
-    marginTop: -8,
-  },
-  debug: {
-    fontSize: 10,
-    opacity: 0.5,
-    marginTop: 8,
+  image: {
+    width: "100%",
+    height: "100%",
+    alignSelf: "center",
   },
 });

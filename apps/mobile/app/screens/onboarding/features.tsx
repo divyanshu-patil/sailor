@@ -35,13 +35,17 @@ const FeaturesScreen = () => {
   const { completeOnboarding } = useOnboardingStore();
 
   const handleContinue = () => {
-    completeOnboarding();
-    router.replace("/(unauthenticated)/login" as any);
+    // TODO: chnage this to no parameter once onbaording screen done
+    // completeOnboarding();
+    completeOnboarding(true);
+    router.replace("/(unauthenticated)" as any);
   };
 
   const handleSkip = () => {
-    completeOnboarding();
-    router.replace("/(unauthenticated)/login" as any);
+    // TODO: chnage this to no parameter once onbaording screen done
+    // completeOnboarding();
+    completeOnboarding(true);
+    router.replace("/(unauthenticated)" as any);
   };
 
   return (

@@ -30,6 +30,7 @@
         "expo-font",
         {
           "fonts": [
+            "../../node_modules/@expo-google-fonts/alan-sans/400Regular/AlanSans_400Regular.ttf",
             "../../node_modules/@expo-google-fonts/krona-one/400Regular/KronaOne_400Regular.ttf",
             "../../node_modules/@expo-google-fonts/amarna/100Thin/Amarna_100Thin.ttf",
             "../../node_modules/@expo-google-fonts/amarna/200ExtraLight/Amarna_200ExtraLight.ttf",
