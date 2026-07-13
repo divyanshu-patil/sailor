@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { useNativeState } from "@expo/ui/swift-ui";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
-import { userService, ExperienceLevel } from "@/services/user.debug.service";
+import { userService, ExperienceLevel, Profession } from "@/services/user.debug.service";
 import { usePreferenceStore } from "@/hooks";
 import { colord } from "colord";
 
@@ -39,6 +39,10 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     appUser.experienceLevel,
   );
 
+  const [profession, setProfession] = useState<Profession | null>(
+    appUser.profession ?? null,
+  );
+
   const nameState = useNativeState(appUser.fullName);
   const nicknameState = useNativeState(appUser.nickname);
 
@@ -53,13 +57,18 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     setNicknameValue(text);
   }, []);
 
+  const handleProfessionChange = useCallback((value: string) => {
+    setProfession(value as Profession);
+  }, []);
+
   const hasChanges = useMemo(() => {
     return (
       nameValue.trim() !== appUser.fullName ||
       nicknameValue.trim() !== appUser.nickname ||
-      experienceLevel !== appUser.experienceLevel
+      experienceLevel !== appUser.experienceLevel ||
+      profession !== appUser.profession
     );
-  }, [appUser, nameValue, nicknameValue, experienceLevel]);
+  }, [appUser, nameValue, nicknameValue, experienceLevel, profession]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -68,6 +77,7 @@ export function useEditProfileForm(appUser: AppUserProfile) {
         fullName: nameValue.trim(),
         nickname: nicknameValue.trim(),
         experienceLevel,
+        profession,
       });
       router.back();
     } catch {
@@ -79,6 +89,7 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     nameValue,
     nicknameValue,
     experienceLevel,
+    profession,
     updateAppUserProfile,
     router,
     showError,
@@ -109,6 +120,8 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     nicknameState,
     handleNameChange,
     handleNicknameChange,
+    profession,
+    handleProfessionChange,
     experienceLevel,
     setExperienceLevel,
     hasChanges,

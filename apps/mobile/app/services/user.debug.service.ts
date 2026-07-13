@@ -10,6 +10,7 @@ let mockProfile: UserProfile = {
   full_name: "Div Patil",
   nickname: "div",
   experience_level: "intermediate",
+  profession: "student",
   avatar_url: null,
   role: "user",
   created_at: new Date().toISOString(),

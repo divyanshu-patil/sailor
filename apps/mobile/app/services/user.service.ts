@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api/client";
-import { ExperienceLevel, UserProfile } from "@/types/user";
+import { ExperienceLevel, Profession, UserProfile } from "@/types/user";
 export * from "@/types/user";
 
 export interface UpdateProfilePayload {
@@ -7,6 +7,7 @@ export interface UpdateProfilePayload {
   full_name?: string;
   nickname?: string;
   experience_level?: ExperienceLevel;
+  profession?: Profession | null;
 }
 
 export const userService = {

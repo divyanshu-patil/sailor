@@ -1,23 +1,22 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
+import FontAwesome6, {
+  FontAwesome6SolidIconName,
+} from "@react-native-vector-icons/fontawesome6";
 import { fonts } from "@/constants/fonts";
 
 interface NameBadgeProps {
   name: string;
   badgeLabel: string;
+  badgeIcon: FontAwesome6SolidIconName;
   pillColor: string;
   textColor: string;
 }
 
-/**
- * Dumb presentational piece: the user's display name plus a role pill
- * (e.g. "Student"). No data fetching, no color math — everything comes
- * in as props.
- */
 const NameBadge = ({
   name,
   badgeLabel,
+  badgeIcon,
   pillColor,
   textColor,
 }: NameBadgeProps) => {
@@ -26,7 +25,7 @@ const NameBadge = ({
       <Text style={[styles.name, { color: textColor }]}>{name}</Text>
       <View style={[styles.badgePill, { backgroundColor: pillColor }]}>
         <FontAwesome6
-          name="graduation-cap"
+          name={badgeIcon}
           size={16}
           color={textColor}
           iconStyle="solid"

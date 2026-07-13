@@ -8,6 +8,7 @@ import {
   TextField,
   Picker,
   Text,
+  Spacer,
 } from "@expo/ui/swift-ui";
 import {
   textInputAutocapitalization,
@@ -19,7 +20,12 @@ import {
   scrollDismissesKeyboard,
   foregroundStyle,
 } from "@expo/ui/swift-ui/modifiers";
-import { EXPERIENCE_LEVELS, ROW_LABEL_MODIFIERS } from "./components/constants";
+import {
+  EXPERIENCE_LEVELS,
+  PROFESSIONS,
+  PROFESSION_LABELS,
+  rowLabelModifiers,
+} from "./components/constants";
 import { DeleteAccountSection } from "./components/delete-account-section";
 import { useEditProfileForm } from "./hooks/use-edit-profile-form";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
@@ -33,6 +39,7 @@ function toAppUserProfile(profile: UserProfile): AppUserProfile {
     fullName: profile.full_name,
     nickname: profile.nickname,
     experienceLevel: profile.experience_level,
+    profession: profile.profession,
     avatarUrl: profile.avatar_url,
     role: profile.role as AppUserProfile["role"],
   };
@@ -41,13 +48,15 @@ function toAppUserProfile(profile: UserProfile): AppUserProfile {
 function FieldRow({
   label,
   children,
+  withPicker,
 }: {
   label: string;
   children: React.ReactNode;
+  withPicker?: boolean;
 }) {
   return (
     <HStack>
-      <Text modifiers={ROW_LABEL_MODIFIERS}>{label}</Text>
+      <Text modifiers={rowLabelModifiers(withPicker)}>{label}</Text>
       {children}
     </HStack>
   );
@@ -60,20 +69,28 @@ export default function EditProfileScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (appUser) return; // no setState here anymore
     let cancelled = false;
+    const cachedAppUser = useAppUserStore.getState().appUser;
+
     (async () => {
       try {
+        // Try fetching from server first
         const profile = await userService.getProfile();
         if (!cancelled) setAppUser(toAppUserProfile(profile));
       } catch {
-        if (!cancelled) setLoadError("Couldn't load your profile. Try again.");
+        // On network error, fall back to cached local data if available
+        // (MMKV storage will have the last known good profile)
+        if (!cancelled && cachedAppUser) {
+          setLoadError(null); // Clear error, using cached data
+        } else if (!cancelled) {
+          setLoadError("Couldn't load your profile. Try again.");
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [appUser, setAppUser]);
+  }, [setAppUser]);
 
   if (!appUser && !loadError) return null; // loading
   if (!appUser) return null; // error, using loadError
@@ -94,6 +111,8 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
     nicknameState,
     handleNameChange,
     handleNicknameChange,
+    profession,
+    handleProfessionChange,
     experienceLevel,
     setExperienceLevel,
     hasChanges,
@@ -181,20 +200,39 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
 
           {/* Speaking profile */}
           <Section title="Speaking Profile">
+            {/* <FieldRow label="Profession"> */}
+            {/* <Spacer /> */}
             <Picker
-              label="Experience Level"
-              selection={experienceLevel}
+              label={"Profession"}
+              selection={profession}
               onSelectionChange={(value) =>
-                setExperienceLevel(value as typeof experienceLevel)
+                handleProfessionChange(value as string)
               }
-              modifiers={[pickerStyle("menu")]}
+              modifiers={[pickerStyle("menu"), ...rowLabelModifiers(true)]}
             >
-              {EXPERIENCE_LEVELS.map((level) => (
-                <Text key={level.tag} modifiers={[tag(level.tag)]}>
-                  {level.label}
+              {PROFESSIONS.map((p) => (
+                <Text key={p} modifiers={[tag(p)]}>
+                  {PROFESSION_LABELS[p]}
                 </Text>
               ))}
             </Picker>
+            {/* </FieldRow> */}
+            <FieldRow label="Experience Level" withPicker>
+              <Spacer />
+              <Picker
+                selection={experienceLevel}
+                onSelectionChange={(value) =>
+                  setExperienceLevel(value as typeof experienceLevel)
+                }
+                modifiers={[pickerStyle("menu")]}
+              >
+                {EXPERIENCE_LEVELS.map((level) => (
+                  <Text key={level.tag} modifiers={[tag(level.tag)]}>
+                    {level.label}
+                  </Text>
+                ))}
+              </Picker>
+            </FieldRow>
           </Section>
 
           <DeleteAccountSection

@@ -1,5 +1,5 @@
 import { frame, foregroundStyle } from "@expo/ui/swift-ui/modifiers";
-import { ExperienceLevel } from "@/types/user";
+import { ExperienceLevel, PROFESSION_LABELS, PROFESSIONS } from "@/types/user";
 
 export const EXPERIENCE_LEVELS: { tag: ExperienceLevel; label: string }[] = [
   { tag: "beginner", label: "Beginner" },
@@ -8,12 +8,23 @@ export const EXPERIENCE_LEVELS: { tag: ExperienceLevel; label: string }[] = [
   { tag: "pro", label: "Pro speaker" },
 ];
 
+export { PROFESSION_LABELS, PROFESSIONS };
+
 export const DESTRUCTIVE_RED = "#FF3B30"; // iOS system red
 
-export const ROW_LABEL_MODIFIERS = [
-  frame({ width: 92, alignment: "leading" as const }),
+const ROW_LABEL_BASE_MODIFIERS = [
   foregroundStyle({
     type: "hierarchical" as const,
     style: "secondary" as const,
   }),
 ];
+
+export function rowLabelModifiers(withPicker?: boolean) {
+  return [
+    ...ROW_LABEL_BASE_MODIFIERS,
+    frame({
+      maxWidth: withPicker ? Infinity : 92,
+      alignment: "leading" as const,
+    }),
+  ];
+}

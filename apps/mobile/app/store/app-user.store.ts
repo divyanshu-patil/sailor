@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createMMKVStorage } from "./mmkv.storage";
 import { userService } from "@/services/user.debug.service";
-import { ExperienceLevel } from "@/types/user";
+import { ExperienceLevel, Profession } from "@/types/user";
 
 const appUserStorage = createMMKVStorage("app-user-storage");
 
@@ -16,6 +16,7 @@ export interface AppUserProfile {
   fullName: string;
   nickname: string;
   experienceLevel: ExperienceLevel;
+  profession: Profession | null;
   avatarUrl: string | null;
   role: "user" | "admin" | "dev";
   // ...add as needed from database.
@@ -28,6 +29,7 @@ export interface ProfileUpdateInput {
   fullName?: string;
   nickname?: string;
   experienceLevel?: ExperienceLevel;
+  profession?: Profession | null;
   email?: string;
 }
 
@@ -75,6 +77,7 @@ export const useAppUserStore = create<AppUserStore>()(
             full_name: input.fullName,
             nickname: input.nickname,
             experience_level: input.experienceLevel,
+            profession: input.profession,
           });
 
           set({
@@ -86,6 +89,7 @@ export const useAppUserStore = create<AppUserStore>()(
               fullName: updated.full_name,
               nickname: updated.nickname,
               experienceLevel: updated.experience_level,
+              profession: updated.profession,
               avatarUrl: updated.avatar_url,
               role: updated.role as AppUserProfile["role"],
             },
