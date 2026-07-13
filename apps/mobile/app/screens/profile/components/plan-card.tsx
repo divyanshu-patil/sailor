@@ -1,3 +1,4 @@
+// components/ui/PlanCard.tsx
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
@@ -5,6 +6,8 @@ import { Ionicons } from "@react-native-vector-icons/ionicons";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { fonts } from "@/constants/fonts";
 import PressableScale from "@/components/ui/animated/PressableScale";
+import ShimmerOverlay from "@/components/ui/shared/shimmer-overlay";
+import { colord } from "colord";
 
 interface PlanCardProps {
   planName: string;
@@ -16,12 +19,6 @@ interface PlanCardProps {
   onManagePress?: () => void;
 }
 
-/**
- * Displays a subscription tier card: name, today's usage, remaining
- * credits, and a "Manage" action. Everything is prop-driven (plan
- * name, usage, remaining) so this can be wired to real subscription
- * data later without touching the layout.
- */
 const PlanCard = ({
   planName,
   usagePercent,
@@ -37,17 +34,24 @@ const PlanCard = ({
       style={[styles.planCard, { backgroundColor: cardColor }]}
     >
       <View style={styles.planTopRow}>
-        <View style={styles.planTitleRow}>
-          <FontAwesome6
-            name="crown"
-            iconStyle="solid"
-            size={24}
-            color={textColor}
-          />
-          <Text style={[styles.planTitle, { color: textColor }]}>
-            {planName}
-          </Text>
-        </View>
+        <ShimmerOverlay
+          baseColor={textColor}
+          highlightColor={colord(textColor).lighten(0.25).toHex()}
+          duration={3000}
+        >
+          <View style={styles.planTitleRow}>
+            <FontAwesome6
+              name="crown"
+              iconStyle="solid"
+              size={24}
+              color={textColor}
+            />
+            <Text style={[styles.planTitle, { color: textColor }]}>
+              {planName}
+            </Text>
+          </View>
+        </ShimmerOverlay>
+
         <View style={styles.usedRow}>
           <Ionicons name="sparkles-sharp" size={13} color={textColor} />
           <Text style={[styles.usedText, { color: textColor }]}>
