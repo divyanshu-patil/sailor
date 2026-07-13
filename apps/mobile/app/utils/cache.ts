@@ -1,5 +1,6 @@
 import { createMMKV } from "react-native-mmkv";
 import { usePreferenceStore } from "@/store/preference-store";
+import { useAppUserStore } from "@/store/app-user.store";
 
 const mmkvIds = ["preference-storage", "script-store", "app-user-storage"];
 
@@ -28,4 +29,7 @@ export function clearAllCache() {
   });
 
   usePreferenceStore.getState().resetPreferences();
+  // Signal to any mounted screen (e.g. ProfileScreen sitting underneath
+  // the Settings sheet) that the profile is now stale and must be re-fetched.
+  useAppUserStore.getState().setAppUser(null);
 }

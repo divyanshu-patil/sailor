@@ -10,6 +10,8 @@ export interface UpdateProfilePayload {
   profession?: Profession | null;
 }
 
+export type UserService = typeof userService;
+
 export const userService = {
   getProfile: async (): Promise<UserProfile> => {
     try {

@@ -72,34 +72,34 @@ export const useAppUserStore = create<AppUserStore>()(
         set({ appUser: localNext });
 
         try {
-          const updated = await userService.updateProfile({
-            email: input.email,
-            full_name: input.fullName,
-            nickname: input.nickname,
-            experience_level: input.experienceLevel,
-            profession: input.profession,
-          });
+          const payload: Parameters<typeof userService.updateProfile>[0] = {};
+          if (input.fullName !== undefined) payload.full_name = input.fullName;
+          if (input.nickname !== undefined) payload.nickname = input.nickname;
+          if (input.experienceLevel !== undefined)
+            payload.experience_level = input.experienceLevel;
+          if (input.profession !== undefined)
+            payload.profession = input.profession;
+          if (input.email !== undefined) payload.email = input.email;
 
-          set({
-            appUser: {
-              ...localNext,
-              id: updated.id,
-              clerkUserId: updated.clerk_user_id,
-              email: updated.email,
-              fullName: updated.full_name,
-              nickname: updated.nickname,
-              experienceLevel: updated.experience_level,
-              profession: updated.profession,
-              avatarUrl: updated.avatar_url,
-              role: updated.role as AppUserProfile["role"],
-            },
+          const updated = await userService.updateProfile(payload);
+
+          set((state) => {
+            if (!state.appUser) return state;
+            return {
+              appUser: {
+                ...state.appUser,
+                id: updated.id,
+                clerkUserId: updated.clerk_user_id,
+                fullName: updated.full_name,
+                nickname: updated.nickname,
+                experienceLevel: updated.experience_level,
+                profession: updated.profession,
+                avatarUrl: updated.avatar_url,
+                role: updated.role as AppUserProfile["role"],
+              },
+            };
           });
         } catch (e) {
-          // No rollback — see note above. Just leave the local value in
-          // place and let it sync later.
-          //
-          // TODO(offline-sync): push `input` onto a pending-updates queue
-          // here so it can be retried instead of silently left unsynced.
           console.error(
             "updateAppUserProfile: API sync failed, keeping local value",
             e,

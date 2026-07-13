@@ -1,8 +1,14 @@
 import { useCallback } from "react";
-import { userService, UserProfile } from "@/services/user.service";
+import {
+  userService,
+  UserProfile,
+  UserService,
+} from "@/services/user.debug.service";
 import { useApiState, UseApiStateReturn } from "./use-api-state";
 
 export interface UseUserOptions {
+  /** Custom user service to use (defaults to userService) */
+  userService?: UserService;
   /** Initial data to set */
   initialData?: UserProfile;
   /** Callback on successful fetch */
@@ -21,7 +27,9 @@ export interface UseUserReturn extends UseApiStateReturn<UserProfile> {
   /** Fetch user profile */
   fetchProfile: () => Promise<void>;
   /** Update user profile */
-  updateProfile: (payload: { email?: string }) => Promise<UserProfile | undefined>;
+  updateProfile: (payload: {
+    email?: string;
+  }) => Promise<UserProfile | undefined>;
 }
 
 /**
@@ -30,6 +38,7 @@ export interface UseUserReturn extends UseApiStateReturn<UserProfile> {
  */
 export function useUser(options: UseUserOptions = {}): UseUserReturn {
   const {
+    userService: customService,
     initialData,
     onSuccess,
     onError,
@@ -37,6 +46,9 @@ export function useUser(options: UseUserOptions = {}): UseUserReturn {
     retryDelay = 1000,
     immediate = true,
   } = options;
+
+  // Use custom service if provided, otherwise use default
+  const service = customService || userService;
 
   const {
     data,
@@ -57,18 +69,18 @@ export function useUser(options: UseUserOptions = {}): UseUserReturn {
   });
 
   const fetchProfile = useCallback(async () => {
-    await execute(userService.getProfile());
-  }, [execute]);
+    await execute(service.getProfile());
+  }, [execute, service]);
 
   const updateProfile = useCallback(
     async (payload: { email?: string }): Promise<UserProfile | undefined> => {
-      const result = await execute(userService.updateProfile(payload));
+      const result = await execute(service.updateProfile(payload));
       if (result) {
         setData(result);
       }
       return result;
     },
-    [execute, setData],
+    [execute, setData, service],
   );
 
   // Auto-fetch on mount if immediate is true

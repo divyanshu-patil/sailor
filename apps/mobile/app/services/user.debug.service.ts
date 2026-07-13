@@ -1,6 +1,6 @@
-import { UpdateProfilePayload, UserProfile } from "./user.service";
+import { UpdateProfilePayload, UserProfile, UserService } from "./user.service";
 export * from "@/types/user";
-
+export { UserService };
 // In-memory only — resets on reload. Mirrors userService's interface
 // exactly so screens/hooks never need to know which one they're using.
 let mockProfile: UserProfile = {
@@ -10,7 +10,7 @@ let mockProfile: UserProfile = {
   full_name: "Div Patil",
   nickname: "div",
   experience_level: "intermediate",
-  profession: "student",
+  profession: "finance_consulting",
   avatar_url: null,
   role: "user",
   created_at: new Date().toISOString(),
@@ -18,7 +18,7 @@ let mockProfile: UserProfile = {
 
 let deleted = false;
 
-const DEBUG_DELAY = 400;
+const DEBUG_DELAY = 4000;
 
 function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) =>

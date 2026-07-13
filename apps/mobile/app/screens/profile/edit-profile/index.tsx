@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Stack } from "expo-router";
 import {
   Host,
@@ -28,14 +28,17 @@ import {
 } from "./components/constants";
 import { DeleteAccountSection } from "./components/delete-account-section";
 import { useEditProfileForm } from "./hooks/use-edit-profile-form";
+import { useUser } from "@/hooks/use-user";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
-import { userService, UserProfile } from "@/services/user.debug.service";
 
-function toAppUserProfile(profile: UserProfile): AppUserProfile {
+function toAppUserProfile(
+  profile: any,
+  existingEmail?: string,
+): AppUserProfile {
   return {
     id: profile.id,
     clerkUserId: profile.clerk_user_id,
-    email: profile.email,
+    email: profile.email || existingEmail || "",
     fullName: profile.full_name,
     nickname: profile.nickname,
     experienceLevel: profile.experience_level,
@@ -66,34 +69,19 @@ export default function EditProfileScreen() {
   const appUser = useAppUserStore((s) => s.appUser);
   const setAppUser = useAppUserStore((s) => s.setAppUser);
 
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // Use useUser hook for profile data with debug service
+  const { data: profile, isLoading } = useUser();
 
+  // Sync profile data to store when fetched
   useEffect(() => {
-    let cancelled = false;
-    const cachedAppUser = useAppUserStore.getState().appUser;
+    if (profile) {
+      const existingEmail = appUser?.email;
+      setAppUser(toAppUserProfile(profile, existingEmail));
+    }
+  }, [profile, appUser?.email, setAppUser]);
 
-    (async () => {
-      try {
-        // Try fetching from server first
-        const profile = await userService.getProfile();
-        if (!cancelled) setAppUser(toAppUserProfile(profile));
-      } catch {
-        // On network error, fall back to cached local data if available
-        // (MMKV storage will have the last known good profile)
-        if (!cancelled && cachedAppUser) {
-          setLoadError(null); // Clear error, using cached data
-        } else if (!cancelled) {
-          setLoadError("Couldn't load your profile. Try again.");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [setAppUser]);
-
-  if (!appUser && !loadError) return null; // loading
-  if (!appUser) return null; // error, using loadError
+  if (isLoading && !appUser) return null; // loading
+  if (!appUser) return null; // error or no data
 
   // Keyed by appUser.id so EditProfileForm always mounts fresh with the
   // real profile values already in hand — see useEditProfileForm.ts for why
