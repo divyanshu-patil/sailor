@@ -22,7 +22,9 @@ const NameBadge = ({
 }: NameBadgeProps) => {
   return (
     <View style={styles.nameContainer}>
-      <Text style={[styles.name, { color: textColor }]}>{name}</Text>
+      <Text numberOfLines={1} style={[styles.name, { color: textColor }]}>
+        {name}
+      </Text>
       <View style={[styles.badgePill, { backgroundColor: pillColor }]}>
         <FontAwesome6
           name={badgeIcon}

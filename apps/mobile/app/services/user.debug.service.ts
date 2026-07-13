@@ -1,6 +1,6 @@
-import { UpdateProfilePayload, UserProfile, UserService } from "./user.service";
+import { UpdateProfilePayload, UserProfile, UserService, MAX_LENGTH, truncateField } from "./user.service";
 export * from "@/types/user";
-export { UserService };
+export { UserService, MAX_LENGTH };
 // In-memory only — resets on reload. Mirrors userService's interface
 // exactly so screens/hooks never need to know which one they're using.
 let mockProfile: UserProfile = {
@@ -18,7 +18,7 @@ let mockProfile: UserProfile = {
 
 let deleted = false;
 
-const DEBUG_DELAY = 4000;
+const DEBUG_DELAY = 1000;
 
 function delay<T>(value: T): Promise<T> {
   return new Promise((resolve) =>
@@ -32,7 +32,13 @@ export const userService = {
       throw new Error("Account has been deleted");
     }
     console.log("[debug] getProfile", mockProfile);
-    return delay(mockProfile);
+    // Apply max length validation to nickname
+    const profile = {
+      ...mockProfile,
+      nickname: truncateField(mockProfile.nickname, MAX_LENGTH.nickname),
+      full_name: truncateField(mockProfile.full_name, MAX_LENGTH.fullName),
+    };
+    return delay(profile);
   },
 
   updateProfile: async (
@@ -41,7 +47,13 @@ export const userService = {
     if (deleted) {
       throw new Error("Account has been deleted");
     }
-    mockProfile = { ...mockProfile, ...payload };
+    // Apply max length validation to input
+    const sanitizedPayload = {
+      ...payload,
+      nickname: truncateField(payload.nickname, MAX_LENGTH.nickname),
+      full_name: truncateField(payload.full_name, MAX_LENGTH.fullName),
+    };
+    mockProfile = { ...mockProfile, ...sanitizedPayload };
     console.log("[debug] updateProfile", mockProfile);
     return delay(mockProfile);
   },

@@ -152,6 +152,7 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
                 text={nicknameState}
                 onTextChange={handleNicknameChange}
                 placeholder="nickname"
+                maxLength={10}
                 modifiers={[
                   textInputAutocapitalization("never"),
                   textContentType("nickname"),
