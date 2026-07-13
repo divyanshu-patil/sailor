@@ -1,4 +1,3 @@
-import { View, Text } from "react-native";
 import React from "react";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
@@ -13,7 +12,7 @@ const Layout = () => {
         <NativeTabs.Trigger.Icon sf="house" md="home" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(explore)">
-        <NativeTabs.Trigger.Label>Todos</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="safari" md="home" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(profile)">
