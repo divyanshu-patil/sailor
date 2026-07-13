@@ -118,23 +118,13 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           onPress={handleSave}
-          hidden={isSaving}
-          disabled={!hasChanges}
+          disabled={!hasChanges || isSaving}
           tintColor={appearanceColor}
           variant="prominent"
         >
-          Save
-        </Stack.Toolbar.Button>
-        <Stack.Toolbar.Button
-          hidden={!isSaving}
-          onPress={() => {}}
-          tintColor={appearanceColor}
-          variant="prominent"
-        >
-          Saving…
+          {isSaving ? "Saving…" : "Save"}
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
-
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
           icon="xmark"
