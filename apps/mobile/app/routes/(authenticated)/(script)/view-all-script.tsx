@@ -1,5 +1,5 @@
 import React from "react";
-import AllScriptsScreen from "@/screens/presentation/view-all-scripts";
+import AllScriptsScreen from "@/screens/presentation/decks/view-all-scripts";
 import { router, Stack } from "expo-router";
 
 const ViewAllScript = () => {

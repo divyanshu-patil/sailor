@@ -14,8 +14,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { Image } from "expo-image";
 
-import { Card } from "./Card";
-import { COLUMN_GAP, SCREEN_PADDING } from "./constants";
+import { Card } from "../components/Card";
+import { COLUMN_GAP, SCREEN_PADDING } from "../components/constants";
 import { DeckItem } from "@/services/deck.debug.service";
 import { useDecks } from "@/hooks";
 import {
@@ -95,7 +95,7 @@ const AllScriptsScreen = () => {
 
     return {
       transform: [{ scale: isRefreshingShared.value ? 1 : scale }],
-      transformOrigin: ["center", "100%", 0],
+      transformOrigin: ["50%", "100%", 0],
     };
   });
 
