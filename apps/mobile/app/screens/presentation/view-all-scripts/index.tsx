@@ -1,6 +1,21 @@
-import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { FlashList, type ListRenderItem } from "@shopify/flash-list";
+import { ComponentType, useCallback, useEffect, useState } from "react";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  FlashList,
+  type FlashListProps,
+  type ListRenderItem,
+} from "@shopify/flash-list";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolation,
+  LinearTransition,
+  withTiming,
+  withSpring,
+} from "react-native-reanimated";
+import { Image } from "expo-image";
 
 import { Card } from "./Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "./constants";
@@ -10,11 +25,21 @@ import {
   useFocusEffect,
   useHeaderHeight,
 } from "expo-router/build/react-navigation";
-// import { useBottomTabBarHeight } from "expo-router/build/react-navigation/bottom-tabs";
+import ShimmerOverlay from "@/components/ui/shared/shimmer-overlay";
+import ShimmerBar from "@/components/ui/shared/shimmer-bar";
+
+// const MASCOT_AREA_HEIGHT = 90;
+const PULL_DISTANCE_FOR_FULL_OPACITY = 80; // px of pull needed to reach full reveal
+const SHIMMER_BAR_HEIGHT = 10;
+
+// Re-assert the generic type Reanimated's wrapper erases
+const AnimatedFlashList = Animated.createAnimatedComponent(
+  FlashList,
+) as ComponentType<FlashListProps<DeckItem>>;
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const AllScriptsScreen = () => {
   const headerHeight = useHeaderHeight();
-  // const bottomTabHeight = useBottomTabBarHeight();
   const [hasActivated, setHasActivated] = useState(false);
 
   useFocusEffect(
@@ -30,9 +55,59 @@ const AllScriptsScreen = () => {
     error,
     refresh: onRefresh,
   } = useDecks({
-    onError: () => {
-      // Error is handled by the hook
+    onError: () => {},
+  });
+
+  // Shared values live on the UI thread — no bridge hops per scroll frame
+  const scrollY = useSharedValue(0);
+  const isRefreshingShared = useSharedValue(0);
+
+  // Mirror the JS-thread `isRefreshing` boolean into a UI-thread shared value
+  useEffect(() => {
+    isRefreshingShared.value = isRefreshing ? 1 : 0;
+  }, [isRefreshing, isRefreshingShared]);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
     },
+  });
+
+  const restOffset = -headerHeight;
+  const pullOffset = -(headerHeight + PULL_DISTANCE_FOR_FULL_OPACITY);
+
+  const mascotContainerStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [pullOffset, restOffset],
+      [1, 0],
+      Extrapolation.CLAMP,
+    );
+    const height = interpolate(
+      scrollY.value,
+      [pullOffset, restOffset],
+      [PULL_DISTANCE_FOR_FULL_OPACITY, 0],
+    );
+
+    return {
+      opacity: isRefreshingShared.value ? 1 : opacity,
+      height: isRefreshingShared.value
+        ? PULL_DISTANCE_FOR_FULL_OPACITY
+        : height,
+    };
+  });
+
+  const mascotImageStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollY.value,
+      [pullOffset, restOffset],
+      [1, 0],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [{ scale: isRefreshingShared.value ? 1 : scale }],
+    };
   });
 
   const renderItem: ListRenderItem<DeckItem> = useCallback(
@@ -40,12 +115,8 @@ const AllScriptsScreen = () => {
     [],
   );
 
-  if (isLoading || !hasActivated) {
-    return (
-      <View style={[styles.screen, styles.centered]}>
-        <ActivityIndicator />
-      </View>
-    );
+  if (!hasActivated) {
+    return <View style={[styles.screen, styles.centered]} />;
   }
 
   if (error && (!decks || decks.length === 0)) {
@@ -63,22 +134,55 @@ const AllScriptsScreen = () => {
       </View>
     );
   }
+
   return (
-    <View style={[styles.screen]}>
-      <FlashList
+    <View style={styles.screen}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.mascotContainer,
+          { top: headerHeight, backgroundColor: "#82BAE9" },
+          mascotContainerStyle,
+        ]}
+      >
+        <AnimatedImage
+          source={require("@/assets/rocket.svg")}
+          style={[{ width: 68, height: 68 }, mascotImageStyle]}
+        />
+      </Animated.View>
+
+      <AnimatedFlashList
         data={decks ?? []}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: DeckItem) => item.id}
         renderItem={renderItem}
+        ListHeaderComponent={
+          isLoading ? <ShimmerBar height={5} color={"#82BAE9"} /> : null
+        }
+        ListHeaderComponentStyle={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+        }}
         masonry
         numColumns={2}
         optimizeItemArrangement
-        contentContainerStyle={[
-          styles.screenContent,
-          { paddingTop: headerHeight, paddingBottom: 100 },
-        ]}
+        scrollEnabled={!isRefreshing}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.screenContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
-        refreshing={isRefreshing}
-        onRefresh={onRefresh}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
+            progressViewOffset={headerHeight}
+          />
+        }
       />
     </View>
   );
@@ -87,9 +191,7 @@ const AllScriptsScreen = () => {
 export default AllScriptsScreen;
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
+  screen: { flex: 1 },
   centered: {
     justifyContent: "center",
     alignItems: "center",
@@ -100,9 +202,20 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
   },
+  mascotContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
   screenContent: {
     paddingHorizontal: SCREEN_PADDING - COLUMN_GAP / 2,
     paddingBottom: 24,
     paddingTop: 24,
+    position: "relative",
+    zIndex: 2,
   },
 });
