@@ -11,9 +11,6 @@ import Animated, {
   useAnimatedScrollHandler,
   interpolate,
   Extrapolation,
-  LinearTransition,
-  withTiming,
-  withSpring,
 } from "react-native-reanimated";
 import { Image } from "expo-image";
 
@@ -25,12 +22,11 @@ import {
   useFocusEffect,
   useHeaderHeight,
 } from "expo-router/build/react-navigation";
-import ShimmerOverlay from "@/components/ui/shared/shimmer-overlay";
 import ShimmerBar from "@/components/ui/shared/shimmer-bar";
 
 // const MASCOT_AREA_HEIGHT = 90;
 const PULL_DISTANCE_FOR_FULL_OPACITY = 80; // px of pull needed to reach full reveal
-const SHIMMER_BAR_HEIGHT = 10;
+const SHIMMER_BAR_HEIGHT = 5;
 
 // Re-assert the generic type Reanimated's wrapper erases
 const AnimatedFlashList = Animated.createAnimatedComponent(
@@ -77,20 +73,12 @@ const AllScriptsScreen = () => {
   const pullOffset = -(headerHeight + PULL_DISTANCE_FOR_FULL_OPACITY);
 
   const mascotContainerStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      scrollY.value,
-      [pullOffset, restOffset],
-      [1, 0],
-      Extrapolation.CLAMP,
-    );
-    const height = interpolate(
-      scrollY.value,
-      [pullOffset, restOffset],
-      [PULL_DISTANCE_FOR_FULL_OPACITY, 0],
-    );
+    const pulled = restOffset - scrollY.value;
+    const height = Math.max(0, pulled);
 
     return {
-      opacity: isRefreshingShared.value ? 1 : opacity,
+      // opacity: isRefreshingShared.value ? 1 : opacity,
+      opacity: 1,
       height: isRefreshingShared.value
         ? PULL_DISTANCE_FOR_FULL_OPACITY
         : height,
@@ -107,6 +95,7 @@ const AllScriptsScreen = () => {
 
     return {
       transform: [{ scale: isRefreshingShared.value ? 1 : scale }],
+      transformOrigin: ["center", "100%", 0],
     };
   });
 
@@ -141,13 +130,13 @@ const AllScriptsScreen = () => {
         pointerEvents="none"
         style={[
           styles.mascotContainer,
-          { top: headerHeight, backgroundColor: "#82BAE9" },
+          { top: headerHeight, backgroundColor: "#C1D8EB" },
           mascotContainerStyle,
         ]}
       >
         <AnimatedImage
-          source={require("@/assets/rocket.svg")}
-          style={[{ width: 68, height: 68 }, mascotImageStyle]}
+          source={require("@/assets/smiling.svg")}
+          style={[{ width: 98, height: 98 }, mascotImageStyle]}
         />
       </Animated.View>
 
@@ -156,7 +145,9 @@ const AllScriptsScreen = () => {
         keyExtractor={(item: DeckItem) => item.id}
         renderItem={renderItem}
         ListHeaderComponent={
-          isLoading ? <ShimmerBar height={5} color={"#82BAE9"} /> : null
+          isLoading ? (
+            <ShimmerBar height={SHIMMER_BAR_HEIGHT} color={"#A0C4E2"} />
+          ) : null
         }
         ListHeaderComponentStyle={{
           position: "absolute",
@@ -207,7 +198,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     overflow: "hidden",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
     zIndex: 1,
   },

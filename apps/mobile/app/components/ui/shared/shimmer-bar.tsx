@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect } from "react";
-import { ColorValue, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ColorValue, StyleSheet } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -14,23 +14,30 @@ const ShimmerBar = ({
   height,
   color,
   highlightColor = "#fff",
+  duration = 1800,
 }: {
   height: number;
   color: ColorValue;
   highlightColor?: ColorValue;
+  duration?: number;
 }) => {
-  const translateX = useSharedValue(-1);
+  const translateX = useSharedValue(0);
+  const [width, setWidth] = useState(0);
 
   useEffect(() => {
+    if (!width) return;
+
+    // Start fully off-screen to the left, end fully off-screen to the right.
+    translateX.value = -width;
     translateX.value = withRepeat(
-      withTiming(1, { duration: 1400, easing: Easing.linear }),
+      withTiming(width, { duration: duration, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [translateX]);
+  }, [translateX, width, duration]);
 
   const gradientStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value * 200 }],
+    transform: [{ translateX: translateX.value }],
   }));
 
   const customHeightEntering = () => {
@@ -48,21 +55,27 @@ const ShimmerBar = ({
       animations: { height: withTiming(0, { duration: 150 }) },
     };
   };
+
   return (
     <Animated.View
       entering={customHeightEntering}
       exiting={customHeightExiting}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{ height, backgroundColor: color, overflow: "hidden" }}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, gradientStyle]}>
-        <LinearGradient
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          colors={[color, color, highlightColor, color, color]}
-          locations={[0, 0.35, 0.5, 0.65, 1]}
-        />
-      </Animated.View>
+      {width > 0 && (
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { width }, gradientStyle]}
+        >
+          <LinearGradient
+            style={StyleSheet.absoluteFill}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            colors={[color, color, highlightColor, color, color]}
+            locations={[0, 0.35, 0.5, 0.65, 1]}
+          />
+        </Animated.View>
+      )}
     </Animated.View>
   );
 };
