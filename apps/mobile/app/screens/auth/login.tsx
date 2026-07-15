@@ -230,7 +230,7 @@ export default function Page() {
             Don&apos;t have an account?
           </Text>
 
-          <Link href="/(unauthenticated)/signup" asChild>
+          <Link href="/(unauthenticated)/create-account" asChild>
             <Button
               label="Sign up"
               modifiers={[

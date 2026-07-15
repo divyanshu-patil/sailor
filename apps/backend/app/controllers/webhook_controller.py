@@ -1,19 +1,9 @@
-# NOTE: Webhook endpoint exists at POST /webhooks/clerk but is not registered
-# with Clerk Dashboard yet. User sync currently relies on the fallback in
-# get_current_user() in auth/dependencies.py.
-#
-# This covers: sign-up, sign-in, all protected routes.
-# Not covered: email changes, account deletion from Clerk side.
-#
-# TODO: Register webhook endpoint once deployed to a public URL
-#       1. Deploy FastAPI (Railway / Render / fly.io etc.)
-#       2. Clerk Dashboard → Webhooks → Add endpoint → <deployed-url>/webhooks/clerk
-#       3. Subscribe to: user.created, user.updated, user.deleted
-#       4. Copy signing secret → CLERK_WEBHOOK_SIGNING_SECRET in .env
-#       5. Remove the fallback upsert in auth/dependencies.py get_current_user()
-
-from app.db.supabase_client import supabase
 import logging
+
+from sqlalchemy.exc import IntegrityError
+
+from app.db.database import SessionLocal
+from app.models.user_model import User
 
 logger = logging.getLogger("uvicorn")
 
@@ -33,31 +23,44 @@ def handle_user_created(data: dict) -> None:
     clerk_user_id = data["id"]
     email = _extract_primary_email(data) or ""
 
-    supabase.table("users").upsert(
-        {
-            "clerk_user_id": clerk_user_id,
-            "email": email,
-            "role": "user",
-        },
-        on_conflict="clerk_user_id",
-    ).execute()
+    db = SessionLocal()
+    try:
+        existing = db.query(User).filter(User.clerk_user_id == clerk_user_id).one_or_none()
+        if existing:
+            logger.info(f"[webhook] user.created → {clerk_user_id} already exists, skipping")
+            return
 
-    logger.info(f"[webhook] user.created → {clerk_user_id} ({email})")
+        db.add(User(clerk_user_id=clerk_user_id, email=email, role="user"))
+        try:
+            db.commit()
+            logger.info(f"[webhook] user.created → {clerk_user_id} ({email})")
+        except IntegrityError:
+            db.rollback()
+            logger.warning(f"[webhook] user.created race for {clerk_user_id}, already inserted elsewhere")
+    finally:
+        db.close()
 
 
 def handle_user_updated(data: dict) -> None:
     clerk_user_id = data["id"]
     email = _extract_primary_email(data)
 
-    if email:
-        supabase.table("users").update({"email": email}).eq(
-            "clerk_user_id", clerk_user_id
-        ).execute()
-
-    logger.info(f"[webhook] user.updated → {clerk_user_id}")
+    db = SessionLocal()
+    try:
+        if email:
+            db.query(User).filter(User.clerk_user_id == clerk_user_id).update({"email": email})
+            db.commit()
+        logger.info(f"[webhook] user.updated → {clerk_user_id}")
+    finally:
+        db.close()
 
 
 def handle_user_deleted(data: dict) -> None:
     clerk_user_id = data["id"]
-    supabase.table("users").delete().eq("clerk_user_id", clerk_user_id).execute()
-    logger.info(f"[webhook] user.deleted → {clerk_user_id}")
+    db = SessionLocal()
+    try:
+        db.query(User).filter(User.clerk_user_id == clerk_user_id).delete()
+        db.commit()
+        logger.info(f"[webhook] user.deleted → {clerk_user_id}")
+    finally:
+        db.close()

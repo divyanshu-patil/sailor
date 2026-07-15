@@ -14,7 +14,7 @@ export default function CreateAccount() {
           source={require("@/assets/images/create_an_account.png")}
           style={styles.image}
           contentFit="cover"
-          contentPosition={{ bottom: "20%" }}
+          contentPosition={{ bottom: -80 }}
           accessible={false}
           importantForAccessibility="no-hide-descendants"
         />
@@ -50,18 +50,20 @@ const styles = StyleSheet.create({
   },
 
   container: {
+    flex: 1,
     paddingHorizontal: 30,
   },
 
   hero: {
-    overflow: "visible",
-    height: 300,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 40,
+    marginBottom: 24,
   },
 
   image: {
     width: "100%",
-    height: "100%",
-    alignSelf: "center",
+    aspectRatio: 1,
   },
 
   title: {

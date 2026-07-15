@@ -16,6 +16,17 @@ class Settings(BaseSettings):
     # CLERK_WEBHOOK_SIGNING_SECRET: str 
     SUPABASE_URL: str
     SUPABASE_SERVICE_ROLE_KEY: str
+    DATABASE_URL: str
+    CLERK_WEBHOOK_SIGNING_SECRET: str
+
+    API_KEY: str
+    AI_BASE_URL: str
+    AI_MODEL: str
+    AI_TIMEOUT_SECONDS: float
+    AI_MAX_RETRIES: int
+    AI_MAX_OUTPUT_TOKENS: int = 8192 
+    MAX_REPAIR_ATTEMPTS: int = 3
+    MAX_PREVIOUS_CARDS_CONTEXT: int = 8
 
     class Config:
         env_file = ".env"
