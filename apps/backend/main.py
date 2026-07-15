@@ -1,8 +1,20 @@
+from unittest.mock import Base
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.supabase_client import supabase
 from app.middlewares.logging_middleware import LoggingMiddleware
 from app.api.v1 import user_router
+from app.api.v1 import webhook_router
+from app.db.database import engine
+from app.db.base import Base
+
+# Models
+from app.models.user_model import User
+from app.models.deck_model import Deck
+from app.models.card_model import Card
+from app.api.v1 import deck_router
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Your App API",
@@ -26,6 +38,8 @@ app.add_middleware(LoggingMiddleware)
 # ─── Routers ──────────────────────────────────────────────────────────────────
 # All routes are prefixed with /api/v1 for versioning
 app.include_router(user_router.router, prefix="/api/v1")
+app.include_router(deck_router.router, prefix="/api/v1")
+app.include_router(webhook_router.router)
 
 # TODO: Uncomment this when we implement webhook verification
 # app.include_router(webhook_router.router)   # no /api/v1 prefix — webhooks are external
@@ -35,12 +49,3 @@ app.include_router(user_router.router, prefix="/api/v1")
 def health_check():
     """Simple health check — no auth required."""
     return {"status": "ok", "service": "your-app-api"}
-
-# add temporarily in app/main.py
-@app.get("/debug/supabase")
-def debug_supabase():
-    try:
-        result = supabase.table("users").select("*").execute()
-        return {"data": result.data, "count": len(result.data)}
-    except Exception as e:
-        return {"error": str(e)}

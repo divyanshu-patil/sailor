@@ -1,84 +1,59 @@
 from fastapi import Depends, HTTPException, status
-from app.auth.clerk import get_current_clerk_user, ClerkUser
-from app.db.supabase_client import supabase
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-# TODO: Register webhook endpoint once deployed to a public URL
-#       Steps:
-#       1. Deploy FastAPI (Railway / Render / fly.io etc.)
-#       2. Clerk Dashboard → Webhooks → Add endpoint → <deployed-url>/webhooks/clerk
-#       3. Subscribe to: user.created, user.updated, user.deleted
-#       4. Copy signing secret → CLERK_WEBHOOK_SIGNING_SECRET in env
-#       5. Uncomment CLERK_WEBHOOK_SIGNING_SECRET in settings.py
-#       6. Remove the fallback upsert in get_current_user() if desired
+from app.auth.clerk import get_current_clerk_user, ClerkUser
+from app.db.database import get_db
+from app.models.user_model import User
+
 
 def get_current_user(
     clerk_user: ClerkUser = Depends(get_current_clerk_user),
-) -> dict:
+    db: Session = Depends(get_db),
+) -> User:
     """
-    Resolves the authenticated Clerk user to your own `users` table row.
+    Resolves the authenticated Clerk user to a row in our own `users` table.
 
-    - First tries to find an existing user by clerk_user_id
-    - If not found (race condition before webhook fires), creates one on the fly
-    - Returns the full user dict from Supabase
+    - Primary sync path: the Clerk webhook (see webhook_controller.py) keeps this
+      table up to date on user.created / user.updated / user.deleted.
+    - Fallback: if this dependency runs before the webhook has fired (e.g. right
+      after sign-up), it creates the row itself so the request doesn't fail.
 
-    This is the dependency to use on most protected routes.
+    Returns the SQLAlchemy User object (not a dict) so callers get attribute access
+    and stay consistent with the rest of the ORM-based code.
     """
+    user = db.query(User).filter(User.clerk_user_id == clerk_user.clerk_user_id).one_or_none()
+    if user is not None:
+        return user
+
+    user = User(
+        clerk_user_id=clerk_user.clerk_user_id,
+        email=clerk_user.email or "",
+        role="user",
+    )
+    db.add(user)
     try:
-        result = (
-            supabase.table("users")
-            .select("*")
-            .eq("clerk_user_id", clerk_user.clerk_user_id)
-            .execute()
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Supabase error: {str(e)}",
-        )
+        db.commit()
+    except IntegrityError:
+        # Lost a race with the webhook firing at the same moment — just read what it wrote.
+        db.rollback()
+        user = db.query(User).filter(User.clerk_user_id == clerk_user.clerk_user_id).one_or_none()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to resolve user record.",
+            )
+    else:
+        db.refresh(user)
 
-    # result.data is a list — grab first row if exists
-    if result.data and len(result.data) > 0:
-        return result.data[0]
-
-    # fallback — create user if not found
-    try:
-        new_user = (
-            supabase.table("users")
-            .insert({
-                "clerk_user_id": clerk_user.clerk_user_id,
-                "email": clerk_user.email or "",
-                "role": "user",
-            })
-            .execute()
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Supabase insert error: {str(e)}",
-        )
-
-    if not new_user.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create user record.",
-        )
-
-    return new_user.data[0]
+    return user
 
 
 def require_admin(
-    current_user: dict = Depends(get_current_user),
-) -> dict:
-    """
-    Extends get_current_user — additionally checks that the user has role='admin'.
-    Raises 403 if not. Use on admin-only routes.
-
-    Usage:
-        @router.get("/admin/something")
-        def admin_route(user: dict = Depends(require_admin)):
-            ...
-    """
-    if current_user.get("role") != "admin":
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Extends get_current_user — additionally requires role == 'admin'."""
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required.",

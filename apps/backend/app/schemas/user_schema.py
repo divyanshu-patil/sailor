@@ -1,15 +1,14 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Literal
 from datetime import datetime
 
 
 class UserProfileResponse(BaseModel):
-    """Shape of the response for GET /profile"""
-    id: str
-    clerk_user_id: str
-    email: str
-    role: Literal["user", "admin"]
-    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
+    email: str
+    name: str | None = None
+    occupation: str | None = None
+    subscription_tier: str | None = None
+    role: str
