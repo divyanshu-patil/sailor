@@ -20,9 +20,11 @@ import {
   animation,
   buttonStyle,
   contentTransition,
+  foregroundStyle,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
+import { useOnboardingStore } from "@/store/onboarding.store";
 
 const messages = ["Hello", "Namaste", "Bonjour", "Hola", "Ciao"];
 
@@ -32,12 +34,24 @@ const HomeScreen = () => {
   const { user } = useUser();
   const { signOut } = useClerk();
   const { clearAppState } = useAppUserStore();
+  const { resetOnboarding } = useOnboardingStore();
 
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
 
   const handleSignOut = async () => {
     try {
+      clearAppState();
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      Alert.alert("Error", "An error occurred while signing out.");
+    }
+  };
+
+  const handleClearOnboardingAndSignOut = async () => {
+    try {
+      resetOnboarding();
       clearAppState();
       await signOut();
     } catch (error) {
@@ -127,7 +141,12 @@ const HomeScreen = () => {
         </Section>
         <Section>
           <Button onPress={handleSignOut}>
-            <Text>LogOut</Text>
+            <Text modifiers={[foregroundStyle("#f00")]}>LogOut</Text>
+          </Button>
+        </Section>
+        <Section>
+          <Button onPress={handleClearOnboardingAndSignOut}>
+            <Text>Clear Onboarding and Sign Out</Text>
           </Button>
         </Section>
       </Form>
