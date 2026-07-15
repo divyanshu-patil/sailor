@@ -5,8 +5,10 @@ const Layout = () => {
   return (
     <Stack
       screenOptions={{
-        headerTitle: "Search",
+        headerTitle: "Decks",
+        headerLargeTitleEnabled: false,
         headerTransparent: true,
+        // headerShown: false,
       }}
     />
   );

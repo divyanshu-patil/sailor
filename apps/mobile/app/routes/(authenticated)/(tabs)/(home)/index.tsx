@@ -29,9 +29,14 @@ const Home = () => {
         <Stack.Toolbar.Button
           variant="prominent"
           tintColor={"#c11b5c"}
-          onPress={() => router.push("./screen-2")}
+          // icon={"plus"}
+          onPress={() =>
+            router.push("/(authenticated)/(script)/create-new-script", {
+              withAnchor: true,
+            })
+          }
         >
-          Screen 2
+          New Script
         </Stack.Toolbar.Button>
         {/*  TEMP: Health check button */}
         <Stack.Toolbar.Button

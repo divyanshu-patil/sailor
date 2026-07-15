@@ -11,9 +11,12 @@ const Layout = () => {
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="house" md="home" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(explore)">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="safari" md="home" />
+      <NativeTabs.Trigger name="(decks)">
+        <NativeTabs.Trigger.Label>Decks</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="rectangle.portrait.on.rectangle.portrait.angled"
+          md="home"
+        />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(profile)">
         <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>

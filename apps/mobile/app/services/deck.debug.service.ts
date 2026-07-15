@@ -11,7 +11,7 @@ import { DATA } from "./dummyData/deck";
 // call sites keep working unchanged.
 export * from "@/types/presentation/deck";
 
-const FAKE_LATENCY_MS = 400;
+const FAKE_LATENCY_MS = 4000;
 
 const delay = <T>(value: T, ms: number = FAKE_LATENCY_MS): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), ms));

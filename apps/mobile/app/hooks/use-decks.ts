@@ -40,6 +40,53 @@ export interface UseDecksReturn extends UseApiStateReturn<DeckItem[]> {
   isMutating: boolean;
 }
 
+// hooks/use-decks.ts — add these exports (keep existing useDecks hook as-is)
+
+export type DeckFilterType = "all" | "favourites";
+export type DeckSortOption =
+  | "dateCreated"
+  | "nameAsc"
+  | "nameDesc"
+  | "duration"
+  | "cardCount";
+
+/**
+ * Client-side filter + sort over an already-fetched decks array.
+ *
+ * TODO: once local DB (SQLite / WatermelonDB / etc.) is wired up as the
+ * source of truth, replace the internals here with a real query
+ * (e.g. `SELECT * FROM decks WHERE is_favourite = 1 ORDER BY ...`)
+ * instead of filtering/sorting an in-memory array. Keep the signature
+ * and return shape the same so callers (AllScriptsScreen, SearchScreen,
+ * etc.) don't need to change when the swap happens.
+ */
+export function filterAndSortDecks(
+  decks: DeckItem[],
+  filter: DeckFilterType,
+  sort: DeckSortOption,
+): DeckItem[] {
+  const filtered =
+    filter === "favourites" ? decks.filter((deck) => deck.isFavourite) : decks;
+
+  const sorted = [...filtered];
+
+  switch (sort) {
+    case "nameAsc":
+      return sorted.sort((a, b) => a.title.localeCompare(b.title));
+    case "nameDesc":
+      return sorted.sort((a, b) => b.title.localeCompare(a.title));
+    case "duration":
+      return sorted.sort((a, b) => b.durationMins - a.durationMins);
+    case "cardCount":
+      return sorted.sort((a, b) => b.slideCount - a.slideCount);
+    case "dateCreated":
+    default:
+      return sorted.sort(
+        (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+      );
+  }
+}
+
 /**
  * Hook for managing deck list operations.
  * Provides loading, error, and refresh states along with CRUD operations.
