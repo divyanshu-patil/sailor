@@ -2,7 +2,7 @@ import {
   usePreferenceStore,
   defaultPreferences,
 } from "@/store/preference-store";
-import { appearanceService } from "@/services/appearance.debug.service";
+import { appearanceService } from "@/services/appearance.service";
 import { AppearanceOption } from "@/types/settings/preferences";
 import { debugService } from "@/services/debug.service";
 

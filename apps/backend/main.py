@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.supabase_client import supabase
 from app.middlewares.logging_middleware import LoggingMiddleware
-from app.api.v1 import user_router
+from app.api.v1 import user_router, appearance_router
 
 app = FastAPI(
     title="Your App API",
@@ -26,6 +26,7 @@ app.add_middleware(LoggingMiddleware)
 # ─── Routers ──────────────────────────────────────────────────────────────────
 # All routes are prefixed with /api/v1 for versioning
 app.include_router(user_router.router, prefix="/api/v1")
+app.include_router(appearance_router.router, prefix="/api/v1/appearance")
 
 # TODO: Uncomment this when we implement webhook verification
 # app.include_router(webhook_router.router)   # no /api/v1 prefix — webhooks are external
