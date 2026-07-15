@@ -7,12 +7,13 @@ from app.api.v1 import user_router, appearance_router
 from app.api.v1 import webhook_router
 from app.db.database import engine
 from app.db.base import Base
-from app.api.v1 import deck_router
+from app.api.v1 import deck_router, preferences_router
 
 # Models
 from app.models.user_model import User
 from app.models.deck_model import Deck
 from app.models.card_model import Card
+from app.models.preferences_model import UserPreferences
 
 Base.metadata.create_all(bind=engine)
 
@@ -40,6 +41,7 @@ app.add_middleware(LoggingMiddleware)
 app.include_router(user_router.router, prefix="/api/v1")
 app.include_router(appearance_router.router, prefix="/api/v1/appearance")
 app.include_router(deck_router.router, prefix="/api/v1")
+app.include_router(preferences_router.router, prefix="/api/v1/users")
 app.include_router(webhook_router.router)
 
 # TODO: Uncomment this when we implement webhook verification

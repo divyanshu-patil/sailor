@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api/client";
-import { UserPreferences } from "@/types/settings/preferences";
+import { EditablePreferences } from "@/types/settings/preferences";
 export * from "@/types/settings/preferences";
 
 // ---------------------------------------------------------------------------
@@ -8,9 +8,9 @@ export * from "@/types/settings/preferences";
 // ---------------------------------------------------------------------------
 
 export const preferencesService = {
-  getPreferences: async (): Promise<UserPreferences> => {
+  getPreferences: async (): Promise<EditablePreferences> => {
     try {
-      const response = await apiClient.get<UserPreferences>(
+      const response = await apiClient.get<EditablePreferences>(
         "/api/v1/users/preferences",
       );
       return response.data;
@@ -24,11 +24,30 @@ export const preferencesService = {
     }
   },
 
-  updatePreferences: async (
-    payload: Partial<UserPreferences>,
-  ): Promise<UserPreferences> => {
+  createPreferences: async (
+    payload: EditablePreferences,
+  ): Promise<EditablePreferences> => {
     try {
-      const response = await apiClient.patch<UserPreferences>(
+      const response = await apiClient.post<EditablePreferences>(
+        "/api/v1/users/preferences",
+        payload,
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log(
+        "preferences create error",
+        e.response?.data,
+        e.response?.status,
+      );
+      throw e;
+    }
+  },
+
+  updatePreferences: async (
+    payload: Partial<EditablePreferences>,
+  ): Promise<EditablePreferences> => {
+    try {
+      const response = await apiClient.patch<EditablePreferences>(
         "/api/v1/users/preferences",
         payload,
       );
