@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
 
 from app.controllers import user_controller
 from app.auth.dependencies import get_current_user
+from app.db.database import get_db
 from app.models.user_model import User
-from app.schemas.user_schema import UserProfileResponse  # adjust path to match your project
+from app.schemas.user_schema import UserProfileResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -20,5 +22,6 @@ def get_user_health_check():
     summary="Get my profile",
     description="Returns the authenticated user's profile from the users table.",
 )
+
 def get_my_profile(current_user: User = Depends(get_current_user)):
     return user_controller.get_profile(current_user)
