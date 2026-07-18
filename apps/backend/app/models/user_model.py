@@ -2,22 +2,30 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Integer, String, func
+from sqlalchemy import DateTime, Enum as SAEnum, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.utils.enums.user_enums import ExperienceLevel, Profession
 
 from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.deck_model import Deck
 
+
 class UserRole(str, enum.Enum):
     USER = "user"
     ADMIN = "admin"
 
+
 class SubscriptionTier(str, enum.Enum):
-    SKETOS = "sketos"  
-    METRIOS = "metrios" 
-    GLYKOS = "glykos"    
+    """
+    Named after the traditional Greek coffee sweetness scale, low to high --
+    sketos (plain/unsweetened) -> metrios (medium) -> glykos (sweet).
+    Maps to free -> pro -> team.
+    """
+    SKETOS = "sketos"
+    METRIOS = "metrios"
+    GLYKOS = "glykos"
 
 
 class User(Base):
@@ -36,8 +44,6 @@ class User(Base):
         nullable=False,
     )
 
-    # Was indexed but NOT unique before -- two rows could share an email.
-    # Fixed here; add a matching unique index/constraint in the migration.
     email: Mapped[str] = mapped_column(
         String,
         unique=True,
@@ -45,14 +51,22 @@ class User(Base):
         nullable=False,
     )
 
-    # Optional profile fields
-    name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    occupation: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    full_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    nickname: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+    experience_level: Mapped[Optional[ExperienceLevel]] = mapped_column(
+        SAEnum(ExperienceLevel, name="experience_level_enum"),
+        nullable=True,
+    )
+    profession: Mapped[Optional[Profession]] = mapped_column(
+        SAEnum(Profession, name="profession_enum"),
+        nullable=True,
+    )
 
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
         SAEnum(SubscriptionTier, name="subscription_tier_enum"),
-        default=SubscriptionTier.FREE,
-        server_default=SubscriptionTier.FREE.value,
+        default=SubscriptionTier.SKETOS,
+        server_default=SubscriptionTier.SKETOS.value,
         nullable=False,
     )
 
@@ -63,18 +77,17 @@ class User(Base):
         nullable=False,
     )
 
-    # --- account status --------------------------------------------------------
-    # Lets you suspend/ban a user (e.g. abuse of the AI generation endpoints)
-    # without deleting their row -- deleting would cascade-delete every deck
-    # they own via the relationship below.
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-
     # --- usage tracking for rate limiting / quota enforcement -------------------
     # Check-and-increment this before queuing a script-generation Celery task,
     # gate it against a per-tier limit, and reset usage_period_started_at on
     # a schedule (cron/beat task). Keeps one user from drowning out everyone
     # else's queue when load is high.
-    monthly_generations_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    monthly_generations_used: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default=text("0"),
+    )
     usage_period_started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )

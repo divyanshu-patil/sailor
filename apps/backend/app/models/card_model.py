@@ -3,8 +3,6 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
-    Boolean,
-    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -15,6 +13,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
     JSON,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -55,7 +54,7 @@ class Card(Base):
         JSON,
         nullable=False,
         default=list,
-        doc="List of keywords for the card.",
+        server_default=text("'[]'::json"),
     )
 
     # hex string representing the color of the card (e.g., "#FF5733") generate using logic not by ai.
@@ -75,7 +74,12 @@ class Card(Base):
     )
     
     # whenever card is updated by user version will increase by 1. This is used for optimistic concurrency control.
-    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+        server_default=text("1"),
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

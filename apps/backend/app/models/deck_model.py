@@ -1,22 +1,17 @@
 from datetime import datetime
 import enum
 
-from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, func, Boolean, Enum as SAEnum
+from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func, Boolean, Enum as SAEnum, text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db.base import Base
 from typing import TYPE_CHECKING, Optional
+from app.utils.enums.deck_enums import GenerationStatus
 
 if TYPE_CHECKING:
     from app.models.user_model import User
     from app.models.card_model import Card
 
 
-class GenerationStatus(str, enum.Enum):
-    """Shared status enum for any async AI job (script, audio, cards, ...)."""
-    PENDING = "pending"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
 
 class Deck(Base):
     """
@@ -40,6 +35,8 @@ class Deck(Base):
     # but the script itself doesn't exist until the AI job finishes.
     script: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+    recording_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
     # hex string representing the color of the deck (e.g., "#FF5733")
     color: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -50,7 +47,12 @@ class Deck(Base):
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # ---- Public deck sharing ------------------------------------------------------
-    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,          # ORM default
+        server_default=false(), # Database default
+    )
 
     # --- AI script generation tracking ---------------------------------------
     # One AI job per deck (generate the markdown script), so this lives
@@ -64,7 +66,12 @@ class Deck(Base):
     )
     celery_task_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     generation_error: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    generation_retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    generation_retry_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default=text("0"),
+    )
     generation_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     generation_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -72,14 +79,25 @@ class Deck(Base):
     # --- soft delete ---------------------------------------------------------
     # Never hard-delete user content by default -- lets you undo accidental
     # deletes and keeps FK history intact for analytics/support.
-    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=false(),
+        index=True,
+    )
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
     # --- optimistic locking ---------------------------------------------------
     # Prevents a lost update when e.g. a Celery worker writes the finished
     # script at the same moment the user edits the title from the app.
-    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
 
 
     created_at: Mapped[datetime] = mapped_column(
