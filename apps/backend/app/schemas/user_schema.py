@@ -21,3 +21,10 @@ class UserProfileResponse(BaseModel):
     monthly_generations_used: int
     created_at: datetime
     updated_at: datetime
+
+class UserProfileUpdateRequest(BaseModel):
+    """All fields optional — PATCH is a partial update."""
+    full_name: Optional[str] = Field(default=None, max_length=100)
+    nickname: Optional[str] = Field(default=None, max_length=30)
+    experience_level: Optional[ExperienceLevel] = None
+    profession: Optional[Profession] = None
