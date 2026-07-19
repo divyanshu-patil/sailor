@@ -1,8 +1,11 @@
+
 from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Literal
 from datetime import datetime
+from typing import Optional
 
 from app.utils.enums.speaking_style import SpeakingStyle
+from app.utils.enums.deck_enums import GenerationStatus
 
 
 class AttachmentRequest(BaseModel):
@@ -12,7 +15,7 @@ class AttachmentRequest(BaseModel):
     uri: str
 
 
-class DeckGenerateRequest(BaseModel):
+class DeckCreateRequest(BaseModel):
     description: str = Field(
         ...,
         min_length=1,
@@ -44,6 +47,21 @@ class DeckGenerateRequest(BaseModel):
 
     attachments: List[AttachmentRequest] = []
 
+class DeckResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    title: str
+    script: Optional[str] = None
+    color: str
+    duration_mins: int
+    card_count: int
+    is_favorite: bool
+    generation_status: GenerationStatus
+    generation_error: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
 class CardResponse(BaseModel):
     id: int
@@ -56,12 +74,6 @@ class CardResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
-
-class DeckGenerateResponse(BaseModel):
-    id: int
-    title: str
-    color: str
-    duration_mins: int = Field(..., serialization_alias="durationMinutes")
 
 class DeckInfoResponse(BaseModel):
     id: int
