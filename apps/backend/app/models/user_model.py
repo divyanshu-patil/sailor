@@ -55,23 +55,39 @@ class User(Base):
     nickname: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
 
     experience_level: Mapped[Optional[ExperienceLevel]] = mapped_column(
-        SAEnum(ExperienceLevel, name="experience_level_enum"),
+        SAEnum(
+            ExperienceLevel,
+            name="experience_level_enum",
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=True,
     )
     profession: Mapped[Optional[Profession]] = mapped_column(
-        SAEnum(Profession, name="profession_enum"),
+        SAEnum(
+            Profession,
+            name="profession_enum",
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=True,
     )
 
     subscription_tier: Mapped[SubscriptionTier] = mapped_column(
-        SAEnum(SubscriptionTier, name="subscription_tier_enum"),
+        SAEnum(
+            SubscriptionTier,
+            name="subscription_tier_enum",
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=SubscriptionTier.SKETOS,
         server_default=SubscriptionTier.SKETOS.value,
         nullable=False,
     )
 
     role: Mapped[UserRole] = mapped_column(
-        SAEnum(UserRole, name="user_role_enum"),
+        SAEnum(
+            UserRole,
+            name="user_role_enum",
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=UserRole.USER,
         server_default=UserRole.USER.value,
         nullable=False,
