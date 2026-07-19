@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import {
+  EditablePreferences,
   preferencesService,
   UserPreferences,
-} from "@/services/preferences.debug.service";
+} from "@/services/preferences.service";
 import { usePreferenceStore } from "@/store/preference-store";
 import { useApiMutation } from "./use-api-state";
+import { syncPreferences } from "@/services/preferences-sync.service";
 
 export interface UsePreferencesOptions {
   onSync?: () => void;
@@ -17,6 +19,7 @@ export interface UsePreferencesReturn {
     key: K,
     value: UserPreferences[K],
   ) => Promise<void>;
+  createPreference: (initial: EditablePreferences) => Promise<void>;
 }
 
 export function usePreferences(
@@ -26,7 +29,7 @@ export function usePreferences(
   const store = usePreferenceStore();
   const hasSyncedRef = useRef(false);
 
-  const { mutate, isMutating } = useApiMutation({
+  const { mutate, isMutating } = useApiMutation<EditablePreferences>({
     onError: (error) => onError?.(error as Error),
   });
 
@@ -35,13 +38,12 @@ export function usePreferences(
     hasSyncedRef.current = true;
 
     try {
-      const serverPreferences = await preferencesService.getPreferences();
-      store.setPreferences(serverPreferences);
+      await syncPreferences();
       onSync?.();
     } catch (error) {
       onError?.(error as Error);
     }
-  }, [store, onSync, onError]);
+  }, [onSync, onError]);
 
   useEffect(() => {
     hydrate();
@@ -57,9 +59,7 @@ export function usePreferences(
 
       try {
         await mutate(
-          preferencesService.updatePreferences({
-            [key]: value,
-          } as Partial<UserPreferences>),
+          preferencesService.updatePreferences({ [key]: value } as any),
         );
         onSync?.();
       } catch (error) {
@@ -71,5 +71,21 @@ export function usePreferences(
     [store, mutate, onSync, onError],
   );
 
-  return { isLoading: isMutating, updatePreference };
+  const createPreference = useCallback(
+    async (initial: EditablePreferences) => {
+      try {
+        const created = await mutate(
+          preferencesService.createPreferences(initial),
+        );
+        store.setPreferences({ ...store.preferences, ...created });
+        onSync?.();
+      } catch (error) {
+        onError?.(error as Error);
+        throw error;
+      }
+    },
+    [store, mutate, onSync, onError],
+  );
+
+  return { isLoading: isMutating, updatePreference, createPreference };
 }

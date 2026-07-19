@@ -50,31 +50,35 @@ export interface UseApiStateMutateOptions {
 export function useApiState<T>(
   options: UseApiStateOptions<T> = {},
 ): UseApiStateReturn<T> {
-  const { initialData, onSuccess, onError, retryCount = 0, retryDelay = 1000 } =
-    options;
+  const {
+    initialData,
+    onSuccess,
+    onError,
+    retryCount = 0,
+    retryDelay = 1000,
+  } = options;
 
   const [data, setData] = useState<T | undefined>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastPromise, setLastPromise] = useState<(() => Promise<T>) | null>(null);
+  const [lastPromise, setLastPromise] = useState<(() => Promise<T>) | null>(
+    null,
+  );
 
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
   const executeWithRetry = useCallback(
-    async (
-      promise: Promise<T>,
-      retries: number,
-    ): Promise<T> => {
+    async function attempt(promise: Promise<T>, retries: number): Promise<T> {
       try {
         return await promise;
       } catch (err) {
         if (retries > 0) {
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
-          return executeWithRetry(promise, retries - 1);
+          return attempt(promise, retries - 1);
         }
         throw err;
       }

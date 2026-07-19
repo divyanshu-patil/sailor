@@ -8,6 +8,7 @@ import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { useOnboardingStore } from "@/store/onboarding.store";
+import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 
 function ApiAuthSetup() {
   const { getToken, isSignedIn } = useAuth();
@@ -27,6 +28,7 @@ function InitialLayout() {
   const { isSignedIn, isLoaded } = useAuth();
 
   useEffect(() => {
+    syncPreferencesOnce();
     syncAppearanceOptionsOnce();
   }, []);
 

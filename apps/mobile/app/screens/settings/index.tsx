@@ -7,6 +7,8 @@ import {
   defaultPreferences,
   usePreferenceStore,
 } from "@/store/preference-store";
+import { syncPreferences } from "@/services/preferences-sync.service";
+import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { AppearanceSection } from "./AppearanceSection";
 import { PracticeSection } from "./PracticeSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
@@ -41,6 +43,9 @@ const SettingsScreen = () => {
   const handleCacheCleared = useCallback(() => {
     setAlertMessage("Cache cleared. Data will refetch automatically.");
     setAlertVisible(true);
+    // Sync preferences and appearance options from server
+    syncPreferences();
+    syncAppearanceOptionsOnce();
   }, []);
 
   return (
