@@ -4,12 +4,19 @@ export interface AppearanceOption {
   hex: string;
 }
 
-export interface UserPreferences {
-  appearance: AppearanceOption;
-  emotionHapticsEnabled: boolean;
+export interface EditablePreferences {
   practiceRemindersEnabled: boolean;
   practiceReminderTime: string;
   defaultMood: ScriptMood;
 }
+export interface UserPreferences extends EditablePreferences {
+  appearance: AppearanceOption;
+  emotionHapticsEnabled: boolean;
+}
 
-export type ScriptMood = "confident" | "calm" | "playful" | "reflective" | "energetic";
+export type ScriptMood =
+  | "confident"
+  | "calm"
+  | "playful"
+  | "reflective"
+  | "energetic";

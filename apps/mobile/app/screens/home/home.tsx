@@ -25,6 +25,7 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useOnboardingStore } from "@/store/onboarding.store";
+import { usePreferences } from "@/hooks";
 
 const messages = ["Hello", "Namaste", "Bonjour", "Hola", "Ciao"];
 
@@ -35,6 +36,11 @@ const HomeScreen = () => {
   const { signOut } = useClerk();
   const { clearAppState } = useAppUserStore();
   const { resetOnboarding } = useOnboardingStore();
+
+  const { createPreference } = usePreferences({
+    onError: (error) =>
+      Alert.alert("Error", error.message ?? "Failed to create preferences."),
+  });
 
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -57,6 +63,19 @@ const HomeScreen = () => {
     } catch (error) {
       console.error("Error signing out:", error);
       Alert.alert("Error", "An error occurred while signing out.");
+    }
+  };
+
+  const handleCreatePreferences = async () => {
+    try {
+      await createPreference({
+        practiceRemindersEnabled: true,
+        practiceReminderTime: "18:00",
+        defaultMood: "confident",
+      });
+      Alert.alert("Preferences created");
+    } catch {
+      // error already surfaced via onError above
     }
   };
 
@@ -139,6 +158,12 @@ const HomeScreen = () => {
             </SwipeActions.Actions>
           </SwipeActions>
         </Section>
+        <Section>
+          <Button onPress={handleCreatePreferences}>
+            <Text>Create Preferences (test)</Text>
+          </Button>
+        </Section>
+
         <Section>
           <Button onPress={handleSignOut}>
             <Text modifiers={[foregroundStyle("#f00")]}>LogOut</Text>

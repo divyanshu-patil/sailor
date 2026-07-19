@@ -1,10 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { createMMKV } from "react-native-mmkv";
-import {
-  UserPreferences,
-  AppearanceOption,
-} from "@/types/settings/preferences";
+import { AppearanceOption, UserPreferences, ScriptMood } from "@/types/settings/preferences";
 
 const mmkv = createMMKV({ id: "preference-storage" });
 
@@ -41,11 +38,8 @@ export const defaultPreferences: UserPreferences = {
 interface PreferenceStore {
   preferences: UserPreferences;
   appearanceOptions: AppearanceOption[];
-  setPreferences: (preferences: UserPreferences) => void;
-  setPreference: <K extends keyof UserPreferences>(
-    key: K,
-    value: UserPreferences[K],
-  ) => void;
+  setPreferences: (preferences: Partial<UserPreferences>) => void;
+  setPreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
   setAppearance: (appearance: AppearanceOption) => void;
   setAppearanceOptions: (options: AppearanceOption[]) => void;
   resetPreferences: () => void;
@@ -56,7 +50,10 @@ export const usePreferenceStore = create<PreferenceStore>()(
     (set) => ({
       preferences: { ...defaultPreferences },
       appearanceOptions: defaultAppearanceOptions,
-      setPreferences: (preferences) => set({ preferences }),
+      setPreferences: (preferences) =>
+        set((state) => ({
+          preferences: { ...state.preferences, ...preferences },
+        })),
       setPreference: (key, value) =>
         set((state) => ({
           preferences: { ...state.preferences, [key]: value },
