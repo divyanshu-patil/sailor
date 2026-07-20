@@ -33,7 +33,7 @@ class DeckCreateRequest(BaseModel):
         le=100,
         description="Number of cards to generate",
     )
-    duration_minutes: int = Field(
+    duration_mins: int = Field(
         ...,
         alias="durationMinutes",
         ge=1,

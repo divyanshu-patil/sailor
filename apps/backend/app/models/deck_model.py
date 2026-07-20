@@ -29,6 +29,7 @@ class Deck(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
      # Nullable on purpose: the row exists the instant the user hits "create",
     # but the script itself doesn't exist until the AI job finishes.
@@ -68,7 +69,12 @@ class Deck(Base):
     # One AI job per deck (generate the markdown script), so this lives
     # directly on Deck rather than in a separate jobs table.
     generation_status: Mapped[DeckGenerationStatus] = mapped_column(
-        SAEnum(DeckGenerationStatus, name="generation_status_enum", native_enum=True),
+        SAEnum(
+            DeckGenerationStatus,
+            values_callable=lambda enum: [e.value for e in enum],
+            name="generation_status_enum",
+            native_enum=True,
+        ),
         nullable=False,
         default=DeckGenerationStatus.PENDING,
         server_default=DeckGenerationStatus.PENDING.value,

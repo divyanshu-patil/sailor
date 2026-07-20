@@ -1,7 +1,7 @@
 import random
 
 from sqlalchemy.orm import Session
-
+from fastapi import HTTPException, status
 from app.models.deck_model import Deck
 from app.models.user_model import User
 from app.schemas.deck_schema import DeckCreateRequest
@@ -17,6 +17,7 @@ def create_deck(payload: DeckCreateRequest, current_user: User, db: Session) -> 
         user_id=current_user.id,
         title=payload.title,
         description=payload.description,
+        card_count=payload.card_count,
         color=random.choice(DEFAULT_COLORS),
         duration_mins=payload.duration_mins,
         generation_status=DeckGenerationStatus.PENDING,
@@ -31,4 +32,11 @@ def create_deck(payload: DeckCreateRequest, current_user: User, db: Session) -> 
     db.commit()
     db.refresh(deck)
 
+    return deck
+
+
+def get_deck(deck_id: int, current_user: User, db: Session) -> Deck:
+    deck = db.query(Deck).filter(Deck.id == deck_id, Deck.user_id == current_user.id).one_or_none()
+    if deck is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deck not found")
     return deck

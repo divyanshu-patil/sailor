@@ -1,6 +1,7 @@
 from celery import Celery
 
 from app.config.settings import settings
+import app.models
 
 celery_app = Celery(
     "sailor",
