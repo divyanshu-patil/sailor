@@ -89,11 +89,13 @@ class DeckInfoResponse(BaseModel):
 
 
 class AllDeckInfoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     description: str
     color: str
-    updatedAt: datetime
-    slideCount: int
-    durationMins: int
-    isFavourite: bool
+    updatedAt: datetime = Field(alias="updated_at")
+    slideCount: int = Field(alias="card_count")
+    durationMins: int = Field(alias="duration_mins")
+    isFavourite: bool = Field(alias="is_favorite")

@@ -40,3 +40,12 @@ def get_deck(deck_id: int, current_user: User, db: Session) -> Deck:
     if deck is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deck not found")
     return deck
+
+
+def list_decks(current_user: User, db: Session) -> list[Deck]:
+    return (
+        db.query(Deck)
+        .filter(Deck.user_id == current_user.id)
+        .order_by(Deck.created_at.desc())
+        .all()
+    )
