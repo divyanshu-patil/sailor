@@ -6,6 +6,10 @@
       "cache": false,
       "persistent": true
     },
+    "celery": {
+      "cache": false,
+      "persistent": true
+    },
     "ios": {
       "cache": false,
       "persistent": true
