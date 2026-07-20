@@ -5,8 +5,7 @@ from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db.base import Base
 from typing import TYPE_CHECKING, Optional
-from app.utils.enums.deck_enums import GenerationStatus
-
+from app.utils.enums.deck_enums import DeckGenerationStatus, AudienceType
 if TYPE_CHECKING:
     from app.models.user_model import User
     from app.models.card_model import Card
@@ -41,12 +40,23 @@ class Deck(Base):
     color: Mapped[str] = mapped_column(String, nullable=False)
 
     duration_mins: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
- 
+    
+    audience: Mapped[AudienceType] = mapped_column(
+        SAEnum(
+            AudienceType,
+            values_callable=lambda enum: [e.value for e in enum],
+            name="audience_type_enum",
+            native_enum=True,
+        ),
+        nullable=False,
+        default=AudienceType.GENERAL,
+        server_default=AudienceType.GENERAL.value,
+    )
 
     card_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    # ---- Public deck sharing ------------------------------------------------------
+    # Public deck sharing 
     is_public: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -54,14 +64,14 @@ class Deck(Base):
         server_default=false(), # Database default
     )
 
-    # --- AI script generation tracking ---------------------------------------
+    # AI script generation tracking
     # One AI job per deck (generate the markdown script), so this lives
     # directly on Deck rather than in a separate jobs table.
-    generation_status: Mapped[GenerationStatus] = mapped_column(
-        SAEnum(GenerationStatus, name="generation_status_enum", native_enum=True),
+    generation_status: Mapped[DeckGenerationStatus] = mapped_column(
+        SAEnum(DeckGenerationStatus, name="generation_status_enum", native_enum=True),
         nullable=False,
-        default=GenerationStatus.PENDING,
-        server_default=GenerationStatus.PENDING.value,
+        default=DeckGenerationStatus.PENDING,
+        server_default=DeckGenerationStatus.PENDING.value,
         index=True,
     )
     celery_task_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
@@ -76,7 +86,7 @@ class Deck(Base):
     generation_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-    # --- soft delete ---------------------------------------------------------
+    # soft delete
     # Never hard-delete user content by default -- lets you undo accidental
     # deletes and keeps FK history intact for analytics/support.
     is_deleted: Mapped[bool] = mapped_column(
@@ -89,7 +99,6 @@ class Deck(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-    # --- optimistic locking ---------------------------------------------------
     # Prevents a lost update when e.g. a Celery worker writes the finished
     # script at the same moment the user edits the title from the app.
     version: Mapped[int] = mapped_column(

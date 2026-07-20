@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.utils.enums.speaking_style import SpeakingStyle
-from app.utils.enums.deck_enums import GenerationStatus
+from app.utils.enums.deck_enums import DeckGenerationStatus, AudienceType
 
 
 class AttachmentRequest(BaseModel):
@@ -16,27 +16,16 @@ class AttachmentRequest(BaseModel):
 
 
 class DeckCreateRequest(BaseModel):
+    title: str = Field(
+        ...,
+        min_length=1,
+        description="Presentation title",
+    )
     description: str = Field(
         ...,
         min_length=1,
         description="Presentation topic or prompt",
     )
-
-    duration_minutes: int = Field(
-        ...,
-        alias="durationMinutes",
-        ge=1,
-        le=60,
-        description="Desired presentation duration in minutes",
-    )
-
-    audience_index: int = Field(
-        ...,
-        alias="audienceIndex",
-        ge=0,
-        description="Selected audience level/index from the frontend",
-    )
-
     card_count: int = Field(
         ...,
         alias="cardCount",
@@ -44,8 +33,20 @@ class DeckCreateRequest(BaseModel):
         le=100,
         description="Number of cards to generate",
     )
+    duration_minutes: int = Field(
+        ...,
+        alias="durationMinutes",
+        ge=1,
+        le=60,
+        description="Desired presentation duration in minutes",
+    )
+    audience: AudienceType = Field(
+        ...,
+        description="Intended audience for the presentation",
+    )
 
-    attachments: List[AttachmentRequest] = []
+
+    # attachments: List[AttachmentRequest] = []
 
 class DeckResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -58,7 +59,7 @@ class DeckResponse(BaseModel):
     duration_mins: int
     card_count: int
     is_favorite: bool
-    generation_status: GenerationStatus
+    generation_status: DeckGenerationStatus
     generation_error: Optional[str] = None
     created_at: datetime
     updated_at: datetime
