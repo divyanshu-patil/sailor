@@ -9,6 +9,7 @@
     "postinstall": "cd apps/backend && uv sync",
     "dev": "turbo run dev --filter=sailor --filter=@sailor/backend",
     "run:backend": "turbo run dev --filter=@sailor/backend",
+    "run:celery": "turbo run celery --filter=@sailor/backend",
     "dev:android": "turbo run android --filter=sailor & turbo run dev --filter=backend",
     "dev:ios": "turbo run ios --filter=sailor & turbo run dev --filter=backend",
     "ios": "turbo run ios",

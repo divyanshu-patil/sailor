@@ -4,29 +4,17 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     CLERK_JWT_PUBLIC_KEY: str
     CLERK_SECRET_KEY: str
-    # NOTE: Webhook endpoint exists at POST /webhooks/clerk but is not registered
-    # with Clerk Dashboard yet. User sync currently relies on the fallback in
-    # get_current_user() — on first authenticated request, if the user row doesn't
-    # exist in Supabase it gets auto-created from the JWT claims.
-    
-    # This covers: sign-up, sign-in, all protected routes.
-    # Not covered: email changes, account deletion from Clerk side.
-
-    # TODO: Uncomment this when we implement webhook verification 
-    # CLERK_WEBHOOK_SIGNING_SECRET: str 
     SUPABASE_URL: str
     SUPABASE_SERVICE_ROLE_KEY: str
     DATABASE_URL: str
     CLERK_WEBHOOK_SIGNING_SECRET: str
 
-    API_KEY: str
-    AI_BASE_URL: str
-    AI_MODEL: str
-    AI_TIMEOUT_SECONDS: float
-    AI_MAX_RETRIES: int
-    AI_MAX_OUTPUT_TOKENS: int = 8192 
-    MAX_REPAIR_ATTEMPTS: int = 3
-    MAX_PREVIOUS_CARDS_CONTEXT: int = 8
+    REDIS_URL: str
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+    OLLAMA_API_KEY: str
+    OLLAMA_MODEL: str
+    OLLAMA_FALLBACK_MODEL: str
 
     class Config:
         env_file = ".env"

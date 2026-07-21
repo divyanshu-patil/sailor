@@ -18,6 +18,26 @@ class ClerkUser:
         self.claims = claims                # full decoded JWT payload
 
 
+def _verify_token(token: str) -> dict:
+    """
+    Decodes and verifies a Clerk-issued JWT, returning its claims.
+    Raises jwt.PyJWTError (or a subclass) on failure — callers decide how to
+    turn that into a response: HTTP 401 for regular routes, a WS close code
+    for the deck progress socket.
+    """
+    # Replace literal \n with real newlines in case the PEM was stored as a
+    # single-line string in the .env file
+    public_key = settings.CLERK_JWT_PUBLIC_KEY.replace("\\n", "\n")
+
+    return jwt.decode(
+        token,
+        key=public_key,
+        algorithms=["RS256"],
+        options={"require": ["exp", "sub"]},
+        leeway=10,  # token iat issue
+    )
+
+
 def get_current_clerk_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
 ) -> ClerkUser:
@@ -32,18 +52,8 @@ def get_current_clerk_user(
     """
     token = credentials.credentials
 
-    # Replace literal \n with real newlines in case the PEM was stored as a
-    # single-line string in the .env file
-    public_key = settings.CLERK_JWT_PUBLIC_KEY.replace("\\n", "\n")
-
     try:
-        claims = jwt.decode(
-            token,
-            key=public_key,
-            algorithms=["RS256"],
-            options={"require": ["exp", "sub"]},
-            leeway=10, # token iat issue
-        )
+        claims = _verify_token(token)
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,3 +75,16 @@ def get_current_clerk_user(
         email=email,
         claims=claims,
     )
+
+
+def decode_clerk_token(token: str) -> dict | None:
+    """
+    Like get_current_clerk_user, but returns None instead of raising —
+    for the deck progress WebSocket, which authenticates via a `token` query
+    param (can't send an Authorization header reliably from RN) and has to
+    close the socket with a WS close code on failure instead of a 401.
+    """
+    try:
+        return _verify_token(token)
+    except jwt.PyJWTError:
+        return None

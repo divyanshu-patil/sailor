@@ -9,10 +9,7 @@ from app.db.database import engine
 from app.db.base import Base
 from app.api.v1 import deck_router, preferences_router
 
-# Models
-from app.models.user_model import User
-from app.models.deck_model import Deck
-from app.models.card_model import Card
+import app.models
 from app.models.preferences_model import UserPreferences
 
 Base.metadata.create_all(bind=engine)
