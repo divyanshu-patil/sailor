@@ -22,3 +22,8 @@ dependencies = [
     "svix>=1.96.1",
     "uvicorn>=0.48.0",
 ]
+
+[dependency-groups]
+dev = [
+    "concurrently>=2.1",
+]

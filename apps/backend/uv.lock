@@ -90,6 +90,11 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "concurrently" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.18.5" },
@@ -109,6 +114,9 @@ requires-dist = [
     { name = "svix", specifier = ">=1.96.1" },
     { name = "uvicorn", specifier = ">=0.48.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "concurrently", specifier = ">=2.1" }]
 
 [[package]]
 name = "billiard"
@@ -242,6 +250,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697, upload-time = "2022-10-25T02:36:22.414Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
+]
+
+[[package]]
+name = "concurrently"
+version = "2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/cb/528221dfd10c944ddc2531b6882ad13513a35670ed418a494fe328d1375b/concurrently-2.1.tar.gz", hash = "sha256:f477dbee46bf2deb2a88e5ed846f0306ddad34b9cf7c3d78e69be97b73904ff1", size = 10701, upload-time = "2025-01-19T11:19:42.128Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f0/2e/366c547b67bb44603377bbaabe92aab4e0ee2483c84b4ea475b97e996fe6/concurrently-2.1-py3-none-any.whl", hash = "sha256:d80305f488cf400c76c575eae78c0f99c8c67d4510181f903d15d3b2722019ad", size = 14926, upload-time = "2025-01-19T11:19:40.259Z" },
 ]
 
 [[package]]
