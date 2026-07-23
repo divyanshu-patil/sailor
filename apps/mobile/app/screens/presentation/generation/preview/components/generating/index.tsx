@@ -1,9 +1,9 @@
 import { StyleSheet, View } from "react-native";
 import CtaButton from "../../../components/cta-button";
-import { GenerationState } from "../../../../hooks/use-script-generation";
+import { DeckGenerationStatus } from "@/services/deck-generation.service";
 
 interface GeneratingScreenProps {
-  status: GenerationState;
+  status: DeckGenerationStatus;
   error?: string | null;
   onStop: () => void;
 }

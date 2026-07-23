@@ -1,8 +1,7 @@
 import { Keyboard, StyleSheet, TextInput } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useScriptStore } from "@/store/script-store";
-import { useScriptGeneration } from "../hooks/use-script-generation";
+import { useDeckGeneration } from "@/hooks/use-deck-generation";
 import { useColors } from "@/constants/theme";
 import {
   KeyboardAvoidingView,
@@ -11,28 +10,41 @@ import {
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 
 type EditScriptScreenParams = {
-  jobId: string;
+  deckId: string;
 };
 
 const HISTORY_DEBOUNCE_MS = 500;
 
 const EditScriptScreen = () => {
-  const { jobId } = useLocalSearchParams<EditScriptScreenParams>();
-  const { script, setResult } = useScriptStore();
-  const [scriptValue, setScriptValue] = useState<string>(script);
+  const { deckId } = useLocalSearchParams<EditScriptScreenParams>();
+  const {
+    deck,
+    isEditing: saving,
+    edit,
+    fetchDeck,
+  } = useDeckGeneration({ deckId });
 
-  // Use the presentation hook which uses debug service
-  const { edit, isRevising: saving, attach } = useScriptGeneration();
+  const [scriptValue, setScriptValue] = useState<string>("");
+  const seededRef = useRef(false);
 
-  // Attach to the job when jobId is available
+  // Defensive fetch in case the ws snapshot (sent on connect, since
+  // script_ready is a non-active status) hasn't arrived yet.
   useEffect(() => {
-    if (jobId) {
-      attach(jobId);
-    }
-  }, [jobId, attach]);
+    if (deckId) fetchDeck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckId]);
 
-  // undo/redo history
-  const historyRef = useRef<string[]>([script]);
+  // Seed the editable text once we actually have the script — only once,
+  // so it doesn't clobber in-progress edits if `deck` updates again later.
+  useEffect(() => {
+    if (!seededRef.current && deck?.script) {
+      setScriptValue(deck.script);
+      historyRef.current = [deck.script];
+      seededRef.current = true;
+    }
+  }, [deck?.script]);
+
+  const historyRef = useRef<string[]>([""]);
   const pointerRef = useRef(0);
   const lastEditRef = useRef(0);
   const isUndoRedoRef = useRef(false);
@@ -47,7 +59,6 @@ const EditScriptScreen = () => {
   const handleChangeText = useCallback((value: string) => {
     setScriptValue(value);
 
-    // if this change came from undo/redo itself, don't re-record it
     if (isUndoRedoRef.current) {
       isUndoRedoRef.current = false;
       return;
@@ -57,17 +68,19 @@ const EditScriptScreen = () => {
     const history = historyRef.current;
     const pointer = pointerRef.current;
 
-    // if we're not at the tip (user typed after undoing), drop the redo branch
-    const truncated =
-      pointer < history.length - 1 ? history.slice(0, pointer + 1) : history;
+    // Always copy — never mutate the array historyRef.current currently
+    // points at, even when we're about to just replace its last entry.
+    const base =
+      pointer < history.length - 1
+        ? history.slice(0, pointer + 1)
+        : history.slice();
 
     if (now - lastEditRef.current < HISTORY_DEBOUNCE_MS) {
-      // still within the same "burst" of typing — replace current tip
-      truncated[truncated.length - 1] = value;
-      historyRef.current = truncated;
+      base[base.length - 1] = value;
+      // eslint-disable-next-line react-hooks/immutability
+      historyRef.current = base;
     } else {
-      // new burst — push a new history entry
-      historyRef.current = [...truncated, value];
+      historyRef.current = [...base, value];
       pointerRef.current = historyRef.current.length - 1;
     }
 
@@ -80,7 +93,7 @@ const EditScriptScreen = () => {
     pointerRef.current -= 1;
     isUndoRedoRef.current = true;
     setScriptValue(historyRef.current[pointerRef.current]);
-    lastEditRef.current = 0; // force next real edit to start a new burst
+    lastEditRef.current = 0;
     syncFlags();
   }, []);
 
@@ -96,19 +109,10 @@ const EditScriptScreen = () => {
   const handleConfirm = async () => {
     if (saving) return;
     try {
-      // Pass the jobId and script value to the edit function
-      const updated = await edit(scriptValue);
-      if (updated) {
-        setResult({
-          job_id: updated.job_id,
-          title: updated.title,
-          script: updated.script,
-        });
-        KeyboardController.dismiss();
-        Keyboard.dismiss();
-
-        router.dismiss();
-      }
+      await edit(scriptValue);
+      KeyboardController.dismiss();
+      Keyboard.dismiss();
+      router.dismiss();
     } catch {
       // surface a toast/snackbar here in your existing error pattern
     }
@@ -140,7 +144,6 @@ const EditScriptScreen = () => {
           disabled={saving}
         />
       </Stack.Toolbar>
-      {/* <KeyboardAvoidingView> */}
       <KeyboardAvoidingView
         style={styles.container}
         behavior="padding"
@@ -149,7 +152,6 @@ const EditScriptScreen = () => {
         <TextInput
           style={styles.input}
           value={scriptValue}
-          // scrollEnabled={false}
           autoCapitalize="none"
           autoComplete="off"
           onChangeText={handleChangeText}
@@ -157,21 +159,13 @@ const EditScriptScreen = () => {
           textBreakStrategy="simple"
         />
       </KeyboardAvoidingView>
-      {/* </KeyboardAvoidingView> */}
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1, // <-- was missing; lets TextInput own its scroll region
-    paddingHorizontal: 30,
-  },
-  input: {
-    flex: 1, // <-- fill the container
-    fontSize: 20,
-    textAlignVertical: "top", // Android: align text to top, not center
-  },
+  container: { flex: 1, paddingHorizontal: 30 },
+  input: { flex: 1, fontSize: 20, textAlignVertical: "top" },
 });
 
 export default EditScriptScreen;

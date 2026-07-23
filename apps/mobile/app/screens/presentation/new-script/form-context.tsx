@@ -7,7 +7,7 @@ import {
   useCallback,
 } from "react";
 import { useNativeState } from "@expo/ui/swift-ui";
-import { PresentationFormState, DEFAULT_STATE } from "./types/types";
+import { PresentationFormState, DEFAULT_STATE, AUDIENCES } from "./types/types";
 import { Attachment } from "@/types/presentation";
 
 // ---- Context -----------------------------------------------------------
@@ -64,7 +64,7 @@ export function PresentationFormProvider({
   }, []);
 
   const setAudienceIndex = useCallback((audienceIndex: number) => {
-    setForm((prev) => ({ ...prev, audienceIndex }));
+    setForm((prev) => ({ ...prev, audience: AUDIENCES[audienceIndex] }));
   }, []);
 
   const setCardCount = useCallback((cardCount: number) => {

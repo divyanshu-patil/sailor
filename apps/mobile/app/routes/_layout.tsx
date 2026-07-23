@@ -15,7 +15,7 @@ function ApiAuthSetup() {
 
   useEffect(() => {
     if (!isSignedIn) return; // wait until signed in
-    getToken().then((t) => console.log("token:", t ? t : "null"));
+    // getToken().then((t) => console.log("token:", t ? t : "null"));
     setupApiAuth(getToken);
   }, [getToken, isSignedIn]);
 

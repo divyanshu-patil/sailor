@@ -16,36 +16,14 @@ class AttachmentRequest(BaseModel):
 
 
 class DeckCreateRequest(BaseModel):
-    title: str = Field(
-        ...,
-        min_length=1,
-        description="Presentation title",
+    title: Optional[str] = Field(
+        default=None,
+        description="Optional — if omitted, an AI-generated title is set once script generation completes",
     )
-    description: str = Field(
-        ...,
-        min_length=1,
-        description="Presentation topic or prompt",
-    )
-    card_count: int = Field(
-        ...,
-        alias="cardCount",
-        ge=1,
-        le=100,
-        description="Number of cards to generate",
-    )
-    duration_mins: int = Field(
-        ...,
-        alias="durationMinutes",
-        ge=1,
-        le=60,
-        description="Desired presentation duration in minutes",
-    )
-    audience: AudienceType = Field(
-        ...,
-        description="Intended audience for the presentation",
-    )
-
-
+    description: str = Field(..., min_length=1, description="Presentation topic or prompt")
+    card_count: int = Field(..., alias="cardCount", ge=1, le=100)
+    duration_mins: int = Field(..., alias="durationMinutes", ge=1, le=60)
+    audience: AudienceType
     # attachments: List[AttachmentRequest] = []
 
 class DeckResponse(BaseModel):
@@ -54,6 +32,7 @@ class DeckResponse(BaseModel):
     id: int
     user_id: int
     title: str
+    description: Optional[str] = None
     script: Optional[str] = None
     color: str
     duration_mins: int
@@ -99,3 +78,10 @@ class AllDeckInfoResponse(BaseModel):
     slideCount: int = Field(alias="card_count")
     durationMins: int = Field(alias="duration_mins")
     isFavourite: bool = Field(alias="is_favorite")
+
+class DeckReviseRequest(BaseModel):
+    instruction: str = Field(..., min_length=1)
+
+
+class DeckEditRequest(BaseModel):
+    script: str = Field(..., min_length=1)

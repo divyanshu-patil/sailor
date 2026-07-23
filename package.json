@@ -11,7 +11,7 @@
     "run:backend": "turbo run dev celery --filter=@sailor/backend",
     "run:celery": "turbo run celery --filter=@sailor/backend",
     "dev:android": "turbo run android dev celery --filter=sailor --filter=@sailor/backend",
-    "dev:ios": "turbo run ios dev celery --filter=sailor --filter=@sailor/backend",
+    "dev:ios": "turbo run ios dev redis celery --filter=sailor --filter=@sailor/backend",
     "ios": "turbo run ios",
     "android": "turbo run android",
     "lint": "turbo run lint",

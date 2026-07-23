@@ -1,17 +1,31 @@
-import { GenerationState } from "../../../../../hooks/use-script-generation";
+import { DeckGenerationStatus } from "@/services/deck-generation.service";
 import { generatingMessages } from "../constants";
 
+const IN_PROGRESS_MESSAGES: Record<string, string[]> = {
+  pending: generatingMessages,
+  processing: generatingMessages,
+  revising: generatingMessages,
+  generating_cards: generatingMessages,
+};
+
 export const getGeneratingMessages = (
-  status: GenerationState,
+  status: DeckGenerationStatus | undefined,
   title?: string,
 ): string[] => {
+  if (!status) return generatingMessages;
+
   if (status === "failed") {
     return ["Failed to Generate Script, try again later"];
-  } else if (status === "generating") {
-    return generatingMessages;
-  } else if (status === "cancelled") {
-    return ["cancelled"];
-  } else if (status === "completed" && title) {
+  }
+  if (status === "cancelled") {
+    return ["Cancelled"];
+  }
+  if (status === "completed" && title) {
     return [title];
-  } else return generatingMessages;
+  }
+  if (status in IN_PROGRESS_MESSAGES) {
+    return IN_PROGRESS_MESSAGES[status];
+  }
+  // script_ready with no title yet, or any other in-between state
+  return generatingMessages;
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, View, Keyboard } from "react-native";
 import {
   useLocalSearchParams,
@@ -6,10 +6,7 @@ import {
   router,
   useFocusEffect,
 } from "expo-router";
-import {
-  useScriptGeneration,
-  useDeckGeneration,
-} from "../../hooks/use-script-generation";
+import { useDeckGeneration } from "@/hooks/use-deck-generation";
 import { PresentationFormState } from "../../new-script/types/types";
 import GeneratingScreen from "./components/generating";
 import BlobBackground from "../components/background";
@@ -19,7 +16,6 @@ import { useHeaderHeight } from "expo-router/build/react-navigation";
 import ScriptText from "./components/script-text/script-text";
 import Animated, { LinearTransition } from "react-native-reanimated";
 import ReviseBar, { ReviseBarRef } from "./components/revise-bar";
-import { useScriptStore } from "@/store/script-store";
 import { useColors } from "@/constants/theme";
 import { KeyboardController } from "react-native-keyboard-controller";
 
@@ -29,7 +25,6 @@ type GeneratePreviewParams = {
 
 const PreviewScreen = () => {
   const reviseBarRef = useRef<ReviseBarRef>(null);
-
   const headerHeight = useHeaderHeight();
   const { form } = useLocalSearchParams<GeneratePreviewParams>();
   const formState: PresentationFormState = useMemo(
@@ -37,92 +32,52 @@ const PreviewScreen = () => {
     [form],
   );
 
-  const { state, result, error, startGeneration, stopGeneration, revise } =
-    useScriptGeneration();
-
-  const [isConfirming, setIsConfirming] = useState(false);
-  const { startDeckGeneration } = useDeckGeneration();
-
-  const handleCreate = async () => {
-    if (state !== "completed" || !jobId) return;
-
-    try {
-      setIsConfirming(true);
-      const deckJobId = await startDeckGeneration(jobId);
-      router.push({
-        pathname: "/(authenticated)/(script)/results",
-        params: { jobId: deckJobId },
-      });
-    } catch {
-      // deckError will already be set by the hook; surface it however you
-      // show errors elsewhere on this screen (toast, inline text, etc.)
-    } finally {
-      setIsConfirming(false);
-    }
-  };
-
-  const jobId = useScriptStore((s) => s.jobId);
-  const title = useScriptStore((s) => s.title);
-  const script = useScriptStore((s) => s.script);
-  const setResult = useScriptStore((s) => s.setResult);
+  const {
+    deck,
+    status,
+    isScriptReady,
+    isConfirming,
+    isRevising,
+    error,
+    generate,
+    revise,
+    confirm,
+    cancel,
+  } = useDeckGeneration();
 
   const startedRef = useRef(false);
-  const stateRef = useRef(state);
 
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    startGeneration({
-      attachments: formState.attachments,
+    generate({
       description: formState.description,
-      durationMinutes: formState.durationMinutes,
-      audienceIndex: formState.audienceIndex,
+      durationMins: formState.durationMinutes,
+      audience: formState.audience,
       cardCount: formState.cardCount,
+      // formState.attachments still isn't consumed by the backend — see
+      // deck_controller.create_deck / DeckCreateRequest.
     });
-  }, [
-    formState.attachments,
-    formState.audienceIndex,
-    formState.cardCount,
-    formState.description,
-    formState.durationMinutes,
-    startGeneration,
-  ]);
-
-  // sync completed generation into the store — single source of truth from here on
-  useEffect(() => {
-    if (state === "completed" && result) {
-      setResult({
-        job_id: result.job_id,
-        title: result.title,
-        script: result.script,
-      });
-    }
-  }, [state, result, setResult]);
-
-  useEffect(() => {
-    return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      if (stateRef.current === "generating") {
-        stopGeneration();
-      }
-    };
-  }, [stopGeneration]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRevise = async (instruction: string) => {
-    if (!jobId) return;
-    const revised = await revise(instruction);
-    if (revised) {
-      setResult({
-        job_id: revised.job_id,
-        title: revised.title,
-        script: revised.script,
-      });
-    }
+    if (!isScriptReady) return;
+    await revise(instruction);
   };
+
+  const handleCreate = async () => {
+    if (!isScriptReady || !deck) return;
+    await confirm();
+    router.push({
+      pathname: "/(authenticated)/(script)/results",
+      params: { deckId: String(deck.id) },
+    });
+  };
+
   const { colors } = useColors();
 
-  // Dismiss keyboard when screen mounts or comes into focus
   useEffect(() => {
     KeyboardController.dismiss();
     Keyboard.dismiss();
@@ -133,24 +88,35 @@ const PreviewScreen = () => {
     Keyboard.dismiss();
   });
 
+  const showScript = !!deck?.script && (isScriptReady || isRevising);
+
+  useEffect(() => {
+    if (showScript) {
+      console.log(
+        "[preview] showScript is now true, script length:",
+        deck?.script?.length,
+      );
+    }
+  }, [showScript, deck?.script?.length]);
+
   return (
     <>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={"square.and.pencil"}
-          hidden={state !== "completed" && !result?.script}
+          hidden={!isScriptReady}
           tintColor={colors.rust}
           disabled={isConfirming}
           onPress={() => {
             reviseBarRef.current?.blur();
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
-              params: { jobId },
+              params: { deckId: String(deck?.id) },
             });
           }}
         />
         <Stack.Toolbar.Button
-          hidden={state !== "completed" && !result?.script}
+          hidden={!isScriptReady}
           tintColor={colors.rust}
           variant="prominent"
           disabled={isConfirming}
@@ -163,25 +129,25 @@ const PreviewScreen = () => {
         <BlobBackground />
         <ScrollView
           style={[{ paddingTop: headerHeight + 20 }, styles.container]}
-          scrollEnabled={state === "completed" && !!script}
+          scrollEnabled={showScript}
           keyboardDismissMode="on-drag"
         >
           <StatusText
-            labels={getGeneratingMessages(state, title)}
+            labels={getGeneratingMessages(status, deck?.title)}
             accentColor={colors.rust}
           />
 
-          {state === "completed" && !!script && (
+          {showScript && (
             <Animated.View
               layout={LinearTransition.springify()}
               style={styles.scriptContainer}
             >
-              <ScriptText script={script} fontSize={20} />
+              <ScriptText script={deck!.script!} fontSize={20} />
             </Animated.View>
           )}
         </ScrollView>
 
-        {state === "completed" && !!script && (
+        {isScriptReady && (
           <ReviseBar
             ref={reviseBarRef}
             onSubmit={handleRevise}
@@ -189,11 +155,11 @@ const PreviewScreen = () => {
           />
         )}
 
-        {state !== "completed" && (
+        {!isScriptReady && status !== "completed" && (
           <GeneratingScreen
-            status={state}
+            status={status ?? "pending"}
             error={error}
-            onStop={stopGeneration}
+            onStop={cancel}
           />
         )}
       </View>

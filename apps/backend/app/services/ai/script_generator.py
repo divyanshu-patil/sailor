@@ -151,6 +151,44 @@ def _generate_section(
 
     return text
 
+def revise_script(current_script: str, instruction: str) -> str:
+    """
+    Revises an existing script in place based on a user instruction, rather
+    than regenerating from the outline. Uses the same fallback-across-models
+    chat call as the rest of the pipeline, but as a single request — no
+    outline/section/continuation machinery, since a revision is scoped to
+    "change what's there," not "hit a word budget."
+    """
+    client = get_ollama_client()
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are revising an existing presentation script. Apply the "
+                "user's instruction to the script below. Preserve the parts "
+                "the instruction doesn't ask you to change. Return ONLY the "
+                "full revised script text — no preamble, no explanation, no "
+                "markdown fences."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"SCRIPT:\n\n{current_script}\n\nINSTRUCTION: {instruction}",
+        },
+    ]
+
+    revised = _chat_with_fallback(client, messages)
+
+    # Defensive: catch banned list formatting the same way section generation
+    # does, since a revision could reintroduce it (e.g. "make this a summary").
+    for _ in range(MAX_DELIST_ATTEMPTS):
+        if not LIST_LINE_PATTERN.search(revised):
+            break
+        logger.warning("[ai] list formatting detected in revision, running delist repair")
+        revised = _chat_with_fallback(client, build_delist_prompt(revised))
+
+    return revised
 
 def generate_script(title: str, description: str | None, duration_mins: int, audience: AudienceType) -> str:
     client = get_ollama_client()

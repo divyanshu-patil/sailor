@@ -35,7 +35,7 @@ export default function StepDurationAudience() {
             <Picker
               label="Who is this for?"
               modifiers={[pickerStyle("menu"), tint("#c11b5c")]}
-              selection={form.audienceIndex}
+              selection={AUDIENCES.indexOf(form.audience)}
               onSelectionChange={setAudienceIndex}
             >
               {AUDIENCES.map((label, index) => (
