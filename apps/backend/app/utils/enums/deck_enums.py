@@ -1,5 +1,5 @@
 import enum
-class DeckGenerationStatus(str, enum.Enum):
+class GenerationStatus(str, enum.Enum):
     """Shared status enum for any async AI job (script, audio, cards, ...)."""
     PENDING = "pending"
     PROCESSING = "processing"

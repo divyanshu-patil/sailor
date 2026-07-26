@@ -7,7 +7,7 @@ celery_app = Celery(
     "sailor",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.deck_tasks"],
+    include=["app.tasks.deck_tasks", "app.tasks.card_tasks"],
 )
 
 celery_app.conf.update(

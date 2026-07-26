@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.utils.enums.speaking_style import SpeakingStyle
-from app.utils.enums.deck_enums import DeckGenerationStatus, AudienceType
+from app.utils.enums.deck_enums import GenerationStatus, AudienceType
 
 
 class AttachmentRequest(BaseModel):
@@ -59,7 +59,7 @@ class DeckResponse(BaseModel):
     duration_mins: int
     card_count: int
     is_favorite: bool
-    generation_status: DeckGenerationStatus
+    generation_status: GenerationStatus
     generation_error: Optional[str] = None
     created_at: datetime
     updated_at: datetime

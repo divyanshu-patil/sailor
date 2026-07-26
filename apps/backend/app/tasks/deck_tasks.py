@@ -7,8 +7,8 @@ from app.db.database import SessionLocal
 from app.models.deck_model import Deck
 from app.schemas.deck_schema import DeckResponse
 from app.services.ai.script_generator import ScriptGenerationError, generate_script
-from app.services.realtime.deck_events import publish_deck_event
-from app.utils.enums.deck_enums import DeckGenerationStatus
+from app.services.realtime.deck_events import write_deck_status
+from app.utils.enums.deck_enums import GenerationStatus
 
 logger = logging.getLogger("celery")
 
@@ -22,10 +22,10 @@ def generate_deck_script(self, deck_id: int) -> None:
             logger.warning(f"[deck_task] deck {deck_id} not found, aborting")
             return
 
-        deck.generation_status = DeckGenerationStatus.PROCESSING
+        deck.generation_status = GenerationStatus.PROCESSING
         deck.celery_task_id = self.request.id
         db.commit()
-        publish_deck_event(deck_id, {"status": "processing"})
+        write_deck_status(deck_id, {"status": "processing"})
 
         try:
             script_text = generate_script(
@@ -36,30 +36,30 @@ def generate_deck_script(self, deck_id: int) -> None:
             )
         except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:
-                publish_deck_event(deck_id, {"status": "retrying", "attempt": self.request.retries + 1})
+                write_deck_status(deck_id, {"status": "retrying", "attempt": self.request.retries + 1})
                 raise self.retry(exc=exc, countdown=min(60, 2 ** self.request.retries * 5))
             raise
 
         deck.script = script_text
-        deck.generation_status = DeckGenerationStatus.COMPLETED
+        deck.generation_status = GenerationStatus.COMPLETED
         deck.generation_error = None
         db.commit()
         db.refresh(deck)
 
-        publish_deck_event(
+        write_deck_status(
             deck_id,
             {"status": "completed", "deck": DeckResponse.model_validate(deck).model_dump(mode="json")},
         )
 
     except Retry:
-        raise  # Celery's own retry signal — must NOT be treated as a failure below
+        raise
     except Exception as exc:
         db.rollback()
         deck = db.query(Deck).filter(Deck.id == deck_id).one_or_none()
         if deck is not None:
-            deck.generation_status = DeckGenerationStatus.FAILED
+            deck.generation_status = GenerationStatus.FAILED
             deck.generation_error = str(exc)[:500]
             db.commit()
-        publish_deck_event(deck_id, {"status": "failed", "error": str(exc)[:500]})
+        write_deck_status(deck_id, {"status": "failed", "error": str(exc)[:500]})
     finally:
         db.close()
