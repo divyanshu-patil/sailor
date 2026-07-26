@@ -16,7 +16,6 @@ DEFAULT_COLORS = ["#FF5733", "#33A1FF", "#8E44AD", "#2ECC71", "#F1C40F"]
 def create_deck(payload: DeckCreateRequest, current_user: User, db: Session) -> Deck:
     deck = Deck(
         user_id=current_user.id,
-        title=payload.title,
         description=payload.description,
         card_count=payload.card_count,
         color=random.choice(DEFAULT_COLORS),
@@ -53,11 +52,6 @@ def list_decks(current_user: User, db: Session) -> list[Deck]:
 
 
 def get_deck_generation_status(deck_id: int, current_user: User, db: Session) -> dict:
-    # Only the columns needed for the ownership check + the Postgres fallback —
-    # not a full Deck row. This endpoint gets hit every couple seconds while a
-    # script is generating; no reason to pull the (potentially large) `script`
-    # text column on every poll when the Redis fast-path usually means we
-    # never touch it at all.
     row = (
         db.query(Deck.id, Deck.generation_status, Deck.generation_error)
         .filter(Deck.id == deck_id, Deck.user_id == current_user.id, Deck.is_deleted == False)  # noqa: E712

@@ -28,7 +28,7 @@ class Deck(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    title: Mapped[Optional[str]] = mapped_column(String, nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
      # Nullable on purpose: the row exists the instant the user hits "create",

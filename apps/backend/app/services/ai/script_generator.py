@@ -62,8 +62,19 @@ def _strip_json_fences(raw: str) -> str:
             text = text.rsplit("```", 1)[0]
     return text.strip()
 
+def _fallback_title(description: str) -> str:
+    """Deterministic fallback used only if the model can't produce a usable
+    title after retries — derives something readable from the brief itself
+    rather than leaving the deck untitled."""
+    first_sentence = description.strip().split(".")[0]
+    words = first_sentence.split()
+    if not words:
+        return "Untitled Presentation"
+    if len(words) > 8:
+        return " ".join(words[:8]) + "…"
+    return first_sentence.strip()
 
-def _fallback_outline(duration_mins: int) -> dict:
+def _fallback_outline(description: str, duration_mins: int) -> dict:
     """Deterministic outline used only if the model can't produce valid JSON
     after retries — keeps the job alive instead of failing over a parse error.
     Note: Ollama Cloud does not currently support schema-constrained structured
@@ -73,33 +84,38 @@ def _fallback_outline(duration_mins: int) -> dict:
     _, _, body_words = word_budget(duration_mins)
     per_section = max(150, body_words // n_sections)
     return {
+        "title": _fallback_title(description),
         "sections": [
             {"title": f"Key point {i + 1}", "target_words": per_section, "key_points": []}
             for i in range(n_sections)
-        ]
+        ],
     }
 
 
-def _normalize_outline(outline: dict, duration_mins: int) -> dict:
+def _normalize_outline(outline: dict, description: str, duration_mins: int) -> dict:
     """Rescale section word targets so they actually sum to the body budget —
-    don't trust the model's arithmetic, verify and correct it."""
+    don't trust the model's arithmetic, verify and correct it. Also guards
+    against a missing/blank generated title."""
     _, _, body_words = word_budget(duration_mins)
     sections = outline.get("sections") or []
     total = sum(int(s.get("target_words") or 0) for s in sections) or 1
     for s in sections:
         s["target_words"] = max(150, round(int(s.get("target_words") or 0) * body_words / total))
     outline["sections"] = sections
+
+    title = (outline.get("title") or "").strip()
+    outline["title"] = title or _fallback_title(description)
     return outline
 
 
-def _generate_outline(client, title, description, duration_mins, audience) -> dict:
-    messages = build_outline_prompt(title, description, duration_mins, audience)
+def _generate_outline(client, description, duration_mins, audience) -> dict:
+    messages = build_outline_prompt(description, duration_mins, audience)
     for attempt in range(MAX_OUTLINE_ATTEMPTS):
         try:
             raw = _chat_with_fallback(client, messages)
             outline = json.loads(_strip_json_fences(raw))
             if isinstance(outline, dict) and outline.get("sections"):
-                return _normalize_outline(outline, duration_mins)
+                return _normalize_outline(outline, description, duration_mins)
             raise ValueError("missing 'sections' key")
         except (json.JSONDecodeError, ValueError, ScriptGenerationError) as e:
             logger.warning(f"[ai] outline attempt {attempt} failed: {e}")
@@ -113,7 +129,7 @@ def _generate_outline(client, title, description, duration_mins, audience) -> di
                 }
             )
     logger.warning("[ai] outline generation failed after retries, using deterministic fallback outline")
-    return _fallback_outline(duration_mins)
+    return _fallback_outline(description, duration_mins)
 
 
 def _generate_section(
@@ -152,10 +168,12 @@ def _generate_section(
     return text
 
 
-def generate_script(title: str, description: str | None, duration_mins: int, audience: AudienceType) -> str:
+def generate_script(description: str, duration_mins: int, audience: AudienceType) -> tuple[str, str]:
+    """Returns (generated_title, script)."""
     client = get_ollama_client()
 
-    outline = _generate_outline(client, title, description, duration_mins, audience)
+    outline = _generate_outline(client, description, duration_mins, audience)
+    title = outline["title"]
     opening_words, closing_words, _ = word_budget(duration_mins)
     sections = outline["sections"]
 
@@ -176,7 +194,7 @@ def generate_script(title: str, description: str | None, duration_mins: int, aud
                 target_words=section["target_words"],
                 title=title,
                 audience=audience,
-                include_question=(i == len(sections) // 2),  # roughly one, placed mid-script
+                include_question=(i == len(sections) // 2),
             )
         )
 
@@ -191,6 +209,6 @@ def generate_script(title: str, description: str | None, duration_mins: int, aud
 
     total_words = len(script.split())
     target_words = duration_mins * 140
-    logger.info(f"[ai] script generated: {total_words} words (target ~{target_words})")
+    logger.info(f"[ai] script generated: '{title}' — {total_words} words (target ~{target_words})")
 
-    return script
+    return title, script

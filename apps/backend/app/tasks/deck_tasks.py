@@ -28,8 +28,7 @@ def generate_deck_script(self, deck_id: int) -> None:
         write_deck_status(deck_id, {"status": "processing"})
 
         try:
-            script_text = generate_script(
-                title=deck.title,
+            generated_title, script_text = generate_script(
                 description=deck.description,
                 duration_mins=deck.duration_mins,
                 audience=deck.audience,
@@ -40,6 +39,7 @@ def generate_deck_script(self, deck_id: int) -> None:
                 raise self.retry(exc=exc, countdown=min(60, 2 ** self.request.retries * 5))
             raise
 
+        deck.title = generated_title
         deck.script = script_text
         deck.generation_status = GenerationStatus.COMPLETED
         deck.generation_error = None

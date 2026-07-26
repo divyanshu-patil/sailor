@@ -109,25 +109,27 @@ def word_budget(duration_mins: int) -> tuple[int, int, int]:
     body_words = max(200, target_words - opening_words - closing_words)
     return opening_words, closing_words, body_words
 
-
 def build_outline_prompt(
-    title: str, description: str | None, duration_mins: int, audience: AudienceType
+    description: str, duration_mins: int, audience: AudienceType
 ) -> list[dict]:
-    """Step 1 of the pipeline: ask for a structural plan only (small, easy-to-verify
-    output), not the full script. Section count and word budget are enforced here
-    with a hard number rather than a range."""
+    """Step 1 of the pipeline: ask for a structural plan *and* a generated
+    title (small, easy-to-verify output), not the full script. Section count
+    and word budget are enforced here with a hard number rather than a range."""
     n_sections = section_count_for_duration(duration_mins)
     _, _, body_words = word_budget(duration_mins)
     audience_note = AUDIENCE_GUIDANCE.get(audience, AUDIENCE_GUIDANCE[AudienceType.GENERAL])
-    brief = description or "No additional brief was given — infer a sensible angle and audience from the title alone."
 
     system = (
         "You are a presentation script planner. Respond with ONLY a JSON "
         "object and nothing else — no prose, no markdown code fences, no "
         "commentary before or after. The object must match exactly this "
         "shape:\n"
-        '{"sections": [{"title": string, "target_words": integer, '
-        '"key_points": [string, string, ...]}]}\n\n'
+        '{"title": string, "sections": [{"title": string, "target_words": '
+        'integer, "key_points": [string, string, ...]}]}\n\n'
+        "\"title\" is the presentation's own title — a compelling, concise "
+        "title (roughly 3-10 words, no trailing punctuation) capturing the "
+        "essence of the brief below. It is separate from any section title "
+        "and should not just restate one.\n"
         f"Produce EXACTLY {n_sections} section objects — not one more, not "
         "one fewer, no matter how many topics feel relevant. Combine related "
         "ideas into the same section rather than adding new ones.\n"
@@ -138,8 +140,7 @@ def build_outline_prompt(
         "sentences."
     )
     user = (
-        f"Title: {title}\n"
-        f"Brief: {brief}\n"
+        f"Brief: {description}\n"
         f"Audience: {audience.value} — {audience_note}\n"
         f"Duration: {duration_mins} minutes."
     )

@@ -16,14 +16,9 @@ class AttachmentRequest(BaseModel):
 
 
 class DeckCreateRequest(BaseModel):
-    title: str = Field(
-        ...,
-        min_length=1,
-        description="Presentation title",
-    )
     description: str = Field(
         ...,
-        min_length=1,
+        min_length=10,
         description="Presentation topic or prompt",
     )
     card_count: int = Field(
@@ -53,7 +48,7 @@ class DeckResponse(BaseModel):
 
     id: int
     user_id: int
-    title: str
+    title: Optional[str] = None
     script: Optional[str] = None
     color: str
     duration_mins: int
@@ -92,7 +87,7 @@ class AllDeckInfoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    title: str
+    title: Optional[str] = None
     description: str
     color: str
     updatedAt: datetime = Field(alias="updated_at")
