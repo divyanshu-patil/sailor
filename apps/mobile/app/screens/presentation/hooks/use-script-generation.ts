@@ -1,19 +1,26 @@
 import { useCallback, useState } from "react";
 import { useJobPoller } from "./use-job-poller";
-import { scriptService } from "@/services/script.debug.service";
 import {
   GenerateScriptPayload,
   ScriptResult,
   DeckResult,
+  scriptService,
 } from "@/services/script.service";
 
 export type { JobState as GenerationState } from "./use-job-poller";
 
+/**
+ * Phase one: create the deck (which queues the script job) and poll
+ * /decks/{id}/status until the script is written.
+ *
+ * There's no cancel route on the API, so `stopGeneration` only stops the
+ * client polling — the worker finishes the script regardless and the deck is
+ * still there when the user comes back to it.
+ */
 export function useScriptGeneration() {
   const poller = useJobPoller<ScriptResult>({
     getStatus: scriptService.getJobStatus,
     getResult: scriptService.getResult,
-    cancelJob: scriptService.cancelJob,
   });
 
   const [isRevising, setIsRevising] = useState(false);
@@ -31,19 +38,24 @@ export function useScriptGeneration() {
     return poller.stop();
   }, [poller]);
 
+  /**
+   * AI revision runs as a job on the same deck, so this hands control back to
+   * the poller rather than resolving with the new script itself — the revised
+   * script arrives through `result`, exactly like the first generation did.
+   */
   const revise = useCallback(
-    async (instruction: string): Promise<ScriptResult | undefined> => {
+    async (instruction: string): Promise<boolean> => {
       const jobId = poller.jobIdRef.current;
-      if (!jobId) return undefined;
+      if (!jobId) return false;
 
       setIsRevising(true);
       try {
-        const result = await scriptService.revise(jobId, instruction);
-        poller.setResult(result);
-        return result;
+        await scriptService.revise(jobId, instruction);
+        poller.attach(jobId);
+        return true;
       } catch {
         // Error is handled by the caller
-        return undefined;
+        return false;
       } finally {
         setIsRevising(false);
       }
@@ -51,6 +63,7 @@ export function useScriptGeneration() {
     [poller],
   );
 
+  /** Manual edit — a plain PATCH, so the new script comes straight back. */
   const edit = useCallback(
     async (script: string): Promise<ScriptResult | undefined> => {
       const jobId = poller.jobIdRef.current;
@@ -93,16 +106,18 @@ export function useScriptGeneration() {
 }
 
 /**
- * Deck generation kicked off from a *ready* script via the /confirm route.
- * `getDeckResult` now returns the full deck payload (title, color,
- * slideCount, etc.) so ResultsScreen can build its Link params directly
- * off `result` without a second `deckService.getDeck()` fetch.
+ * Phase two: turn a finished script into cards. Kicked off from the preview
+ * screen's "Create" via POST /decks/{id}/cards/generate and polled on
+ * /decks/{id}/cards/status — the deck id doubles as the card job id, so
+ * `startDeckGeneration` resolves with the same id the script job used.
+ *
+ * `getDeckResult` returns the full deck payload (title, color, slideCount,
+ * ...) so ResultsScreen can build its Link params directly off `result`.
  */
 export function useDeckGeneration() {
   const poller = useJobPoller<DeckResult>({
-    getStatus: scriptService.getJobStatus,
+    getStatus: scriptService.getCardsJobStatus,
     getResult: scriptService.getDeckResult,
-    cancelJob: scriptService.cancelJob,
   });
 
   const startDeckGeneration = useCallback(

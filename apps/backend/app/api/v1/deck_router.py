@@ -5,7 +5,13 @@ from app.auth.dependencies import get_current_user
 from app.controllers import deck_controller
 from app.db.database import get_db
 from app.models.user_model import User
-from app.schemas.deck_schema import AllDeckInfoResponse, DeckCreateRequest, DeckResponse
+from app.schemas.deck_schema import (
+    AllDeckInfoResponse,
+    DeckCreateRequest,
+    DeckResponse,
+    DeckReviseRequest,
+    DeckUpdateRequest,
+)
 
 router = APIRouter(prefix="/decks", tags=["Decks"])
 
@@ -32,6 +38,29 @@ def get_deck(
     db: Session = Depends(get_db),
 ):
     return deck_controller.get_deck(deck_id, current_user, db)
+
+
+@router.patch("/{deck_id}", response_model=DeckResponse)
+def update_deck(
+    deck_id: int,
+    payload: DeckUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Manual edits: the script editor, a rename, the favourite toggle."""
+    return deck_controller.update_deck(deck_id, payload, current_user, db)
+
+
+@router.post("/{deck_id}/revise", response_model=DeckResponse, status_code=status.HTTP_202_ACCEPTED)
+def revise_deck_script(
+    deck_id: int,
+    payload: DeckReviseRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Kicks off an AI rewrite of the existing script. Poll /{deck_id}/status
+    for the result, exactly as with the initial generation."""
+    return deck_controller.request_script_revision(deck_id, payload, current_user, db)
 
 
 @router.get("", response_model=list[AllDeckInfoResponse])

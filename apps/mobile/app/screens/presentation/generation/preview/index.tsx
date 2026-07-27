@@ -17,7 +17,6 @@ import StatusText from "./components/generating/components/status-text";
 import { getGeneratingMessages } from "./components/generating/utils/get-generation-messages";
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 import ScriptText from "./components/script-text/script-text";
-import Animated, { LinearTransition } from "react-native-reanimated";
 import ReviseBar, { ReviseBarRef } from "./components/revise-bar";
 import { useScriptStore } from "@/store/script-store";
 import { useColors } from "@/constants/theme";
@@ -109,18 +108,24 @@ const PreviewScreen = () => {
     };
   }, [stopGeneration]);
 
+  // A revision is a job on the same deck, so the revised script arrives through
+  // the poller and lands in the store via the effect above — nothing to set here.
   const handleRevise = async (instruction: string) => {
     if (!jobId) return;
-    const revised = await revise(instruction);
-    if (revised) {
-      setResult({
-        job_id: revised.job_id,
-        title: revised.title,
-        script: revised.script,
-      });
-    }
+    await revise(instruction);
   };
   const { colors } = useColors();
+
+  // Must be memoised. `getGeneratingMessages` builds a fresh array for every
+  // state except "generating" (which returns the shared constant), and
+  // StatusText resets itself whenever the array identity changes — so an
+  // unmemoised call re-rendered StatusText, which produced a new array, which
+  // reset it again. That loop starts the instant the state flips to
+  // "completed", i.e. exactly when the script arrives.
+  const statusLabels = useMemo(
+    () => getGeneratingMessages(state, title),
+    [state, title],
+  );
 
   // Dismiss keyboard when screen mounts or comes into focus
   useEffect(() => {
@@ -160,24 +165,26 @@ const PreviewScreen = () => {
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
       <View style={{ flex: 1 }}>
-        <BlobBackground />
+        {/* The blobs are 15 concurrent timing animations under a 150px blur,
+            all of it re-rendered every frame. That's fine as the focus of a
+            waiting screen, but once the script is up it's just competing with
+            scrolling for the same frame budget — so it settles. */}
+        <BlobBackground animate={state !== "completed" || !script} />
         <ScrollView
           style={[{ paddingTop: headerHeight + 20 }, styles.container]}
           scrollEnabled={state === "completed" && !!script}
           keyboardDismissMode="on-drag"
         >
-          <StatusText
-            labels={getGeneratingMessages(state, title)}
-            accentColor={colors.rust}
-          />
+          <StatusText labels={statusLabels} accentColor={colors.rust} />
 
           {state === "completed" && !!script && (
-            <Animated.View
-              layout={LinearTransition.springify()}
-              style={styles.scriptContainer}
-            >
+            // No layout transition here: the script mounts in batches, and a
+            // layout spring on the container re-measures and re-animates the
+            // whole body on every batch — which is most of the stutter when
+            // the script lands. The blocks animate themselves instead.
+            <View style={styles.scriptContainer}>
               <ScriptText script={script} fontSize={20} />
-            </Animated.View>
+            </View>
           )}
         </ScrollView>
 

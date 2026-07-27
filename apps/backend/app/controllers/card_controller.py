@@ -8,7 +8,7 @@ from app.models.user_model import User
 from app.schemas.card_schema import CardCreateParams, CardResponse, CardUpdateParams
 from app.services.ai.card_generator import CardGenerationError, split_script_into_segments
 from app.services.cards.impact_colors import assign_colors_by_impact
-from app.services.realtime.deck_events import read_card_status
+from app.services.realtime.deck_events import read_card_status, write_card_status
 from app.tasks.card_tasks import generate_deck_cards
 from app.utils.enums.deck_enums import GenerationStatus
 
@@ -56,6 +56,11 @@ def request_card_generation(deck_id: int, current_user: User, db: Session) -> di
     deck.cards_generation_error = None
     db.commit()
     db.refresh(deck)
+
+    # Clear any cached "completed" payload from an earlier run first: the status
+    # endpoint reads Redis before Postgres, so a re-generation would otherwise
+    # hand the client the previous run's cards on its first poll and stop.
+    write_card_status(deck_id, {"status": "pending"})
 
     task = generate_deck_cards.delay(deck.id, deck.card_count)
     deck.cards_celery_task_id = task.id

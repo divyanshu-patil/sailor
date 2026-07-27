@@ -7,15 +7,22 @@ export type JobState =
   | "failed"
   | "cancelled";
 
-interface JobStatusLike {
-  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
+interface JobStatusLike<TResult> {
+  // "retrying" is written by the Celery tasks between attempts; it's just
+  // another in-progress state as far as the poller is concerned.
+  status: "pending" | "processing" | "retrying" | "completed" | "failed";
   error?: string;
+  /** Set when the status endpoint returns the finished payload inline, which
+   *  saves the extra getResult round trip. */
+  result?: TResult;
 }
 
 interface UseJobPollerOptions<TResult> {
   pollIntervalMs?: number;
-  getStatus: (jobId: string) => Promise<JobStatusLike>;
+  getStatus: (jobId: string) => Promise<JobStatusLike<TResult>>;
   getResult: (jobId: string) => Promise<TResult>;
+  /** Optional: the API has no cancel route today, so `stop()` is client-side
+   *  only — it stops polling but leaves the job running server-side. */
   cancelJob?: (jobId: string) => Promise<void>;
 }
 
@@ -60,7 +67,7 @@ export function useJobPoller<TResult>({
         if (stoppedRef.current) return;
 
         if (statusRes.status === "completed") {
-          const fullResult = await getResult(jobId);
+          const fullResult = statusRes.result ?? (await getResult(jobId));
           if (stoppedRef.current) return;
           setResult(fullResult);
           setState("completed");
@@ -73,12 +80,7 @@ export function useJobPoller<TResult>({
           return;
         }
 
-        if (statusRes.status === "cancelled") {
-          setState("cancelled");
-          return;
-        }
-
-        // still pending/processing — poll again via the ref, not the closure
+        // still pending/processing/retrying — poll again via the ref, not the closure
         timeoutRef.current = setTimeout(() => {
           pollRef.current?.(jobId);
         }, pollIntervalMs);

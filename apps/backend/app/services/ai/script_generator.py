@@ -10,6 +10,7 @@ from app.services.ai.prompts import (
     build_continuation_message,
     build_delist_prompt,
     build_outline_prompt,
+    build_revision_prompt,
     build_section_prompt,
     section_count_for_duration,
     word_budget,
@@ -212,3 +213,31 @@ def generate_script(description: str, duration_mins: int, audience: AudienceType
     logger.info(f"[ai] script generated: '{title}' — {total_words} words (target ~{target_words})")
 
     return title, script
+
+
+def revise_script(
+    script: str, instruction: str, title: str, audience: AudienceType
+) -> str:
+    """Returns the revised script. One model call plus the same delist repair
+    the section pipeline uses — no outline step, since a revision keeps the
+    structure the presenter already accepted."""
+    client = get_ollama_client()
+
+    revised = _chat_with_fallback(
+        client,
+        build_revision_prompt(
+            script=script, instruction=instruction, title=title, audience=audience
+        ),
+    )
+
+    for _ in range(MAX_DELIST_ATTEMPTS):
+        if not LIST_LINE_PATTERN.search(revised):
+            break
+        logger.warning("[ai] list formatting detected in revision, running delist repair")
+        revised = _chat_with_fallback(client, build_delist_prompt(revised))
+
+    logger.info(
+        f"[ai] script revised: '{title}' — {len(script.split())} -> {len(revised.split())} words"
+    )
+
+    return revised

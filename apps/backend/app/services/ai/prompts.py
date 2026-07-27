@@ -205,6 +205,35 @@ def build_section_prompt(
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def build_revision_prompt(
+    *, script: str, instruction: str, title: str, audience: AudienceType
+) -> list[dict]:
+    """Revision pass: rewrite an already-finished script to follow a presenter
+    instruction. Deliberately not a re-run of the outline->sections pipeline —
+    the presenter has already accepted this script's shape, so a revision must
+    preserve it and change only what was asked for."""
+    audience_note = AUDIENCE_GUIDANCE.get(audience, AUDIENCE_GUIDANCE[AudienceType.GENERAL])
+
+    system = (
+        "You are an expert presentation scriptwriter revising a finished "
+        "spoken-word script on the presenter's instruction.\n\n"
+        + MARKDOWN_RULES
+        + "\n"
+        + GOOD_EXAMPLE
+        + "\n"
+        + BAD_EXAMPLE
+        + "\nApply ONLY the requested change. Keep the script's structure, its "
+        "`## ` section headers, its approximate length, and its wording as "
+        "close to the original as the instruction allows. Respond with the "
+        "complete revised script and nothing else — no commentary, no "
+        "explanation of what you changed, no preamble.\n\n"
+        f"Presentation title: {title}\n"
+        f"Audience: {audience.value} — {audience_note}"
+    )
+    user = f"Revision instruction: {instruction}\n\nCurrent script:\n\n{script}"
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
 def build_continuation_message(remaining_words: int) -> dict:
     """Appended to an in-progress section's message history when it came back short."""
     return {

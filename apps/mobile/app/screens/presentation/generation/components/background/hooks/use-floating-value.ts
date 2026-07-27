@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { Easing, useSharedValue, withTiming } from "react-native-reanimated";
+import {
+  cancelAnimation,
+  Easing,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 export function useFloatingValue(
   initial: number,
@@ -8,10 +13,17 @@ export function useFloatingValue(
   minDuration: number,
   maxDuration: number,
   speed: number,
+  /** When false the value stops where it is instead of drifting on. */
+  enabled = true,
 ) {
   const value = useSharedValue(initial);
 
   useEffect(() => {
+    if (!enabled) {
+      cancelAnimation(value);
+      return;
+    }
+
     function animate() {
       "worklet";
       const next = min + Math.random() * (max - min);
@@ -27,7 +39,9 @@ export function useFloatingValue(
       );
     }
     animate();
-  }, [max, maxDuration, min, minDuration, speed, value]);
+
+    return () => cancelAnimation(value);
+  }, [enabled, max, maxDuration, min, minDuration, speed, value]);
 
   return value;
 }

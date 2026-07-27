@@ -37,6 +37,9 @@ const INACTIVE_COLOR = "#E5E5EA";
 
 const STEP_TITLES = ["Describe", "Audience", "Cards"];
 
+// Matches DeckCreateRequest.description's min_length on the API.
+const MIN_DESCRIPTION_LENGTH = 10;
+
 // ---- Top pagination bar -------------------------------------------------
 
 const PaginationSegment = React.memo(
@@ -262,7 +265,9 @@ function FlowContent() {
           onPress={goNext}
           variant="primary"
           currentStep={currentStep}
-          disabled={descriptionValue.length <= 0}
+          // DeckCreateRequest requires a description of at least 10 chars —
+          // gate here rather than letting the create call 422.
+          disabled={descriptionValue.trim().length < MIN_DESCRIPTION_LENGTH}
         />
       </View>
     </SafeAreaView>

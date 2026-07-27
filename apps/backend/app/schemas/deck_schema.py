@@ -43,12 +43,36 @@ class DeckCreateRequest(BaseModel):
 
     # attachments: List[AttachmentRequest] = []
 
+
+class DeckUpdateRequest(BaseModel):
+    """Manual (non-AI) edits from the app: the script editor, renaming a deck,
+    the favourite toggle. Every field is optional — only what's sent is written.
+    Accepts either the snake_case field name or the camelCase alias the mobile
+    client uses."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    script: Optional[str] = Field(default=None, min_length=1)
+    is_favorite: Optional[bool] = Field(default=None, alias="isFavourite")
+
+
+class DeckReviseRequest(BaseModel):
+    instruction: str = Field(
+        ...,
+        min_length=3,
+        max_length=1000,
+        description="What the presenter wants changed about the current script",
+    )
+
+
 class DeckResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
     title: Optional[str] = None
+    description: Optional[str] = None
     script: Optional[str] = None
     color: str
     duration_mins: int

@@ -17,9 +17,15 @@ const BLOBS: BlobConfig[] = [
 interface BlobBackgroundProps {
   speed?: number;
   blur?: number;
+  /** false leaves the blobs on screen but stops them drifting. */
+  animate?: boolean;
 }
 
-const BlobBackground = ({ speed = 2, blur = 150 }: BlobBackgroundProps) => {
+const BlobBackground = ({
+  speed = 2,
+  blur = 150,
+  animate = true,
+}: BlobBackgroundProps) => {
   return (
     <Animated.View
       style={[StyleSheet.absoluteFill, { backgroundColor: "#FFF4E8" }]}
@@ -32,6 +38,7 @@ const BlobBackground = ({ speed = 2, blur = 150 }: BlobBackgroundProps) => {
           height={height}
           speed={speed}
           blur={blur}
+          animate={animate}
         />
       </Canvas>
     </Animated.View>

@@ -12,8 +12,8 @@ export type { UseDeckOptions, UseDeckReturn } from "./use-deck";
 export { useCards } from "./use-cards";
 export type { UseCardsOptions, UseCardsReturn } from "./use-cards";
 
-export { useScriptGeneration } from "./use-script";
-export type { UseScriptGenerationOptions, UseScriptGenerationReturn } from "./use-script";
+// Script generation lives with the screens that own it:
+// screens/presentation/hooks/use-script-generation.ts
 
 export { useUser } from "./use-user";
 export type { UseUserOptions, UseUserReturn } from "./use-user";

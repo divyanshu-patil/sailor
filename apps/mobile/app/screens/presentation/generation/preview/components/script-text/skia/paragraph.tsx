@@ -1,6 +1,7 @@
 import React from "react";
 import { WrappedText } from "./wrapped-text";
-import { FontSet, Segment } from "./text-layout";
+import { FontSet, Segment } from "../text-layout";
+import { RevealMode } from "../config";
 
 interface ParagraphProps {
   segments: Segment[];
@@ -11,8 +12,10 @@ interface ParagraphProps {
   boldColor?: string;
   paragraphSpacing: number;
   justify?: boolean;
-  index: number;
-  delay?: number;
+  width: number;
+  reveal: RevealMode;
+  revealIndex: number;
+  tint: string;
 }
 
 export const Paragraph = React.memo(
@@ -25,12 +28,12 @@ export const Paragraph = React.memo(
     boldColor,
     paragraphSpacing,
     justify = false,
-    index,
-    delay,
+    width,
+    reveal,
+    revealIndex,
+    tint,
   }: ParagraphProps) => (
     <WrappedText
-      index={index}
-      delay={delay}
       lines={[segments]}
       fonts={fonts}
       fontSize={fontSize}
@@ -39,6 +42,10 @@ export const Paragraph = React.memo(
       boldColor={boldColor}
       justify={justify}
       spacing={paragraphSpacing}
+      width={width}
+      reveal={reveal}
+      revealIndex={revealIndex}
+      tint={tint}
     />
   ),
 );
