@@ -1,7 +1,11 @@
 import logging
 
 from app.config.settings import settings
-from app.services.ai.providers.base import ChatRequest, ProviderError
+from app.services.ai.providers.base import (
+    ChatRequest,
+    ProviderError,
+    RateLimitedError,
+)
 
 logger = logging.getLogger("celery")
 
@@ -54,6 +58,10 @@ class AnthropicProvider:
                 messages=request.messages,
                 output_config={"effort": "low" if request.fast else "high"},
             )
+        except anthropic.RateLimitError as e:
+            # Transient and account-scoped — wait rather than falling through to
+            # a fallback drawing on the same budget.
+            raise RateLimitedError(f"'{model}' rate limited: {e}") from e
         except anthropic.APIStatusError as e:
             raise ProviderError(f"'{model}' failed ({e.status_code}): {e.message}") from e
         except anthropic.APIConnectionError as e:

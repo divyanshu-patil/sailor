@@ -1,7 +1,11 @@
 import logging
 
 from app.config.settings import settings
-from app.services.ai.providers.base import ChatRequest, ProviderError
+from app.services.ai.providers.base import (
+    ChatRequest,
+    ProviderError,
+    RateLimitedError,
+)
 
 logger = logging.getLogger("celery")
 
@@ -51,6 +55,8 @@ class OpenAIProvider:
 
         try:
             response = self._client().chat.completions.create(**kwargs)
+        except openai.RateLimitError as e:
+            raise RateLimitedError(f"'{model}' rate limited: {e}") from e
         except openai.APIStatusError as e:
             raise ProviderError(f"'{model}' failed ({e.status_code}): {e}") from e
         except openai.APIConnectionError as e:

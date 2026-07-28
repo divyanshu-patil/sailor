@@ -5,9 +5,16 @@ from app.services.ai.providers.base import (
     ChatProvider,
     ChatRequest,
     ProviderError,
+    RateLimitedError,
 )
 
-__all__ = ["ChatProvider", "ChatRequest", "ProviderError", "get_provider"]
+__all__ = [
+    "ChatProvider",
+    "ChatRequest",
+    "ProviderError",
+    "RateLimitedError",
+    "get_provider",
+]
 
 # Constructed lazily, per provider, so selecting one doesn't require the others'
 # SDKs to be installed — the `anthropic` package isn't a hard dependency of an

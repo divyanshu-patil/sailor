@@ -1,9 +1,17 @@
 import logging
+import random
+import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Callable, Iterable, TypeVar
 
 from app.config.settings import settings
-from app.services.ai.providers import ChatRequest, ProviderError, get_provider
+from app.services.ai.providers import (
+    ChatRequest,
+    ProviderError,
+    RateLimitedError,
+    get_provider,
+)
+from app.services.ai.rate_limit import AdaptiveLimiter
 
 logger = logging.getLogger("celery")
 
@@ -12,6 +20,65 @@ T = TypeVar("T")
 
 class ModelCallError(Exception):
     """Raised when no configured model could answer a single call."""
+
+
+# Every provider call in this process passes through here.
+#
+# AI_MAX_CONCURRENCY stays the ceiling — this does not lower it. What it adds is
+# a floor-to-ceiling range: the fan-outs bound themselves individually, but the
+# provider's limit is per *account* and nothing counted across them, so a worker
+# generating a script (7 concurrent beats) alongside a card job overshot and took
+# 429s. The limiter counts across tasks and, when the provider does push back,
+# backs off temporarily and climbs straight back to the ceiling.
+_limiter = AdaptiveLimiter(settings.AI_MAX_CONCURRENCY)
+
+# A 429 here is self-inflicted — the pipeline out-ran the account's ceiling, not
+# a sign anything is broken. Waiting and retrying is the correct response.
+MAX_RATE_LIMIT_RETRIES = 5
+RATE_LIMIT_BASE_DELAY = 1.5
+RATE_LIMIT_MAX_DELAY = 20.0
+
+
+def _rate_limit_delay(attempt: int, retry_after: float | None) -> float:
+    """Exponential backoff with jitter, honouring the provider's own hint.
+
+    The jitter matters more than usual here: a fan-out that gets rate-limited
+    gets rate-limited on every branch at once, so retrying them all on the same
+    schedule just reproduces the burst that caused it.
+    """
+    if retry_after is not None:
+        return min(retry_after, RATE_LIMIT_MAX_DELAY)
+    backoff = min(RATE_LIMIT_BASE_DELAY * (2**attempt), RATE_LIMIT_MAX_DELAY)
+    return backoff * (0.5 + random.random())
+
+
+def _complete_with_retry(provider, request: ChatRequest, model: str) -> str:
+    """One model, retried for as long as it's only rate limiting us."""
+    last_error: RateLimitedError | None = None
+
+    for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+        try:
+            with _limiter.slot():
+                result = provider.complete(request, model)
+        except RateLimitedError as e:
+            _limiter.record_rate_limited()
+            last_error = e
+            if attempt == MAX_RATE_LIMIT_RETRIES:
+                break
+            delay = _rate_limit_delay(attempt, e.retry_after)
+            logger.info(
+                f"[ai] {provider.name}:{model} rate limited, retrying in {delay:.1f}s "
+                f"({attempt + 1}/{MAX_RATE_LIMIT_RETRIES})"
+            )
+            time.sleep(delay)
+            continue
+
+        # Outside the slot: a success is what earns the limiter's way back up to
+        # the ceiling after a period of backing off.
+        _limiter.record_success()
+        return result
+
+    raise last_error if last_error else ProviderError("rate limited")
 
 
 def _split_system(messages: list[dict]) -> tuple[str, list[dict]]:
@@ -57,7 +124,15 @@ def chat(messages: list[dict], *, fast: bool | None = None) -> str:
     last_error: Exception | None = None
     for model in models:
         try:
-            return provider.complete(request, model)
+            return _complete_with_retry(provider, request, model)
+        except RateLimitedError as e:
+            # Still limited after backing off. Trying the fallback model is
+            # pointless where the limit is per-account — it draws on the same
+            # exhausted budget and fails instantly, which is what doubled the
+            # 429s in the logs. Stop here and let the task's own retry pick it
+            # up once the burst has cleared.
+            logger.warning(f"[ai] {provider.name}:{model} still rate limited, giving up")
+            raise ModelCallError(f"{provider.name} rate limited: {e}") from e
         except ProviderError as e:
             logger.warning(f"[ai] {provider.name}:{model} failed: {e}")
             last_error = e

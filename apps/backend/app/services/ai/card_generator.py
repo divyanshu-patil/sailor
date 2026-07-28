@@ -3,6 +3,7 @@ import logging
 import re
 import time
 
+from app.schemas.ai_schema import normalize_delivery
 from app.services.ai.card_prompt import build_card_batch_prompt
 from app.services.ai.chat import ModelCallError, chat, map_parallel
 from app.utils.enums.speaking_style import SpeakingStyle
@@ -208,7 +209,13 @@ def _coerce_card(item, valid_delivery: set[str]) -> dict | None:
     except (TypeError, ValueError):
         impact = DEFAULT_IMPACT
 
-    delivery = str(item.get("delivery") or "").strip().lower().replace(" ", "_")
+    # Shared with the AI schema validators rather than reimplemented: it already
+    # carries the synonym table and a fuzzy match, so 'explanatory' becomes
+    # 'explaining' and 'enthusiastic' becomes 'energetic' instead of every
+    # near-miss flattening to the default. Anything genuinely unrecognisable
+    # still falls back — never fatal.
+    raw_delivery = str(item.get("delivery") or "").strip()
+    delivery = normalize_delivery(raw_delivery) if raw_delivery else DEFAULT_DELIVERY
     if delivery not in valid_delivery:
         delivery = DEFAULT_DELIVERY
 

@@ -7,6 +7,24 @@ class ProviderError(Exception):
     doesn't have to know which SDK's exception hierarchy it's catching."""
 
 
+class RateLimitedError(ProviderError):
+    """
+    The provider refused because too much was in flight — a 429.
+
+    Its own type because the right response differs from any other failure in
+    two ways. It's transient, so the same call is worth retrying after a wait
+    rather than counting as a failure. And falling through to the fallback model
+    doesn't help: the limit is on the account, not the model, so the fallback
+    request lands in the same exhausted budget and fails immediately — which is
+    exactly what the logs showed, two instant 429s per attempt.
+    """
+
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        # Seconds the provider asked us to wait, on the providers that say so.
+        self.retry_after = retry_after
+
+
 @dataclass(frozen=True)
 class ChatRequest:
     """

@@ -1,7 +1,11 @@
 import logging
 
 from app.config.settings import settings
-from app.services.ai.providers.base import ChatRequest, ProviderError
+from app.services.ai.providers.base import (
+    ChatRequest,
+    ProviderError,
+    RateLimitedError,
+)
 
 logger = logging.getLogger("celery")
 
@@ -60,6 +64,14 @@ class OllamaProvider:
             raise
         except Exception as e:
             detail = str(getattr(e, "error", e)).lower()
+
+            # Ollama Cloud caps concurrent requests per account, and this
+            # pipeline fans out deliberately — a 429 means we out-ran ourselves,
+            # not that anything is wrong. Its own type so the caller waits and
+            # retries instead of burning the fallback against the same budget.
+            if getattr(e, "status_code", None) == 429 or "too many" in detail:
+                raise RateLimitedError(f"'{model}' rate limited: {detail}") from e
+
             if think is not None and any(m in detail for m in _THINK_UNSUPPORTED_MARKERS):
                 logger.info(f"[ai] '{model}' doesn't accept `think`; retrying without it")
                 _no_think_models.add(model)
