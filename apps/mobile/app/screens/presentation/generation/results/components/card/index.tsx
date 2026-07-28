@@ -52,7 +52,7 @@ const Card = React.memo(({ item }: { item: DeckItem }) => {
             title: item.title,
             description: item.description,
             color: item.color,
-            updatedAt: item.updatedAt.toISOString(),
+            updatedAt: item.updatedAt,
             slideCount: String(item.slideCount),
             durationMins: String(item.durationMins),
             isFavourite: JSON.stringify(item.isFavourite),

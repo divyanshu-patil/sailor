@@ -1,6 +1,6 @@
 import {
   useCallback,
-  useMemo,
+  useEffect,
   useRef,
   useState,
   ForwardRefExoticComponent,
@@ -22,8 +22,14 @@ import { Stack } from "expo-router";
 
 import { Card } from "../components/Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "../components/constants";
-import { DeckItem } from "@/services/deck.debug.service";
+import { DeckItem } from "@/services/deck.service";
 import { useDecks } from "@/hooks";
+import { useDebouncedValue } from "@/hooks/use-debounce";
+import {
+  DeckSearchResult,
+  DeckSortOption,
+  searchDecks as dbSearchDecks,
+} from "@/db/decks.repo";
 import ShimmerBar from "@/components/ui/shared/shimmer-bar";
 import StartSearchingState from "./start-searching.state";
 import NoResultsFoundState from "./no-results.state";
@@ -35,126 +41,75 @@ const AnimatedFlashList = Animated.createAnimatedComponent(
 ) as unknown as ForwardRefExoticComponent<
   FlashListProps<DeckItem> & RefAttributes<FlashListRef<DeckItem>>
 >;
-type FilterType = "exactTitle" | "script";
-type SortOption =
-  | "dateCreated"
-  | "nameAsc"
-  | "nameDesc"
-  | "duration"
-  | "cardCount";
+type FilterType = "all" | "titleOnly";
+type SortOption = DeckSortOption;
 
-type SearchResult = DeckItem & {
-  matchType: "title" | "script" | "fuzzy";
-};
-
-/* --------------------------------------------------------------------- *
- * Placeholder search functions
+/**
+ * Search runs in SQLite, not over an in-memory array.
  *
- * These currently run against the in-memory `decks` array from useDecks
- * and only compare against the deck title. Once local storage (SQLite /
- * WatermelonDB / etc.) is wired up, swap the internals below to query the
- * DB directly instead of filtering an array — function signatures and
- * return shape can stay the same so the screen doesn't need to change.
- * --------------------------------------------------------------------- */
-
-/**
- * Exact / substring match against the deck title.
- * TODO: replace with a real query once local DB exists,
- * e.g. `SELECT * FROM decks WHERE title LIKE '%query%'`.
+ * `searchDecks` in db/decks.repo does the whole thing in one ranked query:
+ * title beats description beats script beats card title, a deck that matches
+ * several ways collapses to its strongest match, and sorting happens in SQL. The
+ * old version could only ever match titles — script and fuzzy search were
+ * stubs returning `[]` — because the script text simply wasn't on the device.
  */
-function searchByTitle(query: string, decks: DeckItem[]): SearchResult[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-
-  return decks
-    .filter((deck) => deck.title.toLowerCase().includes(q))
-    .map((deck) => ({ ...deck, matchType: "title" as const }));
-}
-
-/**
- * Placeholder for matching against a deck's actual slide/script content
- * rather than just its title.
- * TODO: implement once scripts are stored locally — will likely need its
- * own indexed table (deckId -> slide text) to search efficiently.
- */
-function searchByScript(_query: string, _decks: DeckItem[]): SearchResult[] {
-  return [];
-}
-
-/**
- * Placeholder for fuzzy matching (e.g. Fuse.js, trigram similarity, etc.)
- * against title and/or script content.
- * TODO: implement fuzzy scoring + a match threshold once local DB is in place.
- */
-function searchFuzzy(_query: string, _decks: DeckItem[]): SearchResult[] {
-  return [];
-}
-
-/**
- * Single entry point the screen calls. Combines whichever strategies are
- * relevant for the active filter into one de-duplicated array — all match
- * types render through the same list/card, so this is the only seam the
- * UI needs to know about.
- */
-function searchDecks(
-  query: string,
-  decks: DeckItem[],
-  filter: FilterType,
-): SearchResult[] {
-  if (!query.trim()) return [];
-
-  let results: SearchResult[] = [];
-
-  if (filter === "exactTitle") {
-    results = results.concat(searchByTitle(query, decks));
-    // Once fuzzy matching exists, exact-title mode could still layer it in:
-    // results = results.concat(searchFuzzy(query, decks));
-  }
-
-  if (filter === "script") {
-    results = results.concat(searchByScript(query, decks));
-  }
-
-  const seen = new Set<string>();
-  return results.filter((deck) => {
-    if (seen.has(deck.id)) return false;
-    seen.add(deck.id);
-    return true;
-  });
-}
-
-function sortDecks(decks: SearchResult[], sort: SortOption): SearchResult[] {
-  const sorted = [...decks];
-
-  switch (sort) {
-    case "nameAsc":
-      return sorted.sort((a, b) => a.title.localeCompare(b.title));
-    case "nameDesc":
-      return sorted.sort((a, b) => b.title.localeCompare(a.title));
-    case "duration":
-      return sorted.sort((a, b) => b.durationMins - a.durationMins);
-    case "cardCount":
-      return sorted.sort((a, b) => b.slideCount - a.slideCount);
-    case "dateCreated":
-    default:
-      return sorted.sort(
-        (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
-      );
-  }
-}
-
 const SearchScreen = () => {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterType>("exactTitle");
+  const [filter, setFilter] = useState<FilterType>("all");
   const [sort, setSort] = useState<SortOption>("dateCreated");
+  const [results, setResults] = useState<DeckSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const listRef = useRef<FlashListRef<DeckItem>>(null);
 
-  const { data: decks, isLoading } = useDecks({ onError: () => {} });
+  // Still mounted for its side effect: it refreshes decks from the API into
+  // SQLite, which is what the query below reads.
+  const { isRefreshing } = useDecks({ onError: () => {} });
 
-  const results = useMemo(() => {
-    const matched = searchDecks(query, decks ?? [], filter);
-    return sortDecks(matched, sort);
-  }, [query, decks, filter, sort]);
+  // Typing fires a query per keystroke otherwise, and a LIKE over every script
+  // body is the one query here that's actually worth debouncing.
+  const debouncedQuery = useDebouncedValue(query, 180);
+
+  useEffect(() => {
+    const trimmed = debouncedQuery.trim();
+    // Nothing typed: there's no state to clear, because `results` is only read
+    // through `visibleResults` below, which is empty whenever the query is.
+    if (!trimmed) return;
+
+    let active = true;
+
+    dbSearchDecks(trimmed, sort)
+      .then((rows) => {
+        if (!active) return;
+        // "Title only" narrows the same ranked result set rather than running a
+        // second query — the rank already records how each deck matched.
+        setResults(
+          filter === "titleOnly"
+            ? rows.filter((row) => row.matchType === "title")
+            : rows,
+        );
+      })
+      .catch(() => {
+        if (active) setResults([]);
+      })
+      .finally(() => {
+        if (active) setIsSearching(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [debouncedQuery, filter, sort]);
+
+  const hasQuery = query.trim().length > 0;
+
+  // Derived, not stored. The query clearing has to blank the list on the same
+  // frame — waiting for the debounce and an async round trip to write `[]` would
+  // leave the previous results on screen behind an empty search box.
+  const visibleResults = hasQuery ? results : [];
+
+  // `isSearching` is set during render-phase-free user input (below) rather than
+  // in the effect, so a keystroke shows the shimmer immediately.
+  const isLoading = (isSearching && hasQuery) || isRefreshing;
 
   const renderItem: ListRenderItem<DeckItem> = useCallback(
     ({ item, index }) => (
@@ -168,8 +123,6 @@ const SearchScreen = () => {
     ),
     [],
   );
-
-  const hasQuery = query.trim().length > 0;
 
   return (
     <View style={styles.screen}>
@@ -188,23 +141,30 @@ const SearchScreen = () => {
         placement="automatic"
         placeholder="Search scripts"
         hideNavigationBar={false}
-        onChangeText={(text) => setQuery(text.nativeEvent.text)}
+        onChangeText={(text) => {
+          const next = text.nativeEvent.text;
+          setQuery(next);
+          // Flag the search as in-flight here, on the event, rather than in the
+          // effect: the effect is debounced, so setting it there would leave the
+          // list looking settled for 180ms while the query is already stale.
+          setIsSearching(next.trim().length > 0);
+        }}
       />
 
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Menu icon="line.3.horizontal.decrease">
-          <Stack.Toolbar.Menu inline title="Filter">
+          <Stack.Toolbar.Menu inline title="Search in">
             <Stack.Toolbar.MenuAction
-              isOn={filter === "exactTitle"}
-              onPress={() => setFilter("exactTitle")}
+              isOn={filter === "all"}
+              onPress={() => setFilter("all")}
             >
-              Exact title match
+              Everything
             </Stack.Toolbar.MenuAction>
             <Stack.Toolbar.MenuAction
-              isOn={filter === "script"}
-              onPress={() => setFilter("script")}
+              isOn={filter === "titleOnly"}
+              onPress={() => setFilter("titleOnly")}
             >
-              Script match
+              Titles only
             </Stack.Toolbar.MenuAction>
           </Stack.Toolbar.Menu>
 
@@ -249,12 +209,16 @@ const SearchScreen = () => {
 
       {!hasQuery ? (
         <StartSearchingState />
-      ) : results.length === 0 ? (
-        <NoResultsFoundState query={query} />
+      ) : visibleResults.length === 0 ? (
+        // Held back until the query has actually run, so the "nothing found" art
+        // doesn't flash between keystrokes while results are still coming.
+        isLoading ? null : (
+          <NoResultsFoundState query={query} />
+        )
       ) : (
         <AnimatedFlashList
           ref={listRef}
-          data={results}
+          data={visibleResults}
           keyExtractor={(item: DeckItem) => item.id}
           renderItem={renderItem}
           masonry

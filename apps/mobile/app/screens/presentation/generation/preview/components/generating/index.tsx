@@ -6,20 +6,38 @@ interface GeneratingScreenProps {
   status: GenerationState;
   error?: string | null;
   onStop: () => void;
+  /** Re-run the job. Omitted where there's nothing sensible to retry. */
+  onRetry?: () => void;
 }
 
 /**
- * @description
- * mascot and stop button will be placed here
+ * The overlay shown while a job runs, and after it stops.
+ *
+ * "failed" and "cancelled" are terminal, but used to render the same Stop button
+ * as a running job — so a job that had already died was indistinguishable from
+ * one still working, and the only thing on offer was to stop something already
+ * stopped. Both now offer Try again, which is the only action that means
+ * anything from either state.
+ *
+ * mascot goes here too.
  */
-const GeneratingScreen = ({ onStop, status }: GeneratingScreenProps) => {
+const GeneratingScreen = ({
+  onStop,
+  onRetry,
+  status,
+}: GeneratingScreenProps) => {
+  if (status === "completed") return null;
+
+  const isTerminal = status === "failed" || status === "cancelled";
+
   return (
     <View style={[styles.container]}>
-      {status !== "completed" && (
-        <CtaButton containerStyles={styles.ctaStyle} onPress={onStop}>
-          {status === "cancelled" ? "Stopped" : "Stop"}
-        </CtaButton>
-      )}
+      <CtaButton
+        containerStyles={styles.ctaStyle}
+        onPress={isTerminal ? (onRetry ?? onStop) : onStop}
+      >
+        {isTerminal ? "Try again" : "Stop"}
+      </CtaButton>
     </View>
   );
 };

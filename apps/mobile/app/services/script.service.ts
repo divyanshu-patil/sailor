@@ -6,30 +6,45 @@ import {
 } from "@/types/presentation";
 
 /**
- * Script generation is deck-scoped on the backend: there is no separate job
- * resource. `POST /decks` creates the deck row and queues the script job, and
- * the deck's own id is the handle everything else polls against:
+ * Scripts are their own resource now.
  *
- *   POST  /api/v1/decks                      -> create deck + start script job
- *   GET   /api/v1/decks/{id}/status          -> script job status (+ deck when done)
- *   GET   /api/v1/decks/{id}                 -> the deck itself
- *   PATCH /api/v1/decks/{id}                 -> manual script edit / rename / favourite
- *   POST  /api/v1/decks/{id}/revise          -> AI revision, re-runs the script job
- *   POST  /api/v1/decks/{id}/cards/generate  -> start the card job
- *   GET   /api/v1/decks/{id}/cards/status    -> card job status (+ cards when done)
+ * They used to be a property of a deck: `POST /decks` created a deck row *and*
+ * queued the script job, so the deck existed before the script did — and every
+ * generation the user discarded or walked away from left a permanent, card-less
+ * deck behind. A script is now generated against a generation of its own, and a
+ * deck is created at exactly one moment: when the user accepts the result.
  *
- * `job_id` below is therefore always the deck id as a string.
+ *   POST   /api/v1/scripts                      -> start (or resume) a generation
+ *   GET    /api/v1/scripts                      -> drafts: scripts with no deck yet
+ *   GET    /api/v1/scripts/{id}                 -> the generation
+ *   GET    /api/v1/scripts/{id}/status          -> poll target, doubles as heartbeat
+ *   PATCH  /api/v1/scripts/{id}                 -> manual edit (appends a version)
+ *   POST   /api/v1/scripts/{id}/revise          -> AI revision (appends a version)
+ *   POST   /api/v1/scripts/{id}/retry           -> re-run the same brief
+ *   POST   /api/v1/scripts/{id}/cancel          -> stop the job at the provider
+ *   GET    /api/v1/scripts/{id}/versions        -> undo/redo history
+ *   POST   /api/v1/scripts/{id}/versions/{v}/restore
+ *   POST   /api/v1/scripts/{id}/deck            -> accept: create deck + queue cards
+ *   DELETE /api/v1/scripts/{id}                 -> discard the draft
+ *
+ * The card job still belongs to the deck, so it stays on deck.service.
  */
 
-// Mirrors GenerationStatus in app/utils/enums/deck_enums.py. "retrying" isn't
-// in the enum — the Celery tasks write it straight to the Redis status payload
-// between attempts, so it only ever shows up on the status endpoints.
+// Mirrors GenerationStatus in app/utils/enums/deck_enums.py. "retrying" isn't in
+// the enum — the Celery tasks write it straight to the Redis status payload
+// between attempts, so it only ever shows up on the status endpoint.
 export type ScriptJobStatus =
   | "pending"
   | "processing"
   | "retrying"
   | "completed"
-  | "failed";
+  | "failed"
+  // Only ever the result of the user stopping, leaving for home, or backgrounding
+  // the app — never of something going wrong. The UI treats it as a resting state
+  // with a "Try again", not an error.
+  | "cancelled";
+
+export type ScriptVersionKind = "generated" | "revised" | "edited";
 
 export interface GenerateScriptPayload {
   attachments: Attachment[]; // collected by the form; the API ignores these for now
@@ -39,103 +54,194 @@ export interface GenerateScriptPayload {
   cardCount: number;
 }
 
-export interface GenerateScriptResponse {
-  job_id: string;
-  status: ScriptJobStatus;
-  type: "script" | "deck";
-}
-
-export interface ScriptJobStatusResponse<TResult = unknown> {
-  job_id: string;
-  status: ScriptJobStatus;
-  type: "script" | "deck";
-  error?: string;
-  /** Present on "completed": the status endpoints return the payload inline,
-   *  so the poller doesn't need a follow-up request. */
-  result?: TResult;
-}
-
-export interface ScriptResult {
+export interface ScriptGeneration {
   id: string;
-  job_id: string;
-  title: string; // AI-generated title
-  script: string; // full generated script content
-  created_at: string;
-}
-
-export interface DeckResult {
-  id: string;
-  job_id: string;
-  title: string;
   description: string;
-  color: string;
-  slideCount: number;
-  durationMins: number;
-  isFavourite: boolean;
-  updatedAt: string; // ISO string from API
-  created_at: string;
+  durationMinutes: number;
+  cardCount: number;
+  audience: string;
+  title: string;
+  script: string;
+  status: ScriptJobStatus;
+  error: string | null;
+  /** Set once this script was accepted and became a deck. Non-null means the
+   *  draft is retired — there's nothing left to resume. */
+  deckId: string | null;
+  versionCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** The API's DeckResponse (snake_case, straight off the SQLAlchemy model). */
-interface DeckApiResponse {
+export interface ScriptDraftSummary {
+  id: string;
+  description: string;
+  durationMinutes: number;
+  cardCount: number;
+  audience: string;
+  title: string;
+  status: ScriptJobStatus;
+  deckId: string | null;
+  versionCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScriptVersion {
+  id: string;
+  position: number;
+  title: string;
+  script: string;
+  kind: ScriptVersionKind;
+  instruction: string | null;
+  createdAt: string;
+}
+
+export interface StartGenerationResult {
+  generation: ScriptGeneration;
+  /** True when the API handed back a generation that already existed for this
+   *  exact brief instead of starting a second identical job. The preview screen
+   *  keys "resume, don't restart" off this. */
+  reused: boolean;
+}
+
+/** What the poller reads. `script` and `title` arrive inline on completion, so
+ *  a finished poll needs no follow-up request. */
+export interface ScriptStatusResult {
+  status: ScriptJobStatus;
+  error?: string;
+  title?: string;
+  script?: string;
+  attempt?: number;
+}
+
+// ---- API shapes (snake_case, straight off the Pydantic schemas) ------------
+
+interface GenerationApiResponse {
   id: number;
-  user_id: number;
-  title: string | null;
-  description: string | null;
-  script: string | null;
-  color: string;
+  description: string;
   duration_mins: number;
   card_count: number;
-  is_favorite: boolean;
-  generation_status: ScriptJobStatus;
-  generation_error: string | null;
+  audience: string;
+  title: string | null;
+  script: string | null;
+  status: ScriptJobStatus;
+  error: string | null;
+  deck_id: number | null;
+  version_count: number;
   created_at: string;
   updated_at: string;
 }
 
-/** Shape of both status endpoints — see read_deck_status / read_card_status. */
-interface JobStatusApiResponse {
+/** The drafts list omits `script` — see ScriptGenerationSummary on the API for
+ *  why: a full script per draft would make the list enormous. */
+type SummaryApiResponse = Omit<GenerationApiResponse, "script">;
+
+interface VersionApiResponse {
+  id: number;
+  position: number;
+  title: string;
+  script: string;
+  kind: ScriptVersionKind;
+  instruction: string | null;
+  created_at: string;
+}
+
+interface StatusApiResponse {
   status: ScriptJobStatus;
   error?: string;
-  deck?: DeckApiResponse;
+  title?: string | null;
+  script?: string | null;
   attempt?: number;
 }
 
-const toScriptResult = (deck: DeckApiResponse): ScriptResult => ({
-  id: String(deck.id),
-  job_id: String(deck.id),
-  title: deck.title ?? "",
-  script: deck.script ?? "",
-  created_at: deck.created_at,
+interface DeckBuildApiResponse {
+  status: ScriptJobStatus;
+  deck_id: number | null;
+  error?: string | null;
+}
+
+/** Progress of turning an accepted script into a deck. `deckId` arrives only at
+ *  the end — the deck and its cards are created in one transaction, so seeing an
+ *  id means the deck is complete. */
+export interface DeckBuildStatus {
+  status: ScriptJobStatus;
+  deckId: string | null;
+  error?: string;
+}
+
+const toDeckBuildStatus = (data: DeckBuildApiResponse): DeckBuildStatus => ({
+  status: data.status,
+  deckId: data.deck_id == null ? null : String(data.deck_id),
+  error: data.error ?? undefined,
 });
 
-const toDeckResult = (deck: DeckApiResponse): DeckResult => ({
-  id: String(deck.id),
-  job_id: String(deck.id),
-  title: deck.title ?? "",
-  description: deck.description ?? "",
-  color: deck.color,
-  slideCount: deck.card_count,
-  durationMins: deck.duration_mins,
-  isFavourite: deck.is_favorite,
-  updatedAt: deck.updated_at,
-  created_at: deck.created_at,
+const toGeneration = (data: GenerationApiResponse): ScriptGeneration => ({
+  id: String(data.id),
+  description: data.description,
+  durationMinutes: data.duration_mins,
+  cardCount: data.card_count,
+  audience: data.audience,
+  title: data.title ?? "",
+  script: data.script ?? "",
+  status: data.status,
+  error: data.error,
+  deckId: data.deck_id == null ? null : String(data.deck_id),
+  versionCount: data.version_count,
+  createdAt: data.created_at,
+  updatedAt: data.updated_at,
 });
+
+const toSummary = (data: SummaryApiResponse): ScriptDraftSummary => ({
+  id: String(data.id),
+  description: data.description,
+  durationMinutes: data.duration_mins,
+  cardCount: data.card_count,
+  audience: data.audience,
+  title: data.title ?? "",
+  status: data.status,
+  deckId: data.deck_id == null ? null : String(data.deck_id),
+  versionCount: data.version_count,
+  createdAt: data.created_at,
+  updatedAt: data.updated_at,
+});
+
+const toVersion = (data: VersionApiResponse): ScriptVersion => ({
+  id: String(data.id),
+  position: data.position,
+  title: data.title,
+  script: data.script,
+  kind: data.kind,
+  instruction: data.instruction,
+  createdAt: data.created_at,
+});
+
+const log = (label: string, e: any) => {
+  console.log(label, e?.response?.data, e?.response?.status);
+};
 
 export const scriptService = {
-  // 1. Create the deck — this is what kicks off script generation. The deck id
-  //    it returns is the id every call below polls against.
+  /**
+   * Start generating — or resume the generation this brief already has.
+   *
+   * Resubmitting an unchanged brief is free: the API matches on a fingerprint of
+   * the brief and returns the existing generation with `reused: true`. That's
+   * what makes stepping back to the wizard and pressing Generate again a no-op
+   * rather than a discard-and-regenerate.
+   */
   generate: async (
     payload: GenerateScriptPayload,
-  ): Promise<GenerateScriptResponse> => {
+  ): Promise<StartGenerationResult> => {
     try {
       const audience =
         AUDIENCE_OPTIONS[payload.audienceIndex]?.value ??
         ("general" satisfies AudienceType);
 
-      // Field names are the aliases DeckCreateRequest declares; attachments are
-      // left out because the backend hasn't enabled them yet.
-      const response = await apiClient.post<DeckApiResponse>("/api/v1/decks", {
+      // Field names are the aliases ScriptGenerateRequest declares; attachments
+      // are left out because the backend hasn't enabled them yet.
+      const response = await apiClient.post<{
+        generation: GenerationApiResponse;
+        reused: boolean;
+      }>("/api/v1/scripts", {
         description: payload.description,
         durationMinutes: payload.durationMinutes,
         cardCount: payload.cardCount,
@@ -143,143 +249,207 @@ export const scriptService = {
       });
 
       return {
-        job_id: String(response.data.id),
-        status: response.data.generation_status,
-        type: "script",
+        generation: toGeneration(response.data.generation),
+        reused: response.data.reused,
       };
     } catch (e: any) {
-      console.log(
-        "script generate error",
-        e.response?.data,
-        e.response?.status,
-      );
+      log("script generate error", e);
       throw e;
     }
   },
 
-  // 2. Poll until status is "completed" | "failed". A completed response
-  //    already carries the deck, so `result` is filled in here.
-  getJobStatus: async (
-    jobId: string,
-  ): Promise<ScriptJobStatusResponse<ScriptResult>> => {
+  /** Poll until status is terminal. Also the heartbeat that tells the API a
+   *  client is still watching — a generation nobody polls gets swept. */
+  getJobStatus: async (id: string): Promise<ScriptStatusResult> => {
     try {
-      const response = await apiClient.get<JobStatusApiResponse>(
-        `/api/v1/decks/${jobId}/status`,
+      const response = await apiClient.get<StatusApiResponse>(
+        `/api/v1/scripts/${id}/status`,
       );
-      const { status, error, deck } = response.data;
-
+      const { status, error, title, script, attempt } = response.data;
       return {
-        job_id: jobId,
         status,
-        type: "script",
         error,
-        result: deck ? toScriptResult(deck) : undefined,
+        title: title ?? undefined,
+        script: script ?? undefined,
+        attempt,
       };
     } catch (e: any) {
-      console.log("script status error", e.response?.data, e.response?.status);
+      log("script status error", e);
       throw e;
     }
   },
 
-  // 3. Fallback for the status payload above (cache miss mid-flight, or an
-  //    attach() to a job that already finished long ago).
-  getResult: async (jobId: string): Promise<ScriptResult> => {
+  get: async (id: string): Promise<ScriptGeneration> => {
     try {
-      const response = await apiClient.get<DeckApiResponse>(
-        `/api/v1/decks/${jobId}`,
+      const response = await apiClient.get<GenerationApiResponse>(
+        `/api/v1/scripts/${id}`,
       );
-      return toScriptResult(response.data);
+      return toGeneration(response.data);
     } catch (e: any) {
-      console.log("script result error", e.response?.data, e.response?.status);
+      log("script get error", e);
       throw e;
     }
   },
 
-  // 4. AI revision — async, like the initial generation: this returns as soon
-  //    as the job is queued and the caller goes back to polling getJobStatus.
-  revise: async (
-    jobId: string,
-    instruction: string,
-  ): Promise<GenerateScriptResponse> => {
+  /** Drafts — scripts that never became decks, including runs abandoned
+   *  mid-generation. */
+  listDrafts: async (): Promise<ScriptDraftSummary[]> => {
     try {
-      const response = await apiClient.post<DeckApiResponse>(
-        `/api/v1/decks/${jobId}/revise`,
+      const response =
+        await apiClient.get<SummaryApiResponse[]>("/api/v1/scripts");
+      return response.data.map(toSummary);
+    } catch (e: any) {
+      log("script drafts error", e);
+      throw e;
+    }
+  },
+
+  /** AI revision. Async, like the initial generation: this returns as soon as
+   *  the job is queued and the caller goes back to polling getJobStatus. */
+  revise: async (id: string, instruction: string): Promise<ScriptGeneration> => {
+    try {
+      const response = await apiClient.post<GenerationApiResponse>(
+        `/api/v1/scripts/${id}/revise`,
         { instruction },
       );
-      return {
-        job_id: String(response.data.id),
-        status: response.data.generation_status,
-        type: "script",
-      };
+      return toGeneration(response.data);
     } catch (e: any) {
-      console.log("script revise error", e.response?.data, e.response?.status);
+      log("script revise error", e);
       throw e;
     }
   },
 
-  // 5. Manual edit — full replacement text from the edit screen. Synchronous,
-  //    no AI involved.
-  edit: async (jobId: string, script: string): Promise<ScriptResult> => {
+  /** Manual edit — full replacement text from the edit screen. Synchronous, and
+   *  appended to the version history so it undoes like a revision. */
+  edit: async (id: string, script: string): Promise<ScriptGeneration> => {
     try {
-      const response = await apiClient.patch<DeckApiResponse>(
-        `/api/v1/decks/${jobId}`,
+      const response = await apiClient.patch<GenerationApiResponse>(
+        `/api/v1/scripts/${id}`,
         { script },
       );
-      return toScriptResult(response.data);
+      return toGeneration(response.data);
     } catch (e: any) {
-      console.log("script edit error", e.response?.data, e.response?.status);
+      log("script edit error", e);
       throw e;
     }
   },
 
-  // 6. "Create" on the preview screen: turn the accepted script into cards.
-  //    Same deck id, second job.
-  confirm: async (jobId: string): Promise<GenerateScriptResponse> => {
+  /**
+   * Stop the job at the provider.
+   *
+   * Called on an explicit Stop, and when the user lands on home or backgrounds
+   * the app — deliberately *not* on a plain back out of the preview screen,
+   * which is the accidental gesture this whole flow was losing work to.
+   * Resolves even if the job had already finished.
+   */
+  cancel: async (id: string): Promise<void> => {
     try {
-      const response = await apiClient.post<{
-        deck_id: number;
-        card_count: number;
-        cards_generation_status: ScriptJobStatus;
-        cards_generation_error: string | null;
-      }>(`/api/v1/decks/${jobId}/cards/generate`);
-
-      return {
-        job_id: String(response.data.deck_id),
-        status: response.data.cards_generation_status,
-        type: "deck",
-      };
+      await apiClient.post(`/api/v1/scripts/${id}/cancel`);
     } catch (e: any) {
-      console.log("script confirm error", e.response?.data, e.response?.status);
+      log("script cancel error", e);
       throw e;
     }
   },
 
-  // 7. Card job status. Completed responses carry the cards, but the results
-  //    screen renders the deck, so the deck is fetched by getDeckResult.
-  getCardsJobStatus: async (
-    jobId: string,
-  ): Promise<ScriptJobStatusResponse<DeckResult>> => {
+  /** "Try again" after a failed or cancelled run — re-queues the same brief on
+   *  the same generation, so no dead draft is left behind. */
+  retry: async (id: string): Promise<ScriptGeneration> => {
     try {
-      const response = await apiClient.get<JobStatusApiResponse>(
-        `/api/v1/decks/${jobId}/cards/status`,
+      const response = await apiClient.post<GenerationApiResponse>(
+        `/api/v1/scripts/${id}/retry`,
       );
-      const { status, error } = response.data;
-
-      return { job_id: jobId, status, type: "deck", error };
+      return toGeneration(response.data);
     } catch (e: any) {
-      console.log("cards status error", e.response?.data, e.response?.status);
+      log("script retry error", e);
       throw e;
     }
   },
 
-  getDeckResult: async (jobId: string): Promise<DeckResult> => {
+  /** Oldest first. The undo/redo arrows step through this. */
+  listVersions: async (id: string): Promise<ScriptVersion[]> => {
     try {
-      const response = await apiClient.get<DeckApiResponse>(
-        `/api/v1/decks/${jobId}`,
+      const response = await apiClient.get<VersionApiResponse[]>(
+        `/api/v1/scripts/${id}/versions`,
       );
-      return toDeckResult(response.data);
+      return response.data.map(toVersion);
     } catch (e: any) {
-      console.log("deck result error", e.response?.data, e.response?.status);
+      log("script versions error", e);
+      throw e;
+    }
+  },
+
+  /** Make an earlier version current again. Nothing is deleted, so redo is just
+   *  restoring a later version. */
+  restoreVersion: async (
+    id: string,
+    versionId: string,
+  ): Promise<ScriptGeneration> => {
+    try {
+      const response = await apiClient.post<GenerationApiResponse>(
+        `/api/v1/scripts/${id}/versions/${versionId}/restore`,
+      );
+      return toGeneration(response.data);
+    } catch (e: any) {
+      log("script restore error", e);
+      throw e;
+    }
+  },
+
+  /**
+   * Accept the script: queue the job that generates the cards and then creates
+   * the deck.
+   *
+   * Resolves as soon as the job is queued — there is no deck yet, and that's the
+   * point. The deck and its cards are written together at the end of the job, so
+   * a deck can never be seen before its cards exist. Poll `getDeckBuildStatus`
+   * for the id.
+   *
+   * Idempotent server-side: a double tap returns the running job, or the deck if
+   * it already finished.
+   */
+  startDeckBuild: async (id: string): Promise<DeckBuildStatus> => {
+    try {
+      const response = await apiClient.post<DeckBuildApiResponse>(
+        `/api/v1/scripts/${id}/deck`,
+      );
+      return toDeckBuildStatus(response.data);
+    } catch (e: any) {
+      log("script deck build error", e);
+      throw e;
+    }
+  },
+
+  /** `deckId` is null until the cards are written. A non-null one is a complete
+   *  deck, never a placeholder. */
+  getDeckBuildStatus: async (id: string): Promise<DeckBuildStatus> => {
+    try {
+      const response = await apiClient.get<DeckBuildApiResponse>(
+        `/api/v1/scripts/${id}/deck/status`,
+      );
+      return toDeckBuildStatus(response.data);
+    } catch (e: any) {
+      log("script deck status error", e);
+      throw e;
+    }
+  },
+
+  /** Stop the card job. Nothing has been written, so this leaves the generation
+   *  as a draft rather than a half-built deck. */
+  cancelDeckBuild: async (id: string): Promise<void> => {
+    try {
+      await apiClient.post(`/api/v1/scripts/${id}/deck/cancel`);
+    } catch (e: any) {
+      log("script deck cancel error", e);
+      throw e;
+    }
+  },
+
+  /** Throw the draft away, killing any job still running for it. */
+  discard: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/api/v1/scripts/${id}`);
+    } catch (e: any) {
+      log("script discard error", e);
       throw e;
     }
   },

@@ -23,54 +23,69 @@ import { useColors } from "@/constants/theme";
 import { KeyboardController } from "react-native-keyboard-controller";
 
 type GeneratePreviewParams = {
-  form: string;
+  /** The brief, when arriving from the wizard. */
+  form?: string;
+  /** An existing generation to pick back up, when arriving from drafts. Exactly
+   *  one of the two is set. */
+  generationId?: string;
 };
 
 const PreviewScreen = () => {
   const reviseBarRef = useRef<ReviseBarRef>(null);
 
   const headerHeight = useHeaderHeight();
-  const { form } = useLocalSearchParams<GeneratePreviewParams>();
-  const formState: PresentationFormState = useMemo(
-    () => JSON.parse(form),
+  const { form, generationId: resumeId } =
+    useLocalSearchParams<GeneratePreviewParams>();
+  const formState: PresentationFormState | null = useMemo(
+    () => (form ? JSON.parse(form) : null),
     [form],
   );
 
-  const { state, result, error, startGeneration, stopGeneration, revise } =
-    useScriptGeneration();
+  const {
+    state,
+    result,
+    error,
+    generationId,
+    startGeneration,
+    resumeGeneration,
+    stopGeneration,
+    retryGeneration,
+    revise,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+  } = useScriptGeneration();
 
   const [isConfirming, setIsConfirming] = useState(false);
-  const { startDeckGeneration } = useDeckGeneration();
+  const { createDeck } = useDeckGeneration();
 
-  const handleCreate = async () => {
-    if (state !== "completed" || !jobId) return;
-
-    try {
-      setIsConfirming(true);
-      const deckJobId = await startDeckGeneration(jobId);
-      router.push({
-        pathname: "/(authenticated)/(script)/results",
-        params: { jobId: deckJobId },
-      });
-    } catch {
-      // deckError will already be set by the hook; surface it however you
-      // show errors elsewhere on this screen (toast, inline text, etc.)
-    } finally {
-      setIsConfirming(false);
-    }
-  };
-
-  const jobId = useScriptStore((s) => s.jobId);
   const title = useScriptStore((s) => s.title);
   const script = useScriptStore((s) => s.script);
   const setResult = useScriptStore((s) => s.setResult);
 
   const startedRef = useRef(false);
-  const stateRef = useRef(state);
 
+  /**
+   * Generate — or resume.
+   *
+   * Arriving with a `generationId` (from drafts) attaches to that generation
+   * directly. Arriving with a brief goes through `startGeneration`, which
+   * resolves an unchanged brief to the generation that already exists
+   * server-side — so coming here a second time from the wizard picks the running
+   * or finished script back up instead of discarding it and paying to produce an
+   * identical one. The ref only guards React re-running the effect within a
+   * single mount; the real deduplication is the fingerprint on the API.
+   */
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
+
+    if (resumeId) {
+      resumeGeneration(resumeId);
+      return;
+    }
+    if (!formState) return;
 
     startGeneration({
       attachments: formState.attachments,
@@ -78,42 +93,67 @@ const PreviewScreen = () => {
       durationMinutes: formState.durationMinutes,
       audienceIndex: formState.audienceIndex,
       cardCount: formState.cardCount,
+    }).catch(() => {
+      // The hook has already put the reason in `error`; the generating screen
+      // renders it with a Try again.
     });
-  }, [
-    formState.attachments,
-    formState.audienceIndex,
-    formState.cardCount,
-    formState.description,
-    formState.durationMinutes,
-    startGeneration,
-  ]);
+  }, [formState, resumeId, resumeGeneration, startGeneration]);
 
-  // sync completed generation into the store — single source of truth from here on
+  // sync completed generation into the store — single source of truth from here
+  // on, including for the edit modal
   useEffect(() => {
-    if (state === "completed" && result) {
+    if (result) {
       setResult({
-        job_id: result.job_id,
+        generationId: result.id,
         title: result.title,
         script: result.script,
       });
     }
-  }, [state, result, setResult]);
+  }, [result, setResult]);
 
-  useEffect(() => {
-    return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      if (stateRef.current === "generating") {
-        stopGeneration();
-      }
-    };
-  }, [stopGeneration]);
+  /**
+   * Nothing is cancelled on unmount, deliberately.
+   *
+   * Backing out of this screen used to terminate the job, so a mistap on the
+   * back gesture threw away a script the user had been waiting on — and coming
+   * forward again started from zero. Leaving is now free: the generation keeps
+   * running, re-entering re-attaches to it, and cancellation is owned by
+   * lib/generation-guard, which fires when the user lands on home or
+   * backgrounds the app.
+   */
 
-  // A revision is a job on the same deck, so the revised script arrives through
-  // the poller and lands in the store via the effect above — nothing to set here.
-  const handleRevise = async (instruction: string) => {
-    if (!jobId) return;
-    await revise(instruction);
+  /**
+   * Accept the script.
+   *
+   * This queues card generation; the deck itself is created only once those
+   * cards exist, so the results screen is handed the *generation* id and waits
+   * for a deck to come into being. Nothing appears in the user's deck grid in
+   * the meantime — which is the whole reason the deck isn't created here.
+   */
+  const handleCreate = async () => {
+    if (state !== "completed" || !generationId || isConfirming) return;
+
+    try {
+      setIsConfirming(true);
+      await createDeck(generationId);
+      router.push({
+        pathname: "/(authenticated)/(script)/results",
+        params: { generationId },
+      });
+    } catch {
+      // The hook surfaces the reason through its own error state.
+    } finally {
+      setIsConfirming(false);
+    }
   };
+
+  // A revision is a job on the same generation, so the revised script arrives
+  // through the poller and lands in the store via the effect above.
+  const handleRevise = async (instruction: string) => {
+    if (!generationId) return false;
+    return revise(instruction);
+  };
+
   const { colors } = useColors();
 
   // Must be memoised. `getGeneratingMessages` builds a fresh array for every
@@ -123,8 +163,8 @@ const PreviewScreen = () => {
   // reset it again. That loop starts the instant the state flips to
   // "completed", i.e. exactly when the script arrives.
   const statusLabels = useMemo(
-    () => getGeneratingMessages(state, title),
-    [state, title],
+    () => getGeneratingMessages(state, title, error),
+    [state, title, error],
   );
 
   // Dismiss keyboard when screen mounts or comes into focus
@@ -138,24 +178,47 @@ const PreviewScreen = () => {
     Keyboard.dismiss();
   });
 
+  const hasScript = state === "completed" && !!script;
+
   return (
     <>
+      {/* Undo/redo across the script's whole history — every generation,
+          revision and manual edit is a step. Header-left is the top-bar slot:
+          expo-router's toolbar placements are left/right/bottom, and the
+          arrows belong beside the back button rather than competing with
+          Create on the right. */}
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon={"arrow.uturn.backward"}
+          hidden={!hasScript}
+          tintColor={colors.rust}
+          disabled={!canUndo || isConfirming}
+          onPress={undo}
+        />
+        <Stack.Toolbar.Button
+          icon={"arrow.uturn.forward"}
+          hidden={!hasScript}
+          tintColor={colors.rust}
+          disabled={!canRedo || isConfirming}
+          onPress={redo}
+        />
+      </Stack.Toolbar>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={"square.and.pencil"}
-          hidden={state !== "completed" && !result?.script}
+          hidden={!hasScript}
           tintColor={colors.rust}
           disabled={isConfirming}
           onPress={() => {
             reviseBarRef.current?.blur();
             router.push({
               pathname: "/(authenticated)/(script)/modals/edit-script",
-              params: { jobId },
+              params: { generationId },
             });
           }}
         />
         <Stack.Toolbar.Button
-          hidden={state !== "completed" && !result?.script}
+          hidden={!hasScript}
           tintColor={colors.rust}
           variant="prominent"
           disabled={isConfirming}
@@ -169,15 +232,15 @@ const PreviewScreen = () => {
             all of it re-rendered every frame. That's fine as the focus of a
             waiting screen, but once the script is up it's just competing with
             scrolling for the same frame budget — so it settles. */}
-        <BlobBackground animate={state !== "completed" || !script} />
+        <BlobBackground animate={!hasScript} />
         <ScrollView
           style={[{ paddingTop: headerHeight + 20 }, styles.container]}
-          scrollEnabled={state === "completed" && !!script}
+          scrollEnabled={hasScript}
           keyboardDismissMode="on-drag"
         >
           <StatusText labels={statusLabels} accentColor={colors.rust} />
 
-          {state === "completed" && !!script && (
+          {hasScript && (
             // No layout transition here: the script mounts in batches, and a
             // layout spring on the container re-measures and re-animates the
             // whole body on every batch — which is most of the stutter when
@@ -188,7 +251,7 @@ const PreviewScreen = () => {
           )}
         </ScrollView>
 
-        {state === "completed" && !!script && (
+        {hasScript && (
           <ReviseBar
             ref={reviseBarRef}
             onSubmit={handleRevise}
@@ -201,6 +264,7 @@ const PreviewScreen = () => {
             status={state}
             error={error}
             onStop={stopGeneration}
+            onRetry={retryGeneration}
           />
         )}
       </View>

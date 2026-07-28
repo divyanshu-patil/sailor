@@ -1,12 +1,10 @@
 import json
 import logging
 import re
+import time
 
-from ollama import ResponseError
-
-from app.config.settings import settings
 from app.services.ai.card_prompt import build_card_batch_prompt
-from app.services.ai.ollama_client import get_ollama_client
+from app.services.ai.chat import ModelCallError, chat, map_parallel
 from app.utils.enums.speaking_style import SpeakingStyle
 
 logger = logging.getLogger("celery")
@@ -17,6 +15,11 @@ logger = logging.getLogger("celery")
 # high counts. Tune this if you see batches still struggling — smaller is safer,
 # larger means fewer total Ollama calls (matters for free-tier rate limits).
 CARD_BATCH_SIZE = 6
+
+# Attempts per batch. Kept low because a retry is a whole extra model call on the
+# critical path, and the deterministic fill below means a batch that still won't
+# comply doesn't cost the user their deck.
+MAX_BATCH_ATTEMPTS = 2
 
 _SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[.!?])\s+")
 
@@ -71,51 +74,103 @@ def _extract_json_array(text: str) -> str:
     return text[start : end + 1]
 
 
-def _validate_cards(raw: list, expected_count: int, valid_delivery: set[str]) -> list[dict]:
+DEFAULT_DELIVERY = SpeakingStyle.EXPLAINING.value
+DEFAULT_IMPACT = 0.5
+# Words used to build a stand-in title from a segment when the model gives none.
+_STOPWORDS = {
+    "the", "a", "an", "and", "or", "but", "of", "to", "in", "on", "at", "for",
+    "with", "is", "are", "was", "were", "it", "its", "this", "that", "you",
+    "your", "we", "our", "they", "their", "he", "she", "as", "so", "if", "then",
+}
+
+
+def _card_from_segment(segment: str) -> dict:
+    """
+    Deterministic card built from the segment's own words.
+
+    The last resort when the model won't produce a usable card for a segment
+    after retries. A plain card is a far better outcome than the alternative the
+    old code took — one unusable item failed its batch, which failed the whole
+    job, which discarded every other card in the deck and re-ran the lot. The
+    presenter ends up with one flat card among thirty good ones instead of
+    waiting minutes for nothing.
+    """
+    sentences = [s.strip() for s in _SENTENCE_SPLIT_PATTERN.split(segment.strip()) if s.strip()]
+    first = sentences[0] if sentences else segment.strip()
+
+    salient = [w.strip(".,;:!?\"'()") for w in first.split()]
+    salient = [w for w in salient if len(w) > 3 and w.lower() not in _STOPWORDS]
+
+    title = " ".join(salient[:4]) or " ".join(first.split()[:4]) or "Untitled Card"
+    description = first if len(first) <= 160 else first[:157].rstrip() + "..."
+
+    return {
+        "title": title[:200],
+        "description": description or "This part of the script.",
+        "keywords": salient[:5],
+        "impact": DEFAULT_IMPACT,
+        "delivery": DEFAULT_DELIVERY,
+    }
+
+
+def _coerce_card(item, valid_delivery: set[str]) -> dict | None:
+    """
+    Turn one model-produced object into a valid card, or None if there's nothing
+    usable in it.
+
+    Every field except title/description is repaired rather than rejected. The
+    model gets impact and delivery wrong often enough that treating either as
+    fatal — which is what the previous version did — meant a single out-of-range
+    number could cost the user their entire deck. Neither field is worth that:
+    an impact that defaults to the middle of the range and a delivery that
+    defaults to "explaining" are both perfectly serviceable.
+    """
+    if not isinstance(item, dict):
+        return None
+
+    title = str(item.get("title") or "").strip()
+    description = str(item.get("description") or "").strip()
+    # Content is the one thing that can't be invented from an empty object.
+    if not title and not description:
+        return None
+    if not title:
+        title = " ".join(description.split()[:4])
+    if not description:
+        description = title
+
+    raw_keywords = item.get("keywords")
+    if isinstance(raw_keywords, str):
+        raw_keywords = [raw_keywords]
+    keywords = (
+        [str(k).strip() for k in raw_keywords if str(k).strip()][:10]
+        if isinstance(raw_keywords, list)
+        else []
+    )
+
+    try:
+        impact = round(min(1.0, max(0.0, float(item.get("impact")))), 2)
+    except (TypeError, ValueError):
+        impact = DEFAULT_IMPACT
+
+    delivery = str(item.get("delivery") or "").strip().lower().replace(" ", "_")
+    if delivery not in valid_delivery:
+        delivery = DEFAULT_DELIVERY
+
+    return {
+        "title": title[:200],
+        "description": description,
+        "keywords": keywords,
+        "impact": impact,
+        "delivery": delivery,
+    }
+
+
+def _coerce_cards(raw, valid_delivery: set[str]) -> list[dict]:
+    """Best-effort read of a whole batch. Unusable entries are dropped, and the
+    caller decides what to do about a short result."""
     if not isinstance(raw, list):
         raise CardGenerationError("Model output was not a JSON array")
-    if len(raw) != expected_count:
-        raise CardGenerationError(f"Expected {expected_count} cards, got {len(raw)}")
-
-    cleaned = []
-    for i, item in enumerate(raw):
-        if not isinstance(item, dict):
-            raise CardGenerationError(f"Card {i} is not a JSON object")
-
-        missing = {"title", "description", "keywords", "impact", "delivery"} - item.keys()
-        if missing:
-            raise CardGenerationError(f"Card {i} missing fields: {missing}")
-
-        title = str(item["title"]).strip()
-        description = str(item["description"]).strip()
-        keywords = item["keywords"]
-        if not title or not description:
-            raise CardGenerationError(f"Card {i} has an empty title or description")
-        if not isinstance(keywords, list) or not all(isinstance(k, str) for k in keywords):
-            raise CardGenerationError(f"Card {i} keywords must be a list of strings")
-
-        try:
-            impact = float(item["impact"])
-        except (TypeError, ValueError):
-            raise CardGenerationError(f"Card {i} impact is not a number")
-        if not (0.0 <= impact <= 1.0):
-            raise CardGenerationError(f"Card {i} impact {impact} out of range 0.00-1.00")
-
-        delivery = str(item["delivery"]).strip()
-        if delivery not in valid_delivery:
-            raise CardGenerationError(f"Card {i} delivery '{delivery}' is not a valid SpeakingStyle")
-
-        cleaned.append(
-            {
-                "title": title[:200],
-                "description": description,
-                "keywords": [k.strip() for k in keywords if k.strip()][:10],
-                "impact": round(impact, 2),
-                "delivery": delivery,
-            }
-        )
-
-    return cleaned
+    return [card for card in (_coerce_card(item, valid_delivery) for item in raw) if card]
 
 
 def _generate_card_batch(
@@ -125,60 +180,108 @@ def _generate_card_batch(
     total_segments: int,
     valid_delivery: set[str],
 ) -> list[dict]:
-    client = get_ollama_client()
     messages = build_card_batch_prompt(
         full_script, segments, batch_start_index, total_segments, sorted(valid_delivery)
     )
+    span = f"segments {batch_start_index}-{batch_start_index + len(segments) - 1}"
+    expected = len(segments)
+    best: list[dict] = []
+    content = ""
 
-    models_to_try = [m for m in (settings.OLLAMA_MODEL, settings.OLLAMA_FALLBACK_MODEL) if m]
-    last_error: Exception | None = None
-
-    for model in models_to_try:
+    # Retried here, per batch, rather than by failing the whole job.
+    #
+    # This is the fix for card generation taking minutes and then failing. A
+    # batch that came back with the wrong number of cards used to raise, which
+    # failed generate_cards, which failed the task — and the task's retry re-ran
+    # *every* batch from scratch, throwing away all the good ones. With thirty
+    # cards that's five batches per attempt and four attempts, so one flaky
+    # response cost twenty extra model calls and several minutes.
+    for attempt in range(MAX_BATCH_ATTEMPTS):
         try:
-            response = client.chat(model=model, messages=messages, stream=False)
-            content = (response.get("message", {}) or {}).get("content", "").strip()
-            if not content:
-                raise CardGenerationError(f"Model '{model}' returned empty content")
+            content = chat(messages)
+            cards = _coerce_cards(json.loads(_extract_json_array(content)), valid_delivery)
+        except ModelCallError as e:
+            # Transport, not content — chat() has already tried every model.
+            raise CardGenerationError(f"All models failed on {span}: {e}") from e
+        except (CardGenerationError, json.JSONDecodeError) as e:
+            logger.warning(f"[ai] unparseable card batch ({span}, attempt {attempt + 1}): {e}")
+            cards = []
 
-            raw_cards = json.loads(_extract_json_array(content))
-            return _validate_cards(raw_cards, len(segments), valid_delivery)
+        if len(cards) > expected:
+            # Over-production is harmless: the extras are for segments that
+            # aren't in this batch, and they're in order, so trimming is correct.
+            logger.info(f"[ai] card batch ({span}) returned {len(cards)}, trimming to {expected}")
+            cards = cards[:expected]
 
-        except (ResponseError, CardGenerationError, json.JSONDecodeError) as e:
+        if len(cards) == expected:
+            return cards
+
+        if len(cards) > len(best):
+            best = cards
+
+        if attempt < MAX_BATCH_ATTEMPTS - 1:
             logger.warning(
-                f"[ai] '{model}' failed batch (segments {batch_start_index}-"
-                f"{batch_start_index + len(segments) - 1}): {e}"
+                f"[ai] card batch ({span}) returned {len(cards)}/{expected}, retrying"
             )
-            last_error = e
-        except Exception as e:
-            logger.warning(
-                f"[ai] '{model}' failed batch (segments {batch_start_index}-"
-                f"{batch_start_index + len(segments) - 1}): {e}"
-            )
-            last_error = e
+            messages = messages + [
+                {"role": "assistant", "content": content},
+                {
+                    "role": "user",
+                    "content": (
+                        f"That response contained {len(cards)} usable cards, but "
+                        f"exactly {expected} are required — one per segment, in "
+                        "the order given. Respond again with ONLY the raw JSON "
+                        f"array of {expected} objects, each having title, "
+                        "description, keywords, impact and delivery."
+                    ),
+                },
+            ]
 
-    raise CardGenerationError(
-        f"All models failed on segments {batch_start_index}-"
-        f"{batch_start_index + len(segments) - 1}. Last error: {last_error}"
+    # Still short. Fill the gap from the segments themselves rather than
+    # discarding a batch of otherwise-good cards.
+    logger.warning(
+        f"[ai] card batch ({span}) settled at {len(best)}/{expected}; "
+        "filling the remainder from segment text"
     )
+    return best + [_card_from_segment(seg) for seg in segments[len(best) :]]
 
 
 def generate_cards(script: str, card_count: int) -> list[dict]:
     """Public interface is unchanged — same signature, same return shape as
     before. card_tasks.py doesn't need to change at all; everything below is new,
-    but nothing above this function's boundary needs to know that."""
+    but nothing above this function's boundary needs to know that.
+
+    Batches run concurrently. Each one is prompted with the full script plus its
+    own segments, so no batch needs to see another's output — running them in
+    sequence just multiplied the wait by the number of batches, which is what
+    made a 20-card deck feel several times slower than a 6-card one."""
     valid_delivery = {style.value for style in SpeakingStyle}
     segments = split_script_into_segments(script, card_count)
 
-    all_cards: list[dict] = []
-    for batch_start in range(0, card_count, CARD_BATCH_SIZE):
-        batch_segments = segments[batch_start : batch_start + CARD_BATCH_SIZE]
-        batch_cards = _generate_card_batch(
+    batch_starts = list(range(0, card_count, CARD_BATCH_SIZE))
+
+    def run_batch(batch_start: int) -> list[dict]:
+        started = time.monotonic()
+        cards = _generate_card_batch(
             full_script=script,
-            segments=batch_segments,
+            segments=segments[batch_start : batch_start + CARD_BATCH_SIZE],
             batch_start_index=batch_start + 1,  # 1-indexed for prompts/logs
             total_segments=card_count,
             valid_delivery=valid_delivery,
         )
-        all_cards.extend(batch_cards)
+        logger.info(
+            f"[ai] card batch at {batch_start + 1} produced {len(cards)} cards "
+            f"in {time.monotonic() - started:.1f}s"
+        )
+        return cards
 
-    return all_cards
+    started = time.monotonic()
+    # Order matters — a card's position in the deck is its position in the
+    # script — and map_parallel returns results in the order they were submitted,
+    # not the order they finished.
+    cards = [card for batch in map_parallel(run_batch, batch_starts) for card in batch]
+    logger.info(
+        f"[ai] {len(cards)} cards across {len(batch_starts)} batches "
+        f"in {time.monotonic() - started:.1f}s total"
+    )
+    return cards

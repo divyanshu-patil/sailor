@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "uv run fastapi dev main.py --port 3000 --host 0.0.0.0",
-    "celery": "uv run celery -A app.core.celery_app worker --loglevel=info --concurrency=2",
+    "celery": "uv run celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --beat",
+    "celery:worker": "uv run celery -A app.core.celery_app worker --loglevel=info --concurrency=2",
+    "celery:beat": "uv run celery -A app.core.celery_app beat --loglevel=info",
     "redis": "docker compose up -d redis"
   }
 }

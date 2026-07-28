@@ -20,7 +20,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { DeckItem } from "@/services/deck.debug.service";
+import { DeckItem } from "@/services/deck.service";
 import { useDeck } from "@/hooks";
 
 type ScriptDetailParams = {
@@ -58,7 +58,7 @@ export default function ScriptDetailScreen() {
       title: params.title,
       description: params.description,
       color: params.color,
-      updatedAt: new Date(params.updatedAt),
+      updatedAt: params.updatedAt,
       slideCount: Number(params.slideCount),
       durationMins: Number(params.durationMins),
       isFavourite:
@@ -68,13 +68,19 @@ export default function ScriptDetailScreen() {
   );
 
   // Use initial data from params, then refresh from API
-  const { data: script, isMutating: isDeleting, toggleFavourite, deleteDeck } = useDeck({
+  const {
+    data: deck,
+    script,
+    isMutating: isDeleting,
+    toggleFavourite,
+    deleteDeck,
+  } = useDeck({
     deckId: paramScript.id,
     initialData: paramScript,
   });
 
   // Use the fetched data if available, otherwise fall back to params
-  const currentScript = script ?? paramScript;
+  const currentScript = deck ?? paramScript;
   const isFavourite = currentScript.isFavourite ?? false;
 
   const handleToggleFavourite = async () => {
@@ -83,8 +89,10 @@ export default function ScriptDetailScreen() {
 
   const handleDelete = async () => {
     if (isDeleting) return;
-    const success = await deleteDeck();
-    if (success !== undefined) {
+    // Only leave the screen if the delete actually went through. `!== undefined`
+    // was true for `false` as well, so a failed delete still popped the screen
+    // and the deck reappeared in the grid a moment later.
+    if (await deleteDeck()) {
       router.back();
     }
   };
@@ -134,7 +142,13 @@ export default function ScriptDetailScreen() {
       setCardCountNum1(0);
       setCardCountNum2(0);
     };
-  }, [cardRotate, cardScale, currentScript.slideCount, shadowOffsetX, shadowOffsetY]);
+  }, [
+    cardRotate,
+    cardScale,
+    currentScript.slideCount,
+    shadowOffsetX,
+    shadowOffsetY,
+  ]);
 
   const animatedCardStyle = useAnimatedStyle(() => ({
     transform: [
@@ -152,8 +166,10 @@ export default function ScriptDetailScreen() {
     ],
   }));
 
-  const scriptText = `Your CPU speaks at the speed of light. Your hard disk speaks at the speed of a bicycle. And somehow — they have to talk to each other.
-Every single time you open a file, plug in a keyboard, or save your work. The system that makes that conversation possible — without crashing, without data loss, without freezing your processor — is the *Advanced I/O System*. And understanding it is understanding the backbone of every computer ever built.`;
+  // The deck's real script, from SQLite via useDeck. This was a hardcoded
+  // paragraph about I/O systems that every deck displayed regardless of what it
+  // was actually about.
+  const scriptText = script ?? "";
 
   const textDarkColor = colord(currentScript.color)
     .darken(0.35)
@@ -177,7 +193,18 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
           tintColor={"#EB6B83"}
           onPress={handleToggleFavourite}
         />
-        <Stack.Toolbar.Button icon={"square.and.arrow.up"} />
+        <Stack.Toolbar.Menu icon={"ellipsis"}>
+          <Stack.Toolbar.MenuAction icon={"square.and.arrow.up"}>
+            Share
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction
+            destructive
+            icon={"trash"}
+            onPress={handleDelete}
+          >
+            Delete
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
       </Stack.Toolbar>
       <Stack.Toolbar placement="bottom">
         <Stack.Toolbar.Spacer />
@@ -281,7 +308,13 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
               variant="duration"
               durationMins={currentScript.durationMins}
             />
-            <Pill color={currentScript.color} variant="date" date={currentScript.updatedAt} />
+            <Pill
+              color={currentScript.color}
+              variant="date"
+              // updatedAt is an ISO string end-to-end now; Pill formats a Date,
+              // so the conversion happens here, at the point of display.
+              date={new Date(currentScript.updatedAt)}
+            />
           </View>
         </View>
 
@@ -297,7 +330,10 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
             onPress={() =>
               router.navigate({
                 pathname: "/(authenticated)/(script)/script",
-                params: { script: currentScript.id, color: currentScript.color },
+                params: {
+                  script: currentScript.id,
+                  color: currentScript.color,
+                },
               })
             }
           >
@@ -313,7 +349,10 @@ Every single time you open a file, plug in a keyboard, or save your work. The sy
               onPress={() =>
                 router.navigate({
                   pathname: "/(authenticated)/(script)/script",
-                  params: { script: currentScript.id, color: currentScript.color },
+                  params: {
+                    script: currentScript.id,
+                    color: currentScript.color,
+                  },
                 })
               }
             />

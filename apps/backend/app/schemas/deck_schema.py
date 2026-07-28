@@ -15,33 +15,10 @@ class AttachmentRequest(BaseModel):
     uri: str
 
 
-class DeckCreateRequest(BaseModel):
-    description: str = Field(
-        ...,
-        min_length=10,
-        description="Presentation topic or prompt",
-    )
-    card_count: int = Field(
-        ...,
-        alias="cardCount",
-        ge=1,
-        le=100,
-        description="Number of cards to generate",
-    )
-    duration_mins: int = Field(
-        ...,
-        alias="durationMinutes",
-        ge=1,
-        le=60,
-        description="Desired presentation duration in minutes",
-    )
-    audience: AudienceType = Field(
-        ...,
-        description="Intended audience for the presentation",
-    )
-
-
-    # attachments: List[AttachmentRequest] = []
+# There is no DeckCreateRequest any more. The brief that used to create a deck
+# now creates a ScriptGeneration instead — see ScriptGenerateRequest in
+# script_schema.py — and a deck is built from an accepted script rather than
+# from a brief.
 
 
 class DeckUpdateRequest(BaseModel):

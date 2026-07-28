@@ -7,7 +7,6 @@ from app.db.database import get_db
 from app.models.user_model import User
 from app.schemas.deck_schema import (
     AllDeckInfoResponse,
-    DeckCreateRequest,
     DeckResponse,
     DeckReviseRequest,
     DeckUpdateRequest,
@@ -15,20 +14,18 @@ from app.schemas.deck_schema import (
 
 router = APIRouter(prefix="/decks", tags=["Decks"])
 
+# There is deliberately no POST /decks.
+#
+# A deck is only ever born from an accepted script, at POST
+# /scripts/{id}/deck — which is what keeps the grid free of card-less ghost
+# decks left behind by generations the user walked away from. Everything here
+# operates on decks that already exist.
+
 
 @router.get("/health")
 def get_user_health_check():
     """Simple health check for users — no auth required."""
     return {"status": "ok", "service": "Deck-router"}
-
-
-@router.post("", response_model=DeckResponse, status_code=status.HTTP_201_CREATED)
-def create_deck(
-    payload: DeckCreateRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    return deck_controller.create_deck(payload, current_user, db)
 
 
 @router.get("/{deck_id}", response_model=DeckResponse)
@@ -61,6 +58,28 @@ def revise_deck_script(
     """Kicks off an AI rewrite of the existing script. Poll /{deck_id}/status
     for the result, exactly as with the initial generation."""
     return deck_controller.request_script_revision(deck_id, payload, current_user, db)
+
+
+@router.delete("/{deck_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_deck(
+    deck_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Soft delete — the deck stops appearing in listings but the row survives, so
+    an accidental delete stays recoverable. Cancels any in-flight generation."""
+    deck_controller.delete_deck(deck_id, current_user, db)
+
+
+@router.post("/{deck_id}/cancel", response_model=DeckResponse)
+def cancel_deck_script_generation(
+    deck_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Stop an in-flight script job. Terminates the worker so the AI provider
+    stops generating, rather than only dropping the task from the queue."""
+    return deck_controller.cancel_script_generation(deck_id, current_user, db)
 
 
 @router.get("", response_model=list[AllDeckInfoResponse])

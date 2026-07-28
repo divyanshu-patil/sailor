@@ -1,11 +1,20 @@
 import { create } from "zustand";
 
+/**
+ * The script currently being worked on, shared between the preview screen and
+ * the edit-script modal.
+ *
+ * `generationId` is a script generation, not a deck. A deck doesn't exist while
+ * this store is populated — it's created only when the user accepts the script —
+ * which is the whole point of the split: an abandoned script leaves nothing
+ * behind but a draft.
+ */
 interface ScriptStore {
-  jobId: string | null;
+  generationId: string | null;
   title: string;
   script: string;
   setResult: (result: {
-    job_id: string;
+    generationId: string;
     title: string;
     script: string;
   }) => void;
@@ -14,11 +23,11 @@ interface ScriptStore {
 }
 
 export const useScriptStore = create<ScriptStore>((set) => ({
-  jobId: null,
+  generationId: null,
   title: "",
   script: "",
-  setResult: ({ job_id, title, script }) =>
-    set({ jobId: job_id, title, script }),
+  setResult: ({ generationId, title, script }) =>
+    set({ generationId, title, script }),
   updateScript: (script) => set({ script }),
-  reset: () => set({ jobId: null, title: "", script: "" }),
+  reset: () => set({ generationId: null, title: "", script: "" }),
 }));

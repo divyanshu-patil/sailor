@@ -3,7 +3,20 @@ export type DeckItem = {
   title: string;
   description: string;
   color: string;
-  updatedAt: Date;
+  /**
+   * ISO-8601 string, not a Date.
+   *
+   * It's what the API sends, what SQLite stores, and what survives a round trip
+   * through expo-router params — all three of which previously needed a
+   * `new Date()` / `.toISOString()` conversion at a different boundary, and one
+   * of them was missing: the deck list came back from the API as strings while
+   * the sort helpers called `.getTime()` on them.
+   *
+   * ISO-8601 also sorts lexicographically in chronological order, so ordering
+   * needs no parsing. Components that format it construct a Date at the point of
+   * use.
+   */
+  updatedAt: string;
   slideCount: number;
   durationMins: number;
   isFavourite?: boolean;

@@ -1,10 +1,29 @@
 /* eslint-disable react-hooks/refs */
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   debounce,
   DebounceOptions,
   DebouncedFunction,
 } from "../utils/debounce";
+
+/**
+ * Debounce a *value* rather than a callback.
+ *
+ * For the case where the expensive work is an effect keyed on the value, not a
+ * handler you call — search being the obvious one: the query drives a SQL LIKE
+ * over every stored script, and running that per keystroke is what makes typing
+ * feel heavy.
+ */
+export function useDebouncedValue<T>(value: T, wait: number): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(value), wait);
+    return () => clearTimeout(timeout);
+  }, [value, wait]);
+
+  return debounced;
+}
 
 /**
  * React hook version of `debounce`.

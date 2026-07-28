@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 
 from app.config.settings import settings
 import app.models
@@ -7,7 +8,7 @@ celery_app = Celery(
     "sailor",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.deck_tasks", "app.tasks.card_tasks"],
+    include=["app.tasks.deck_tasks", "app.tasks.card_tasks", "app.tasks.script_tasks"],
 )
 
 celery_app.conf.update(
@@ -22,4 +23,21 @@ celery_app.conf.update(
     # crashes mid-generation.
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    # A script generation fans out to one concurrent AI call per beat, and cards
+    # to one per batch, so a single task holds several sockets open at once. The
+    # default soft/hard time limits are generous enough for that, but a hung
+    # provider connection would otherwise pin a worker slot indefinitely.
+    task_soft_time_limit=600,
+    task_time_limit=660,
+    beat_schedule={
+        # Backing out of the preview screen deliberately no longer cancels a
+        # generation. The cost is a job with nobody waiting for it whenever the
+        # app is killed outright — neither the home-screen nor the background
+        # cancel can catch that — so this sweeps them up server-side. See
+        # script_tasks.sweep_stale_generations.
+        "sweep-stale-script-generations": {
+            "task": "app.tasks.script_tasks.sweep_stale_generations",
+            "schedule": crontab(minute="*/5"),
+        },
+    },
 )
