@@ -13,34 +13,47 @@ import { getGeneratingMessages } from "../preview/components/generating/utils/ge
 import Card from "./components/card";
 import Spacer from "@/components/ui/shared/spacer";
 import Animated, { LinearTransition } from "react-native-reanimated";
+import { useDeck } from "@/hooks/use-deck";
 
 type ResultsScreenParams = {
-  jobId: string; // deck job id, handed off from PreviewScreen's handleCreate
+  /** The generation whose script was accepted. Not a deck id — there is no deck
+   *  yet. Cards are generated first and the deck is written together with them,
+   *  so this screen waits for one to exist rather than rendering an empty one. */
+  generationId: string;
 };
 
 const ResultsScreen = () => {
   const { colors } = useColors();
-  const { jobId } = useLocalSearchParams<ResultsScreenParams>();
+  const { generationId } = useLocalSearchParams<ResultsScreenParams>();
 
-  const { state, result, error, resumeDeckGeneration, stopDeckGeneration } =
-    useDeckGeneration();
+  const {
+    state,
+    deckId,
+    error,
+    resumeDeckGeneration,
+    retryDeckGeneration,
+    stopDeckGeneration,
+  } = useDeckGeneration();
+
+  // Only queried once the deck exists. `useDeck` is given an empty id until
+  // then, which reads nothing and fetches nothing — there is no row to find.
+  const { data: deck } = useDeck({ deckId: deckId ?? "", immediate: !!deckId });
 
   const startedRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current || !jobId) return;
+    if (startedRef.current || !generationId) return;
     startedRef.current = true;
-    resumeDeckGeneration(jobId);
-  }, [jobId, resumeDeckGeneration]);
+    resumeDeckGeneration(generationId);
+  }, [generationId, resumeDeckGeneration]);
 
-  useEffect(() => {
-    return () => {
-      if (state === "generating") {
-        stopDeckGeneration();
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /**
+   * Card generation isn't cancelled on unmount, for the same reason the script
+   * isn't: leaving a screen is not a decision to throw work away. The job
+   * finishes and the deck appears in the grid whenever the user next looks.
+   * Only the explicit Stop below cancels — and because nothing is written until
+   * the job completes, cancelling leaves a draft rather than a broken deck.
+   */
 
   const headerHeight = useHeaderHeight();
   return (
@@ -56,19 +69,17 @@ const ResultsScreen = () => {
           layout={LinearTransition.springify()}
         >
           <StatusText
-            labels={getGeneratingMessages(state, "Your Script is Ready")}
+            labels={getGeneratingMessages(
+              state,
+              "Your Deck is Ready",
+              error,
+              "deck",
+            )}
             accentColor={colors.rust}
           />
         </Animated.View>
         <Spacer />
-        {result && (
-          <Card
-            item={{
-              ...result,
-              updatedAt: new Date(result.updatedAt),
-            }}
-          />
-        )}
+        {deck && <Card item={deck} />}
         <Spacer />
       </Animated.View>
       {state !== "completed" && (
@@ -76,6 +87,7 @@ const ResultsScreen = () => {
           status={state}
           error={error}
           onStop={stopDeckGeneration}
+          onRetry={retryDeckGeneration}
         />
       )}
     </>
@@ -108,6 +120,5 @@ const styles = StyleSheet.create({
   },
   statusText: {
     position: "absolute",
-    // left: 0,
   },
 });

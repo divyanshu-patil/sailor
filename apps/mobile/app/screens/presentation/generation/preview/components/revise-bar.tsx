@@ -32,7 +32,9 @@ import {
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 
 type ReviseBarProps = {
-  onSubmit: (instruction: string) => Promise<void>;
+  /** Resolves false when the revision was rejected, which keeps the typed
+   *  instruction in the field instead of making the user retype it. */
+  onSubmit: (instruction: string) => Promise<boolean>;
   disabled?: boolean;
   accentColor?: string;
 };
@@ -64,8 +66,9 @@ const ReviseBar = forwardRef<ReviseBarRef, ReviseBarProps>(
 
       setSending(true);
       try {
-        await onSubmit(value);
-        fieldRef.current?.setText("");
+        if (await onSubmit(value)) {
+          fieldRef.current?.setText("");
+        }
       } finally {
         setSending(false);
       }

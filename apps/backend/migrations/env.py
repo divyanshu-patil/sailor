@@ -76,7 +76,18 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            # One transaction per migration, not one around the whole run.
+            #
+            # Postgres forbids *using* an enum value in the same transaction that
+            # added it, and this project's history has migrations that add enum
+            # values ('cancelled', 'faculty') followed by ones that create
+            # columns of that type. Committing between revisions keeps those
+            # independent, and means a failure part-way through a multi-revision
+            # upgrade leaves the revisions that did succeed applied and recorded
+            # rather than rolling the whole chain back.
+            transaction_per_migration=True,
         )
 
         with context.begin_transaction():

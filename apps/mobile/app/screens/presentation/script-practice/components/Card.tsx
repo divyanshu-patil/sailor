@@ -12,22 +12,20 @@ import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
 import Lucide from "@react-native-vector-icons/lucide";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import React from "react";
-export type Delivery =
-  | "energetic"
-  | "confident"
-  | "explaining"
-  | "curious"
-  | "dramatic"
-  | "gentle"
-  | "pause"
-  | "storytelling";
+// Delivery lives in @/types/presentation/card — it has to mirror the API's
+// SpeakingStyle enum, and a second copy here is exactly what let the two drift
+// apart (this one had "gentle", which the API has never sent, and was missing
+// two dozen values it does). Re-exported so existing imports of it from this
+// module keep working.
+import type { DeliveryLike } from "@/types/presentation/card";
+export type { Delivery, DeliveryLike } from "@/types/presentation/card";
 
 interface CardProps {
   text: string;
   reveal: string;
   color: string;
   impact: number;
-  delivery: Delivery;
+  delivery: DeliveryLike;
   numOfCards: number;
   currIndex: number;
   drag: {

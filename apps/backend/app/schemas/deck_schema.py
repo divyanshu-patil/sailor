@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.utils.enums.speaking_style import SpeakingStyle
-from app.utils.enums.deck_enums import DeckGenerationStatus, AudienceType
+from app.utils.enums.deck_enums import GenerationStatus, AudienceType
 
 
 class AttachmentRequest(BaseModel):
@@ -15,51 +15,47 @@ class AttachmentRequest(BaseModel):
     uri: str
 
 
-class DeckCreateRequest(BaseModel):
-    title: str = Field(
-        ...,
-        min_length=1,
-        description="Presentation title",
-    )
-    description: str = Field(
-        ...,
-        min_length=1,
-        description="Presentation topic or prompt",
-    )
-    card_count: int = Field(
-        ...,
-        alias="cardCount",
-        ge=1,
-        le=100,
-        description="Number of cards to generate",
-    )
-    duration_mins: int = Field(
-        ...,
-        alias="durationMinutes",
-        ge=1,
-        le=60,
-        description="Desired presentation duration in minutes",
-    )
-    audience: AudienceType = Field(
-        ...,
-        description="Intended audience for the presentation",
-    )
+# There is no DeckCreateRequest any more. The brief that used to create a deck
+# now creates a ScriptGeneration instead — see ScriptGenerateRequest in
+# script_schema.py — and a deck is built from an accepted script rather than
+# from a brief.
 
 
-    # attachments: List[AttachmentRequest] = []
+class DeckUpdateRequest(BaseModel):
+    """Manual (non-AI) edits from the app: the script editor, renaming a deck,
+    the favourite toggle. Every field is optional — only what's sent is written.
+    Accepts either the snake_case field name or the camelCase alias the mobile
+    client uses."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    script: Optional[str] = Field(default=None, min_length=1)
+    is_favorite: Optional[bool] = Field(default=None, alias="isFavourite")
+
+
+class DeckReviseRequest(BaseModel):
+    instruction: str = Field(
+        ...,
+        min_length=3,
+        max_length=1000,
+        description="What the presenter wants changed about the current script",
+    )
+
 
 class DeckResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
-    title: str
+    title: Optional[str] = None
+    description: Optional[str] = None
     script: Optional[str] = None
     color: str
     duration_mins: int
     card_count: int
     is_favorite: bool
-    generation_status: DeckGenerationStatus
+    generation_status: GenerationStatus
     generation_error: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -92,7 +88,7 @@ class AllDeckInfoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    title: str
+    title: Optional[str] = None
     description: str
     color: str
     updatedAt: datetime = Field(alias="updated_at")

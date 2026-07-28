@@ -1,33 +1,32 @@
-import json
-
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status, Query
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-import redis.asyncio as aioredis
-from app.db.database import SessionLocal, get_db
-from app.schemas.deck_schema import DeckCreateRequest, DeckResponse, AllDeckInfoResponse
-from app.auth.dependencies import get_current_user, resolve_user_from_claims
-from app.models.user_model import User
+from app.auth.dependencies import get_current_user
 from app.controllers import deck_controller
-from app.auth.clerk import decode_clerk_token
-from app.models.deck_model import Deck
-from app.utils.enums.deck_enums import DeckGenerationStatus
-from app.config.settings import settings
+from app.db.database import get_db
+from app.models.user_model import User
+from app.schemas.deck_schema import (
+    AllDeckInfoResponse,
+    DeckResponse,
+    DeckReviseRequest,
+    DeckUpdateRequest,
+)
 
 router = APIRouter(prefix="/decks", tags=["Decks"])
+
+# There is deliberately no POST /decks.
+#
+# A deck is only ever born from an accepted script, at POST
+# /scripts/{id}/deck — which is what keeps the grid free of card-less ghost
+# decks left behind by generations the user walked away from. Everything here
+# operates on decks that already exist.
+
 
 @router.get("/health")
 def get_user_health_check():
     """Simple health check for users — no auth required."""
     return {"status": "ok", "service": "Deck-router"}
 
-@router.post("/script/generate", response_model=DeckResponse, status_code=status.HTTP_201_CREATED)
-def create_deck(
-    payload: DeckCreateRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    return deck_controller.create_deck(payload, current_user, db)
 
 @router.get("/{deck_id}", response_model=DeckResponse)
 def get_deck(
@@ -38,59 +37,72 @@ def get_deck(
     return deck_controller.get_deck(deck_id, current_user, db)
 
 
-@router.get("/", response_model=list[AllDeckInfoResponse])
+@router.patch("/{deck_id}", response_model=DeckResponse)
+def update_deck(
+    deck_id: int,
+    payload: DeckUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Manual edits: the script editor, a rename, the favourite toggle."""
+    return deck_controller.update_deck(deck_id, payload, current_user, db)
+
+
+@router.post("/{deck_id}/revise", response_model=DeckResponse, status_code=status.HTTP_202_ACCEPTED)
+def revise_deck_script(
+    deck_id: int,
+    payload: DeckReviseRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Kicks off an AI rewrite of the existing script. Poll /{deck_id}/status
+    for the result, exactly as with the initial generation."""
+    return deck_controller.request_script_revision(deck_id, payload, current_user, db)
+
+
+@router.delete("/{deck_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_deck(
+    deck_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Soft delete — the deck stops appearing in listings but the row survives, so
+    an accidental delete stays recoverable. Cancels any in-flight generation."""
+    deck_controller.delete_deck(deck_id, current_user, db)
+
+
+@router.post("/{deck_id}/cancel", response_model=DeckResponse)
+def cancel_deck_script_generation(
+    deck_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Stop an in-flight script job. Terminates the worker so the AI provider
+    stops generating, rather than only dropping the task from the queue."""
+    return deck_controller.cancel_script_generation(deck_id, current_user, db)
+
+
+@router.get("", response_model=list[AllDeckInfoResponse], response_model_by_alias=False)
 def list_decks(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """`response_model_by_alias=False` is load-bearing.
+
+    AllDeckInfoResponse names its fields in camelCase and uses snake_case
+    *aliases* to read them off the SQLAlchemy model. FastAPI serialises by alias
+    by default, so this endpoint was emitting `card_count` / `duration_mins`
+    while the client read `slideCount` / `durationMins` — every deck arrived with
+    0 cards and a NaN duration, and the malformed row raced the correct one from
+    the detail endpoint. Serialising by field name is what the schema was written
+    for.
+    """
     return deck_controller.list_decks(current_user, db)
 
-@router.websocket("/{deck_id}/ws")
-async def deck_progress_ws(websocket: WebSocket, deck_id: int, token: str | None = Query(default=None)):
-    await websocket.accept()
-
-    claims = decode_clerk_token(token) if token else None
-    if claims is None:
-        await websocket.close(code=4401)
-        return
-
-    db = SessionLocal()
-    try:
-        user = resolve_user_from_claims(claims, db)
-        deck = db.query(Deck).filter(Deck.id == deck_id, Deck.user_id == user.id).one_or_none()
-        if deck is None:
-            await websocket.close(code=4404)
-            return
-
-        # Already finished by the time the client connected — send final state and stop.
-        if deck.generation_status in (DeckGenerationStatus.COMPLETED, DeckGenerationStatus.FAILED):
-            if deck.generation_status == DeckGenerationStatus.COMPLETED:
-                await websocket.send_json(
-                    {"status": "completed", "deck": DeckResponse.model_validate(deck).model_dump(mode="json")}
-                )
-            else:
-                await websocket.send_json({"status": "failed", "error": deck.generation_error})
-            await websocket.close(code=1000)
-            return
-    finally:
-        db.close()
-
-    redis_client = aioredis.from_url(settings.REDIS_URL)
-    pubsub = redis_client.pubsub()
-    channel = f"deck:{deck_id}:events"
-    await pubsub.subscribe(channel)
-
-    try:
-        async for message in pubsub.listen():
-            if message["type"] != "message":
-                continue
-            payload = json.loads(message["data"])
-            await websocket.send_json(payload)
-            if payload.get("status") in ("completed", "failed"):
-                break
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.close()
-        await redis_client.close()
+@router.get("/{deck_id}/status")
+def get_deck_generation_status(
+    deck_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return deck_controller.get_deck_generation_status(deck_id, current_user, db)

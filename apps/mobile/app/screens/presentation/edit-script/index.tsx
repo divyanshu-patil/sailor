@@ -1,5 +1,5 @@
-import { Keyboard, StyleSheet, TextInput } from "react-native";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Keyboard, StyleSheet, Text, TextInput } from "react-native";
+import React, { useCallback, useRef, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useScriptStore } from "@/store/script-store";
 import { useScriptGeneration } from "../hooks/use-script-generation";
@@ -11,25 +11,30 @@ import {
 import { useHeaderHeight } from "expo-router/build/react-navigation";
 
 type EditScriptScreenParams = {
-  jobId: string;
+  generationId: string;
 };
 
 const HISTORY_DEBOUNCE_MS = 500;
 
 const EditScriptScreen = () => {
-  const { jobId } = useLocalSearchParams<EditScriptScreenParams>();
-  const { script, setResult } = useScriptStore();
+  const { generationId } = useLocalSearchParams<EditScriptScreenParams>();
+  const script = useScriptStore((s) => s.script);
+  const setResult = useScriptStore((s) => s.setResult);
   const [scriptValue, setScriptValue] = useState<string>(script);
 
-  // Use the presentation hook which uses debug service
-  const { edit, isRevising: saving, attach } = useScriptGeneration();
-
-  // Attach to the job when jobId is available
-  useEffect(() => {
-    if (jobId) {
-      attach(jobId);
-    }
-  }, [jobId, attach]);
+  // The local undo stack below is per-keystroke, for this editing session only.
+  // It's distinct from the script's *version* history — which spans generations,
+  // AI revisions and saved edits, and lives on the preview screen's toolbar. A
+  // save appends to that one; the stack here is discarded when the modal closes.
+  //
+  // No `attach` here on purpose. This screen has nothing to poll — the script is
+  // already written and the save is a plain PATCH — but attaching started a full
+  // polling lifecycle, and because `attach`'s identity changed every render the
+  // effect that called it re-fired on every render: attach -> poll -> "completed"
+  // -> setState -> render -> new attach -> attach again, one GET /status per
+  // round trip for as long as the modal stayed open. The generation id goes
+  // straight to `edit` instead.
+  const { edit, isRevising: saving, error: saveError } = useScriptGeneration();
 
   // undo/redo history
   const historyRef = useRef<string[]>([script]);
@@ -96,11 +101,10 @@ const EditScriptScreen = () => {
   const handleConfirm = async () => {
     if (saving) return;
     try {
-      // Pass the jobId and script value to the edit function
-      const updated = await edit(scriptValue);
+      const updated = await edit(scriptValue, generationId);
       if (updated) {
         setResult({
-          job_id: updated.job_id,
+          generationId: updated.id,
           title: updated.title,
           script: updated.script,
         });
@@ -109,8 +113,10 @@ const EditScriptScreen = () => {
 
         router.dismiss();
       }
+      // A failed save leaves the modal open with the user's text intact and
+      // `saveError` rendered below — dismissing here would throw the edit away.
     } catch {
-      // surface a toast/snackbar here in your existing error pattern
+      // `edit` already captured the reason into `saveError`.
     }
   };
 
@@ -146,6 +152,7 @@ const EditScriptScreen = () => {
         behavior="padding"
         keyboardVerticalOffset={headerHeight}
       >
+        {!!saveError && <Text style={styles.error}>{saveError}</Text>}
         <TextInput
           style={styles.input}
           value={scriptValue}
@@ -166,6 +173,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1, // <-- was missing; lets TextInput own its scroll region
     paddingHorizontal: 30,
+  },
+  error: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#C0392B",
+    paddingBottom: 12,
   },
   input: {
     flex: 1, // <-- fill the container

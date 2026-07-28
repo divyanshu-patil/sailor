@@ -1,81 +1,57 @@
-import { ScrollView, StyleSheet, Text } from "react-native";
-import React, { useMemo } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
+import React from "react";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { fonts } from "@/constants/fonts";
-import { ScriptLine } from "./ScriptLine";
+import { useDeck } from "@/hooks";
+import ScriptText from "../generation/preview/components/script-text/script-text";
 
 type ScriptTextParams = {
+  /** The deck id. Named `script` because that's what the detail screen's Link
+   *  passes; the deck id is the script's id everywhere in this flow. */
   script: string;
   color: string;
 };
 
-type ScriptData = {
-  id: string;
-  text: string;
-};
-
-const SCRIPTS: ScriptData[] = [
-  {
-    id: "1",
-    text: `Your CPU speaks at the **speed of light**. Your hard disk speaks at the *speed of a bicycle*. And somehow — they have to talk to each other.
-Every single time you open a file, plug in a keyboard, or save your work.
-The system that makes that conversation possible — **without crashing**, *without data loss*, without freezing your processor — is the **Advanced I/O System**.
-And understanding it is understanding the **backbone** of every computer ever built.`,
-  },
-  {
-    id: "2",
-    text: `Revenue is up **23% quarter-over-quarter**. Churn dropped to *4.2%* — the lowest we've ever seen.
-The roadmap ahead is **ambitious but clear**.
-We're not just hitting numbers. We're *building something that lasts*.`,
-  },
-];
-
-function getScriptById(id: string): ScriptData | null {
-  return SCRIPTS.find((s) => s.id === id) ?? null;
-}
-
 const ScriptTextScreen = () => {
-  const params = useLocalSearchParams<ScriptTextParams>();
-  const script = useMemo(
-    () => ({
-      id: params.script,
-      color: params.color,
-    }),
-    [params],
-  );
-  const screenColor = colord(script.color).lighten(0.18).toHex();
-  const scriptText = getScriptById(script.id);
-  const lines =
-    scriptText?.text.split("\n").filter((l) => l.trim() !== "") ?? [];
+  const { script: deckId, color } = useLocalSearchParams<ScriptTextParams>();
+
+  // The screen used to look the script up in a hardcoded two-entry array keyed
+  // on ids "1" and "2", so a real deck id never matched and every deck rendered
+  // "No script found." The script comes off the deck row now — from SQLite on
+  // the first frame, refreshed from the detail endpoint behind it.
+  const { script, isLoading } = useDeck({ deckId });
+
+  const screenColor = colord(color).lighten(0.18).toHex();
+  // A `const` rather than a boolean flag so it narrows `string | null` for both
+  // the copy button and the renderer below.
+  const scriptText = script?.trim() ? script : null;
 
   return (
     <>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={"rectangle.portrait.on.rectangle.portrait"}
-          onPress={() =>
-            lines.length > 0 && Clipboard.setString(scriptText?.text as string)
-          }
+          disabled={!scriptText}
+          onPress={() => scriptText && Clipboard.setString(scriptText)}
         />
       </Stack.Toolbar>
       <ScrollView
-        style={{ backgroundColor: screenColor }}
+        style={[styles.screen, { backgroundColor: screenColor }]}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
       >
-        {lines.length === 0 ? (
-          <Text style={styles.empty}>No script found.</Text>
+        {scriptText ? (
+          // Same component and the same props the preview screen renders with,
+          // so the markdown — bold stress, italic delivery notes, `> ` pause
+          // blockquotes — lays out identically in both places.
+          <ScriptText script={scriptText} fontSize={20} />
+        ) : isLoading ? (
+          <ActivityIndicator style={styles.loading} />
         ) : (
-          lines.map((line, i) => (
-            <ScriptLine
-              key={i}
-              line={line}
-              color={params.color}
-              shouldHighlightBold
-            />
-          ))
+          <Text style={styles.empty}>No script found.</Text>
         )}
       </ScrollView>
     </>
@@ -85,12 +61,12 @@ const ScriptTextScreen = () => {
 export default ScriptTextScreen;
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: {
-    paddingHorizontal: 32,
-    paddingVertical: 48,
-    gap: 28,
-    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 30,
   },
+  loading: { marginTop: 80 },
   empty: {
     fontFamily: fonts.amarna.regular,
     fontSize: 16,

@@ -17,7 +17,6 @@ import Animated, {
   Extrapolation,
 } from "react-native-reanimated";
 import { fonts } from "@/constants/fonts";
-import { scheduleOnRN } from "react-native-worklets";
 import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/spring";
 
 type TextMorphProps = {
@@ -188,6 +187,13 @@ function MorphChar({
   const [displayLabel, setDisplayLabel] = React.useState(entry.label);
   const prevLabelRef = React.useRef(entry.label);
 
+  // Read through a ref so a new `onExitComplete` identity from the parent
+  // can't re-run — and therefore restart — the exit animation below.
+  const onExitCompleteRef = React.useRef(onExitComplete);
+  useEffect(() => {
+    onExitCompleteRef.current = onExitComplete;
+  });
+
   useEffect(() => {
     if (exiting) return; // handled in the exit effect below
 
@@ -226,21 +232,30 @@ function MorphChar({
 
   useEffect(() => {
     if (!exiting) return;
-    // exit: fade out, translate down, blur out — then remove from state
+    // exit: fade out, translate down, blur out — then remove from state.
+    //
+    // The removal is timed on the JS side instead of being fired from the
+    // withTiming callback. `scheduleOnRN` serialises its target into the
+    // worklet runtime on every run, and there is one of these per character:
+    // when the status line swapped out, the whole string exited at once and
+    // each completion re-rendered the parent, which re-armed every other
+    // character's callback. That burst is what aborted the JS thread inside
+    // the worklets runtime. A timer matching the animation duration removes
+    // the worklet -> JS hop entirely and looks identical on screen.
     opacity.value = withTiming(0, { duration: ANIMATION_CONFIG.duration.exit });
     translateY.value = withTiming(ANIMATION_CONFIG.translate.exitTo, {
       duration: ANIMATION_CONFIG.duration.exit,
     });
-    exitBlur.value = withTiming(
-      ANIMATION_CONFIG.blur.exitPeak,
-      { duration: ANIMATION_CONFIG.duration.exit },
-      (finished) => {
-        if (finished && onExitComplete) {
-          scheduleOnRN(onExitComplete, entry.id);
-        }
-      },
-    );
-  }, [entry.id, exitBlur, exiting, onExitComplete, opacity, translateY]);
+    exitBlur.value = withTiming(ANIMATION_CONFIG.blur.exitPeak, {
+      duration: ANIMATION_CONFIG.duration.exit,
+    });
+
+    const timeout = setTimeout(() => {
+      onExitCompleteRef.current?.(entry.id);
+    }, ANIMATION_CONFIG.duration.exit);
+
+    return () => clearTimeout(timeout);
+  }, [entry.id, exitBlur, exiting, opacity, translateY]);
 
   // same character identity (id is keyed on lowercase letter), but the glyph
   // itself changed case — e.g. "a" -> "A". Cross-fade the label instead of
@@ -258,21 +273,22 @@ function MorphChar({
       prevLabel !== nextLabel;
 
     if (isCaseSwap) {
-      caseFadeOpacity.value = withTiming(
-        0,
-        { duration: ANIMATION_CONFIG.caseChange.duration },
-        (finished) => {
-          if (finished) {
-            scheduleOnRN(setDisplayLabel, nextLabel);
-            caseFadeOpacity.value = withTiming(1, {
-              duration: ANIMATION_CONFIG.caseChange.duration,
-            });
-          }
-        },
-      );
-    } else {
-      setDisplayLabel(nextLabel);
+      // Same JS-timer treatment as the exit above — no worklet -> JS hop.
+      caseFadeOpacity.value = withTiming(0, {
+        duration: ANIMATION_CONFIG.caseChange.duration,
+      });
+
+      const timeout = setTimeout(() => {
+        setDisplayLabel(nextLabel);
+        caseFadeOpacity.value = withTiming(1, {
+          duration: ANIMATION_CONFIG.caseChange.duration,
+        });
+      }, ANIMATION_CONFIG.caseChange.duration);
+
+      return () => clearTimeout(timeout);
     }
+
+    setDisplayLabel(nextLabel);
   }, [entry.label, exiting, caseFadeOpacity]);
 
   const animatedX = useDerivedValue(() => x.value + translateX.value);
@@ -358,9 +374,11 @@ export function TextMorph({
     ]);
   }
 
-  const handleExitComplete = (id: string) => {
+  // Stable identity: MorphChar's exit effect must not re-run (and so restart
+  // the exit animation) every time this component re-renders.
+  const handleExitComplete = React.useCallback((id: string) => {
     setDisplayedCharacters((prev) => prev.filter((c) => c.id !== id));
-  };
+  }, []);
 
   if (!font) return <View style={{ height: resolvedLineHeight * maxLines }} />;
 

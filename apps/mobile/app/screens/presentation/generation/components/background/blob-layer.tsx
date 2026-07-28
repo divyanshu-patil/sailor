@@ -18,6 +18,8 @@ interface BlobLayerProps {
   speed?: number; // 1 = default, 2 = twice as fast, 0.5 = half speed
   minDurationMs?: number;
   maxDurationMs?: number;
+  /** false parks the blobs where they are — still drawn, no longer drifting. */
+  animate?: boolean;
 }
 
 const AnimatedBlob = ({
@@ -31,12 +33,14 @@ const AnimatedBlob = ({
   speed,
   minDurationMs,
   maxDurationMs,
+  animate,
 }: BlobConfig & {
   width: number;
   height: number;
   speed: number;
   minDurationMs: number;
   maxDurationMs: number;
+  animate: boolean;
 }) => {
   const cx = useFloatingValue(
     startX,
@@ -45,6 +49,7 @@ const AnimatedBlob = ({
     minDurationMs,
     maxDurationMs,
     speed,
+    animate,
   );
   const cy = useFloatingValue(
     startY,
@@ -53,6 +58,7 @@ const AnimatedBlob = ({
     minDurationMs,
     maxDurationMs,
     speed,
+    animate,
   );
   const radius = useFloatingValue(
     r,
@@ -61,6 +67,7 @@ const AnimatedBlob = ({
     minDurationMs * 0.75,
     maxDurationMs * 0.75,
     speed,
+    animate,
   );
 
   const content = <Blob cx={cx} cy={cy} r={radius} color={color} />;
@@ -76,6 +83,7 @@ const BlobLayer = ({
   speed = 1,
   minDurationMs = 4000,
   maxDurationMs = 8000,
+  animate = true,
 }: BlobLayerProps) => {
   return (
     <Group
@@ -94,6 +102,7 @@ const BlobLayer = ({
           speed={speed}
           minDurationMs={minDurationMs}
           maxDurationMs={maxDurationMs}
+          animate={animate}
         />
       ))}
     </Group>

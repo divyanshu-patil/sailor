@@ -1,11 +1,26 @@
 import { ScrollView, StyleSheet, Text, View, Alert } from "react-native";
-import React, { useState } from "react";
-import { Stack, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import HomeScreen from "@/screens/home/home";
 import apiClient from "@/lib/api/client";
+import { cancelActiveGeneration } from "@/lib/generation-guard";
 
 const Home = () => {
   const router = useRouter();
+
+  /**
+   * Landing here is what ends an in-flight script generation.
+   *
+   * Backing out of the preview screen no longer cancels anything — that gesture
+   * is too easy to hit by accident, and losing a minute of generation to it was
+   * the problem. Reaching home is unambiguous: the user left the creation flow,
+   * so the job stops. A no-op when nothing is running.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      void cancelActiveGeneration("navigated home");
+    }, []),
+  );
 
   // TEMP: Health check button
   const [checking, setChecking] = useState(false);

@@ -30,7 +30,7 @@ import { useIntroAnimation } from "./hooks/useIntroAnimation";
 import { RETURN_START_X, VISIBLE_COUNT } from "./constants";
 import { getCardsProgressInfoText } from "./utils/getCardsProgressInfoText";
 import { useRecordingTimer } from "./hooks/useRecordingTimer";
-import { getDeliveryEmoji } from "./utils/getDeliveryEmoji";
+import { formatDelivery, getDeliveryEmoji } from "./utils/getDeliveryEmoji";
 import DeliveryPill from "./components/DeliveryPill";
 import { lightenColor } from "./utils/lightenColor";
 import DurationText from "./components/DurationText";
@@ -186,7 +186,7 @@ const ScriptPracticeScreen = () => {
       const safeIndex = Math.min(currIndex, cards.length - 1);
       const card = cards[safeIndex];
       if (!card) return "";
-      return `${getDeliveryEmoji(card.delivery)} ${card.delivery}`;
+      return `${getDeliveryEmoji(card.delivery)} ${formatDelivery(card.delivery)}`;
     },
     [cards],
   );

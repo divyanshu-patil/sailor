@@ -100,7 +100,8 @@
       "@react-native-vector-icons/lucide",
       "expo-audio",
       "expo-image",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-sqlite"
     ],
     "extra": {
       "EXPO_PUBLIC_CLERK_GOOGLE_WEB_CLIENT_ID": "303236832902-rj0p6ii09h0p8r25ftp1i0krrdrqi238.apps.googleusercontent.com",

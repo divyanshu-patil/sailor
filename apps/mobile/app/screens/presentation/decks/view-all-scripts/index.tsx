@@ -1,11 +1,11 @@
 // screens/presentation/decks/all-scripts.tsx (or wherever this file lives)
 import {
-  ComponentType,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
+  type ForwardRefExoticComponent,
+  type RefAttributes,
 } from "react";
 import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
@@ -14,7 +14,6 @@ import {
   type FlashListRef,
   type ListRenderItem,
 } from "@shopify/flash-list";
-import { ForwardRefExoticComponent, RefAttributes } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -30,7 +29,7 @@ import { Stack } from "expo-router";
 
 import { Card } from "../components/Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "../components/constants";
-import { DeckItem } from "@/services/deck.debug.service";
+import { DeckItem } from "@/services/deck.service";
 import {
   useDecks,
   filterAndSortDecks,
@@ -82,11 +81,6 @@ const AllScriptsScreen = () => {
   );
 
   const scrollY = useSharedValue(0);
-  const isRefreshingShared = useSharedValue(0);
-
-  useEffect(() => {
-    isRefreshingShared.value = isRefreshing ? 1 : 0;
-  }, [isRefreshing, isRefreshingShared]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -97,31 +91,30 @@ const AllScriptsScreen = () => {
   const restOffset = -headerHeight;
   const pullOffset = -(headerHeight + PULL_DISTANCE_FOR_FULL_OPACITY);
 
-  const mascotContainerStyle = useAnimatedStyle(() => {
-    const pulled = restOffset - scrollY.value;
-    const height = Math.max(0, pulled);
+  // Purely a function of the scroll position now — no refreshing branch at all.
+  // The mascot belongs to the pull gesture and nothing else: it grows under the
+  // finger and collapses back to 0 as the list springs home on release, at which
+  // point the shimmer bar takes over as the only sign that a load is running.
+  // Anything that held this open during the refresh had to jump to that held
+  // height the instant the refresh began, which was the flicker.
+  const mascotContainerStyle = useAnimatedStyle(() => ({
+    opacity: 1,
+    height: Math.max(0, restOffset - scrollY.value),
+  }));
 
-    return {
-      opacity: 1,
-      height: isRefreshingShared.value
-        ? PULL_DISTANCE_FOR_FULL_OPACITY
-        : height,
-    };
-  });
-
-  const mascotImageStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollY.value,
-      [pullOffset, restOffset],
-      [1, 0],
-      Extrapolation.CLAMP,
-    );
-
-    return {
-      transform: [{ scale: isRefreshingShared.value ? 1 : scale }],
-      transformOrigin: ["50%", "100%", 0],
-    };
-  });
+  const mascotImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(
+          scrollY.value,
+          [pullOffset, restOffset],
+          [1, 0],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+    transformOrigin: ["50%", "100%", 0],
+  }));
 
   const renderItem: ListRenderItem<DeckItem> = useCallback(
     ({ item, index }) => (
@@ -230,7 +223,7 @@ const AllScriptsScreen = () => {
         keyExtractor={(item: DeckItem) => item.id}
         renderItem={renderItem}
         ListHeaderComponent={
-          isLoading ? (
+          isLoading || isRefreshing ? (
             <ShimmerBar height={SHIMMER_BAR_HEIGHT} color={"#A0C4E2"} />
           ) : null
         }
@@ -244,7 +237,6 @@ const AllScriptsScreen = () => {
         numColumns={2}
         optimizeItemArrangement
         maintainVisibleContentPosition={{ disabled: true }}
-        scrollEnabled={!isRefreshing}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         contentInsetAdjustmentBehavior="automatic"
@@ -252,7 +244,13 @@ const AllScriptsScreen = () => {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
+            // Never held open. `refreshing` is what keeps the control — and the
+            // ~60px of content inset under it — pinned down for the length of
+            // the request, which would leave an empty gap where the mascot used
+            // to be. Pinned to false, the list springs straight back on release
+            // (so the mascot's height reaches 0) while `onRefresh` still fires
+            // on the pull. The shimmer bar reports the load from there.
+            refreshing={false}
             onRefresh={onRefresh}
             tintColor="transparent"
             colors={["transparent"]}

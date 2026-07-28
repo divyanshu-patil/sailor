@@ -1,8 +1,7 @@
 import React from "react";
 import { WrappedText } from "./wrapped-text";
-import { FontSet } from "./text-layout";
-
-type Segment = { text: string; bold: boolean; italic: boolean };
+import { FontSet, Segment } from "../text-layout";
+import { RevealMode } from "../config";
 
 interface QuoteProps {
   lines: Segment[][];
@@ -15,8 +14,10 @@ interface QuoteProps {
   borderWidth?: number;
   borderColor?: string;
   justify?: boolean;
-  index: number;
-  delay?: number;
+  width: number;
+  reveal: RevealMode;
+  revealIndex: number;
+  tint: string;
 }
 
 export const Quote = React.memo(
@@ -31,13 +32,13 @@ export const Quote = React.memo(
     borderWidth = 3,
     borderColor = "#B75C5C",
     justify = false,
-    delay,
-    index,
+    width,
+    reveal,
+    revealIndex,
+    tint,
   }: QuoteProps) => {
     return (
       <WrappedText
-        index={index}
-        delay={delay}
         lines={lines}
         fonts={fonts}
         fontSize={fontSize}
@@ -45,7 +46,11 @@ export const Quote = React.memo(
         color={color}
         justify={justify}
         spacing={blockSpacing}
+        width={width}
         contentWidthOffset={indent}
+        reveal={reveal}
+        revealIndex={revealIndex}
+        tint={tint}
         style={{
           paddingLeft: indent,
           borderLeftWidth: borderWidth,

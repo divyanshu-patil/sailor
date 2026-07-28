@@ -5,7 +5,7 @@ from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db.base import Base
 from typing import TYPE_CHECKING, Optional
-from app.utils.enums.deck_enums import DeckGenerationStatus, AudienceType
+from app.utils.enums.deck_enums import GenerationStatus, AudienceType
 if TYPE_CHECKING:
     from app.models.user_model import User
     from app.models.card_model import Card
@@ -28,7 +28,7 @@ class Deck(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    title: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
      # Nullable on purpose: the row exists the instant the user hits "create",
@@ -68,16 +68,16 @@ class Deck(Base):
     # AI script generation tracking
     # One AI job per deck (generate the markdown script), so this lives
     # directly on Deck rather than in a separate jobs table.
-    generation_status: Mapped[DeckGenerationStatus] = mapped_column(
+    generation_status: Mapped[GenerationStatus] = mapped_column(
         SAEnum(
-            DeckGenerationStatus,
+            GenerationStatus,
             values_callable=lambda enum: [e.value for e in enum],
             name="generation_status_enum",
             native_enum=True,
         ),
         nullable=False,
-        default=DeckGenerationStatus.PENDING,
-        server_default=DeckGenerationStatus.PENDING.value,
+        default=GenerationStatus.PENDING,
+        server_default=GenerationStatus.PENDING.value,
         index=True,
     )
     celery_task_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
@@ -88,8 +88,21 @@ class Deck(Base):
         default=0,
         server_default=text("0"),
     )
-    generation_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    generation_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    cards_generation_status: Mapped[GenerationStatus] = mapped_column(
+        SAEnum(
+            GenerationStatus,
+            values_callable=lambda enum: [e.value for e in enum],
+            name="generation_status_enum",
+            native_enum=True,
+        ),
+        nullable=False,
+        default=GenerationStatus.PENDING,
+        server_default=GenerationStatus.PENDING.value,
+        index=True,
+    )
+    cards_celery_task_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    cards_generation_error: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
     # soft delete

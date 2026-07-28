@@ -36,18 +36,30 @@ const StatusText = ({
   const [statusText, setStatusText] = useState(orderedLabels[0]);
   const [currentIndex, setCurrentIndex] = useState(1);
 
-  // keep orderedLabels in sync if the `labels` prop itself changes
-  const labelsRef = useRef(labels);
+  // Keep orderedLabels in sync when the `labels` prop changes.
+  //
+  // Compared by content, not identity: this resets state, so an unmemoised
+  // array from the caller would reset -> re-render -> new array -> reset,
+  // forever. Content comparison makes the component safe to call either way.
+  const labelsKey = labels.join("\u0000");
+  const labelsKeyRef = useRef(labelsKey);
   useEffect(() => {
-    if (labelsRef.current !== labels) {
-      labelsRef.current = labels;
+    if (labelsKeyRef.current !== labelsKey) {
+      labelsKeyRef.current = labelsKey;
       setOrderedLabels(labels);
       setCurrentIndex(1);
       setStatusText(labels[0]);
     }
-  }, [labels]);
+    // `labels` is intentionally not a dep — `labelsKey` stands in for it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labelsKey]);
 
   useEffect(() => {
+    // Nothing to rotate through — this is the completed/failed case, where the
+    // single label is the deck title. Skip the interval rather than reshuffle
+    // a one-item array every tick.
+    if (orderedLabels.length <= 1) return;
+
     const intervalId = setInterval(() => {
       const nextIndex = currentIndex % orderedLabels.length;
 

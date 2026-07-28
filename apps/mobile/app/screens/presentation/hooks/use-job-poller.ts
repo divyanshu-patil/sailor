@@ -7,15 +7,29 @@ export type JobState =
   | "failed"
   | "cancelled";
 
-interface JobStatusLike {
-  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
+interface JobStatusLike<TResult> {
+  // "retrying" is written by the Celery tasks between attempts; it's just
+  // another in-progress state as far as the poller is concerned. "cancelled"
+  // only ever arrives after this client asked for it.
+  status:
+    | "pending"
+    | "processing"
+    | "retrying"
+    | "completed"
+    | "failed"
+    | "cancelled";
   error?: string;
+  /** Set when the status endpoint returns the finished payload inline, which
+   *  saves the extra getResult round trip. */
+  result?: TResult;
 }
 
 interface UseJobPollerOptions<TResult> {
   pollIntervalMs?: number;
-  getStatus: (jobId: string) => Promise<JobStatusLike>;
+  getStatus: (jobId: string) => Promise<JobStatusLike<TResult>>;
   getResult: (jobId: string) => Promise<TResult>;
+  /** Terminates the job server-side. Without one, `stop()` only stops polling
+   *  and the provider keeps generating a script nobody is waiting for. */
   cancelJob?: (jobId: string) => Promise<void>;
 }
 
@@ -60,7 +74,7 @@ export function useJobPoller<TResult>({
         if (stoppedRef.current) return;
 
         if (statusRes.status === "completed") {
-          const fullResult = await getResult(jobId);
+          const fullResult = statusRes.result ?? (await getResult(jobId));
           if (stoppedRef.current) return;
           setResult(fullResult);
           setState("completed");
@@ -74,11 +88,13 @@ export function useJobPoller<TResult>({
         }
 
         if (statusRes.status === "cancelled") {
+          // Terminal, and not an error: stop polling without setting one.
+          stoppedRef.current = true;
           setState("cancelled");
           return;
         }
 
-        // still pending/processing — poll again via the ref, not the closure
+        // still pending/processing/retrying — poll again via the ref, not the closure
         timeoutRef.current = setTimeout(() => {
           pollRef.current?.(jobId);
         }, pollIntervalMs);
@@ -97,12 +113,15 @@ export function useJobPoller<TResult>({
   }, [poll]);
 
   /**
-   * kickoff() is whatever call actually starts the job server-side
-   * (e.g. scriptService.generate, or scriptService.confirm). It just
+   * kickoff() is whatever call actually starts the job server-side. It just
    * needs to resolve with a job_id.
    */
   const start = useCallback(
     async (kickoff: () => Promise<{ job_id: string }>) => {
+      // Any chain already scheduled has to die here, or start/attach/retry each
+      // add a second concurrent chain on the same job and the request rate
+      // doubles per call.
+      clearPoll();
       stoppedRef.current = false;
       setError(null);
       setResult(null);
@@ -128,6 +147,7 @@ export function useJobPoller<TResult>({
    * but skips the kickoff call — just begins polling an existing job_id.
    */
   const attach = useCallback((jobId: string) => {
+    clearPoll();
     stoppedRef.current = false;
     setError(null);
     setResult(null);
@@ -137,28 +157,89 @@ export function useJobPoller<TResult>({
   }, []);
 
   const stop = useCallback(async () => {
+    // Flip the UI to "cancelled" before awaiting the round trip, not after: the
+    // user tapped Stop and the screen has to acknowledge that immediately, and
+    // the request below is best-effort anyway.
     stoppedRef.current = true;
     clearPoll();
+    setState("cancelled");
 
     if (jobIdRef.current && cancelJob) {
       try {
         await cancelJob(jobIdRef.current);
       } catch {
-        // best-effort — even if cancel fails server-side, stop the UI
+        // Best-effort. A failed cancel leaves the job running server-side, but
+        // there's nothing useful to show the user here — the deck's own status
+        // is still the source of truth next time they open it.
       }
     }
-
-    setState("cancelled");
   }, [cancelJob]);
+
+  /**
+   * Re-run a job that failed or was cancelled, on the same id.
+   *
+   * Separate from `start` because there's no kickoff payload to re-supply: the
+   * backend still has the original brief, so "Try again" is a re-queue rather
+   * than a new submission.
+   */
+  const retry = useCallback(
+    async (retryJob: (jobId: string) => Promise<{ job_id: string }>) => {
+      const jobId = jobIdRef.current;
+      if (!jobId) return undefined;
+
+      clearPoll();
+      stoppedRef.current = false;
+      setError(null);
+      setResult(null);
+      setState("generating");
+
+      try {
+        await retryJob(jobId);
+        pollRef.current?.(jobId);
+        return jobId;
+      } catch (e) {
+        setError("Couldn't restart generation");
+        setState("failed");
+        throw e;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     return () => clearPoll(); // cleanup on unmount
   }, []);
 
-  // Expose setResult for external use (e.g., for revise operations)
+  /**
+   * Publish a result the caller already has, without polling for it.
+   *
+   * Two callers need this: resuming a job that finished while the app was
+   * elsewhere, and a manual edit, which returns the new script synchronously.
+   * Both are "the job is done and here is the answer", so this settles the state
+   * as well as the value — setting only the result left the screen rendering its
+   * generating state over a script that had already arrived.
+   *
+   * Any in-flight poll chain is torn down: it can only be about to report the
+   * same terminal state, and letting it land would overwrite a fresher result
+   * with a staler one.
+   */
   const handleSetResult = useCallback((newResult: TResult) => {
+    stoppedRef.current = true;
+    clearPoll();
     setResult(newResult);
+    setError(null);
+    setState("completed");
   }, []);
 
-  return { state, result, error, jobIdRef, start, attach, stop, setResult: handleSetResult };
+  return {
+    state,
+    result,
+    error,
+    jobIdRef,
+    start,
+    attach,
+    stop,
+    retry,
+    setResult: handleSetResult,
+  };
 }

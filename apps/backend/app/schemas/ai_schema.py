@@ -45,8 +45,14 @@ _DELIVERY_SYNONYMS = {
 _VALID_DELIVERY_VALUES = {s.value for s in SpeakingStyle}
 
 
-def _normalize_delivery(raw: str) -> str:
-    """Best-effort mapping of an arbitrary AI string onto SpeakingStyle."""
+def normalize_delivery(raw: str) -> str:
+    """Best-effort mapping of an arbitrary AI string onto SpeakingStyle.
+
+    Public because the card generator needs it too: the model reaches for words
+    outside the enum often enough ('explanatory', 'sad' both seen in production)
+    that treating an unknown value as fatal cost a whole batch each time. Same
+    normalisation in both places means one list of synonyms to maintain.
+    """
     key = re.sub(r"[\s\-]+", "_", raw.strip().lower())
 
     if key in _VALID_DELIVERY_VALUES:
@@ -72,9 +78,9 @@ class AICardOutput(BaseModel):
 
     @field_validator("delivery", mode="before")
     @classmethod
-    def normalize_delivery(cls, v):
+    def _coerce_delivery(cls, v):
         if isinstance(v, str) and v not in _VALID_DELIVERY_VALUES:
-            return _normalize_delivery(v)
+            return normalize_delivery(v)
         return v
 
     @field_validator("color")
@@ -115,9 +121,9 @@ class AIGeneratedPresentationCardOutput(BaseModel):
 
     @field_validator("delivery", mode="before")
     @classmethod
-    def normalize_delivery(cls, v):
+    def _coerce_delivery(cls, v):
         if isinstance(v, str) and v not in _VALID_DELIVERY_VALUES:
-            return _normalize_delivery(v)
+            return normalize_delivery(v)
         return v
 
     @field_validator("color")
