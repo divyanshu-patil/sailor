@@ -42,7 +42,7 @@ export default function StepCardCount() {
       >
         <AnimatedSlider
           min={2}
-          max={30}
+          max={60}
           onChange={(v) => setCardCount(Math.round(v))}
         />
       </View>
