@@ -1,0 +1,5 @@
+
+# Celery beat's local scheduler state (created by `yarn celery`, which runs an
+# embedded beat). Machine-local runtime data, not source.
+celerybeat-schedule
+celerybeat-schedule-*

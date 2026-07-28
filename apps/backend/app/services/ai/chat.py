@@ -2,10 +2,8 @@ import logging
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Callable, Iterable, TypeVar
 
-from ollama import ResponseError
-
 from app.config.settings import settings
-from app.services.ai.ollama_client import get_ollama_client
+from app.services.ai.providers import ChatRequest, ProviderError, get_provider
 
 logger = logging.getLogger("celery")
 
@@ -16,75 +14,58 @@ class ModelCallError(Exception):
     """Raised when no configured model could answer a single call."""
 
 
-def models_to_try() -> list[str]:
-    return [m for m in (settings.OLLAMA_MODEL, settings.OLLAMA_FALLBACK_MODEL) if m]
-
-
-# Models that have no reasoning mode reject the `think` parameter outright
-# rather than ignoring it. Matched on the error text because Ollama reports it as
-# a generic 400 — there's no distinct status code to key off.
-_THINK_UNSUPPORTED_MARKERS = ("think", "thinking")
-
-# Models already known to reject `think`, so the cost of discovering it is paid
-# once per process instead of on every call. Keyed by model name; a set is enough
-# because the answer never changes for a given model.
-_no_think_models: set[str] = set()
-
-
-def _chat_once(client, model: str, messages: list[dict], *, think: bool | None) -> str:
-    kwargs: dict = {"model": model, "messages": messages, "stream": False}
-    if think is not None:
-        kwargs["think"] = think
-    response = client.chat(**kwargs)
-    content = (response.get("message", {}) or {}).get("content", "").strip()
-    if not content:
-        raise ModelCallError(f"Model '{model}' returned empty content")
-    return content
-
-
-def chat(messages: list[dict], *, client=None) -> str:
+def _split_system(messages: list[dict]) -> tuple[str, list[dict]]:
     """
-    One model call, primary model first and the fallback behind it.
+    Pull leading system messages out of a prompt.
 
-    `think` is passed explicitly rather than left to the model's default. The
-    configured models reason before answering, and a script is a dozen-odd calls
-    — so the thinking budget gets paid a dozen times and is the single largest
-    contributor to how long a generation takes. See settings.OLLAMA_THINK.
-
-    A model with no reasoning mode rejects the parameter instead of ignoring it,
-    which would otherwise take down every model at once and fail the whole
-    generation. Such a model is retried immediately without it and remembered, so
-    turning thinking off can only ever make things faster, never break them.
-
-    Every caller creates its own client by default: these run concurrently now,
-    and sharing one connection pool across a fan-out is a needless coupling
-    between calls that have nothing to do with each other.
+    The prompt builders in this package write `[{system}, {user}]`, which is
+    Ollama's and OpenAI's shape but not Anthropic's — there the system prompt is
+    its own request parameter. Splitting here means the prompts don't have to
+    care which provider is configured, and each adapter re-assembles whatever it
+    needs.
     """
-    active_client = client or get_ollama_client()
+    system_parts: list[str] = []
+    rest: list[dict] = []
+    for message in messages:
+        if message.get("role") == "system" and not rest:
+            system_parts.append(str(message.get("content", "")))
+        else:
+            rest.append(message)
+    return "\n\n".join(p for p in system_parts if p), rest
+
+
+def chat(messages: list[dict], *, fast: bool | None = None) -> str:
+    """
+    One completion, primary model first and the fallback behind it.
+
+    Provider-neutral: which service actually runs it is settings.AI_PROVIDER.
+    `fast` defaults to settings.AI_FAST — every call this app makes is heavily
+    prompt-constrained, so a deliberation pass is mostly re-deriving what the
+    prompt already states, on the user's clock. Each adapter maps it onto
+    whatever its provider actually exposes.
+    """
+    provider = get_provider()
+    request = ChatRequest(
+        *_split_system(messages),
+        fast=settings.AI_FAST if fast is None else fast,
+    )
+
+    models = provider.models()
+    if not models:
+        raise ModelCallError("No models configured — set AI_MODEL.")
+
     last_error: Exception | None = None
-
-    for model in models_to_try():
-        think = None if model in _no_think_models else settings.OLLAMA_THINK
+    for model in models:
         try:
-            return _chat_once(active_client, model, messages, think=think)
-        except ResponseError as e:
-            detail = f"{e.error}".lower()
-            if think is not None and any(m in detail for m in _THINK_UNSUPPORTED_MARKERS):
-                logger.info(f"[ai] '{model}' doesn't accept `think`; retrying without it")
-                _no_think_models.add(model)
-                try:
-                    return _chat_once(active_client, model, messages, think=None)
-                except Exception as retry_error:
-                    logger.warning(f"[ai] '{model}' failed without `think`: {retry_error}")
-                    last_error = retry_error
-                    continue
-            logger.warning(f"[ai] '{model}' failed ({e.status_code}): {e.error}")
+            return provider.complete(request, model)
+        except ProviderError as e:
+            logger.warning(f"[ai] {provider.name}:{model} failed: {e}")
             last_error = e
-        except Exception as e:  # network errors, timeouts, empty content
-            logger.warning(f"[ai] '{model}' failed: {e}")
+        except Exception as e:  # anything an adapter failed to wrap
+            logger.warning(f"[ai] {provider.name}:{model} failed: {e}")
             last_error = e
 
-    raise ModelCallError(f"All models failed. Last error: {last_error}")
+    raise ModelCallError(f"All {provider.name} models failed. Last error: {last_error}")
 
 
 def map_parallel(fn: Callable[[T], object], items: Iterable[T]) -> list:
@@ -108,7 +89,7 @@ def map_parallel(fn: Callable[[T], object], items: Iterable[T]) -> list:
     if len(work) == 1:
         return [fn(work[0])]
 
-    max_workers = max(1, min(len(work), settings.OLLAMA_MAX_CONCURRENCY))
+    max_workers = max(1, min(len(work), settings.AI_MAX_CONCURRENCY))
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures: list[Future] = [pool.submit(fn, item) for item in work]
         try:

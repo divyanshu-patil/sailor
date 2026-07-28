@@ -82,11 +82,21 @@ def cancel_deck_script_generation(
     return deck_controller.cancel_script_generation(deck_id, current_user, db)
 
 
-@router.get("", response_model=list[AllDeckInfoResponse])
+@router.get("", response_model=list[AllDeckInfoResponse], response_model_by_alias=False)
 def list_decks(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """`response_model_by_alias=False` is load-bearing.
+
+    AllDeckInfoResponse names its fields in camelCase and uses snake_case
+    *aliases* to read them off the SQLAlchemy model. FastAPI serialises by alias
+    by default, so this endpoint was emitting `card_count` / `duration_mins`
+    while the client read `slideCount` / `durationMins` — every deck arrived with
+    0 cards and a NaN duration, and the malformed row raced the correct one from
+    the detail endpoint. Serialising by field name is what the schema was written
+    for.
+    """
     return deck_controller.list_decks(current_user, db)
 
 @router.get("/{deck_id}/status")

@@ -40,6 +40,33 @@ interface DeckDetailResponse {
   updated_at: string;
 }
 
+/** `GET /decks` — AllDeckInfoResponse, serialised by field name (camelCase).
+ *  No script and no created_at; the detail endpoint carries those. */
+interface DeckSummaryResponse {
+  id: number;
+  title: string | null;
+  description: string;
+  color: string;
+  updatedAt: string;
+  slideCount: number;
+  durationMins: number;
+  isFavourite: boolean;
+}
+
+const toDeckItemFromSummary = (deck: DeckSummaryResponse): DeckItem => ({
+  // String, not the raw number: the local `decks` primary key is TEXT, and the
+  // detail endpoint's mapper already stringifies. Two id types for one deck is
+  // how you end up with two rows for it.
+  id: String(deck.id),
+  title: deck.title ?? "",
+  description: deck.description,
+  color: deck.color,
+  updatedAt: deck.updatedAt,
+  slideCount: deck.slideCount,
+  durationMins: deck.durationMins,
+  isFavourite: deck.isFavourite,
+});
+
 const toDeckItem = (deck: DeckDetailResponse): DeckItem => ({
   id: String(deck.id),
   title: deck.title ?? "",
@@ -63,10 +90,22 @@ export interface DeckWithScript {
 export const deckService: IDeckService & {
   getDeckDetail(id: string): Promise<DeckWithScript>;
 } = {
+  /**
+   * The deck grid.
+   *
+   * Mapped explicitly rather than cast. This used to be
+   * `apiClient.get<DeckItem[]>(...)` returning `response.data` untouched — a
+   * cast that asserted a shape nobody checked. When the API turned out to be
+   * serialising snake_case, every field silently became `undefined`: decks
+   * rendered with 0 cards and a NaN duration, and `deck.id` (a number) went into
+   * a TEXT primary key. A mapper fails loudly on a shape change; a cast doesn't
+   * fail at all.
+   */
   getDecks: async (): Promise<DeckItem[]> => {
     try {
-      const response = await apiClient.get<DeckItem[]>("/api/v1/decks");
-      return response.data;
+      const response =
+        await apiClient.get<DeckSummaryResponse[]>("/api/v1/decks");
+      return response.data.map(toDeckItemFromSummary);
     } catch (e: any) {
       console.log("getDecks error", e.response?.data, e.response?.status);
       throw e;

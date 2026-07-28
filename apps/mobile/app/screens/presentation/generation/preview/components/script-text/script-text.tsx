@@ -102,6 +102,55 @@ export default function ScriptText({
     const reveal: RevealMode =
       index < REVEAL.initialBlockCount ? "distort" : "fade";
 
+    /**
+     * Headings render through the paragraph renderers rather than getting their
+     * own components: a heading is one line of styled text, and both variants
+     * already lay that out. Segments are forced bold and the size is scaled by
+     * level, which is the whole visual difference. Doing it here keeps the Skia
+     * and native paths from each needing a fourth component to maintain.
+     */
+    if (block.type === "heading") {
+      const headingSize = fontSize * (block.level <= 1 ? 1.5 : 1.22);
+      const segments = block.segments.map((segment) => ({
+        ...segment,
+        bold: true,
+      }));
+
+      if (SCRIPT_TEXT_VARIANT === "native") {
+        return (
+          <NativeParagraph
+            key={index}
+            segments={segments}
+            fontSize={headingSize}
+            lineHeightMultiplier={lineHeightMultiplier}
+            color={colors.rust}
+            boldColor={colors.rust}
+            paragraphSpacing={paragraphSpacing}
+            justify={false}
+          />
+        );
+      }
+
+      if (!skiaFonts || width <= 0) return null;
+      return (
+        <SkiaParagraph
+          key={index}
+          segments={segments}
+          fonts={skiaFonts}
+          fontSize={headingSize}
+          lineHeightMultiplier={lineHeightMultiplier}
+          color={colors.rust}
+          boldColor={colors.rust}
+          paragraphSpacing={paragraphSpacing}
+          justify={false}
+          width={width}
+          reveal={reveal}
+          revealIndex={index}
+          tint={colors.rust}
+        />
+      );
+    }
+
     if (SCRIPT_TEXT_VARIANT === "native") {
       return block.type === "quote" ? (
         <NativeQuote

@@ -9,12 +9,26 @@ from app.utils.enums.speaking_style import SpeakingStyle
 
 logger = logging.getLogger("celery")
 
-# Cards generated per AI call — NOT card_count. Keeping this fixed and small is
-# the actual fix: each call's output stays short and grounded no matter how large
-# the overall card_count gets, which is what prevents truncation and drift at
-# high counts. Tune this if you see batches still struggling — smaller is safer,
-# larger means fewer total Ollama calls (matters for free-tier rate limits).
-CARD_BATCH_SIZE = 6
+# Maximum cards per AI call — the ceiling on batch size, not a fixed divisor: a
+# deck smaller than this is one call.
+#
+# Raised from 6 after measuring, and the direction is the opposite of what the
+# original "small batches are safer" reasoning assumed. Batches run
+# concurrently, so wall time is the *slowest* batch — and per-call latency turns
+# out to be dominated by fixed overhead, not by how many cards the call writes.
+# One batch produced 2 cards in 34.6s while another produced 9 in 12.6s. More
+# batches therefore means more draws from that slow tail, and the maximum gets
+# worse. Same 26-card deck, same script, end to end:
+#
+#     7 batches (size 4)  -> 46.3s
+#     5 batches (size 6)  -> 35.1s
+#     3 batches (size 9)  -> 25.2s
+#     2 batches (size 13) -> 17.5s
+#
+# 12 keeps a typical deck at two or three calls while bounding any single call's
+# output, so one bad response can't take a large share of the deck with it. The
+# per-batch retry and deterministic fill below cover it when one does.
+CARD_BATCH_SIZE = 12
 
 # Attempts per batch. Kept low because a retry is a whole extra model call on the
 # critical path, and the deterministic fill below means a batch that still won't
@@ -64,6 +78,48 @@ def split_script_into_segments(script: str, card_count: int) -> list[str]:
             seg_word_count = 0
 
     return [" ".join(seg).strip() for seg in segments]
+
+
+# Above this, the full script is condensed before being sent as calibration
+# context. ~6000 characters is roughly a 10-minute talk — long enough that most
+# scripts pass through untouched.
+MAX_CALIBRATION_CHARS = 6000
+
+
+def _script_digest(script: str) -> str:
+    """
+    A compact stand-in for the full script, for impact calibration.
+
+    Every batch prompt carries the whole script so the model can judge how
+    pivotal a segment is *relative to the talk*. On a long script that's several
+    thousand tokens of prefill per batch, paid once per concurrent call, for
+    context the model only needs the shape of. Keeping each section's header and
+    opening sentence preserves that shape — what the beats are and roughly what
+    each covers — at a fraction of the size. Short scripts are sent whole.
+    """
+    if len(script) <= MAX_CALIBRATION_CHARS:
+        return script
+
+    lines: list[str] = []
+    for block in script.split("\n\n"):
+        block = block.strip()
+        if not block:
+            continue
+        if block.startswith("#"):
+            lines.append(block)
+            continue
+        first = _SENTENCE_SPLIT_PATTERN.split(block)[0].strip()
+        if first:
+            lines.append(first)
+
+    digest = "\n".join(lines)
+    # A script with no headers to hang the digest off — a hand-written or
+    # heavily edited one — degrades to a head-and-tail excerpt rather than to
+    # nothing.
+    if len(digest) > MAX_CALIBRATION_CHARS or not digest:
+        half = MAX_CALIBRATION_CHARS // 2
+        digest = f"{script[:half].strip()}\n\n[...]\n\n{script[-half:].strip()}"
+    return digest
 
 
 def _extract_json_array(text: str) -> str:
@@ -259,11 +315,16 @@ def generate_cards(script: str, card_count: int) -> list[dict]:
     segments = split_script_into_segments(script, card_count)
 
     batch_starts = list(range(0, card_count, CARD_BATCH_SIZE))
+    calibration = _script_digest(script)
+    if calibration is not script:
+        logger.info(
+            f"[ai] calibration context condensed {len(script)} -> {len(calibration)} chars"
+        )
 
     def run_batch(batch_start: int) -> list[dict]:
         started = time.monotonic()
         cards = _generate_card_batch(
-            full_script=script,
+            full_script=calibration,
             segments=segments[batch_start : batch_start + CARD_BATCH_SIZE],
             batch_start_index=batch_start + 1,  # 1-indexed for prompts/logs
             total_segments=card_count,

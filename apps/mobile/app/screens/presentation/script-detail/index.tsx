@@ -21,7 +21,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { DeckItem } from "@/services/deck.service";
-import { useDeck } from "@/hooks";
+import { useCards, useDeck } from "@/hooks";
 
 type ScriptDetailParams = {
   id: string;
@@ -78,6 +78,18 @@ export default function ScriptDetailScreen() {
     deckId: paramScript.id,
     initialData: paramScript,
   });
+
+  /**
+   * Pull the deck's cards into the local mirror.
+   *
+   * Nothing on this screen renders them directly, but this was the only place a
+   * deck gets opened and nothing ever fetched them — `useCards` was wired into
+   * practice mode alone, so a deck the user never practised had no cards on
+   * disk at all. That's what made "cards aren't storing locally" true, and it
+   * also quietly broke search: `searchDecks` ranks matches against the local
+   * `cards` table, so a deck could never be found by a card's title.
+   */
+  useCards({ deckId: paramScript.id });
 
   // Use the fetched data if available, otherwise fall back to params
   const currentScript = deck ?? paramScript;
