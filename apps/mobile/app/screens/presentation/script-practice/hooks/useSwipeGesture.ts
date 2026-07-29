@@ -38,7 +38,12 @@ const handleRightSwipeUpdate = (
   e: { translationX: number; translationY: number },
   params: Pick<
     UseSwipeGestureParams,
-    "translateX" | "translateY" | "prevCardOpacity" | "prevCardX" | "dragX"
+    | "translateX"
+    | "translateY"
+    | "prevCardOpacity"
+    | "prevCardX"
+    | "prevCardY"
+    | "dragX"
   >,
 ) => {
   "worklet";
@@ -50,6 +55,7 @@ const handleRightSwipeUpdate = (
   );
   params.prevCardOpacity.value = withTiming(0, { duration: 80 });
   params.prevCardX.value = RETURN_START_X;
+  params.prevCardY.value = 0;
 };
 
 /**
@@ -118,7 +124,21 @@ const handleRightSwipeEnd = (
       SCREEN_WIDTH * 1.5,
       { duration: 250 },
       (finished) => {
-        if (finished) scheduleOnRN(params.onAdvance);
+        if (finished) {
+          // Advance and clear the drag in one UI-thread write. Everything the
+          // stack draws — card depth, cascade, background colour — reads both,
+          // so they have to move together: hand the index to React first and
+          // the frame it renders pairs the new depths with a drag offset still
+          // parked off-screen, which is the flicker.
+          params.currentIndexSV.value = Math.min(
+            params.currentIndexSV.value + 1,
+            params.cardsLength,
+          );
+          params.translateX.value = 0;
+          params.translateY.value = 0;
+          params.isAnimating.value = false;
+          scheduleOnRN(params.onAdvance);
+        }
       },
     );
   } else {
@@ -160,7 +180,23 @@ const handleLeftSwipeEnd = (
     params.isAnimating.value = true;
     params.isRetreating.value = true;
     params.prevCardX.value = withSpring(0, RETREAT_SPRING, (finished) => {
-      if (finished) scheduleOnRN(params.onRetreat);
+      if (finished) {
+        // Same atomic hand-off as the advance above, in reverse: the returned
+        // card becomes the front card and the retreat state is cleared in the
+        // one write, before React hears about the new index.
+        params.currentIndexSV.value = Math.max(
+          params.currentIndexSV.value - 1,
+          0,
+        );
+        params.prevCardX.value = RETURN_START_X;
+        params.prevCardY.value = 0;
+        params.prevCardOpacity.value = 0;
+        params.translateX.value = 0;
+        params.translateY.value = 0;
+        params.isAnimating.value = false;
+        params.isRetreating.value = false;
+        scheduleOnRN(params.onRetreat);
+      }
     });
     params.prevCardY.value = withSpring(0, RETREAT_SPRING);
     params.prevCardOpacity.value = 1;
@@ -202,6 +238,7 @@ export const useSwipeGesture = ({
           translateY,
           prevCardOpacity,
           prevCardX,
+          prevCardY,
           dragX,
         });
       } else {

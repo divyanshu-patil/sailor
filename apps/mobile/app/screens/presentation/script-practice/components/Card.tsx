@@ -26,8 +26,16 @@ interface CardProps {
   color: string;
   impact: number;
   delivery: DeliveryLike;
-  numOfCards: number;
-  currIndex: number;
+  /** Stacking order, from React's view of the deck. It is safe for this to lag
+   *  the UI thread by a frame: a card that has left is off-screen, and the
+   *  cards still on screen keep the same relative order either way. */
+  zIndex: number;
+  /** This card's absolute position in the deck. */
+  index: number;
+  /** The deck's current position, on the UI thread. Depth is derived from it
+   *  inside the worklet rather than from React state so that advancing the
+   *  deck and resetting the drag are seen as one atomic change. */
+  currentIndexSV: SharedValue<number>;
   drag: {
     translateX: SharedValue<number>;
     translateY: SharedValue<number>;
@@ -49,51 +57,59 @@ const Card = React.memo(
   ({
     text,
     color,
-    currIndex,
+    index,
+    currentIndexSV,
     drag,
     prevDrag,
-    numOfCards,
+    zIndex,
     introRotation,
     introScale,
     introOpacity,
   }: CardProps) => {
     const styles = useStyles();
 
-    const prevAnimatedStyle = useAnimatedStyle(() => {
-      if (!prevDrag) return {};
-      const x = prevDrag.translateX.value;
-      const progress = interpolate(
-        x,
-        [0, RETURN_START_X],
-        [0, 1],
-        Extrapolation.CLAMP,
-      );
+    // One style for both roles (stacked card / swiped-away card). Which role
+    // this card plays is decided from `currentIndexSV` on the UI thread, so the
+    // role and the drag values it reads always come from the same frame — a
+    // React re-render can never pair a new depth with a stale drag offset.
+    const animatedStyle = useAnimatedStyle(() => {
+      const depth = index - currentIndexSV.value;
       const introOffset = introRotation ? introRotation.value : 0;
       const scale = introScale ? introScale.value : 1;
-      const opacity = introOpacity ? introOpacity.value : 1;
-      return {
-        transform: [
-          { translateX: x },
-          { translateY: prevDrag.translateY.value },
-          { rotate: `${progress * MAX_ROTATION + introOffset}deg` },
-          { scale },
-        ],
-        opacity,
-        zIndex: numOfCards + 1,
-      };
-    });
+      let opacity = introOpacity ? introOpacity.value : 1;
 
-    const normalAnimatedStyle = useAnimatedStyle(() => {
-      const { translateX, translateY, rotate } = getNormalCardTransform({
-        currIndex,
-        dragTranslateX: drag.translateX.value,
-        prevCardTranslateX: prevDrag?.translateX.value,
-        returnStartX: RETURN_START_X,
-      });
+      let translateX: number;
+      let translateY: number;
+      let rotate: number;
 
-      const introOffset = introRotation ? introRotation.value : 0;
-      const scale = introScale ? introScale.value : 1;
-      const opacity = introOpacity ? introOpacity.value : 1;
+      if (depth < 0) {
+        // Swiped away. The card one step back rides the "previous card" values
+        // so a left swipe can pull it home; anything further back stays parked
+        // off-screen (it can only be seen for the frame before React unmounts
+        // it, and only when two swipes land inside one render).
+        const isPrev = depth === -1 && prevDrag !== undefined;
+        translateX = isPrev ? prevDrag!.translateX.value : RETURN_START_X;
+        translateY = isPrev ? prevDrag!.translateY.value : 0;
+        const progress = interpolate(
+          translateX,
+          [0, RETURN_START_X],
+          [0, 1],
+          Extrapolation.CLAMP,
+        );
+        rotate = progress * MAX_ROTATION;
+        if (!isPrev) opacity = 0;
+      } else {
+        const transform = getNormalCardTransform({
+          currIndex: depth,
+          dragTranslateX: drag.translateX.value,
+          prevCardTranslateX: prevDrag?.translateX.value,
+          returnStartX: RETURN_START_X,
+        });
+        translateX = transform.translateX;
+        translateY = transform.translateY;
+        rotate = transform.rotate;
+      }
+
       return {
         transform: [
           { translateX },
@@ -102,12 +118,8 @@ const Card = React.memo(
           { scale },
         ],
         opacity,
-        zIndex: numOfCards - currIndex,
       };
     });
-
-    const animatedStyle =
-      currIndex === -1 ? prevAnimatedStyle : normalAnimatedStyle;
 
     const pressed = useSharedValue(0);
 
@@ -119,7 +131,7 @@ const Card = React.memo(
 
     return (
       <Animated.View
-        style={[styles.card, { backgroundColor: color }, animatedStyle]}
+        style={[styles.card, { backgroundColor: color, zIndex }, animatedStyle]}
       >
         <ScriptLine line={text} color={color} />
         <AnimatedPressable

@@ -218,16 +218,7 @@ export default function ScriptDetailScreen() {
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
-      <Stack.Toolbar placement="bottom">
-        <Stack.Toolbar.Spacer />
-        <Stack.Toolbar.Button
-          icon={"trash"}
-          variant="prominent"
-          tintColor={"#f55c53"}
-          disabled={isDeleting}
-          onPress={handleDelete}
-        />
-      </Stack.Toolbar>
+
       <ScrollView
         style={[styles.screen, { backgroundColor: screenColor }]}
         contentContainerStyle={styles.content}

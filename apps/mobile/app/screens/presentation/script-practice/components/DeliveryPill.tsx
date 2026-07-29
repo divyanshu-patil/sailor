@@ -4,6 +4,7 @@ import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import {
   Extrapolation,
   interpolate,
+  LinearTransition,
   SharedValue,
   useAnimatedStyle,
   useSharedValue,
@@ -13,22 +14,20 @@ import {
 import { deliveryModifier, RETURN_START_X, SCREEN_WIDTH } from "../constants";
 import { Host, Text } from "@expo/ui/swift-ui";
 import { useBackgroundColorStyle } from "../hooks/useBackgroundColorStyle";
-import { lightenColor } from "../utils/lightenColor";
 
 interface DeliveryPillProps {
   currentIndex: number;
   totalCards: number;
   delivery: string;
-  isExhausted: boolean;
+  currentIndexSV: SharedValue<number>;
   translateX: SharedValue<number>;
   prevCardX: SharedValue<number>;
   prevCardOpacity: SharedValue<number>;
   swipeDirection: SharedValue<"left" | "right" | null>;
   isRetreating: SharedValue<boolean>;
-  cardsCurrentColor: string;
-  cardsPrevColor: string;
-  cardsNextColor: string;
-  color: string;
+  /** One pill colour per card, in deck order. */
+  colors: string[];
+  fallbackColor: string;
 }
 
 const DeliveryPill = React.memo(
@@ -36,24 +35,27 @@ const DeliveryPill = React.memo(
     currentIndex,
     totalCards,
     delivery,
-    isExhausted,
+    currentIndexSV,
     isRetreating,
     prevCardOpacity,
     prevCardX,
     swipeDirection,
     translateX,
-    color,
-    cardsCurrentColor,
-    cardsNextColor,
-    cardsPrevColor,
+    colors,
+    fallbackColor,
   }: DeliveryPillProps) => {
     const pressed = useSharedValue(0);
 
+    // Reads the deck position from the shared value, like the colour style
+    // below, so the pill fades on the same frame the card it belongs to leaves.
     const animatedPillOpacityStyle = useAnimatedStyle(() => {
+      const index = currentIndexSV.value;
+      const isExhausted = index >= totalCards;
+
       if (isExhausted && prevCardX.value >= RETURN_START_X)
         return { opacity: 0 };
 
-      if (currentIndex < totalCards - 1) return { opacity: 1 };
+      if (index < totalCards - 1) return { opacity: 1 };
 
       if (isExhausted) {
         return {
@@ -75,19 +77,6 @@ const DeliveryPill = React.memo(
         ),
       };
     });
-    const pillCurrentColor = isExhausted
-      ? lightenColor(color)
-      : lightenColor(cardsCurrentColor, 0.1);
-
-    const pillNextColor =
-      !isExhausted && currentIndex + 1 < totalCards
-        ? lightenColor(cardsNextColor, 0.1)
-        : lightenColor(color);
-
-    const pillPrevColor =
-      currentIndex - 1 >= 0 && currentIndex - 1 < totalCards
-        ? lightenColor(cardsPrevColor, 0.1)
-        : pillCurrentColor;
 
     const animatedPillColorStyle = useBackgroundColorStyle({
       translateX,
@@ -95,9 +84,9 @@ const DeliveryPill = React.memo(
       prevCardOpacity,
       swipeDirection,
       isRetreating,
-      currentColor: pillCurrentColor,
-      nextColor: pillNextColor,
-      prevColor: pillPrevColor,
+      currentIndexSV,
+      colors,
+      fallbackColor,
     });
 
     const pillPressedStyle = useAnimatedStyle(() => {
@@ -116,6 +105,7 @@ const DeliveryPill = React.memo(
       <AnimatedPressable
         onPressIn={() => (pressed.value = withTiming(1))}
         onPressOut={() => (pressed.value = withTiming(0))}
+        layout={LinearTransition.springify()}
         style={[
           styles.deliveryPill,
           animatedPillColorStyle,

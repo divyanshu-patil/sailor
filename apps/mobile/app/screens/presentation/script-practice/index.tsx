@@ -89,32 +89,17 @@ const ScriptPracticeScreen = () => {
   const isAnimating = useSharedValue(false);
   const isRetreating = useSharedValue(false);
 
+  // The gesture has already moved `currentIndexSV` and reset the drag values on
+  // the UI thread by the time these run; React state is catching up so the
+  // non-animated chrome (progress text, delivery text, mounted card window)
+  // follows. Nothing animated may be reset from here — doing so is what let a
+  // render land between the index change and the reset.
   const advanceIndex = () => {
-    setCurrentIndex((i) => {
-      const next = Math.min(i + 1, cards.length);
-      currentIndexSV.value = next;
-      return next;
-    });
-    requestAnimationFrame(() => {
-      translateX.value = 0;
-      translateY.value = 0;
-      isAnimating.value = false;
-    });
+    setCurrentIndex((i) => Math.min(i + 1, cards.length));
   };
 
   const retreatIndex = () => {
-    setCurrentIndex((i) => {
-      const next = Math.max(i - 1, 0);
-      currentIndexSV.value = next;
-      return next;
-    });
-    requestAnimationFrame(() => {
-      prevCardX.value = RETURN_START_X;
-      prevCardY.value = 0;
-      prevCardOpacity.value = 0;
-      isAnimating.value = false;
-      isRetreating.value = false;
-    });
+    setCurrentIndex((i) => Math.max(i - 1, 0));
   };
 
   const panGesture = useSwipeGesture({
@@ -133,25 +118,21 @@ const ScriptPracticeScreen = () => {
     onRetreat: retreatIndex,
   });
 
-  const isExhausted = currentIndex >= cards.length;
-
-  const { currentColor, nextColor, prevColor } = useMemo(() => {
-    const current = isExhausted
-      ? lightenColor(params.color)
-      : lightenColor(cards[currentIndex].color);
-
-    const next =
-      !isExhausted && currentIndex + 1 < cards.length
-        ? lightenColor(cards[currentIndex + 1].color)
-        : lightenColor(params.color);
-
-    const prev =
-      currentIndex - 1 >= 0 && currentIndex - 1 < cards.length
-        ? lightenColor(cards[currentIndex - 1].color)
-        : current;
-
-    return { currentColor: current, nextColor: next, prevColor: prev };
-  }, [isExhausted, currentIndex, cards, params.color]);
+  // Palettes, not single colours: the crossfade picks its endpoints from
+  // `currentIndexSV` on the UI thread, so which card is current never has to
+  // travel through a React render to reach the animation.
+  const screenColors = useMemo(
+    () => cards.map((card) => lightenColor(card.color)),
+    [cards],
+  );
+  const pillColors = useMemo(
+    () => cards.map((card) => lightenColor(card.color, 0.1)),
+    [cards],
+  );
+  const fallbackColor = useMemo(
+    () => lightenColor(params.color),
+    [params.color],
+  );
 
   const animatedScreenStyle = useBackgroundColorStyle({
     translateX,
@@ -159,9 +140,9 @@ const ScriptPracticeScreen = () => {
     prevCardOpacity,
     swipeDirection,
     isRetreating,
-    currentColor,
-    nextColor,
-    prevColor,
+    currentIndexSV,
+    colors: screenColors,
+    fallbackColor,
   });
 
   const { introRotation, introScale, introOpacity } = useIntroAnimation(
@@ -222,13 +203,9 @@ const ScriptPracticeScreen = () => {
           currentIndex={currentIndex}
           delivery={getDeliveryText(currentIndex)}
           totalCards={cards.length}
-          isExhausted={isExhausted}
-          cardsCurrentColor={
-            cards[currentIndex]?.color ?? cards[cards.length - 1].color
-          }
-          cardsNextColor={cards[currentIndex + 1]?.color ?? params.color}
-          cardsPrevColor={cards[currentIndex - 1]?.color ?? cards[0].color}
-          color={params.color}
+          currentIndexSV={currentIndexSV}
+          colors={pillColors}
+          fallbackColor={fallbackColor}
           isRetreating={isRetreating}
           prevCardOpacity={prevCardOpacity}
           prevCardX={prevCardX}
@@ -240,9 +217,10 @@ const ScriptPracticeScreen = () => {
         <View style={styles.cardContainer}>
           {cards.map((item, index) => {
             const depth = index - currentIndex;
-            const isVisible = depth >= 0 && depth < VISIBLE_COUNT;
-            const isPrev = depth === -1;
-            if (!isVisible && !isPrev) return null;
+            // One card wider than the stack on each side: React learns about an
+            // advance a frame after the UI thread does, and this keeps the card
+            // entering the back of the stack already mounted when it happens.
+            if (depth < -1 || depth > VISIBLE_COUNT) return null;
 
             return (
               <Card
@@ -252,8 +230,11 @@ const ScriptPracticeScreen = () => {
                 delivery={item.delivery}
                 color={item.color}
                 impact={item.impact}
-                currIndex={depth}
-                numOfCards={VISIBLE_COUNT}
+                index={index}
+                currentIndexSV={currentIndexSV}
+                zIndex={
+                  depth === -1 ? VISIBLE_COUNT + 1 : VISIBLE_COUNT - depth
+                }
                 drag={{ translateX, translateY, swipeDirection }}
                 prevDrag={{
                   translateX: prevCardX,
