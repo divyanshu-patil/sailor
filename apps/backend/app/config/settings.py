@@ -14,9 +14,9 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
     # ---- AI provider -----------------------------------------------------
-    # Which service generates scripts and cards: "ollama", "anthropic", or
-    # "openai". The prompts and the pipeline are provider-neutral; only the
-    # adapter under services/ai/providers/ differs.
+    # Which service generates scripts and cards: "ollama", "anthropic",
+    # "openai", or "gemini". The prompts and the pipeline are provider-neutral;
+    # only the adapter under services/ai/providers/ differs.
     AI_PROVIDER: str = "ollama"
     AI_MODEL: str = ""
     AI_FALLBACK_MODEL: str = ""
@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = ""
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     # Point at any OpenAI-compatible endpoint (Groq, Together, OpenRouter, a
     # local server) without needing a separate adapter.
     OPENAI_BASE_URL: str = ""

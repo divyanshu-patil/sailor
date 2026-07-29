@@ -23,6 +23,7 @@ _BUILDERS = {
     "ollama": lambda: _build("ollama_provider", "OllamaProvider"),
     "anthropic": lambda: _build("anthropic_provider", "AnthropicProvider"),
     "openai": lambda: _build("openai_provider", "OpenAIProvider"),
+    "gemini": lambda: _build("gemini_provider", "GeminiProvider"),
 }
 
 
