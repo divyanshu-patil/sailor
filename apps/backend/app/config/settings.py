@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     REDIS_URL: str
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
+
+    MINIO_ROOT_USER: str
+    MINIO_ROOT_PASSWORD: str
+    MINIO_PORT: int
+
     # ---- AI provider -----------------------------------------------------
     # Which service generates scripts and cards: "ollama", "anthropic",
     # "openai", or "gemini". The prompts and the pipeline are provider-neutral;
