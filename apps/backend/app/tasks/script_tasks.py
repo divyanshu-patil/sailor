@@ -18,10 +18,14 @@ from app.services.ai.script_generator import (
 from app.services.cards.impact_colors import assign_colors_by_impact
 from app.services.decks.deck_colors import pick_deck_color
 from app.services.realtime.script_events import (
+    ImageReferenceCacheError,
+    clear_generation_image_key,
+    read_generation_image_key,
     write_generation_cards_status,
     write_script_status,
 )
 from app.services.scripts.versions import append_version
+from app.services.storage_service import ImageStorageError, delete_image, read_image
 from app.utils.enums.deck_enums import GenerationStatus, ScriptVersionKind
 from app.utils.enums.speaking_style import SpeakingStyle
 
@@ -43,9 +47,27 @@ def _status_payload(generation: ScriptGeneration) -> dict:
     }
 
 
+def _cleanup_generation_image(generation_id: int, object_name: str | None) -> None:
+    """Delete the temporary object first, then remove its Redis pointer."""
+    if object_name is None:
+        return
+    try:
+        delete_image(object_name)
+    except ImageStorageError as exc:
+        # Keeping the pointer lets operators identify the leaked object. The
+        # Redis TTL prevents it becoming permanent when MinIO is unavailable.
+        logger.warning(
+            f"[script_task] could not clean image for generation {generation_id}: {exc}"
+        )
+        return
+    clear_generation_image_key(generation_id)
+
+
 @celery_app.task(bind=True, max_retries=3)
-def generate_script_task(self, generation_id: int) -> None:
+def generate_script_task(self, generation_id: int, expects_image: bool = False) -> None:
     db = SessionLocal()
+    image_object_name: str | None = None
+    cleanup_image = False
     try:
         generation = (
             db.query(ScriptGeneration).filter(ScriptGeneration.id == generation_id).one_or_none()
@@ -59,6 +81,9 @@ def generate_script_task(self, generation_id: int) -> None:
             # rather than flipping to PROCESSING is what stops a stopped job
             # coming back to life on a worker that was busy at the time.
             logger.info(f"[script_task] generation {generation_id} cancelled before start")
+            if expects_image:
+                image_object_name = read_generation_image_key(generation_id)
+            cleanup_image = True
             return
 
         generation.status = GenerationStatus.PROCESSING
@@ -67,12 +92,19 @@ def generate_script_task(self, generation_id: int) -> None:
         write_script_status(generation_id, {"status": "processing"})
 
         try:
+            image = None
+            if expects_image:
+                image_object_name = read_generation_image_key(generation_id)
+                if image_object_name is None:
+                    raise ImageStorageError("The reference image is no longer available.")
+                image = read_image(image_object_name)
             title, script_text = generate_script(
                 description=generation.description,
                 duration_mins=generation.duration_mins,
                 audience=generation.audience,
+                image=image,
             )
-        except ScriptGenerationError as exc:
+        except (ScriptGenerationError, ImageReferenceCacheError, ImageStorageError) as exc:
             if self.request.retries < self.max_retries:
                 write_script_status(
                     generation_id, {"status": "retrying", "attempt": self.request.retries + 1}
@@ -91,6 +123,7 @@ def generate_script_task(self, generation_id: int) -> None:
         db.refresh(generation)
 
         write_script_status(generation_id, _status_payload(generation))
+        cleanup_image = True
 
     except Retry:
         raise
@@ -109,7 +142,10 @@ def generate_script_task(self, generation_id: int) -> None:
         generation.error = str(exc)[:500]
         db.commit()
         write_script_status(generation_id, {"status": "failed", "error": str(exc)[:500]})
+        cleanup_image = True
     finally:
+        if cleanup_image:
+            _cleanup_generation_image(generation_id, image_object_name)
         db.close()
 
 
@@ -373,6 +409,14 @@ def sweep_stale_generations() -> int:
             generation.status = GenerationStatus.CANCELLED
             generation.error = None
             write_script_status(generation.id, {"status": "cancelled"})
+            try:
+                image_object_name = read_generation_image_key(generation.id)
+            except ImageReferenceCacheError as exc:
+                logger.warning(
+                    f"[script_task] could not find image for stale generation {generation.id}: {exc}"
+                )
+            else:
+                _cleanup_generation_image(generation.id, image_object_name)
 
         db.commit()
         return len(stale)

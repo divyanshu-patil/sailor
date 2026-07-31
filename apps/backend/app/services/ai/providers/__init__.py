@@ -4,6 +4,7 @@ from app.config.settings import settings
 from app.services.ai.providers.base import (
     ChatProvider,
     ChatRequest,
+    ImageInput,
     ProviderError,
     RateLimitedError,
 )
@@ -11,6 +12,7 @@ from app.services.ai.providers.base import (
 __all__ = [
     "ChatProvider",
     "ChatRequest",
+    "ImageInput",
     "ProviderError",
     "RateLimitedError",
     "get_provider",

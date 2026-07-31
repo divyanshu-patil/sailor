@@ -7,6 +7,7 @@ from typing import Callable, Iterable, TypeVar
 from app.config.settings import settings
 from app.services.ai.providers import (
     ChatRequest,
+    ImageInput,
     ProviderError,
     RateLimitedError,
     get_provider,
@@ -101,7 +102,9 @@ def _split_system(messages: list[dict]) -> tuple[str, list[dict]]:
     return "\n\n".join(p for p in system_parts if p), rest
 
 
-def chat(messages: list[dict], *, fast: bool | None = None) -> str:
+def chat(
+    messages: list[dict], *, image: ImageInput | None = None, fast: bool | None = None
+) -> str:
     """
     One completion, primary model first and the fallback behind it.
 
@@ -114,6 +117,7 @@ def chat(messages: list[dict], *, fast: bool | None = None) -> str:
     provider = get_provider()
     request = ChatRequest(
         *_split_system(messages),
+        image=image,
         fast=settings.AI_FAST if fast is None else fast,
     )
 

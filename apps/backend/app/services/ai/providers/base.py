@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -26,6 +27,18 @@ class RateLimitedError(ProviderError):
 
 
 @dataclass(frozen=True)
+class ImageInput:
+    """An image fetched by the worker, ready for any vision-capable provider."""
+
+    data: bytes
+    media_type: str
+
+    @property
+    def base64_data(self) -> str:
+        return base64.b64encode(self.data).decode("ascii")
+
+
+@dataclass(frozen=True)
 class ChatRequest:
     """
     One completion, in provider-neutral terms.
@@ -40,6 +53,7 @@ class ChatRequest:
 
     system: str
     messages: list[dict]
+    image: ImageInput | None = None
 
     # "Answer, don't deliberate."
     #

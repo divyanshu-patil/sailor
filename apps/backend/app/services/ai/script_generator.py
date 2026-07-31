@@ -3,6 +3,7 @@ import logging
 import re
 
 from app.services.ai.chat import ModelCallError, chat, map_parallel
+from app.services.ai.providers.base import ImageInput
 from app.services.ai.prompts import (
     HOOK_TYPES,
     SECTION_SPECS,
@@ -51,11 +52,11 @@ class ScriptGenerationError(Exception):
     """Raised when no configured model could produce a script."""
 
 
-def _chat(messages: list[dict]) -> str:
+def _chat(messages: list[dict], *, image: ImageInput | None = None) -> str:
     """Single model call, re-raising the shared client's failure as this
     module's error type so callers keep catching one exception."""
     try:
-        return chat(messages)
+        return chat(messages, image=image)
     except ModelCallError as e:
         raise ScriptGenerationError(str(e)) from e
 
@@ -213,11 +214,21 @@ def _normalize_plan(plan: dict, description: str) -> dict:
     return normalized
 
 
-def _generate_plan(description, duration_mins, audience) -> dict:
+def _generate_plan(
+    description: str,
+    duration_mins: int,
+    audience: AudienceType,
+    image: ImageInput | None = None,
+) -> dict:
     messages = build_plan_prompt(description, duration_mins, audience)
+    if image is not None:
+        messages[-1]["content"] += (
+            "\n\nA reference image is attached. Use its concrete visual details to ground "
+            "the plan where relevant; do not invent details that are not visible."
+        )
     for attempt in range(MAX_PLAN_ATTEMPTS):
         try:
-            raw = _chat(messages)
+            raw = _chat(messages, image=image)
             plan = json.loads(_strip_json_fences(raw))
             if isinstance(plan, dict) and plan.get("title"):
                 return _normalize_plan(plan, description)
@@ -301,7 +312,12 @@ def _generate_section(
     return LEADING_HEADER_PATTERN.sub("", _repair_lists(text)).strip()
 
 
-def generate_script(description: str, duration_mins: int, audience: AudienceType) -> tuple[str, str]:
+def generate_script(
+    description: str,
+    duration_mins: int,
+    audience: AudienceType,
+    image: ImageInput | None = None,
+) -> tuple[str, str]:
     """Returns (generated_title, script).
 
     Two phases: plan the content once, then write each of the seven fixed beats
@@ -314,7 +330,7 @@ def generate_script(description: str, duration_mins: int, audience: AudienceType
     generation cost the sum of seven model latencies instead of the largest one.
     Coherence between beats comes from the shared plan, not from ordering.
     """
-    plan = _generate_plan(description, duration_mins, audience)
+    plan = _generate_plan(description, duration_mins, audience, image)
     title = plan["title"]
 
     # The beyond-the-brief insight belongs to exactly one beat. PROOF/STORY is

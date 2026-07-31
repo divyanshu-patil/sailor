@@ -1,6 +1,7 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.models.deck_model import Deck
@@ -13,14 +14,19 @@ from app.schemas.script_schema import (
 )
 from app.services.ai.card_generator import CardGenerationError, split_script_into_segments
 from app.services.realtime.script_events import (
+    ImageReferenceCacheError,
+    clear_generation_image_key,
+    read_generation_image_key,
     clear_script_status,
     read_generation_cards_status,
     read_script_status,
+    write_generation_image_key,
     write_generation_cards_status,
     write_script_status,
 )
 from app.services.scripts.fingerprint import brief_fingerprint
 from app.services.scripts.versions import append_version, version_count
+from app.services.storage_service import ImageStorageError, delete_image, upload_image
 from app.tasks.script_tasks import (
     build_deck_from_generation,
     generate_script_task,
@@ -38,6 +44,8 @@ REUSABLE_STATUSES = (
     GenerationStatus.COMPLETED,
 )
 
+logger = logging.getLogger("celery")
+
 
 def _revoke(task_id: str | None) -> None:
     # Imported lazily: deck_controller imports this module's siblings, and a
@@ -45,6 +53,34 @@ def _revoke(task_id: str | None) -> None:
     from app.controllers.deck_controller import revoke_task
 
     revoke_task(task_id)
+
+
+def _remove_generation_image(generation_id: int, object_name: str | None = None) -> None:
+    """Remove a temporary image and then its Redis pointer.
+
+    The caller may already know the object name while enqueueing. For terminal
+    user actions (cancel/discard), it is fetched from Redis first.
+    """
+    if object_name is None:
+        try:
+            object_name = read_generation_image_key(generation_id)
+        except ImageReferenceCacheError as exc:
+            logger.warning(
+                f"[script_controller] could not find image for generation {generation_id}: {exc}"
+            )
+            return
+
+    if object_name is None:
+        return
+
+    try:
+        delete_image(object_name)
+    except ImageStorageError as exc:
+        logger.warning(
+            f"[script_controller] could not remove image for generation {generation_id}: {exc}"
+        )
+        return
+    clear_generation_image_key(generation_id)
 
 
 def get_generation(generation_id: int, current_user: User, db: Session) -> ScriptGeneration:
@@ -83,8 +119,11 @@ def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
     }
 
 
-def start_generation(
-    payload: ScriptGenerateRequest, current_user: User, db: Session
+async def start_generation(
+    payload: ScriptGenerateRequest,
+    current_user: User,
+    db: Session,
+    image: UploadFile | None = None,
 ) -> dict:
     """
     Start a script generation — or hand back the one this brief already has.
@@ -103,25 +142,41 @@ def start_generation(
         audience=payload.audience,
     )
 
-    existing = (
-        db.query(ScriptGeneration)
-        .filter(
-            ScriptGeneration.user_id == current_user.id,
-            ScriptGeneration.fingerprint == fingerprint,
-            ScriptGeneration.is_deleted == False,  # noqa: E712
-            # A generation that already became a deck is finished business. The
-            # user is on the wizard asking for a new one, so give them one rather
-            # than reopening a deck they already created.
-            ScriptGeneration.deck_id.is_(None),
-            ScriptGeneration.status.in_(REUSABLE_STATUSES),
+    # The text-only fingerprint does not describe a reference image. Reusing a
+    # text-identical generation for a different image would return a script
+    # grounded in the wrong visual, so image-backed requests always start fresh.
+    if image is None:
+        existing = (
+            db.query(ScriptGeneration)
+            .filter(
+                ScriptGeneration.user_id == current_user.id,
+                ScriptGeneration.fingerprint == fingerprint,
+                ScriptGeneration.is_deleted == False,  # noqa: E712
+                # A generation that already became a deck is finished business. The
+                # user is on the wizard asking for a new one, so give them one rather
+                # than reopening a deck they already created.
+                ScriptGeneration.deck_id.is_(None),
+                ScriptGeneration.status.in_(REUSABLE_STATUSES),
+            )
+            .order_by(ScriptGeneration.created_at.desc())
+            .first()
         )
-        .order_by(ScriptGeneration.created_at.desc())
-        .first()
-    )
+        if existing is not None:
+            touch_generation(existing, db)
+            return {"generation": serialize_generation(db, existing), "reused": True}
 
-    if existing is not None:
-        touch_generation(existing, db)
-        return {"generation": serialize_generation(db, existing), "reused": True}
+    image_object_name: str | None = None
+    if image is not None:
+        try:
+            image_object_name = await upload_image(image)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        except ImageStorageError as exc:
+            logger.error(f"[script_controller] image upload failed: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not store the reference image. Please try again.",
+            ) from exc
 
     generation = ScriptGeneration(
         user_id=current_user.id,
@@ -133,14 +188,38 @@ def start_generation(
         status=GenerationStatus.PENDING,
         last_seen_at=datetime.now(timezone.utc),
     )
-    db.add(generation)
-    db.commit()
-    db.refresh(generation)
+    try:
+        db.add(generation)
+        db.commit()
+        db.refresh(generation)
 
-    task = generate_script_task.delay(generation.id)
-    generation.celery_task_id = task.id
-    db.commit()
-    db.refresh(generation)
+        if image_object_name is not None:
+            write_generation_image_key(generation.id, image_object_name)
+
+        task = generate_script_task.delay(generation.id, image_object_name is not None)
+        generation.celery_task_id = task.id
+        db.commit()
+        db.refresh(generation)
+    except Exception as exc:
+        db.rollback()
+        _remove_generation_image(generation.id, image_object_name)
+
+        # No usable job was dispatched. Hide the incomplete row so a retry is a
+        # clean request rather than a draft the user never received.
+        generation.is_deleted = True
+        generation.deleted_at = datetime.now(timezone.utc)
+        generation.status = GenerationStatus.CANCELLED
+        db.commit()
+
+        if isinstance(exc, ImageReferenceCacheError):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not queue the reference image. Please try again.",
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not queue script generation. Please try again.",
+        ) from exc
 
     return {"generation": serialize_generation(db, generation), "reused": False}
 
@@ -357,6 +436,7 @@ def cancel_generation(generation_id: int, current_user: User, db: Session) -> di
     db.commit()
     db.refresh(generation)
 
+    _remove_generation_image(generation_id)
     write_script_status(generation_id, {"status": "cancelled"})
     return serialize_generation(db, generation)
 
@@ -438,6 +518,7 @@ def discard_generation(generation_id: int, current_user: User, db: Session) -> N
         generation.status = GenerationStatus.CANCELLED
     db.commit()
 
+    _remove_generation_image(generation_id)
     clear_script_status(generation_id)
 
 

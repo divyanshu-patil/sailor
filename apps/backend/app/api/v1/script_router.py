@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -15,6 +17,7 @@ from app.schemas.script_schema import (
     ScriptStartResponse,
     ScriptVersionResponse,
 )
+from app.utils.enums.deck_enums import AudienceType
 
 router = APIRouter(prefix="/scripts", tags=["Scripts"])
 
@@ -26,8 +29,12 @@ def health_check():
 
 
 @router.post("", response_model=ScriptStartResponse, status_code=status.HTTP_201_CREATED)
-def start_generation(
-    payload: ScriptGenerateRequest,
+async def start_generation(
+    description: Annotated[str, Form(min_length=10)],
+    card_count: Annotated[int, Form(alias="cardCount", ge=1, le=100)],
+    duration_mins: Annotated[int, Form(alias="durationMinutes", ge=1, le=60)],
+    audience: Annotated[AudienceType, Form()],
+    image: Annotated[UploadFile | None, File()] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -37,7 +44,13 @@ def start_generation(
     Resubmitting an unchanged brief returns the generation that already exists
     with `reused: true`, rather than starting a second identical job.
     """
-    return script_controller.start_generation(payload, current_user, db)
+    payload = ScriptGenerateRequest(
+        description=description,
+        cardCount=card_count,
+        durationMinutes=duration_mins,
+        audience=audience,
+    )
+    return await script_controller.start_generation(payload, current_user, db, image)
 
 
 @router.get("", response_model=list[ScriptGenerationSummary])

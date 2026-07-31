@@ -50,12 +50,29 @@ class AnthropicProvider:
     def complete(self, request: ChatRequest, model: str) -> str:
         import anthropic
 
+        messages = [dict(message) for message in request.messages]
+        if request.image is not None:
+            for message in reversed(messages):
+                if message.get("role") == "user":
+                    message["content"] = [
+                        {"type": "text", "text": str(message.get("content", ""))},
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": request.image.media_type,
+                                "data": request.image.base64_data,
+                            },
+                        },
+                    ]
+                    break
+
         try:
             response = self._client().messages.create(
                 model=model,
                 max_tokens=request.max_tokens,
                 system=request.system,
-                messages=request.messages,
+                messages=messages,
                 output_config={"effort": "low" if request.fast else "high"},
             )
         except anthropic.RateLimitError as e:
