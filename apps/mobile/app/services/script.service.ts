@@ -4,6 +4,7 @@ import {
   AUDIENCE_OPTIONS,
   AudienceType,
 } from "@/types/presentation";
+import { AxiosRequestHeaders } from "axios";
 
 /**
  * Scripts are their own resource now.
@@ -229,34 +230,62 @@ export const scriptService = {
    * rather than a discard-and-regenerate.
    */
   generate: async (
-    payload: GenerateScriptPayload,
-  ): Promise<StartGenerationResult> => {
-    try {
-      const audience =
-        AUDIENCE_OPTIONS[payload.audienceIndex]?.value ??
-        ("general" satisfies AudienceType);
+  payload: GenerateScriptPayload,
+): Promise<StartGenerationResult> => {
+  try {
+    const audience =
+      AUDIENCE_OPTIONS[payload.audienceIndex]?.value ??
+      ("general" satisfies AudienceType);
 
-      // Field names are the aliases ScriptGenerateRequest declares; attachments
-      // are left out because the backend hasn't enabled them yet.
-      const response = await apiClient.post<{
-        generation: GenerationApiResponse;
-        reused: boolean;
-      }>("/api/v1/scripts", {
-        description: payload.description,
-        durationMinutes: payload.durationMinutes,
-        cardCount: payload.cardCount,
-        audience,
-      });
+    const formData = new FormData();
 
-      return {
-        generation: toGeneration(response.data.generation),
-        reused: response.data.reused,
-      };
-    } catch (e: any) {
-      log("script generate error", e);
-      throw e;
+    formData.append("description", payload.description);
+    formData.append(
+      "durationMinutes",
+      String(payload.durationMinutes),
+    );
+    formData.append(
+      "cardCount",
+      String(payload.cardCount),
+    );
+    formData.append("audience", audience);
+
+    // Optional image upload
+    if (
+      payload.attachments &&
+      payload.attachments.length > 0
+    ) {
+      const attachment = payload.attachments[0];
+
+      formData.append("image", {
+        uri: attachment.uri,
+        name: attachment.name ?? "image.jpg",
+        type: attachment.kind ?? "image/jpeg",
+      } as any);
     }
-  },
+
+   const response = await apiClient.post<{
+  generation: GenerationApiResponse;
+  reused: boolean;
+}>("/api/v1/scripts", formData, {
+  headers: {
+    "Content-Type": "multipart/form-data",
+  } as AxiosRequestHeaders,
+  transformRequest: (data) => data,
+});
+
+    return {
+      generation: toGeneration(response.data.generation),
+      reused: response.data.reused,
+    };
+  } catch (e: any) {
+    console.error(
+      "Script generate error:",
+      JSON.stringify(e.response?.data, null, 2),
+    );
+    throw e;
+  }
+},
 
   /** Poll until status is terminal. Also the heartbeat that tells the API a
    *  client is still watching — a generation nobody polls gets swept. */

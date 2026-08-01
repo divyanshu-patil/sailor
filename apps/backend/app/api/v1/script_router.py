@@ -44,6 +44,14 @@ async def start_generation(
     Resubmitting an unchanged brief returns the generation that already exists
     with `reused: true`, rather than starting a second identical job.
     """
+    print("hehsjfbcsjhvbcsdjvb")
+
+    print("start_generation called with description:", description)
+    print("start_generation called with card_count:", card_count)
+    print("start_generation called with duration_mins:", duration_mins)
+    print("start_generation called with audience:", audience)
+    if image:
+        print("start_generation called with image:", image.filename)
     payload = ScriptGenerateRequest(
         description=description,
         cardCount=card_count,
