@@ -65,6 +65,9 @@ class Deck(Base):
         server_default=false(), # Database default
     )
 
+    audio_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)       # MinIO object key, or None
+    audio_uploaded_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     # AI script generation tracking
     # One AI job per deck (generate the markdown script), so this lives
     # directly on Deck rather than in a separate jobs table.
