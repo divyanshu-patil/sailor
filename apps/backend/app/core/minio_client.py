@@ -9,6 +9,6 @@ client = Minio(
 )
 
 def ensure_buckets():
-    for bucket in ["audio-files", "image-files"]:
+    for bucket in ["image-files", "deck-audio"]:
         if not client.bucket_exists(bucket):
             client.make_bucket(bucket)
