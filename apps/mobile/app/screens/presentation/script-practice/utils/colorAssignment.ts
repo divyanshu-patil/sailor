@@ -8,9 +8,25 @@ export const IMPACT_PALETTES = [
   ["#F7A7A6", "#F8B4B3", "#F9ACAB", "#F6A0A3"],
 ];
 
+/** Stable 32-bit hash of a card id, so the shade a card gets is a property of
+ *  the card rather than of when it happened to be read. */
+const hashId = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
 /**
- * Buckets cards into 5 quantiles by impact score, then assigns each card
- * a random color from that quantile's palette.
+ * Buckets cards into 5 quantiles by impact score, then gives each card a shade
+ * from that quantile's palette.
+ *
+ * The shade is picked from the card's id, not at random: the deck is re-read
+ * from SQLite whenever the cards table changes (the mount refresh, an edit),
+ * and a random pick meant every one of those re-reads repainted the whole deck
+ * in front of the user.
  */
 export const assignColorsByQuantile = (cards: CardItem[]) => {
   const sorted = [...cards].sort((a, b) => a.impact - b.impact);
@@ -19,7 +35,7 @@ export const assignColorsByQuantile = (cards: CardItem[]) => {
   sorted.forEach((card, i) => {
     const bucketIndex = Math.min(Math.floor(i / bucketSize), 4);
     const palette = IMPACT_PALETTES[bucketIndex];
-    colorById.set(card.id, palette[Math.floor(Math.random() * palette.length)]);
+    colorById.set(card.id, palette[hashId(card.id) % palette.length]);
   });
   return cards.map((card) => ({ ...card, color: colorById.get(card.id)! }));
 };
