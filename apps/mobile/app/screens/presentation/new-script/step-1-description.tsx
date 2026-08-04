@@ -27,24 +27,15 @@ import {
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { usePresentationForm } from "./form-context";
-import { AttachmentKind, Attachment } from "@/types/presentation";
-
-function iconForKind(kind: AttachmentKind) {
-  switch (kind) {
-    case "image":
-      return "photo";
-    case "document":
-      return "doc.text";
-    case "link":
-      return "link";
-  }
-}
+import AttachmentStrip from "./components/AttachmentStrip";
+import { Attachment } from "@/types/presentation";
 
 export default function StepDescription() {
   const {
     form,
     addAttachment,
     removeAttachment,
+    retryAttachment,
     descriptionState,
     handleSetDescriptionValue,
     linkDraftState,
@@ -52,6 +43,10 @@ export default function StepDescription() {
 
   const linkDraft = linkDraftState;
   const [showLinkInput, setShowLinkInput] = useState(false);
+
+  // Split by what each can show: a URL is a row, a file is a thumbnail.
+  const links = form.attachments.filter((a) => a.kind === "link");
+  const files = form.attachments.filter((a) => a.kind !== "link");
 
   const addImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -66,6 +61,9 @@ export default function StepDescription() {
         kind: "image",
         name: asset.fileName ?? `Image ${form.attachments.length + i + 1}`,
         uri: asset.uri,
+        // The API accepts JPEG and PNG only; the picker reports what it picked.
+        mimeType: asset.mimeType ?? "image/jpeg",
+        sizeBytes: asset.fileSize,
       });
     });
   }, [addAttachment, form.attachments.length]);
@@ -75,8 +73,9 @@ export default function StepDescription() {
       multiple: true,
       type: [
         "application/pdf",
-        "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        // PowerPoint — the whole reason documents are supported at all.
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         "text/plain",
       ],
     });
@@ -87,6 +86,8 @@ export default function StepDescription() {
         kind: "document",
         name: asset.name,
         uri: asset.uri,
+        mimeType: asset.mimeType ?? "application/pdf",
+        sizeBytes: asset.size,
       });
     });
   }, [addAttachment]);
@@ -156,9 +157,12 @@ export default function StepDescription() {
             </HStack>
           </Section>
 
-          {(form.attachments.length > 0 || showLinkInput) && (
+          {/* Links stay in the form. There is nothing to preview for a URL, so
+              a text row says more than a thumbnail could — the tiles below are
+              for files that actually look like something. */}
+          {(showLinkInput || links.length > 0) && (
             <Section
-              title="Attachments"
+              title="Links"
               modifiers={[animation(Animation.default, showLinkInput)]}
               footer={
                 <Text
@@ -194,23 +198,13 @@ export default function StepDescription() {
                 </HStack>
               )}
 
-              {form.attachments.length > 0 && (
+              {links.length > 0 && (
                 <List>
-                  {form.attachments.map((item: Attachment) => (
-                    <HStack
-                      key={item.id}
-                      modifiers={[padding({ vertical: 4 })]}
-                    >
-                      <Image
-                        systemName={iconForKind(item.kind)}
-                        size={18}
-                        color="#8E8E93"
-                      />
+                  {links.map((item: Attachment) => (
+                    <HStack key={item.id} modifiers={[padding({ vertical: 4 })]}>
+                      <Image systemName="link" size={18} color="#8E8E93" />
                       <Text
-                        modifiers={[
-                          padding({ leading: 8 }),
-                          font({ size: 15 }),
-                        ]}
+                        modifiers={[padding({ leading: 8 }), font({ size: 15 })]}
                       >
                         {item.name}
                       </Text>
@@ -233,6 +227,14 @@ export default function StepDescription() {
           )}
         </Form>
       </Host>
+
+      {/* Below the form, not inside it — see AttachmentStrip for why the
+          thumbnails can't live in a SwiftUI section. */}
+      <AttachmentStrip
+        attachments={files}
+        onRemove={removeAttachment}
+        onRetry={retryAttachment}
+      />
     </>
   );
 }

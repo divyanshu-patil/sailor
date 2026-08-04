@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   dateYearText: {
     position: "absolute",
     fontSize: 16,
-    bottom: 10,
+    bottom: 5,
     right: 15,
   },
 });

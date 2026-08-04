@@ -83,18 +83,34 @@ class GeminiProvider:
         return self._cached_client
 
     @staticmethod
-    def _steps(messages: list[dict]) -> list[dict]:
+    def _steps(messages: list[dict], images=()) -> list[dict]:
         """The app's `{role, content}` messages as Interactions steps."""
         steps: list[dict] = []
-        for message in messages:
+        last_user_message = next(
+            (index for index in range(len(messages) - 1, -1, -1) if messages[index].get("role") == "user"),
+            None,
+        )
+        for index, message in enumerate(messages):
             text = str(message.get("content", "") or "")
-            if not text:
+            content: list[dict] = []
+            if text:
+                content.append({"type": "text", "text": text})
+            if images and index == last_user_message:
+                content.extend(
+                    {
+                        "type": "image",
+                        "data": image.base64_data,
+                        "mime_type": image.media_type,
+                    }
+                    for image in images
+                )
+            if not content:
                 continue
             role = message.get("role")
             steps.append(
                 {
                     "type": "model_output" if role in ("assistant", "model") else "user_input",
-                    "content": [{"type": "text", "text": text}],
+                    "content": content,
                 }
             )
         return steps
@@ -139,7 +155,7 @@ class GeminiProvider:
 
         body: dict = {
             "model": model,
-            "input": self._steps(request.messages),
+            "input": self._steps(request.messages, request.images),
             "generation_config": generation_config,
         }
         if request.system:

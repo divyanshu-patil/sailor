@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 import React from "react";
 import { Image } from "expo-image";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -36,8 +36,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    height: Dimensions.get("screen").height,
   },
   art: { width: "100%", height: "100%" },
 });

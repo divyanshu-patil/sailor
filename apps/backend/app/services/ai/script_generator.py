@@ -1,8 +1,10 @@
 import json
 import logging
 import re
+from typing import Sequence
 
 from app.services.ai.chat import ModelCallError, chat, map_parallel
+from app.services.ai.providers.base import ImageInput
 from app.services.ai.prompts import (
     HOOK_TYPES,
     SECTION_SPECS,
@@ -51,11 +53,11 @@ class ScriptGenerationError(Exception):
     """Raised when no configured model could produce a script."""
 
 
-def _chat(messages: list[dict]) -> str:
+def _chat(messages: list[dict], *, images: Sequence[ImageInput] = ()) -> str:
     """Single model call, re-raising the shared client's failure as this
     module's error type so callers keep catching one exception."""
     try:
-        return chat(messages)
+        return chat(messages, images=images)
     except ModelCallError as e:
         raise ScriptGenerationError(str(e)) from e
 
@@ -213,11 +215,38 @@ def _normalize_plan(plan: dict, description: str) -> dict:
     return normalized
 
 
-def _generate_plan(description, duration_mins, audience) -> dict:
-    messages = build_plan_prompt(description, duration_mins, audience)
+def _generate_plan(
+    description: str,
+    duration_mins: int,
+    audience: AudienceType,
+    images: Sequence[ImageInput] = (),
+    source_text: str | None = None,
+    links: str | None = None,
+) -> dict:
+    """
+    The plan call is the only one the user's source material is sent to.
+
+    That is deliberate, and it is what the plan step is for: the seven beats run
+    concurrently off the plan alone, so attaching a 40k-character document to
+    each of them would send the same material eight times per generation for one
+    script. The plan distils it once, and every beat inherits the result.
+
+    The trade is that a beat can't quote a detail the plan didn't capture. If
+    document-grounded scripts come back too shallow, threading `source_text`
+    into build_section_prompt is the knob — at roughly 7x the input tokens.
+    """
+    messages = build_plan_prompt(
+        description, duration_mins, audience, source_text=source_text, links=links
+    )
+    if images:
+        messages[-1]["content"] += (
+            f"\n\n{len(images)} reference image(s) are attached. Use their concrete visual "
+            "details to ground the plan where relevant; do not invent details that are "
+            "not visible."
+        )
     for attempt in range(MAX_PLAN_ATTEMPTS):
         try:
-            raw = _chat(messages)
+            raw = _chat(messages, images=images)
             plan = json.loads(_strip_json_fences(raw))
             if isinstance(plan, dict) and plan.get("title"):
                 return _normalize_plan(plan, description)
@@ -301,7 +330,14 @@ def _generate_section(
     return LEADING_HEADER_PATTERN.sub("", _repair_lists(text)).strip()
 
 
-def generate_script(description: str, duration_mins: int, audience: AudienceType) -> tuple[str, str]:
+def generate_script(
+    description: str,
+    duration_mins: int,
+    audience: AudienceType,
+    images: Sequence[ImageInput] = (),
+    source_text: str | None = None,
+    links: str | None = None,
+) -> tuple[str, str]:
     """Returns (generated_title, script).
 
     Two phases: plan the content once, then write each of the seven fixed beats
@@ -314,7 +350,9 @@ def generate_script(description: str, duration_mins: int, audience: AudienceType
     generation cost the sum of seven model latencies instead of the largest one.
     Coherence between beats comes from the shared plan, not from ordering.
     """
-    plan = _generate_plan(description, duration_mins, audience)
+    plan = _generate_plan(
+        description, duration_mins, audience, images, source_text, links
+    )
     title = plan["title"]
 
     # The beyond-the-brief insight belongs to exactly one beat. PROOF/STORY is
@@ -413,7 +451,12 @@ def _revision_scope(
 
 
 def revise_script(
-    script: str, instruction: str, title: str, audience: AudienceType
+    script: str,
+    instruction: str,
+    title: str,
+    audience: AudienceType,
+    source_text: str | None = None,
+    links: str | None = None,
 ) -> str:
     """
     Apply a presenter instruction to an existing script, in place.
@@ -426,6 +469,13 @@ def revise_script(
     all, so they're preserved by construction — the only text that can change is
     text the routing step said should.
 
+    `source_text` is the text extracted from the user's own documents at upload.
+    It is sent with every revised beat, unlike generation where only the plan
+    call sees it — a revision touches one or two beats rather than seven, and
+    "add the Q3 numbers from my deck" is exactly the instruction that fails
+    without the source in context. This is why the extraction is stored on the
+    attachment row instead of being discarded after the first run.
+
     Falls back to the whole-script prompt only for a script with no section
     headers, where there's nothing to scope to.
     """
@@ -435,7 +485,12 @@ def revise_script(
     if not sections:
         revised = _chat(
             build_revision_prompt(
-                script=script, instruction=instruction, title=title, audience=audience
+                script=script,
+                instruction=instruction,
+                title=title,
+                audience=audience,
+                source_text=source_text,
+                links=links,
             )
         )
         revised = _repair_lists(revised)
@@ -463,6 +518,8 @@ def revise_script(
                 instruction=instruction,
                 title=title,
                 audience=audience,
+                source_text=source_text,
+                links=links,
             )
         )
         revised_body = LEADING_HEADER_PATTERN.sub("", _repair_lists(revised_body)).strip()

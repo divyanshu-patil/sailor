@@ -33,9 +33,19 @@ class OllamaProvider:
         )
 
     def _call(self, model: str, request: ChatRequest, *, think: bool | None) -> str:
+        messages = [
+            {"role": "system", "content": request.system},
+            *(dict(message) for message in request.messages),
+        ]
+        if request.images:
+            for message in reversed(messages):
+                if message.get("role") == "user":
+                    message["images"] = [image.base64_data for image in request.images]
+                    break
+
         kwargs: dict = {
             "model": model,
-            "messages": [{"role": "system", "content": request.system}, *request.messages],
+            "messages": messages,
             "stream": False,
         }
         if think is not None:

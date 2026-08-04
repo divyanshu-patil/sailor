@@ -17,7 +17,6 @@ from app.services.realtime.deck_events import STATUS_TTL_SECONDS, _get_redis
 
 logger = logging.getLogger("celery")
 
-
 def _key(generation_id: int) -> str:
     return f"script:{generation_id}:status"
 

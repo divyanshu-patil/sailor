@@ -13,6 +13,18 @@ class Settings(BaseSettings):
     REDIS_URL: str
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
+
+    MINIO_ROOT_USER: str
+    MINIO_ROOT_PASSWORD: str
+    MINIO_PORT: int
+
+    # Host:port a *client device* can reach MinIO on, used only for signing
+    # presigned URLs — e.g. "192.168.1.42:9000" on a LAN, or "media.example.com"
+    # behind a proxy. Left empty, URLs are signed for localhost, which a
+    # simulator can reach and a physical phone cannot.
+    MINIO_PUBLIC_ENDPOINT: str = ""
+    MINIO_PUBLIC_SECURE: bool = False
+
     # ---- AI provider -----------------------------------------------------
     # Which service generates scripts and cards: "ollama", "anthropic",
     # "openai", or "gemini". The prompts and the pipeline are provider-neutral;

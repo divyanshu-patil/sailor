@@ -22,6 +22,7 @@ from app.services.realtime.script_events import (
     write_script_status,
 )
 from app.services.scripts.versions import append_version
+from app.services.sources import load_generation_sources
 from app.utils.enums.deck_enums import GenerationStatus, ScriptVersionKind
 from app.utils.enums.speaking_style import SpeakingStyle
 
@@ -67,10 +68,14 @@ def generate_script_task(self, generation_id: int) -> None:
         write_script_status(generation_id, {"status": "processing"})
 
         try:
+            images, source_text = load_generation_sources(generation_id, db)
             title, script_text = generate_script(
                 description=generation.description,
                 duration_mins=generation.duration_mins,
                 audience=generation.audience,
+                images=images,
+                source_text=source_text,
+                links=generation.links,
             )
         except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:
@@ -142,11 +147,14 @@ def revise_script_task(self, generation_id: int, instruction: str) -> None:
         write_script_status(generation_id, {"status": "processing"})
 
         try:
+            _, source_text = load_generation_sources(generation_id, db)
             revised = revise_script(
                 script=original_script,
                 instruction=instruction,
                 title=original_title or "",
                 audience=generation.audience,
+                source_text=source_text,
+                links=generation.links,
             )
         except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:
@@ -373,8 +381,45 @@ def sweep_stale_generations() -> int:
             generation.status = GenerationStatus.CANCELLED
             generation.error = None
             write_script_status(generation.id, {"status": "cancelled"})
+            # Attachments are left in place — a swept generation is retryable,
+            # and a retry that lost the user's documents would quietly produce a
+            # different script. Orphans are handled below.
 
         db.commit()
+        _sweep_orphan_attachments(db)
         return len(stale)
     finally:
         db.close()
+
+
+# A file picked in the wizard and then abandoned — the user backed out, or the
+# app was killed — never gets a generation_id, so nothing else will ever clean
+# it up. Generous enough that a user who leaves the form open over lunch and
+# comes back still has their uploads.
+ORPHAN_ATTACHMENT_AFTER = timedelta(hours=24)
+
+
+def _sweep_orphan_attachments(db) -> int:
+    """Delete attachments uploaded but never submitted with a brief."""
+    from app.models.attachment_model import Attachment
+    from app.services.storage_service import AttachmentStorageError, delete_attachment
+
+    cutoff = datetime.now(timezone.utc) - ORPHAN_ATTACHMENT_AFTER
+    orphans = (
+        db.query(Attachment)
+        .filter(Attachment.generation_id.is_(None), Attachment.created_at < cutoff)
+        .all()
+    )
+    for orphan in orphans:
+        try:
+            delete_attachment(orphan.object_key)
+        except AttachmentStorageError as exc:
+            # Leave the row: it is the only record of the object, and dropping
+            # it here would turn a retryable failure into a permanent leak.
+            logger.warning(f"[script_task] could not remove orphan {orphan.id}: {exc}")
+            continue
+        db.delete(orphan)
+    if orphans:
+        db.commit()
+        logger.info(f"[script_task] swept {len(orphans)} orphan attachment(s)")
+    return len(orphans)

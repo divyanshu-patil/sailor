@@ -47,7 +47,9 @@ export type ScriptJobStatus =
 export type ScriptVersionKind = "generated" | "revised" | "edited";
 
 export interface GenerateScriptPayload {
-  attachments: Attachment[]; // collected by the form; the API ignores these for now
+  /** Collected by the form. Only those that finished uploading contribute —
+   *  their `remoteId` is what the API is sent. */
+  attachments: Attachment[];
   description: string;
   durationMinutes: number;
   audienceIndex: number;
@@ -236,8 +238,24 @@ export const scriptService = {
         AUDIENCE_OPTIONS[payload.audienceIndex]?.value ??
         ("general" satisfies AudienceType);
 
-      // Field names are the aliases ScriptGenerateRequest declares; attachments
-      // are left out because the backend hasn't enabled them yet.
+      // JSON, not multipart. Files were uploaded one at a time while the user
+      // was still filling in the form — see attachment.service — so all that
+      // travels here is their ids. Only files that actually finished have one;
+      // the wizard's Next button already waited for that, and filtering again
+      // means a failed upload degrades to "generated without it" rather than
+      // 400ing the whole brief.
+      const attachmentIds = (payload.attachments ?? [])
+        .map((a) => a.remoteId)
+        .filter((id): id is number => id != null);
+
+      // Links have no upload and no id — the URL itself is the whole payload,
+      // so they travel as text and the API re-validates them. Their `name` is
+      // the URL the user typed.
+      const links = (payload.attachments ?? [])
+        .filter((a) => a.kind === "link")
+        .map((a) => a.name.trim())
+        .filter(Boolean);
+
       const response = await apiClient.post<{
         generation: GenerationApiResponse;
         reused: boolean;
@@ -246,6 +264,8 @@ export const scriptService = {
         durationMinutes: payload.durationMinutes,
         cardCount: payload.cardCount,
         audience,
+        attachmentIds,
+        links,
       });
 
       return {
@@ -253,7 +273,10 @@ export const scriptService = {
         reused: response.data.reused,
       };
     } catch (e: any) {
-      log("script generate error", e);
+      console.error(
+        "Script generate error:",
+        JSON.stringify(e.response?.data, null, 2),
+      );
       throw e;
     }
   },

@@ -34,6 +34,10 @@ def start_generation(
     """Queue a script generation. No deck is created here — that only happens at
     POST /scripts/{id}/deck, once the user accepts the result.
 
+    JSON, not multipart: files are uploaded ahead of the brief via
+    POST /attachments and referenced here by id, which is what lets the wizard
+    report per-file progress and hold its Next button until they land.
+
     Resubmitting an unchanged brief returns the generation that already exists
     with `reused: true`, rather than starting a second identical job.
     """

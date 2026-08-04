@@ -1,14 +1,19 @@
 import { createMMKV } from "react-native-mmkv";
 import { usePreferenceStore } from "@/store/preference-store";
 import { useAppUserStore } from "@/store/app-user.store";
+import { clearAudioCache, getAudioCacheSizeBytes } from "./audio-cache";
 
 const mmkvIds = ["preference-storage", "script-store", "app-user-storage"];
 
 export function getCacheSizeBytes(): number {
-  return mmkvIds.reduce((total, id) => {
+  const mmkvBytes = mmkvIds.reduce((total, id) => {
     const mmkv = createMMKV({ id });
     return total + mmkv.byteSize;
   }, 0);
+  // Cached recordings dominate this figure — a few minutes of audio outweighs
+  // every key-value store in the app — so leaving them out made the number in
+  // Settings meaningless.
+  return mmkvBytes + getAudioCacheSizeBytes();
 }
 
 export function formatBytes(bytes: number): string {
@@ -27,6 +32,10 @@ export function clearAllCache() {
     const mmkv = createMMKV({ id });
     mmkv.clearAll();
   });
+
+  // Recordings re-download from the server on the next practice open, so this
+  // costs the user nothing but the bytes they asked to reclaim.
+  clearAudioCache();
 
   usePreferenceStore.getState().resetPreferences();
   // Signal to any mounted screen (e.g. ProfileScreen sitting underneath

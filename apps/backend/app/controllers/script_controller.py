@@ -1,8 +1,10 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.attachment_model import Attachment
 from app.models.deck_model import Deck
 from app.models.script_model import ScriptGeneration, ScriptVersion
 from app.models.user_model import User
@@ -11,6 +13,7 @@ from app.schemas.script_schema import (
     ScriptGenerateRequest,
     ScriptReviseRequest,
 )
+from app.controllers.attachment_controller import get_owned_attachments
 from app.services.ai.card_generator import CardGenerationError, split_script_into_segments
 from app.services.realtime.script_events import (
     clear_script_status,
@@ -21,6 +24,7 @@ from app.services.realtime.script_events import (
 )
 from app.services.scripts.fingerprint import brief_fingerprint
 from app.services.scripts.versions import append_version, version_count
+from app.services.storage_service import AttachmentStorageError, delete_attachment
 from app.tasks.script_tasks import (
     build_deck_from_generation,
     generate_script_task,
@@ -38,6 +42,8 @@ REUSABLE_STATUSES = (
     GenerationStatus.COMPLETED,
 )
 
+logger = logging.getLogger("celery")
+
 
 def _revoke(task_id: str | None) -> None:
     # Imported lazily: deck_controller imports this module's siblings, and a
@@ -45,6 +51,20 @@ def _revoke(task_id: str | None) -> None:
     from app.controllers.deck_controller import revoke_task
 
     revoke_task(task_id)
+
+
+def _purge_generation_attachments(generation_id: int, db: Session) -> None:
+    """Drop the source files of a discarded draft. Only reached from discard —
+    a cancel keeps them, because retry re-runs against the same brief."""
+    rows = db.query(Attachment).filter(Attachment.generation_id == generation_id).all()
+    for row in rows:
+        try:
+            delete_attachment(row.object_key)
+        except AttachmentStorageError as exc:
+            logger.warning(f"[script_controller] leaked object {row.object_key}: {exc}")
+        db.delete(row)
+    if rows:
+        db.commit()
 
 
 def get_generation(generation_id: int, current_user: User, db: Session) -> ScriptGeneration:
@@ -84,7 +104,9 @@ def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
 
 
 def start_generation(
-    payload: ScriptGenerateRequest, current_user: User, db: Session
+    payload: ScriptGenerateRequest,
+    current_user: User,
+    db: Session,
 ) -> dict:
     """
     Start a script generation — or hand back the one this brief already has.
@@ -95,7 +117,15 @@ def start_generation(
     every tap created a fresh deck row and a fresh job. Now an unchanged brief
     resolves to the same generation, and the only thing the client has to do is
     resume polling it.
+
+    Attachments arrive as ids, not as files. They were uploaded one at a time
+    while the user was still filling in the form — which is what lets the wizard
+    show real progress and hold Next until the uploads land, and what stops a
+    20MB deck being discovered as too large only after the brief is complete.
+    Submitting the brief claims them: `generation_id` goes from null to this row.
     """
+    attachments = get_owned_attachments(payload.attachment_ids, current_user, db)
+
     fingerprint = brief_fingerprint(
         description=payload.description,
         duration_mins=payload.duration_mins,
@@ -103,25 +133,29 @@ def start_generation(
         audience=payload.audience,
     )
 
-    existing = (
-        db.query(ScriptGeneration)
-        .filter(
-            ScriptGeneration.user_id == current_user.id,
-            ScriptGeneration.fingerprint == fingerprint,
-            ScriptGeneration.is_deleted == False,  # noqa: E712
-            # A generation that already became a deck is finished business. The
-            # user is on the wizard asking for a new one, so give them one rather
-            # than reopening a deck they already created.
-            ScriptGeneration.deck_id.is_(None),
-            ScriptGeneration.status.in_(REUSABLE_STATUSES),
+    # The text-only fingerprint describes neither the attached material nor the
+    # reference links. Reusing a text-identical generation for a different set
+    # of sources would return a script grounded in the wrong ones, so a brief
+    # carrying either always starts fresh.
+    if not attachments and not payload.links:
+        existing = (
+            db.query(ScriptGeneration)
+            .filter(
+                ScriptGeneration.user_id == current_user.id,
+                ScriptGeneration.fingerprint == fingerprint,
+                ScriptGeneration.is_deleted == False,  # noqa: E712
+                # A generation that already became a deck is finished business. The
+                # user is on the wizard asking for a new one, so give them one rather
+                # than reopening a deck they already created.
+                ScriptGeneration.deck_id.is_(None),
+                ScriptGeneration.status.in_(REUSABLE_STATUSES),
+            )
+            .order_by(ScriptGeneration.created_at.desc())
+            .first()
         )
-        .order_by(ScriptGeneration.created_at.desc())
-        .first()
-    )
-
-    if existing is not None:
-        touch_generation(existing, db)
-        return {"generation": serialize_generation(db, existing), "reused": True}
+        if existing is not None:
+            touch_generation(existing, db)
+            return {"generation": serialize_generation(db, existing), "reused": True}
 
     generation = ScriptGeneration(
         user_id=current_user.id,
@@ -130,17 +164,43 @@ def start_generation(
         card_count=payload.card_count,
         audience=payload.audience,
         fingerprint=fingerprint,
+        links="\n".join(payload.links) or None,
         status=GenerationStatus.PENDING,
         last_seen_at=datetime.now(timezone.utc),
     )
-    db.add(generation)
-    db.commit()
-    db.refresh(generation)
+    try:
+        db.add(generation)
+        db.flush()
 
-    task = generate_script_task.delay(generation.id)
-    generation.celery_task_id = task.id
-    db.commit()
-    db.refresh(generation)
+        # Claimed in the same transaction as the generation. A crash between the
+        # two would otherwise leave a generation whose worker finds no source
+        # material and silently writes a script ignoring the user's documents.
+        for attachment in attachments:
+            attachment.generation_id = generation.id
+
+        db.commit()
+        db.refresh(generation)
+
+        task = generate_script_task.delay(generation.id)
+        generation.celery_task_id = task.id
+        db.commit()
+        db.refresh(generation)
+    except Exception as exc:
+        db.rollback()
+
+        # No usable job was dispatched. Hide the incomplete row so a retry is a
+        # clean request rather than a draft the user never received. The
+        # attachments are left alone: the rollback un-claimed them, so they are
+        # still there for the retry.
+        generation.is_deleted = True
+        generation.deleted_at = datetime.now(timezone.utc)
+        generation.status = GenerationStatus.CANCELLED
+        db.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not queue script generation. Please try again.",
+        ) from exc
 
     return {"generation": serialize_generation(db, generation), "reused": False}
 
@@ -357,6 +417,9 @@ def cancel_generation(generation_id: int, current_user: User, db: Session) -> di
     db.commit()
     db.refresh(generation)
 
+    # Attachments deliberately survive a cancel. Retry re-runs this same
+    # generation against the same brief, and a retry that had lost the user's
+    # source documents would quietly produce a different, ungrounded script.
     write_script_status(generation_id, {"status": "cancelled"})
     return serialize_generation(db, generation)
 
@@ -438,6 +501,7 @@ def discard_generation(generation_id: int, current_user: User, db: Session) -> N
         generation.status = GenerationStatus.CANCELLED
     db.commit()
 
+    _purge_generation_attachments(generation_id, db)
     clear_script_status(generation_id)
 
 

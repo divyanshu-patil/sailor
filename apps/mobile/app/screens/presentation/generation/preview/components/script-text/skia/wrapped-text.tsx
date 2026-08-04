@@ -25,10 +25,9 @@ export interface WrappedTextProps {
   contentWidthOffset?: number;
   style?: StyleProp<ViewStyle>;
   reveal: RevealMode;
-  /** Position within the first chunk — staggers the distort sweeps. */
-  revealIndex: number;
-  /** Accent colour the distort wavefront pulls toward. */
-  tint: string;
+  /** Position in the cascade — how long after the reveal starts this block
+   *  sweeps, derived by the caller from how far down the page it sits. */
+  delayMs: number;
 }
 
 export const WrappedText = React.memo(
@@ -45,8 +44,7 @@ export const WrappedText = React.memo(
     contentWidthOffset = 0,
     style,
     reveal,
-    revealIndex,
-    tint,
+    delayMs,
   }: WrappedTextProps) => {
     const lineHeight = fontSize * lineHeightMultiplier;
     const contentWidth = Math.max(width - contentWidthOffset, 0);
@@ -84,9 +82,7 @@ export const WrappedText = React.memo(
     return (
       <Animated.View
         entering={
-          reveal === "fade"
-            ? FadeIn.duration(REVEAL.fadeDurationMs)
-            : undefined
+          reveal === "fade" ? FadeIn.duration(REVEAL.fadeDurationMs) : undefined
         }
         style={[{ marginBottom: spacing }, style]}
       >
@@ -95,8 +91,7 @@ export const WrappedText = React.memo(
             <DistortReveal
               width={contentWidth}
               height={height}
-              tint={tint}
-              delayMs={revealIndex * REVEAL.distortStaggerMs}
+              delayMs={delayMs}
             >
               {glyphs}
             </DistortReveal>

@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -26,6 +27,25 @@ class RateLimitedError(ProviderError):
 
 
 @dataclass(frozen=True)
+class ImageInput:
+    """An image fetched by the worker, ready for any vision-capable provider."""
+
+    data: bytes
+    media_type: str
+
+    @property
+    def base64_data(self) -> str:
+        return base64.b64encode(self.data).decode("ascii")
+
+
+# A brief can carry several reference images, and every provider here expresses
+# that as N image parts on one user turn. More than this and the request gets
+# expensive enough to matter without the extra images adding much — the app caps
+# it too, this is the backstop.
+MAX_IMAGES_PER_REQUEST = 8
+
+
+@dataclass(frozen=True)
 class ChatRequest:
     """
     One completion, in provider-neutral terms.
@@ -40,6 +60,12 @@ class ChatRequest:
 
     system: str
     messages: list[dict]
+
+    # Attached to the final user turn, in order. A list rather than a single
+    # image because a brief can reference several — every provider here takes
+    # multiple image parts on one turn, so this needed no per-adapter special
+    # casing beyond looping.
+    images: tuple[ImageInput, ...] = ()
 
     # "Answer, don't deliberate."
     #

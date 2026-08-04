@@ -20,6 +20,7 @@ from app.db.base import Base
 from app.utils.enums.deck_enums import AudienceType, GenerationStatus, ScriptVersionKind
 
 if TYPE_CHECKING:
+    from app.models.attachment_model import Attachment
     from app.models.deck_model import Deck
     from app.models.user_model import User
 
@@ -75,6 +76,13 @@ class ScriptGeneration(Base):
     # the client, so "the same brief" means the same thing on every device — see
     # services/scripts/fingerprint.py.
     fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+    # Reference URLs, newline-separated. Stored on the generation rather than as
+    # Attachment rows: a link has no bytes in MinIO, no size, and nothing to
+    # extract, so an attachment row would be almost entirely null columns.
+    # Kept because a revision needs the same references the script was written
+    # against — same reason attachments keep their extracted text.
+    links: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # ---- the result ------------------------------------------------------
     # Both nullable until the first run finishes. The *current* version is
@@ -158,6 +166,14 @@ class ScriptGeneration(Base):
         back_populates="generation",
         cascade="all, delete-orphan",
         order_by="ScriptVersion.position",
+    )
+
+    # The user's own source material. Not cascaded: the extracted text is what a
+    # revision months from now is grounded in, so it outlives the run that first
+    # used it — see Attachment.
+    attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="generation",
+        order_by="Attachment.id",
     )
 
 

@@ -111,8 +111,11 @@ export default function ScriptDetailScreen() {
 
   useEffect(() => {
     setTimeout(() => {
-      setCardCountNum1(Number(currentScript.slideCount.toString().charAt(0)));
-      setCardCountNum2(Number(currentScript.slideCount.toString().charAt(1)));
+      const paddedSlideCount = currentScript.slideCount
+        .toString()
+        .padStart(2, "0");
+      setCardCountNum1(Number(paddedSlideCount.charAt(0)));
+      setCardCountNum2(Number(paddedSlideCount.charAt(1)));
     }, 500);
 
     cardScale.value = withDelay(
