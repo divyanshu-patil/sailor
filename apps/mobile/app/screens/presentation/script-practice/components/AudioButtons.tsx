@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability */
-import { StyleSheet } from "react-native";
+import { ActivityIndicator, StyleSheet } from "react-native";
 import Icon from "@react-native-vector-icons/fontawesome6";
 import { colord } from "colord";
 import {
@@ -12,23 +12,35 @@ import {
   withTiming,
   useSharedValue,
   Easing,
+  FadeOutRight,
+  LinearTransition,
+  FadeInRight,
 } from "react-native-reanimated";
 import { useCallback, useEffect } from "react";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
 interface RecordingButtonsProps {
   color: string;
-  type: "play" | "stop";
+  /** `confirm` is the check that appears beside delete once a take is stopped;
+   *  it uploads, and shows a spinner in place of its icon while it does. */
+  type: "play" | "stop" | "confirm";
   onPress: () => void;
   recording: SharedValue<number>;
   paused?: boolean;
   finished?: boolean; // stopped
+  /** Swaps the icon for an activity indicator tinted to match it. */
+  loading?: boolean;
+  disabled?: boolean;
 }
 
 const AnimatedIcon = createAnimatedComponent(Icon);
 
-type TIcon = "play" | "pause" | "stop" | "trash";
+type TIcon = "play" | "pause" | "stop" | "trash" | "check";
 const ICON_WIDTH = 44;
+
+const DESTRUCTIVE = "#ef4444";
+const CONFIRM = "#22c55e";
+
 const AudioButtons = ({
   color,
   type,
@@ -36,16 +48,25 @@ const AudioButtons = ({
   recording,
   paused,
   finished,
+  loading,
+  disabled,
 }: RecordingButtonsProps) => {
-  const iconColor =
-    finished && type === "stop"
-      ? colord("#ef4444").darken(0.15).toHex()
-      : colord(color).darken(0.25).desaturate(0.2).toHex();
+  // Each role gets its own hue off the same treatment as the deck accent, so
+  // confirm and delete read as opposites without leaving the deck's palette.
+  const roleColor =
+    type === "confirm"
+      ? CONFIRM
+      : finished && type === "stop"
+        ? DESTRUCTIVE
+        : null;
 
-  const iconBGColor =
-    finished && type === "stop"
-      ? colord("#ef4444").lighten(0.3).toHex()
-      : colord(color).lighten(0.13).toHex();
+  const iconColor = roleColor
+    ? colord(roleColor).darken(0.15).toHex()
+    : colord(color).darken(0.25).desaturate(0.2).toHex();
+
+  const iconBGColor = roleColor
+    ? colord(roleColor).lighten(0.3).toHex()
+    : colord(color).lighten(0.13).toHex();
 
   const iconScale = useSharedValue(1);
   const iconOpacity = useSharedValue(1);
@@ -62,6 +83,8 @@ const AudioButtons = ({
     );
   }, [iconOpacity, iconScale, paused, type]);
 
+  // Confirm slides in from the same side as stop — it sits beside delete, and
+  // the two share the right-hand edge of the pill.
   const outputTranslation =
     type === "play" ? [-ICON_WIDTH * 3, 0] : [ICON_WIDTH * 3, 0];
 
@@ -87,6 +110,7 @@ const AudioButtons = ({
   }));
 
   const getIcon = useCallback((): TIcon => {
+    if (type === "confirm") return "check";
     if (type === "play") {
       if (!paused) return "pause";
       else return "play";
@@ -99,6 +123,7 @@ const AudioButtons = ({
   return (
     <AnimatedPressable
       onPress={onPress}
+      disabled={disabled || loading}
       onPressIn={() => {
         pressed.value = withTiming(1, { duration: 100 });
       }}
@@ -110,17 +135,25 @@ const AudioButtons = ({
         { backgroundColor: iconBGColor },
         containerStyles,
       ]}
+      // layout={LinearTransition.springify()}
+      exiting={FadeOutRight.springify()}
     >
-      <AnimatedIcon
-        name={getIcon()}
-        iconStyle="solid"
-        size={24}
-        color={iconColor}
-        style={[
-          type === "play" && !paused && { transform: [{ translateX: 2 }] },
-          iconStyles,
-        ]}
-      />
+      {loading ? (
+        // Same slot, same size, same colour as the icon it replaces — the
+        // button doesn't resize or change tone when it starts working.
+        <ActivityIndicator size="small" color={iconColor} />
+      ) : (
+        <AnimatedIcon
+          name={getIcon()}
+          iconStyle="solid"
+          size={24}
+          color={iconColor}
+          style={[
+            type === "play" && !paused && { transform: [{ translateX: 2 }] },
+            iconStyles,
+          ]}
+        />
+      )}
     </AnimatedPressable>
   );
 };

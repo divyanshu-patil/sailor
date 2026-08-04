@@ -322,6 +322,7 @@ const ScriptPracticeScreen = () => {
         </View>
 
         <RecordButton
+          deckId={params.id}
           isRecordingBool={isRecordingBool}
           isRecording={isRecording}
           isPaused={isPaused}

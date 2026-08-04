@@ -208,7 +208,7 @@ FooterButton.displayName = "FooterButton";
 // ---- Flow content (needs context, so split from provider) ---------------
 
 function FlowContent() {
-  const { form, descriptionValue } = usePresentationForm();
+  const { form, descriptionValue, isUploading } = usePresentationForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
 
@@ -261,13 +261,24 @@ function FlowContent() {
           />
         ) : null}
         <FooterButton
-          label={currentStep < 2 ? "Next" : "Generate"}
+          label={
+            isUploading
+              ? "Uploading…"
+              : currentStep < 2
+                ? "Next"
+                : "Generate"
+          }
           onPress={goNext}
           variant="primary"
           currentStep={currentStep}
-          // ScriptGenerateRequest requires a description of at least 10 chars —
-          // gate here rather than letting the create call 422.
-          disabled={descriptionValue.trim().length < MIN_DESCRIPTION_LENGTH}
+          // Two gates. The description one is the API's own min_length, checked
+          // here rather than letting the create call 422. The upload one is
+          // what stops the brief being submitted with attachment ids that do
+          // not exist yet — a file only has an id once its upload lands.
+          disabled={
+            descriptionValue.trim().length < MIN_DESCRIPTION_LENGTH ||
+            isUploading
+          }
         />
       </View>
     </SafeAreaView>

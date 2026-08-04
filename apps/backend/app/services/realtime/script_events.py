@@ -17,17 +17,6 @@ from app.services.realtime.deck_events import STATUS_TTL_SECONDS, _get_redis
 
 logger = logging.getLogger("celery")
 
-# This mapping is intentionally separate from the status cache. Status may be
-# overwritten many times by a worker, while the image key must stay stable from
-# enqueue through the final cleanup. One hour comfortably covers the task time
-# limit and its retries without leaving a permanent Redis entry.
-IMAGE_TTL_SECONDS = 60 * 60
-
-
-class ImageReferenceCacheError(RuntimeError):
-    """Redis could not reliably carry a generation's temporary image key."""
-
-
 def _key(generation_id: int) -> str:
     return f"script:{generation_id}:status"
 
@@ -56,47 +45,6 @@ def read_script_status(generation_id: int) -> dict | None:
 
 def _cards_key(generation_id: int) -> str:
     return f"script:{generation_id}:cards:status"
-
-
-def _image_key(generation_id: int) -> str:
-    return f"script:{generation_id}:image"
-
-
-def write_generation_image_key(generation_id: int, object_name: str) -> None:
-    """Associate a queued generation with its temporary MinIO object.
-
-    This is part of enqueueing, not a best-effort status update. If it fails the
-    caller must not dispatch the task, otherwise the worker would silently
-    generate a script without the image the user supplied.
-    """
-    try:
-        _get_redis().set(_image_key(generation_id), object_name, ex=IMAGE_TTL_SECONDS)
-    except redis.RedisError as exc:
-        raise ImageReferenceCacheError(
-            f"failed to cache image key for generation {generation_id}"
-        ) from exc
-
-
-def read_generation_image_key(generation_id: int) -> str | None:
-    """Return the MinIO key for an image-backed generation, if it has one."""
-    try:
-        return _get_redis().get(_image_key(generation_id))
-    except redis.RedisError as exc:
-        raise ImageReferenceCacheError(
-            f"failed to read image key for generation {generation_id}"
-        ) from exc
-
-
-def clear_generation_image_key(generation_id: int) -> None:
-    """Forget a key only after its matching MinIO object has been removed."""
-    try:
-        _get_redis().delete(_image_key(generation_id))
-    except redis.RedisError as exc:
-        # The object is already gone at this point. A TTL bounds the harmless
-        # stale pointer, so cleanup must not turn into another failed task.
-        logger.warning(
-            f"[script_events] failed to clear image key for generation {generation_id}: {exc}"
-        )
 
 
 def write_generation_cards_status(generation_id: int, payload: dict) -> None:

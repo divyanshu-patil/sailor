@@ -2,7 +2,7 @@ import logging
 import random
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable, Iterable, TypeVar
+from typing import Callable, Iterable, Sequence, TypeVar
 
 from app.config.settings import settings
 from app.services.ai.providers import (
@@ -12,6 +12,7 @@ from app.services.ai.providers import (
     RateLimitedError,
     get_provider,
 )
+from app.services.ai.providers.base import MAX_IMAGES_PER_REQUEST
 from app.services.ai.rate_limit import AdaptiveLimiter
 
 logger = logging.getLogger("celery")
@@ -103,13 +104,17 @@ def _split_system(messages: list[dict]) -> tuple[str, list[dict]]:
 
 
 def chat(
-    messages: list[dict], *, image: ImageInput | None = None, fast: bool | None = None
+    messages: list[dict],
+    *,
+    images: Sequence[ImageInput] = (),
+    fast: bool | None = None,
 ) -> str:
     """
     One completion, primary model first and the fallback behind it.
 
     Provider-neutral: which service actually runs it is settings.AI_PROVIDER.
-    `fast` defaults to settings.AI_FAST — every call this app makes is heavily
+    `images` are attached to the final user turn by each adapter, capped at
+    MAX_IMAGES_PER_REQUEST. `fast` defaults to settings.AI_FAST — every call this app makes is heavily
     prompt-constrained, so a deliberation pass is mostly re-deriving what the
     prompt already states, on the user's clock. Each adapter maps it onto
     whatever its provider actually exposes.
@@ -117,7 +122,7 @@ def chat(
     provider = get_provider()
     request = ChatRequest(
         *_split_system(messages),
-        image=image,
+        images=tuple(images)[:MAX_IMAGES_PER_REQUEST],
         fast=settings.AI_FAST if fast is None else fast,
     )
 

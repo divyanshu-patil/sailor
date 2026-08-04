@@ -1,6 +1,4 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -17,7 +15,6 @@ from app.schemas.script_schema import (
     ScriptStartResponse,
     ScriptVersionResponse,
 )
-from app.utils.enums.deck_enums import AudienceType
 
 router = APIRouter(prefix="/scripts", tags=["Scripts"])
 
@@ -29,36 +26,22 @@ def health_check():
 
 
 @router.post("", response_model=ScriptStartResponse, status_code=status.HTTP_201_CREATED)
-async def start_generation(
-    description: Annotated[str, Form(min_length=10)],
-    card_count: Annotated[int, Form(alias="cardCount", ge=1, le=100)],
-    duration_mins: Annotated[int, Form(alias="durationMinutes", ge=1, le=60)],
-    audience: Annotated[AudienceType, Form()],
-    image: Annotated[UploadFile | None, File()] = None,
+def start_generation(
+    payload: ScriptGenerateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Queue a script generation. No deck is created here — that only happens at
     POST /scripts/{id}/deck, once the user accepts the result.
 
+    JSON, not multipart: files are uploaded ahead of the brief via
+    POST /attachments and referenced here by id, which is what lets the wizard
+    report per-file progress and hold its Next button until they land.
+
     Resubmitting an unchanged brief returns the generation that already exists
     with `reused: true`, rather than starting a second identical job.
     """
-    print("hehsjfbcsjhvbcsdjvb")
-
-    print("start_generation called with description:", description)
-    print("start_generation called with card_count:", card_count)
-    print("start_generation called with duration_mins:", duration_mins)
-    print("start_generation called with audience:", audience)
-    if image:
-        print("start_generation called with image:", image.filename)
-    payload = ScriptGenerateRequest(
-        description=description,
-        cardCount=card_count,
-        durationMinutes=duration_mins,
-        audience=audience,
-    )
-    return await script_controller.start_generation(payload, current_user, db, image)
+    return script_controller.start_generation(payload, current_user, db)
 
 
 @router.get("", response_model=list[ScriptGenerationSummary])

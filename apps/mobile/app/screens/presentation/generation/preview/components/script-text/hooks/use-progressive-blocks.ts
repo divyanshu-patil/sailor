@@ -31,7 +31,9 @@ export function useProgressiveBlocks<T>(
     firstChunkDelayMs = 0,
   }: ProgressiveOptions,
 ): T[] {
-  const [count, setCount] = useState(() => Math.min(initialCount, blocks.length));
+  const [count, setCount] = useState(() =>
+    Math.min(initialCount, blocks.length),
+  );
 
   // A new script — first generation, or a revision replacing the old one —
   // restarts the reveal. Adjusted during render rather than in an effect so
@@ -40,6 +42,19 @@ export function useProgressiveBlocks<T>(
   if (blocks !== prevBlocks) {
     setPrevBlocks(blocks);
     setCount(Math.min(initialCount, blocks.length));
+  }
+
+  // `initialCount` is not known on the first render: the caller works it out by
+  // measuring how much fills the screen, and it can only measure once the body
+  // has a width. Growing into the real count is the normal path, so it's a
+  // render-time adjustment too. Only ever grows — a shrinking count would
+  // unmount blocks the reader is already looking at.
+  const [prevInitialCount, setPrevInitialCount] = useState(initialCount);
+  if (initialCount !== prevInitialCount) {
+    setPrevInitialCount(initialCount);
+    setCount((current) =>
+      Math.max(current, Math.min(initialCount, blocks.length)),
+    );
   }
 
   useEffect(() => {

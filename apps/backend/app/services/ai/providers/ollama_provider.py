@@ -37,10 +37,10 @@ class OllamaProvider:
             {"role": "system", "content": request.system},
             *(dict(message) for message in request.messages),
         ]
-        if request.image is not None:
+        if request.images:
             for message in reversed(messages):
                 if message.get("role") == "user":
-                    message["images"] = [request.image.base64_data]
+                    message["images"] = [image.base64_data for image in request.images]
                     break
 
         kwargs: dict = {

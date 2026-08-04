@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   LayoutChangeEvent,
   StyleProp,
   StyleSheet,
+  useWindowDimensions,
   View,
   ViewStyle,
 } from "react-native";
@@ -12,7 +13,9 @@ import { Block, parseBlocks } from "@/utils/parseInlineMarkdown";
 import { useColors } from "@/constants/theme";
 import { FontSet } from "./text-layout";
 import { RevealMode, REVEAL, SCRIPT_TEXT_VARIANT } from "./config";
+import { headingScale, measureBlocks, sweptHeight } from "./block-metrics";
 import { useProgressiveBlocks } from "./hooks/use-progressive-blocks";
+import { DistortSweep } from "./skia/distort-reveal";
 import { Paragraph as SkiaParagraph } from "./skia/paragraph";
 import { Quote as SkiaQuote } from "./skia/quote";
 import { Paragraph as NativeParagraph } from "./native/paragraph";
@@ -51,25 +54,7 @@ export default function ScriptText({
   const { colors } = useColors();
 
   const blocks = useMemo(() => parseBlocks(script), [script]);
-
-  /**
-   * A script is a document, not a feed — it lives inside the preview screen's
-   * ScrollView, which is exactly where a virtualised list can't measure itself.
-   * The list is a plain map; what keeps it cheap is that the blocks arrive in
-   * batches rather than all in one commit.
-   */
-  const visibleBlocks = useProgressiveBlocks(blocks, {
-    initialCount: REVEAL.initialBlockCount,
-    chunkSize: REVEAL.chunkSize,
-    chunkIntervalMs: REVEAL.chunkIntervalMs,
-    // Version 1 holds the rest of the script back until the distort sweep on
-    // the first chunk has finished. Version 2 has no sweep to wait on.
-    firstChunkDelayMs:
-      SCRIPT_TEXT_VARIANT === "skia"
-        ? REVEAL.distortDurationMs +
-          REVEAL.initialBlockCount * REVEAL.distortStaggerMs
-        : REVEAL.chunkIntervalMs,
-  });
+  const { height: windowHeight } = useWindowDimensions();
 
   // Measured once for the whole body. Every block is the same width, and the
   // Skia renderer needs a number before it can lay glyphs out.
@@ -96,11 +81,100 @@ export default function ScriptText({
     };
   }, [fontFamily, fontSize]);
 
+  /**
+   * Where the blocks on the first screen sit. The distort sweep is sized and
+   * aimed from this, and its length decides how many blocks mount in the first
+   * commit — the sweep covers the screen, so the screen is what has to be there
+   * when it starts.
+   *
+   * The budget is the window height rather than the body's visible height: the
+   * body sits below a header whose size this component doesn't know, so erring
+   * long is the safe direction. It costs at most one extra block above the fold
+   * and never leaves a swept-past-but-empty gap.
+   */
+  const metrics = useMemo(() => {
+    if (SCRIPT_TEXT_VARIANT !== "skia" || !skiaFonts || width <= 0) return null;
+    return measureBlocks({
+      blocks,
+      fonts: skiaFonts,
+      width,
+      fontSize,
+      lineHeightMultiplier,
+      paragraphSpacing,
+      quoteSpacing,
+      quoteIndent,
+      justify,
+      budget: windowHeight,
+      maxBlocks: REVEAL.maxInitialBlockCount,
+    });
+  }, [
+    blocks,
+    skiaFonts,
+    width,
+    fontSize,
+    lineHeightMultiplier,
+    paragraphSpacing,
+    quoteSpacing,
+    quoteIndent,
+    justify,
+    windowHeight,
+  ]);
+
+  // Until the body is measured there is nothing on screen to count — the Skia
+  // blocks all render null without a width — so the fallback only ever covers
+  // frames that draw nothing.
+  const distortCount = metrics?.length ?? REVEAL.fallbackBlockCount;
+
+  // Height the cascade travels, and the delay the last block in it waits for.
+  const sweepHeight = metrics ? sweptHeight(metrics) : 0;
+  const lastDelayMs =
+    metrics && metrics.length > 1 ? REVEAL.cascadeWindowMs : 0;
+
+  // TEMPORARY DIAGNOSTIC — delete once the script screen's reveal is confirmed.
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log("[script-text]", {
+      width,
+      blocks: blocks.length,
+      fonts: skiaFonts !== null,
+      metrics: metrics?.length ?? null,
+      distortCount,
+    });
+  }, [width, blocks.length, skiaFonts, metrics, distortCount]);
+
+  /**
+   * A script is a document, not a feed — it lives inside the preview screen's
+   * ScrollView, which is exactly where a virtualised list can't measure itself.
+   * The list is a plain map; what keeps it cheap is that the blocks arrive in
+   * batches rather than all in one commit.
+   */
+  const visibleBlocks = useProgressiveBlocks(blocks, {
+    initialCount: distortCount,
+    chunkSize: REVEAL.chunkSize,
+    chunkIntervalMs: REVEAL.chunkIntervalMs,
+    // Version 1 holds the rest of the script back until the distort sweep has
+    // finished. Version 2 has no sweep to wait on.
+    firstChunkDelayMs:
+      SCRIPT_TEXT_VARIANT === "skia"
+        ? REVEAL.startDelayMs +
+          REVEAL.cascadeWindowMs +
+          REVEAL.distortDurationMs +
+          REVEAL.distortTeardownMs
+        : REVEAL.chunkIntervalMs,
+  });
+
   const renderBlock = (block: Block, index: number) => {
-    // Blocks in the first chunk get the sweep; everything streaming in behind
+    // Blocks on the first screen get the sweep; everything streaming in behind
     // it just fades, which is both cheaper and less busy to watch.
-    const reveal: RevealMode =
-      index < REVEAL.initialBlockCount ? "distort" : "fade";
+    const metric = metrics?.[index];
+    const reveal: RevealMode = metric ? "distort" : "fade";
+    // Each block sweeps its own canvas; scaling its offset down the page into
+    // the cascade window is what turns those separate sweeps into one reveal
+    // travelling from the top of the screen to the bottom.
+    const delayMs =
+      metric && sweepHeight > 0
+        ? (metric.top / sweepHeight) * REVEAL.cascadeWindowMs
+        : 0;
 
     /**
      * Headings render through the paragraph renderers rather than getting their
@@ -110,7 +184,7 @@ export default function ScriptText({
      * and native paths from each needing a fourth component to maintain.
      */
     if (block.type === "heading") {
-      const headingSize = fontSize * (block.level <= 1 ? 1.5 : 1.22);
+      const headingSize = fontSize * headingScale(block.level);
       const segments = block.segments.map((segment) => ({
         ...segment,
         bold: true,
@@ -145,8 +219,7 @@ export default function ScriptText({
           justify={false}
           width={width}
           reveal={reveal}
-          revealIndex={index}
-          tint={colors.rust}
+          delayMs={delayMs}
         />
       );
     }
@@ -192,8 +265,7 @@ export default function ScriptText({
         borderColor={quoteBorderColor}
         width={width}
         reveal={reveal}
-        revealIndex={index}
-        tint={colors.rust}
+        delayMs={delayMs}
       />
     ) : (
       <SkiaParagraph
@@ -208,15 +280,21 @@ export default function ScriptText({
         justify={justify}
         width={width}
         reveal={reveal}
-        revealIndex={index}
-        tint={colors.rust}
+        delayMs={delayMs}
       />
     );
   };
 
   return (
     <View style={[styles.container, style]} onLayout={onLayout}>
-      {visibleBlocks.map(renderBlock)}
+      <DistortSweep
+        ready={metrics !== null}
+        content={blocks}
+        lastDelayMs={lastDelayMs}
+        tint={colors.rust}
+      >
+        {visibleBlocks.map(renderBlock)}
+      </DistortSweep>
     </View>
   );
 }

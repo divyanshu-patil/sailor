@@ -49,24 +49,27 @@ class OpenAIProvider:
             {"role": "system", "content": request.system},
             *(dict(message) for message in request.messages),
         ]
-        if request.image is not None:
+        if request.images:
             # Chat Completions accepts a data URL as an image_url. Attach the
-            # image to the final user turn so provider adapters keep the same
+            # images to the final user turn so provider adapters keep the same
             # conversation shape for repair/continuation calls too.
             for message in reversed(messages):
                 if message.get("role") == "user":
                     text = str(message.get("content", ""))
                     message["content"] = [
                         {"type": "text", "text": text},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": (
-                                    f"data:{request.image.media_type};base64,"
-                                    f"{request.image.base64_data}"
-                                )
-                            },
-                        },
+                        *(
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": (
+                                        f"data:{image.media_type};base64,"
+                                        f"{image.base64_data}"
+                                    )
+                                },
+                            }
+                            for image in request.images
+                        ),
                     ]
                     break
 

@@ -14,8 +14,7 @@ interface ParagraphProps {
   justify?: boolean;
   width: number;
   reveal: RevealMode;
-  revealIndex: number;
-  tint: string;
+  delayMs: number;
 }
 
 export const Paragraph = React.memo(
@@ -30,8 +29,7 @@ export const Paragraph = React.memo(
     justify = false,
     width,
     reveal,
-    revealIndex,
-    tint,
+    delayMs,
   }: ParagraphProps) => (
     <WrappedText
       lines={[segments]}
@@ -44,8 +42,7 @@ export const Paragraph = React.memo(
       spacing={paragraphSpacing}
       width={width}
       reveal={reveal}
-      revealIndex={revealIndex}
-      tint={tint}
+      delayMs={delayMs}
     />
   ),
 );

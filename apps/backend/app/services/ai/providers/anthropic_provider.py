@@ -51,19 +51,22 @@ class AnthropicProvider:
         import anthropic
 
         messages = [dict(message) for message in request.messages]
-        if request.image is not None:
+        if request.images:
             for message in reversed(messages):
                 if message.get("role") == "user":
                     message["content"] = [
                         {"type": "text", "text": str(message.get("content", ""))},
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": request.image.media_type,
-                                "data": request.image.base64_data,
-                            },
-                        },
+                        *(
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": image.media_type,
+                                    "data": image.base64_data,
+                                },
+                            }
+                            for image in request.images
+                        ),
                     ]
                     break
 

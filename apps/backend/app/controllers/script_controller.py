@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.attachment_model import Attachment
 from app.models.deck_model import Deck
 from app.models.script_model import ScriptGeneration, ScriptVersion
 from app.models.user_model import User
@@ -12,21 +13,18 @@ from app.schemas.script_schema import (
     ScriptGenerateRequest,
     ScriptReviseRequest,
 )
+from app.controllers.attachment_controller import get_owned_attachments
 from app.services.ai.card_generator import CardGenerationError, split_script_into_segments
 from app.services.realtime.script_events import (
-    ImageReferenceCacheError,
-    clear_generation_image_key,
-    read_generation_image_key,
     clear_script_status,
     read_generation_cards_status,
     read_script_status,
-    write_generation_image_key,
     write_generation_cards_status,
     write_script_status,
 )
 from app.services.scripts.fingerprint import brief_fingerprint
 from app.services.scripts.versions import append_version, version_count
-from app.services.storage_service import ImageStorageError, delete_image, upload_image
+from app.services.storage_service import AttachmentStorageError, delete_attachment
 from app.tasks.script_tasks import (
     build_deck_from_generation,
     generate_script_task,
@@ -55,32 +53,18 @@ def _revoke(task_id: str | None) -> None:
     revoke_task(task_id)
 
 
-def _remove_generation_image(generation_id: int, object_name: str | None = None) -> None:
-    """Remove a temporary image and then its Redis pointer.
-
-    The caller may already know the object name while enqueueing. For terminal
-    user actions (cancel/discard), it is fetched from Redis first.
-    """
-    if object_name is None:
+def _purge_generation_attachments(generation_id: int, db: Session) -> None:
+    """Drop the source files of a discarded draft. Only reached from discard —
+    a cancel keeps them, because retry re-runs against the same brief."""
+    rows = db.query(Attachment).filter(Attachment.generation_id == generation_id).all()
+    for row in rows:
         try:
-            object_name = read_generation_image_key(generation_id)
-        except ImageReferenceCacheError as exc:
-            logger.warning(
-                f"[script_controller] could not find image for generation {generation_id}: {exc}"
-            )
-            return
-
-    if object_name is None:
-        return
-
-    try:
-        delete_image(object_name)
-    except ImageStorageError as exc:
-        logger.warning(
-            f"[script_controller] could not remove image for generation {generation_id}: {exc}"
-        )
-        return
-    clear_generation_image_key(generation_id)
+            delete_attachment(row.object_key)
+        except AttachmentStorageError as exc:
+            logger.warning(f"[script_controller] leaked object {row.object_key}: {exc}")
+        db.delete(row)
+    if rows:
+        db.commit()
 
 
 def get_generation(generation_id: int, current_user: User, db: Session) -> ScriptGeneration:
@@ -119,11 +103,10 @@ def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
     }
 
 
-async def start_generation(
+def start_generation(
     payload: ScriptGenerateRequest,
     current_user: User,
     db: Session,
-    image: UploadFile | None = None,
 ) -> dict:
     """
     Start a script generation — or hand back the one this brief already has.
@@ -134,7 +117,15 @@ async def start_generation(
     every tap created a fresh deck row and a fresh job. Now an unchanged brief
     resolves to the same generation, and the only thing the client has to do is
     resume polling it.
+
+    Attachments arrive as ids, not as files. They were uploaded one at a time
+    while the user was still filling in the form — which is what lets the wizard
+    show real progress and hold Next until the uploads land, and what stops a
+    20MB deck being discovered as too large only after the brief is complete.
+    Submitting the brief claims them: `generation_id` goes from null to this row.
     """
+    attachments = get_owned_attachments(payload.attachment_ids, current_user, db)
+
     fingerprint = brief_fingerprint(
         description=payload.description,
         duration_mins=payload.duration_mins,
@@ -142,10 +133,11 @@ async def start_generation(
         audience=payload.audience,
     )
 
-    # The text-only fingerprint does not describe a reference image. Reusing a
-    # text-identical generation for a different image would return a script
-    # grounded in the wrong visual, so image-backed requests always start fresh.
-    if image is None:
+    # The text-only fingerprint describes neither the attached material nor the
+    # reference links. Reusing a text-identical generation for a different set
+    # of sources would return a script grounded in the wrong ones, so a brief
+    # carrying either always starts fresh.
+    if not attachments and not payload.links:
         existing = (
             db.query(ScriptGeneration)
             .filter(
@@ -165,19 +157,6 @@ async def start_generation(
             touch_generation(existing, db)
             return {"generation": serialize_generation(db, existing), "reused": True}
 
-    image_object_name: str | None = None
-    if image is not None:
-        try:
-            image_object_name = await upload_image(image)
-        except ValueError as exc:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
-        except ImageStorageError as exc:
-            logger.error(f"[script_controller] image upload failed: {exc}")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Could not store the reference image. Please try again.",
-            ) from exc
-
     generation = ScriptGeneration(
         user_id=current_user.id,
         description=payload.description,
@@ -185,37 +164,39 @@ async def start_generation(
         card_count=payload.card_count,
         audience=payload.audience,
         fingerprint=fingerprint,
+        links="\n".join(payload.links) or None,
         status=GenerationStatus.PENDING,
         last_seen_at=datetime.now(timezone.utc),
     )
     try:
         db.add(generation)
+        db.flush()
+
+        # Claimed in the same transaction as the generation. A crash between the
+        # two would otherwise leave a generation whose worker finds no source
+        # material and silently writes a script ignoring the user's documents.
+        for attachment in attachments:
+            attachment.generation_id = generation.id
+
         db.commit()
         db.refresh(generation)
 
-        if image_object_name is not None:
-            write_generation_image_key(generation.id, image_object_name)
-
-        task = generate_script_task.delay(generation.id, image_object_name is not None)
+        task = generate_script_task.delay(generation.id)
         generation.celery_task_id = task.id
         db.commit()
         db.refresh(generation)
     except Exception as exc:
         db.rollback()
-        _remove_generation_image(generation.id, image_object_name)
 
         # No usable job was dispatched. Hide the incomplete row so a retry is a
-        # clean request rather than a draft the user never received.
+        # clean request rather than a draft the user never received. The
+        # attachments are left alone: the rollback un-claimed them, so they are
+        # still there for the retry.
         generation.is_deleted = True
         generation.deleted_at = datetime.now(timezone.utc)
         generation.status = GenerationStatus.CANCELLED
         db.commit()
 
-        if isinstance(exc, ImageReferenceCacheError):
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Could not queue the reference image. Please try again.",
-            ) from exc
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Could not queue script generation. Please try again.",
@@ -436,7 +417,9 @@ def cancel_generation(generation_id: int, current_user: User, db: Session) -> di
     db.commit()
     db.refresh(generation)
 
-    _remove_generation_image(generation_id)
+    # Attachments deliberately survive a cancel. Retry re-runs this same
+    # generation against the same brief, and a retry that had lost the user's
+    # source documents would quietly produce a different, ungrounded script.
     write_script_status(generation_id, {"status": "cancelled"})
     return serialize_generation(db, generation)
 
@@ -518,7 +501,7 @@ def discard_generation(generation_id: int, current_user: User, db: Session) -> N
         generation.status = GenerationStatus.CANCELLED
     db.commit()
 
-    _remove_generation_image(generation_id)
+    _purge_generation_attachments(generation_id, db)
     clear_script_status(generation_id)
 
 

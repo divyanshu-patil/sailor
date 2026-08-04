@@ -18,14 +18,11 @@ from app.services.ai.script_generator import (
 from app.services.cards.impact_colors import assign_colors_by_impact
 from app.services.decks.deck_colors import pick_deck_color
 from app.services.realtime.script_events import (
-    ImageReferenceCacheError,
-    clear_generation_image_key,
-    read_generation_image_key,
     write_generation_cards_status,
     write_script_status,
 )
 from app.services.scripts.versions import append_version
-from app.services.storage_service import ImageStorageError, delete_image, read_image
+from app.services.sources import load_generation_sources
 from app.utils.enums.deck_enums import GenerationStatus, ScriptVersionKind
 from app.utils.enums.speaking_style import SpeakingStyle
 
@@ -47,27 +44,9 @@ def _status_payload(generation: ScriptGeneration) -> dict:
     }
 
 
-def _cleanup_generation_image(generation_id: int, object_name: str | None) -> None:
-    """Delete the temporary object first, then remove its Redis pointer."""
-    if object_name is None:
-        return
-    try:
-        delete_image(object_name)
-    except ImageStorageError as exc:
-        # Keeping the pointer lets operators identify the leaked object. The
-        # Redis TTL prevents it becoming permanent when MinIO is unavailable.
-        logger.warning(
-            f"[script_task] could not clean image for generation {generation_id}: {exc}"
-        )
-        return
-    clear_generation_image_key(generation_id)
-
-
 @celery_app.task(bind=True, max_retries=3)
-def generate_script_task(self, generation_id: int, expects_image: bool = False) -> None:
+def generate_script_task(self, generation_id: int) -> None:
     db = SessionLocal()
-    image_object_name: str | None = None
-    cleanup_image = False
     try:
         generation = (
             db.query(ScriptGeneration).filter(ScriptGeneration.id == generation_id).one_or_none()
@@ -81,9 +60,6 @@ def generate_script_task(self, generation_id: int, expects_image: bool = False) 
             # rather than flipping to PROCESSING is what stops a stopped job
             # coming back to life on a worker that was busy at the time.
             logger.info(f"[script_task] generation {generation_id} cancelled before start")
-            if expects_image:
-                image_object_name = read_generation_image_key(generation_id)
-            cleanup_image = True
             return
 
         generation.status = GenerationStatus.PROCESSING
@@ -92,19 +68,16 @@ def generate_script_task(self, generation_id: int, expects_image: bool = False) 
         write_script_status(generation_id, {"status": "processing"})
 
         try:
-            image = None
-            if expects_image:
-                image_object_name = read_generation_image_key(generation_id)
-                if image_object_name is None:
-                    raise ImageStorageError("The reference image is no longer available.")
-                image = read_image(image_object_name)
+            images, source_text = load_generation_sources(generation_id, db)
             title, script_text = generate_script(
                 description=generation.description,
                 duration_mins=generation.duration_mins,
                 audience=generation.audience,
-                image=image,
+                images=images,
+                source_text=source_text,
+                links=generation.links,
             )
-        except (ScriptGenerationError, ImageReferenceCacheError, ImageStorageError) as exc:
+        except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:
                 write_script_status(
                     generation_id, {"status": "retrying", "attempt": self.request.retries + 1}
@@ -123,7 +96,6 @@ def generate_script_task(self, generation_id: int, expects_image: bool = False) 
         db.refresh(generation)
 
         write_script_status(generation_id, _status_payload(generation))
-        cleanup_image = True
 
     except Retry:
         raise
@@ -142,10 +114,7 @@ def generate_script_task(self, generation_id: int, expects_image: bool = False) 
         generation.error = str(exc)[:500]
         db.commit()
         write_script_status(generation_id, {"status": "failed", "error": str(exc)[:500]})
-        cleanup_image = True
     finally:
-        if cleanup_image:
-            _cleanup_generation_image(generation_id, image_object_name)
         db.close()
 
 
@@ -178,11 +147,14 @@ def revise_script_task(self, generation_id: int, instruction: str) -> None:
         write_script_status(generation_id, {"status": "processing"})
 
         try:
+            _, source_text = load_generation_sources(generation_id, db)
             revised = revise_script(
                 script=original_script,
                 instruction=instruction,
                 title=original_title or "",
                 audience=generation.audience,
+                source_text=source_text,
+                links=generation.links,
             )
         except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:
@@ -409,16 +381,45 @@ def sweep_stale_generations() -> int:
             generation.status = GenerationStatus.CANCELLED
             generation.error = None
             write_script_status(generation.id, {"status": "cancelled"})
-            try:
-                image_object_name = read_generation_image_key(generation.id)
-            except ImageReferenceCacheError as exc:
-                logger.warning(
-                    f"[script_task] could not find image for stale generation {generation.id}: {exc}"
-                )
-            else:
-                _cleanup_generation_image(generation.id, image_object_name)
+            # Attachments are left in place — a swept generation is retryable,
+            # and a retry that lost the user's documents would quietly produce a
+            # different script. Orphans are handled below.
 
         db.commit()
+        _sweep_orphan_attachments(db)
         return len(stale)
     finally:
         db.close()
+
+
+# A file picked in the wizard and then abandoned — the user backed out, or the
+# app was killed — never gets a generation_id, so nothing else will ever clean
+# it up. Generous enough that a user who leaves the form open over lunch and
+# comes back still has their uploads.
+ORPHAN_ATTACHMENT_AFTER = timedelta(hours=24)
+
+
+def _sweep_orphan_attachments(db) -> int:
+    """Delete attachments uploaded but never submitted with a brief."""
+    from app.models.attachment_model import Attachment
+    from app.services.storage_service import AttachmentStorageError, delete_attachment
+
+    cutoff = datetime.now(timezone.utc) - ORPHAN_ATTACHMENT_AFTER
+    orphans = (
+        db.query(Attachment)
+        .filter(Attachment.generation_id.is_(None), Attachment.created_at < cutoff)
+        .all()
+    )
+    for orphan in orphans:
+        try:
+            delete_attachment(orphan.object_key)
+        except AttachmentStorageError as exc:
+            # Leave the row: it is the only record of the object, and dropping
+            # it here would turn a retryable failure into a permanent leak.
+            logger.warning(f"[script_task] could not remove orphan {orphan.id}: {exc}")
+            continue
+        db.delete(orphan)
+    if orphans:
+        db.commit()
+        logger.info(f"[script_task] swept {len(orphans)} orphan attachment(s)")
+    return len(orphans)

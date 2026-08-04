@@ -4,7 +4,6 @@ import {
   AUDIENCE_OPTIONS,
   AudienceType,
 } from "@/types/presentation";
-import { AxiosRequestHeaders } from "axios";
 
 /**
  * Scripts are their own resource now.
@@ -48,7 +47,9 @@ export type ScriptJobStatus =
 export type ScriptVersionKind = "generated" | "revised" | "edited";
 
 export interface GenerateScriptPayload {
-  attachments: Attachment[]; // collected by the form; the API ignores these for now
+  /** Collected by the form. Only those that finished uploading contribute —
+   *  their `remoteId` is what the API is sent. */
+  attachments: Attachment[];
   description: string;
   durationMinutes: number;
   audienceIndex: number;
@@ -230,62 +231,55 @@ export const scriptService = {
    * rather than a discard-and-regenerate.
    */
   generate: async (
-  payload: GenerateScriptPayload,
-): Promise<StartGenerationResult> => {
-  try {
-    const audience =
-      AUDIENCE_OPTIONS[payload.audienceIndex]?.value ??
-      ("general" satisfies AudienceType);
+    payload: GenerateScriptPayload,
+  ): Promise<StartGenerationResult> => {
+    try {
+      const audience =
+        AUDIENCE_OPTIONS[payload.audienceIndex]?.value ??
+        ("general" satisfies AudienceType);
 
-    const formData = new FormData();
+      // JSON, not multipart. Files were uploaded one at a time while the user
+      // was still filling in the form — see attachment.service — so all that
+      // travels here is their ids. Only files that actually finished have one;
+      // the wizard's Next button already waited for that, and filtering again
+      // means a failed upload degrades to "generated without it" rather than
+      // 400ing the whole brief.
+      const attachmentIds = (payload.attachments ?? [])
+        .map((a) => a.remoteId)
+        .filter((id): id is number => id != null);
 
-    formData.append("description", payload.description);
-    formData.append(
-      "durationMinutes",
-      String(payload.durationMinutes),
-    );
-    formData.append(
-      "cardCount",
-      String(payload.cardCount),
-    );
-    formData.append("audience", audience);
+      // Links have no upload and no id — the URL itself is the whole payload,
+      // so they travel as text and the API re-validates them. Their `name` is
+      // the URL the user typed.
+      const links = (payload.attachments ?? [])
+        .filter((a) => a.kind === "link")
+        .map((a) => a.name.trim())
+        .filter(Boolean);
 
-    // Optional image upload
-    if (
-      payload.attachments &&
-      payload.attachments.length > 0
-    ) {
-      const attachment = payload.attachments[0];
+      const response = await apiClient.post<{
+        generation: GenerationApiResponse;
+        reused: boolean;
+      }>("/api/v1/scripts", {
+        description: payload.description,
+        durationMinutes: payload.durationMinutes,
+        cardCount: payload.cardCount,
+        audience,
+        attachmentIds,
+        links,
+      });
 
-      formData.append("image", {
-        uri: attachment.uri,
-        name: attachment.name ?? "image.jpg",
-        type: attachment.kind ?? "image/jpeg",
-      } as any);
+      return {
+        generation: toGeneration(response.data.generation),
+        reused: response.data.reused,
+      };
+    } catch (e: any) {
+      console.error(
+        "Script generate error:",
+        JSON.stringify(e.response?.data, null, 2),
+      );
+      throw e;
     }
-
-   const response = await apiClient.post<{
-  generation: GenerationApiResponse;
-  reused: boolean;
-}>("/api/v1/scripts", formData, {
-  headers: {
-    "Content-Type": "multipart/form-data",
-  } as AxiosRequestHeaders,
-  transformRequest: (data) => data,
-});
-
-    return {
-      generation: toGeneration(response.data.generation),
-      reused: response.data.reused,
-    };
-  } catch (e: any) {
-    console.error(
-      "Script generate error:",
-      JSON.stringify(e.response?.data, null, 2),
-    );
-    throw e;
-  }
-},
+  },
 
   /** Poll until status is terminal. Also the heartbeat that tells the API a
    *  client is still watching — a generation nobody polls gets swept. */
