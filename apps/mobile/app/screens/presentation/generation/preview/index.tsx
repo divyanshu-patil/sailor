@@ -93,6 +93,7 @@ const PreviewScreen = () => {
       durationMinutes: formState.durationMinutes,
       audienceIndex: formState.audienceIndex,
       cardCount: formState.cardCount,
+      isPublic: formState.isPublic,
     }).catch(() => {
       // The hook has already put the reason in `error`; the generating screen
       // renders it with a Try again.

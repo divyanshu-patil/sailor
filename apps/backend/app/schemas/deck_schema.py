@@ -32,6 +32,7 @@ class DeckUpdateRequest(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=200)
     script: Optional[str] = Field(default=None, min_length=1)
     is_favorite: Optional[bool] = Field(default=None, alias="isFavourite")
+    is_public: Optional[bool] = Field(default=None, alias="isPublic")
 
 
 class DeckReviseRequest(BaseModel):
@@ -55,6 +56,7 @@ class DeckResponse(BaseModel):
     duration_mins: int
     card_count: int
     is_favorite: bool
+    is_public: bool
     generation_status: GenerationStatus
     generation_error: Optional[str] = None
     created_at: datetime

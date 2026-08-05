@@ -29,6 +29,8 @@ type PresentationFormContextValue = {
   /** True while any file is still uploading. The wizard's Next button is
    *  disabled on this — a brief can't reference a file that isn't stored yet. */
   isUploading: boolean;
+  isPublic: boolean;
+  setIsPublic: (value: boolean) => void;
   /** Server ids of every uploaded file, in the order they were added. */
   attachmentIds: number[];
   addAttachment: (attachment: Attachment) => void;
@@ -127,7 +129,9 @@ export function PresentationFormProvider({
           status: "failed",
           progress: undefined,
           error:
-            typeof detail === "string" ? detail : "Upload failed. Tap to retry.",
+            typeof detail === "string"
+              ? detail
+              : "Upload failed. Tap to retry.",
         });
       }
     },
@@ -179,7 +183,8 @@ export function PresentationFormProvider({
       const target = prev.attachments.find((a) => a.id === id);
       // Fire-and-forget: the file is out of the user's form either way, and the
       // server sweeps anything that was never submitted with a brief.
-      if (target?.remoteId != null) void attachmentService.remove(target.remoteId);
+      if (target?.remoteId != null)
+        void attachmentService.remove(target.remoteId);
       return {
         ...prev,
         attachments: prev.attachments.filter((a) => a.id !== id),
@@ -195,12 +200,17 @@ export function PresentationFormProvider({
       // A file rejected on size never reached the network, and retrying it
       // would fail identically. Removing it is the only way forward.
       if (
-        checkSize(target.kind as AttachmentKindApi, target.sizeBytes, 0) !== null
+        checkSize(target.kind as AttachmentKindApi, target.sizeBytes, 0) !==
+        null
       ) {
         return;
       }
 
-      patchAttachment(id, { status: "uploading", progress: 0, error: undefined });
+      patchAttachment(id, {
+        status: "uploading",
+        progress: 0,
+        error: undefined,
+      });
       void startUpload(target);
     },
     [form.attachments, patchAttachment, startUpload],
@@ -220,6 +230,13 @@ export function PresentationFormProvider({
 
   const handleSetDescriptionValue = useCallback((text: string) => {
     setForm((prev) => ({ ...prev, description: text }));
+  }, []);
+
+  const setIsPublic = useCallback((isPublic: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      isPublic,
+    }));
   }, []);
 
   const isUploading = useMemo(
@@ -243,6 +260,10 @@ export function PresentationFormProvider({
       descriptionValue,
       isUploading,
       attachmentIds,
+
+      isPublic: form.isPublic,
+      setIsPublic,
+
       addAttachment,
       removeAttachment,
       retryAttachment,
@@ -258,6 +279,7 @@ export function PresentationFormProvider({
       descriptionValue,
       isUploading,
       attachmentIds,
+      setIsPublic,
       addAttachment,
       removeAttachment,
       retryAttachment,

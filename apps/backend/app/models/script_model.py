@@ -72,6 +72,13 @@ class ScriptGeneration(Base):
         server_default=AudienceType.GENERAL.value,
     )
 
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=false(),
+    )
+
     # Hash of the four fields above. Recomputed on write rather than trusted from
     # the client, so "the same brief" means the same thing on every device — see
     # services/scripts/fingerprint.py.
