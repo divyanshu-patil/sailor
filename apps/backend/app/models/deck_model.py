@@ -20,8 +20,17 @@ class Deck(Base):
     """
     __tablename__ = "decks"
     __table_args__ = (
-        # Speeds up the common "list this user's decks, newest first" query.
         Index("ix_decks_user_id_created_at", "user_id", "created_at"),
+        # Supports: WHERE is_public = true AND is_deleted = false
+        #           ORDER BY created_at DESC, id DESC
+        # Partial (postgresql_where) so the index only contains rows this
+        # query cares about — most decks are private, no reason to index them
+        # for the public feed.
+        Index(
+            "ix_decks_public_feed",
+            "is_public", "created_at", "id",
+            postgresql_where=text("is_public = true AND is_deleted = false"),
+        ),
     )
 
     # ids
