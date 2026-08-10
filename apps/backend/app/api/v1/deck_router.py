@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -10,6 +10,7 @@ from app.schemas.deck_schema import (
     DeckResponse,
     DeckReviseRequest,
     DeckUpdateRequest,
+    PublicDecksPage,
 )
 
 router = APIRouter(prefix="/decks", tags=["Decks"])
@@ -27,6 +28,15 @@ def get_user_health_check():
     """Simple health check for users — no auth required."""
     return {"status": "ok", "service": "Deck-router"}
 
+@router.get("/public", response_model=PublicDecksPage, response_model_by_alias=False)
+def list_public_decks(
+    cursor: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """The public feed. No auth dependency on purpose — browsing public decks
+    shouldn't require a signed-in user, matching /health above it."""
+    return deck_controller.list_public_decks(cursor, limit, db)
 
 @router.get("/{deck_id}", response_model=DeckResponse)
 def get_deck(

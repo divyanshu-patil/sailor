@@ -1,5 +1,5 @@
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import List, Literal
 from datetime import datetime
 from typing import Optional
@@ -97,3 +97,48 @@ class AllDeckInfoResponse(BaseModel):
     slideCount: int = Field(alias="card_count")
     durationMins: int = Field(alias="duration_mins")
     isFavourite: bool = Field(alias="is_favorite")
+
+class PublicDeckCreator(BaseModel):
+    """Just enough about the creator to show a byline — never email,
+    clerk_user_id, subscription_tier, or role. Those are account internals,
+    not something a stranger browsing the feed should see."""
+
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_user(cls, user):
+
+        if isinstance(user, dict):
+            return user
+        name = getattr(user, "nickname", None) or getattr(user, "full_name", None) or "Anonymous"
+        return {"id": user.id, "name": name}
+
+
+class PublicDeckItem(BaseModel):
+    """One public deck as it appears in the infinite-scroll feed. Everything
+    the card needs to render itself (title, color, audience, creator byline)
+    plus the full script, so tapping into a deck needs no second fetch."""
+
+    id: int
+    title: str | None = None
+    script: str | None = None
+    durationMins: int = Field(alias="duration_mins")
+    color: str
+    audience: AudienceType
+    creator: PublicDeckCreator = Field(alias="user")
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+
+class PublicDecksPage(BaseModel):
+    """The envelope the feed endpoint returns."""
+
+    items: list[PublicDeckItem]
+    nextCursor: str | None = Field(default=None, alias="next_cursor")
+    hasMore: bool = Field(alias="has_more")
+
+    model_config = ConfigDict(populate_by_name=True)

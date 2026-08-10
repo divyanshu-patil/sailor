@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
+from sqlalchemy import tuple_
+from sqlalchemy import tuple_
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 from app.core.celery_app import celery_app
 from app.models.card_model import Card
@@ -10,11 +12,14 @@ from app.schemas.deck_schema import (
     DeckResponse,
     DeckReviseRequest,
     DeckUpdateRequest,
+    PublicDeckItem,
+    PublicDecksPage,
 )
 from app.tasks.deck_tasks import revise_deck_script
 from app.services.realtime.deck_events import read_deck_status, write_deck_status
 
 from app.utils.enums.deck_enums import GenerationStatus
+from app.utils.pagination import InvalidCursorError, decode_cursor, encode_cursor
 
 # Decks are no longer created directly.
 #
@@ -24,6 +29,10 @@ from app.utils.enums.deck_enums import GenerationStatus
 # script_controller.create_deck_from_generation, at the one moment the user
 # actually accepts a script, and everything in this module operates on decks that
 # are already real.
+
+
+DEFAULT_PUBLIC_PAGE_SIZE = 20
+MAX_PUBLIC_PAGE_SIZE = 50
 
 
 def get_deck(deck_id: int, current_user: User, db: Session) -> Deck:
@@ -231,3 +240,58 @@ def get_deck_generation_status(deck_id: int, current_user: User, db: Session) ->
     if row.generation_status == GenerationStatus.FAILED:
         return {"status": "failed", "error": row.generation_error}
     return {"status": row.generation_status.value}
+
+
+def list_public_decks(cursor: str | None, limit: int, db: Session) -> PublicDecksPage:
+    
+    limit = min(limit, MAX_PUBLIC_PAGE_SIZE)
+
+    query = (
+        db.query(Deck)
+        # PublicDeckItem reads deck.user for the creator byline on every row.
+        # Without this, SQLAlchemy lazy-loads each deck's user separately —
+        # 20 decks on a page = 20 extra round trips. joinedload folds that
+        # into the same query as a SQL JOIN: one round trip, period.
+        .options(joinedload(Deck.user))
+        .filter(
+            Deck.is_public == True, 
+            Deck.is_deleted == False,
+            Deck.generation_status == GenerationStatus.COMPLETED,
+        )
+    )
+
+    if cursor:
+        try:
+            last_created_at, last_id = decode_cursor(cursor)
+        except InvalidCursorError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid pagination cursor.",
+            )
+        # Row-value comparison: "everything strictly after this (created_at, id)
+        # pair" in DESC order. This is what lets Postgres seek straight into
+        # ix_decks_public_feed instead of scanning from the top every request.
+        query = query.filter(
+            tuple_(Deck.created_at, Deck.id) < (last_created_at, last_id)
+        )
+
+    # Fetch one extra row purely to answer "is there a next page?" without a
+    # separate COUNT(*) query — cheap, and avoids a second round trip.
+    rows = (
+        query.order_by(Deck.created_at.desc(), Deck.id.desc())
+        .limit(limit + 1)
+        .all()
+    )
+
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+
+    next_cursor = (
+        encode_cursor(rows[-1].created_at, rows[-1].id) if has_more and rows else None
+    )
+
+    return PublicDecksPage(
+        items=[PublicDeckItem.model_validate(deck) for deck in rows],
+        next_cursor=next_cursor,
+        has_more=has_more,
+    )
