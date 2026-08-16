@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -25,11 +26,7 @@ from app.services.realtime.script_events import (
 from app.services.scripts.fingerprint import brief_fingerprint
 from app.services.scripts.versions import append_version, version_count
 from app.services.storage_service import AttachmentStorageError, delete_attachment
-from app.tasks.script_tasks import (
-    build_deck_from_generation,
-    generate_script_task,
-    revise_script_task,
-)
+from app.tasks.script_tasks import build_deck_from_generation, generate_script_task
 from app.utils.enums.deck_enums import GenerationStatus, ScriptVersionKind
 
 # Statuses a generation can be handed back in instead of starting a new job for
@@ -82,10 +79,16 @@ def get_generation(generation_id: int, current_user: User, db: Session) -> Scrip
     return generation
 
 
-def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
+def serialize_generation(
+    db: Session, generation: ScriptGeneration, *, versions: int | None = None
+) -> dict:
     """The response body every endpoint here returns. `version_count` is what the
     client's undo/redo arrows enable themselves from, so it travels with every
-    response rather than needing a second call."""
+    response rather than needing a second call.
+
+    `versions` short-circuits that count for a caller that already knows it — a
+    generation created moments ago has none, and counting rows to be told zero
+    is a round trip nobody needs."""
     return {
         "id": generation.id,
         "description": generation.description,
@@ -97,7 +100,7 @@ def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
         "status": generation.status,
         "error": generation.error,
         "deck_id": generation.deck_id,
-        "version_count": version_count(db, generation.id),
+        "version_count": version_count(db, generation.id) if versions is None else versions,
         "created_at": generation.created_at,
         "updated_at": generation.updated_at,
     }
@@ -168,6 +171,12 @@ def start_generation(
         status=GenerationStatus.PENDING,
         last_seen_at=datetime.now(timezone.utc),
     )
+    # Chosen here rather than read back from Celery, which is what lets the id
+    # be stored in the same INSERT as the row instead of an UPDATE-and-commit
+    # afterwards. Celery accepts the id it is given, so the two agree.
+    task_id = str(uuid4())
+    generation.celery_task_id = task_id
+
     try:
         db.add(generation)
         db.flush()
@@ -179,12 +188,10 @@ def start_generation(
             attachment.generation_id = generation.id
 
         db.commit()
-        db.refresh(generation)
 
-        task = generate_script_task.delay(generation.id)
-        generation.celery_task_id = task.id
-        db.commit()
-        db.refresh(generation)
+        # Queued only once the row is committed: the worker looks the generation
+        # up by id, and a task that overtakes its own row finds nothing there.
+        generate_script_task.apply_async(args=[generation.id], task_id=task_id)
     except Exception as exc:
         db.rollback()
 
@@ -202,7 +209,7 @@ def start_generation(
             detail="Could not queue script generation. Please try again.",
         ) from exc
 
-    return {"generation": serialize_generation(db, generation), "reused": False}
+    return {"generation": serialize_generation(db, generation, versions=0), "reused": False}
 
 
 # Only every Nth poll actually writes. The client polls every 2s, and the sweep
@@ -267,36 +274,14 @@ def get_generation_status(generation_id: int, current_user: User, db: Session) -
 def request_revision(
     generation_id: int, payload: ScriptReviseRequest, current_user: User, db: Session
 ) -> dict:
-    generation = get_generation(generation_id, current_user, db)
-
-    if not generation.script:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="There's no script to revise yet — wait for generation to finish.",
-        )
-    if generation.status in (GenerationStatus.PENDING, GenerationStatus.PROCESSING):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This script is already being generated or revised.",
-        )
-
-    generation.status = GenerationStatus.PENDING
-    generation.error = None
-    generation.last_seen_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(generation)
-
-    # Overwrite the cached "completed" payload immediately: without this the
-    # client's first poll after kicking off a revision reads the finished
-    # pre-revision script out of Redis and stops polling.
-    write_script_status(generation_id, {"status": "pending"})
-
-    task = revise_script_task.delay(generation.id, payload.instruction)
-    generation.celery_task_id = task.id
-    db.commit()
-    db.refresh(generation)
-
-    return serialize_generation(db, generation)
+    """AI revision is gone for now — see deck_controller.request_script_revision
+    for the why. Manual edits (PATCH /scripts/{id}) still work and still append
+    a version, so the undo history is unaffected."""
+    get_generation(generation_id, current_user, db)
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Script revision is temporarily unavailable.",
+    )
 
 
 def edit_script(

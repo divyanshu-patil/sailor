@@ -5,17 +5,6 @@ from app.models.script_model import ScriptGeneration, ScriptVersion
 from app.utils.enums.deck_enums import ScriptVersionKind
 
 
-def next_position(db: Session, generation_id: int) -> int:
-    """Positions are contiguous and 1-based, so the client can treat them as an
-    undo cursor rather than having to sort by timestamp."""
-    highest = (
-        db.query(func.max(ScriptVersion.position))
-        .filter(ScriptVersion.generation_id == generation_id)
-        .scalar()
-    )
-    return (highest or 0) + 1
-
-
 def append_version(
     db: Session,
     generation: ScriptGeneration,
@@ -46,7 +35,9 @@ def append_version(
 
     version = ScriptVersion(
         generation_id=generation.id,
-        position=next_position(db, generation.id),
+        # Derived from the row above rather than a second MAX(position) query:
+        # `latest` is already the highest position by definition of its ORDER BY.
+        position=(latest.position + 1) if latest is not None else 1,
         title=title,
         script=script,
         kind=kind,

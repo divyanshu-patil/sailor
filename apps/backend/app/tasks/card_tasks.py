@@ -76,7 +76,7 @@ def generate_deck_cards(self, deck_id: int, card_count: int) -> None:
         )
 
     except Retry:
-        raise  # Celery's own retry signal — not a real failure, same gotcha as deck_tasks.py
+        raise  # Celery's own retry signal — not a real failure
     except Exception as exc:
         db.rollback()
         deck = db.query(Deck).filter(Deck.id == deck_id).one_or_none()

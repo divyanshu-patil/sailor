@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 
 from app.config.settings import settings
 from app.services.ai.providers.base import (
@@ -18,6 +19,30 @@ _THINK_UNSUPPORTED_MARKERS = ("think", "thinking")
 _no_think_models: set[str] = set()
 
 
+@lru_cache(maxsize=None)
+def _cached_client(host: str, api_key: str, timeout: float):
+    """One client per (host, key, timeout), reused for the life of the process.
+
+    It was being constructed per call, which meant a fresh TLS handshake to
+    ollama.com for every beat of every script — eight-plus handshakes per
+    generation, all of them avoidable. httpx pools connections behind the
+    client, so reusing it makes the second call onwards start talking straight
+    away. The client is stateless and thread-safe, which is what lets the beat
+    fan-out share one.
+
+    `timeout` is the reason the whole thing is bounded: without it httpx waits
+    forever, so a wedged request pins one of the seven concurrent beats — and
+    therefore the user's generation — until Celery's own 600s limit fires.
+    """
+    from ollama import Client
+
+    return Client(
+        host=host,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout=timeout,
+    )
+
+
 class OllamaProvider:
     name = "ollama"
 
@@ -25,11 +50,10 @@ class OllamaProvider:
         return [m for m in (settings.AI_MODEL, settings.AI_FALLBACK_MODEL) if m]
 
     def _client(self):
-        from ollama import Client
-
-        return Client(
-            host=settings.OLLAMA_HOST or OLLAMA_CLOUD_HOST,
-            headers={"Authorization": f"Bearer {settings.OLLAMA_API_KEY}"},
+        return _cached_client(
+            settings.OLLAMA_HOST or OLLAMA_CLOUD_HOST,
+            settings.OLLAMA_API_KEY,
+            settings.AI_REQUEST_TIMEOUT,
         )
 
     def _call(self, model: str, request: ChatRequest, *, think: bool | None) -> str:
@@ -81,6 +105,13 @@ class OllamaProvider:
             # retries instead of burning the fallback against the same budget.
             if getattr(e, "status_code", None) == 429 or "too many" in detail:
                 raise RateLimitedError(f"'{model}' rate limited: {detail}") from e
+
+            # A timeout is the fallback model's cue, not a mystery: say so
+            # plainly in the log rather than leaving a bare httpx repr.
+            if "timeout" in detail or type(e).__name__.endswith("Timeout"):
+                raise ProviderError(
+                    f"'{model}' timed out after {settings.AI_REQUEST_TIMEOUT:.0f}s"
+                ) from e
 
             if think is not None and any(m in detail for m in _THINK_UNSUPPORTED_MARKERS):
                 logger.info(f"[ai] '{model}' doesn't accept `think`; retrying without it")

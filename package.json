@@ -8,7 +8,7 @@
   "scripts": {
     "postinstall": "cd apps/backend && uv sync",
     "dev": "turbo run dev --filter=sailor --filter=@sailor/backend",
-    "run:backend": "turbo run dev --filter=@sailor/backend",
+    "run:backend": "turbo run @sailor/backend#dev @sailor/backend#celery @sailor/backend#docker",
     "run:celery": "turbo run celery --filter=@sailor/backend",
     "dev:android": "turbo run sailor#android @sailor/backend#dev @sailor/backend#celery @sailor/backend#redis",
     "dev:ios": "turbo run sailor#ios @sailor/backend#dev @sailor/backend#celery @sailor/backend#docker",

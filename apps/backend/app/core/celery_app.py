@@ -8,7 +8,7 @@ celery_app = Celery(
     "sailor",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.deck_tasks", "app.tasks.card_tasks", "app.tasks.script_tasks"],
+    include=["app.tasks.card_tasks", "app.tasks.script_tasks"],
 )
 
 celery_app.conf.update(
@@ -38,6 +38,14 @@ celery_app.conf.update(
         "sweep-stale-script-generations": {
             "task": "app.tasks.script_tasks.sweep_stale_generations",
             "schedule": crontab(minute="*/5"),
+        },
+        # Separate from the sweep above, and far less often: an attachment is
+        # only an orphan once it is 24 hours old, and the stale sweep now skips
+        # the database entirely when nothing has been generated recently — which
+        # would have taken this with it.
+        "sweep-orphan-attachments": {
+            "task": "app.tasks.script_tasks.sweep_orphan_attachments",
+            "schedule": crontab(minute="17"),
         },
     },
 )

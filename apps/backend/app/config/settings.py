@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     # if you start seeing 429s.
     AI_MAX_CONCURRENCY: int = 12
 
+    # Seconds a single model call may take before it is abandoned.
+    #
+    # The script's beats run concurrently, so wall-clock time is the *slowest*
+    # call, not the average — one straggler sets the user's wait. Measured on
+    # ollama cloud: a healthy beat call is 2-50s, but a call that has gone wrong
+    # can sit open for minutes before the provider admits it (one measured run
+    # hung for 170s and then returned a 500). Cutting it loose hands the work to
+    # the fallback model, which answers in seconds.
+    AI_REQUEST_TIMEOUT: float = 90.0
+
     # ---- per-provider credentials ---------------------------------------
     OLLAMA_API_KEY: str = ""
     OLLAMA_HOST: str = ""

@@ -43,6 +43,36 @@ def read_script_status(generation_id: int) -> dict | None:
     return json.loads(raw) if raw is not None else None
 
 
+# --- "is anything even running?" -------------------------------------------
+#
+# The stale sweep runs every five minutes and, on an idle instance, opens a
+# connection to Postgres (measured: ~6s to the pooler after the worker has been
+# idle) purely to learn that nothing is stale. This marker answers the same
+# question for free: a generation sets it when it starts, with a TTL longer than
+# the staleness window, so its absence proves there is nothing to sweep.
+#
+# Erring towards *running* the sweep is deliberate — if Redis is down or the key
+# was lost, the sweep proceeds and does its own check against the database.
+_ACTIVITY_KEY = "script:activity"
+
+
+def mark_generation_activity(ttl_seconds: int) -> None:
+    """Called when a generation starts running."""
+    try:
+        _get_redis().set(_ACTIVITY_KEY, "1", ex=ttl_seconds)
+    except redis.RedisError as e:
+        logger.warning(f"[script_events] failed to mark activity: {e}")
+
+
+def had_recent_generation_activity() -> bool:
+    """False only when Redis positively says nothing has run recently."""
+    try:
+        return _get_redis().exists(_ACTIVITY_KEY) > 0
+    except redis.RedisError as e:
+        logger.warning(f"[script_events] activity check failed, assuming active: {e}")
+        return True
+
+
 def _cards_key(generation_id: int) -> str:
     return f"script:{generation_id}:cards:status"
 

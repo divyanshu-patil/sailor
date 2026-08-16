@@ -17,7 +17,6 @@ from app.schemas.deck_schema import (
     PublicDeckItem,
     PublicDecksPage,
 )
-from app.tasks.deck_tasks import revise_deck_script
 from app.services.realtime.deck_events import read_deck_status, write_deck_status
 
 from app.utils.enums.deck_enums import DeckCategory, GenerationStatus
@@ -94,37 +93,20 @@ def update_deck(
 def request_script_revision(
     deck_id: int, payload: DeckReviseRequest, current_user: User, db: Session
 ) -> Deck:
-    """AI revision — async, same status lifecycle as the initial generation, so
-    the client polls /decks/{id}/status for both."""
-    deck = get_deck(deck_id, current_user, db)
+    """AI revision is gone for now.
 
-    if not deck.script:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="There's no script to revise yet — wait for generation to finish.",
-        )
-    if deck.generation_status in (GenerationStatus.PENDING, GenerationStatus.PROCESSING):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This script is already being generated or revised.",
-        )
-
-    deck.generation_status = GenerationStatus.PENDING
-    deck.generation_error = None
-    db.commit()
-    db.refresh(deck)
-
-    # Overwrite the cached "completed" payload immediately: without this the
-    # client's first poll after kicking off a revision would read the finished
-    # pre-revision deck out of Redis and stop polling.
-    write_deck_status(deck_id, {"status": "pending"})
-
-    task = revise_deck_script.delay(deck.id, payload.instruction)
-    deck.celery_task_id = task.id
-    db.commit()
-    db.refresh(deck)
-
-    return deck
+    It ran through the staged script pipeline that was removed — a routing call
+    to pick the affected beats, then one rewrite call per beat. Script
+    generation is a single direct model call now, and nothing has been written
+    to replace revision on top of it. The prompts it used
+    (`build_revision_prompt`, `build_section_revision_prompt`) are still in
+    prompts.py, untouched, for whenever it comes back.
+    """
+    get_deck(deck_id, current_user, db)  # 404s for a deck that isn't the user's
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Script revision is temporarily unavailable.",
+    )
 
 
 def revoke_task(task_id: str | None) -> None:
