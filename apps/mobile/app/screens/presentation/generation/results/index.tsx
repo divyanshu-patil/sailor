@@ -1,6 +1,6 @@
 import { fonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
-import { useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import GeneratingScreen from "../preview/components/generating";
@@ -58,6 +58,23 @@ const ResultsScreen = () => {
   const headerHeight = useHeaderHeight();
   return (
     <>
+      {/* The only way out, and it leads home rather than back through the
+          wizard: the preview screen replaces the whole creation stack with this
+          one when the script is accepted, so there is nothing behind it. */}
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          variant="prominent"
+          tintColor={colors.rust}
+          hidden={state !== "completed"}
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/(authenticated)/(tabs)/(home)")
+          }
+        >
+          Done
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
       <BlobBackground />
 
       <Animated.View

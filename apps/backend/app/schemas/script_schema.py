@@ -25,7 +25,6 @@ class ScriptGenerateRequest(BaseModel):
     card_count: int = Field(..., alias="cardCount", ge=1, le=100)
     duration_mins: int = Field(..., alias="durationMinutes", ge=1, le=60)
     audience: AudienceType
-    is_public: bool = Field(..., alias="isPublic")
     # Ids from POST /attachments. The files are already stored by the time this
     # brief is submitted — see script_controller.start_generation.
     attachment_ids: list[int] = Field(

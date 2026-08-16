@@ -14,6 +14,12 @@ export type {
 export { useDeck } from "./use-deck";
 export type { UseDeckOptions, UseDeckReturn } from "./use-deck";
 
+export { usePublicDecks } from "./use-public-decks";
+export type {
+  UsePublicDecksOptions,
+  UsePublicDecksReturn,
+} from "./use-public-decks";
+
 export { useCards } from "./use-cards";
 export type {
   UseCardsOptions,

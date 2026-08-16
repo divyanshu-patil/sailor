@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Link, router, Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
 import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
@@ -22,6 +29,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { DeckItem } from "@/services/deck.service";
 import { useCards, useDeck } from "@/hooks";
+import { usePublicDeck } from "@/hooks/use-public-deck";
+import { publicDeckService } from "@/services/public-deck.service";
 
 type ScriptDetailParams = {
   id: string;
@@ -32,6 +41,15 @@ type ScriptDetailParams = {
   slideCount: string;
   durationMins: string;
   isFavourite: string;
+  /**
+   * "1" when this deck came from Discover and belongs to someone else.
+   *
+   * The screen is the same either way — same hero, same card count, same script
+   * card — because a public deck is a deck. What changes is where the data comes
+   * from (the public endpoint, not the owner-only one) and what the toolbar
+   * offers: Save instead of favourite/publish/delete.
+   */
+  public?: string;
 };
 
 const ANIMATION_DELAY = 300; // ms before anything starts
@@ -67,17 +85,31 @@ export default function ScriptDetailScreen() {
     [params],
   );
 
-  // Use initial data from params, then refresh from API
+  const isOtherPersonsDeck = params.public === "1";
+
+  // Use initial data from params, then refresh from API. Skipped entirely for
+  // someone else's deck: the owner endpoints would 404, and there is no local
+  // row to read either.
   const {
     data: deck,
     script,
     isMutating: isDeleting,
     toggleFavourite,
     deleteDeck,
+    unpublish,
   } = useDeck({
-    deckId: paramScript.id,
+    deckId: isOtherPersonsDeck ? "" : paramScript.id,
     initialData: paramScript,
+    immediate: !isOtherPersonsDeck,
   });
+
+  const {
+    data: publicDeck,
+    script: publicScript,
+    creatorName,
+    isSaved,
+    toggleSaved,
+  } = usePublicDeck(isOtherPersonsDeck ? paramScript.id : null);
 
   /**
    * Pull the deck's cards into the local mirror.
@@ -89,14 +121,77 @@ export default function ScriptDetailScreen() {
    * also quietly broke search: `searchDecks` ranks matches against the local
    * `cards` table, so a deck could never be found by a card's title.
    */
-  useCards({ deckId: paramScript.id });
+  useCards({
+    deckId: paramScript.id,
+    // Someone else's cards are read but never mirrored: the local `cards` table
+    // is foreign-keyed to the user's own decks.
+    local: !isOtherPersonsDeck,
+  });
 
   // Use the fetched data if available, otherwise fall back to params
-  const currentScript = deck ?? paramScript;
+  const currentScript = publicDeck ?? deck ?? paramScript;
   const isFavourite = currentScript.isFavourite ?? false;
 
   const handleToggleFavourite = async () => {
     await toggleFavourite();
+  };
+
+  /**
+   * Publishing lives here, in the deck's own menu, rather than on the brief that
+   * generated it. A deck is something you decide to share *after* you've seen
+   * it, and any deck can be shared — including ones written before the feed
+   * existed. The brief-time toggle could do neither.
+   */
+  const isPublic = currentScript.isPublic ?? false;
+
+  const handlePublish = () => {
+    router.push({
+      pathname: "/(authenticated)/(script)/modals/publish",
+      params: { id: currentScript.id },
+    });
+  };
+
+  /**
+   * Unpublishing asks first. It's the one action here that changes what other
+   * people can see, and it isn't obviously reversible from the outside — so it
+   * gets the confirmation that the reversible actions (favourite, publish)
+   * deliberately don't.
+   */
+  const handleUnpublish = () => {
+    Alert.alert(
+      "Remove from Discover?",
+      "This deck stops appearing publicly. Its description, tags and category are kept, so you can publish it again without retyping them.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            void unpublish();
+          },
+        },
+      ],
+    );
+  };
+
+  /**
+   * Start practising.
+   *
+   * The `public` flag travels with it: the practice screen reads its cards from
+   * the API instead of the local mirror, and records nothing to the author's
+   * audio. Counting the run is fire-and-forget — social proof isn't worth
+   * delaying the first card for.
+   */
+  const handlePractice = () => {
+    if (isOtherPersonsDeck) void publicDeckService.recordPractice(currentScript.id);
+    router.navigate({
+      pathname: "/(authenticated)/(script)/script-practice",
+      params: {
+        id: currentScript.id,
+        color: currentScript.color,
+        ...(isOtherPersonsDeck ? { public: "1" } : {}),
+      },
+    });
   };
 
   const handleDelete = async () => {
@@ -184,7 +279,7 @@ export default function ScriptDetailScreen() {
   // The deck's real script, from SQLite via useDeck. This was a hardcoded
   // paragraph about I/O systems that every deck displayed regardless of what it
   // was actually about.
-  const scriptText = script ?? "";
+  const scriptText = publicScript ?? script ?? "";
 
   const textDarkColor = colord(currentScript.color)
     .darken(0.35)
@@ -202,25 +297,64 @@ export default function ScriptDetailScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <Stack.Screen options={{ headerShown: false }} />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={isFavourite ? "heart.fill" : "heart"}
-          tintColor={"#EB6B83"}
-          onPress={handleToggleFavourite}
-        />
-        <Stack.Toolbar.Menu icon={"ellipsis"}>
-          <Stack.Toolbar.MenuAction icon={"square.and.arrow.up"}>
-            Share
-          </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction
-            destructive
-            icon={"trash"}
-            onPress={handleDelete}
-          >
-            Delete
-          </Stack.Toolbar.MenuAction>
-        </Stack.Toolbar.Menu>
-      </Stack.Toolbar>
+      {isOtherPersonsDeck ? (
+        // A reader gets one action, and it isn't a copy: saving bookmarks the
+        // author's deck, so it keeps their edits and disappears if they
+        // unpublish. There is no favourite (that's for your own library), no
+        // publish, and no delete on a deck you don't own.
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button
+            variant="prominent"
+            icon={isSaved ? "bookmark.fill" : "bookmark"}
+            // The deck's own colour, in the darkened tone the rest of this
+            // screen's text uses — the raw fill would sit on a background that
+            // is that same colour lightened, and disappear into it.
+            tintColor={textDarkColor}
+            onPress={toggleSaved}
+          />
+        </Stack.Toolbar>
+      ) : (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button
+            icon={isFavourite ? "heart.fill" : "heart"}
+            tintColor={"#EB6B83"}
+            onPress={handleToggleFavourite}
+          />
+          <Stack.Toolbar.Menu icon={"ellipsis"}>
+            {isPublic ? (
+              <Stack.Toolbar.Menu inline title="Discover">
+                <Stack.Toolbar.MenuAction
+                  icon={"square.and.pencil"}
+                  onPress={handlePublish}
+                >
+                  Edit public details
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  destructive
+                  icon={"eye.slash"}
+                  onPress={handleUnpublish}
+                >
+                  Remove from Discover
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
+            ) : (
+              <Stack.Toolbar.MenuAction icon={"globe"} onPress={handlePublish}>
+                Publish to Discover
+              </Stack.Toolbar.MenuAction>
+            )}
+            <Stack.Toolbar.MenuAction icon={"square.and.arrow.up"}>
+              Share
+            </Stack.Toolbar.MenuAction>
+            <Stack.Toolbar.MenuAction
+              destructive
+              icon={"trash"}
+              onPress={handleDelete}
+            >
+              Delete
+            </Stack.Toolbar.MenuAction>
+          </Stack.Toolbar.Menu>
+        </Stack.Toolbar>
+      )}
 
       <ScrollView
         style={[styles.screen, { backgroundColor: screenColor }]}
@@ -257,18 +391,32 @@ export default function ScriptDetailScreen() {
                 <Text style={[styles.heroTitle, { color: textDarkColor }]}>
                   {currentScript.title}
                 </Text>
+                {/* Whose deck this is, when it isn't yours. Same slot the
+                    author's own "In Discover" badge uses below. */}
+                {isOtherPersonsDeck && creatorName && (
+                  <View style={styles.publicBadge}>
+                    <Text
+                      style={[styles.publicBadgeText, { color: textDarkColor }]}
+                    >
+                      by {creatorName} · {currentScript.practiceCount ?? 0} practices
+                    </Text>
+                  </View>
+                )}
+                {/* The author's own status line: if a deck is live in Discover,
+                    that should be visible on the deck, not only inside a menu. */}
+                {!isOtherPersonsDeck && isPublic && (
+                  <View style={styles.publicBadge}>
+                    <Text
+                      style={[styles.publicBadgeText, { color: textDarkColor }]}
+                    >
+                      In Discover · {currentScript.practiceCount ?? 0} practices
+                    </Text>
+                  </View>
+                )}
                 <CtaButton
                   label="GO"
                   accentColor={currentScript.color}
-                  onPress={() =>
-                    router.navigate({
-                      pathname: "/(authenticated)/(script)/script-practice",
-                      params: {
-                        id: currentScript.id,
-                        color: currentScript.color,
-                      },
-                    })
-                  }
+                  onPress={handlePractice}
                 />
               </View>
             </Animated.View>
@@ -383,6 +531,15 @@ const styles = StyleSheet.create({
     left: 0,
   },
   heroContent: { padding: 20, width: "80%", gap: 16 },
+  publicBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.45)",
+    marginTop: -8,
+  },
+  publicBadgeText: { fontSize: 11, fontWeight: "700" },
   heroTitle: { fontSize: 34, marginBottom: 10, fontFamily: "KronaOne" },
   ctaPill: {
     flexDirection: "row",

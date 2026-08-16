@@ -54,7 +54,6 @@ export interface GenerateScriptPayload {
   durationMinutes: number;
   audienceIndex: number;
   cardCount: number;
-  isPublic: boolean;
 }
 
 export interface ScriptGeneration {
@@ -263,7 +262,6 @@ export const scriptService = {
       }>("/api/v1/scripts", {
         description: payload.description,
         durationMinutes: payload.durationMinutes,
-        isPublic: payload.isPublic,
         cardCount: payload.cardCount,
         audience,
         attachmentIds,

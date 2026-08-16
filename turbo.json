@@ -10,7 +10,7 @@
       "cache": false,
       "persistent": true
     },
-    "redis": {
+    "docker": {
       "cache": false,
       "persistent": true
     },

@@ -25,7 +25,7 @@ import Animated, {
   LinearTransition,
 } from "react-native-reanimated";
 import { Image } from "expo-image";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 
 import { Card } from "../components/Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "../components/constants";
@@ -152,6 +152,14 @@ const AllScriptsScreen = () => {
   return (
     <View style={styles.screen}>
       <Stack.Toolbar placement="right">
+        {/* Saved decks are other people's, so they don't belong in this grid —
+            but this is where the user comes looking for "my decks", so the way
+            in belongs here too. */}
+        <Stack.Toolbar.Button
+          variant="prominent"
+          icon="bookmark"
+          onPress={() => router.push("/(authenticated)/discover/saved")}
+        />
         <Stack.Toolbar.Menu icon="line.3.horizontal.decrease">
           <Stack.Toolbar.Menu inline title="Filter">
             <Stack.Toolbar.MenuAction

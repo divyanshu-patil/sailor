@@ -2,10 +2,11 @@ from datetime import datetime
 import enum
 
 from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func, Boolean, Enum as SAEnum, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db.base import Base
 from typing import TYPE_CHECKING, Optional
-from app.utils.enums.deck_enums import GenerationStatus, AudienceType
+from app.utils.enums.deck_enums import DeckCategory, GenerationStatus, AudienceType
 if TYPE_CHECKING:
     from app.models.user_model import User
     from app.models.card_model import Card
@@ -21,14 +22,26 @@ class Deck(Base):
     __tablename__ = "decks"
     __table_args__ = (
         Index("ix_decks_user_id_created_at", "user_id", "created_at"),
-        # Supports: WHERE is_public = true AND is_deleted = false
-        #           ORDER BY created_at DESC, id DESC
-        # Partial (postgresql_where) so the index only contains rows this
-        # query cares about — most decks are private, no reason to index them
-        # for the public feed.
+        # The two orders the discover feed offers, each as a partial index over
+        # published decks only — most decks are private, no reason to index them
+        # for a feed they can never appear in. Both carry `id` so the keyset
+        # cursor (sort_key, id) seeks straight into the index instead of
+        # re-scanning from the top on every page.
         Index(
-            "ix_decks_public_feed",
-            "is_public", "created_at", "id",
+            "ix_decks_public_recent",
+            "published_at", "id",
+            postgresql_where=text("is_public = true AND is_deleted = false"),
+        ),
+        Index(
+            "ix_decks_public_popular",
+            "practice_count", "id",
+            postgresql_where=text("is_public = true AND is_deleted = false"),
+        ),
+        # Tag filtering is `tags && ARRAY['x']`, which only a GIN index can serve.
+        Index(
+            "ix_decks_public_tags",
+            "tags",
+            postgresql_using="gin",
             postgresql_where=text("is_public = true AND is_deleted = false"),
         ),
     )
@@ -66,12 +79,48 @@ class Deck(Base):
     card_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    # Public deck sharing 
+    # --- public sharing -------------------------------------------------------
+    # is_public is the *visibility switch* only. The three fields under it are
+    # the published metadata, and they deliberately outlive an unpublish: taking
+    # a deck out of discovery shouldn't make the author retype its description,
+    # tags and category to put it back.
     is_public: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,          # ORM default
         server_default=false(), # Database default
+    )
+
+    tags: Mapped[list[str]] = mapped_column(
+        ARRAY(String),
+        nullable=False,
+        default=list,
+        server_default=text("'{}'::varchar[]"),
+    )
+
+    category: Mapped[Optional[DeckCategory]] = mapped_column(
+        SAEnum(
+            DeckCategory,
+            values_callable=lambda enum: [e.value for e in enum],
+            name="deck_category_enum",
+            native_enum=True,
+        ),
+        nullable=True,
+    )
+
+    # Social proof on the feed card. Counts every practice run, the author's
+    # included — it's a "this deck gets used" signal, not an audience metric.
+    practice_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default=text("0"),
+    )
+
+    # When it *first* entered discovery. Feed order, and stable across an
+    # unpublish/republish so a deck can't farm the top of the feed by toggling.
+    published_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     audio_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)       # MinIO object key, or None

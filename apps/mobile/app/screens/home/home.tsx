@@ -98,6 +98,24 @@ const HomeScreen = () => {
   return (
     <Host style={{ flex: 1 }}>
       <Form>
+        {/* Discover is a full-screen route outside the tab group, so entering
+            it hides the tab bar — see routes/(authenticated)/discover. */}
+        <Section
+          title="Discover"
+          footer={
+            <Text modifiers={[foregroundStyle("#8E8E93")]}>
+              Public decks published by everyone using Sailor.
+            </Text>
+          }
+        >
+          <Button
+            systemImage="sparkles"
+            onPress={() => router.push("/(authenticated)/discover")}
+            modifiers={[buttonStyle("glassProminent"), tint("#c11b5c")]}
+          >
+            <Text>Browse public decks</Text>
+          </Button>
+        </Section>
         <Section>
           <HStack spacing={8}>
             <Text>Notifications</Text>

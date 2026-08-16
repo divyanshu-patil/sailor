@@ -20,6 +20,13 @@ export type DeckItem = {
   slideCount: number;
   durationMins: number;
   isFavourite?: boolean;
+  /** Publish state and the metadata behind it. Present on the detail endpoint
+   *  only — the grid summary doesn't carry them, so they're optional rather
+   *  than defaulted, and a missing value means "not loaded", not "not public". */
+  isPublic?: boolean;
+  tags?: string[];
+  category?: string | null;
+  practiceCount?: number;
 };
 
 export interface DeckCreateParams {
@@ -33,6 +40,14 @@ export interface DeckUpdateParams {
   description?: string;
   color?: string;
   isFavourite?: boolean;
+}
+
+/** What the publish review sheet collects. All three are required by the API —
+ *  a deck in the feed without them isn't browsable. */
+export interface DeckPublishParams {
+  description: string;
+  tags: string[];
+  category: string;
 }
 
 // Both `deckService` (real) and `dummyDeckService` (mock) implement this,

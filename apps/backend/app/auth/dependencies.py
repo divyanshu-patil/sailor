@@ -1,8 +1,9 @@
-from fastapi import Depends, HTTPException, status
+import jwt
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth.clerk import get_current_clerk_user, ClerkUser
+from app.auth.clerk import _verify_token, get_current_clerk_user, ClerkUser
 from app.db.database import get_db
 from app.models.user_model import User
 
@@ -58,6 +59,34 @@ def get_current_user(
     and stay consistent with the rest of the ORM-based code.
     """
     return resolve_user_from_claims(clerk_user.claims, db)
+
+
+def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User | None:
+    """
+    The signed-in user, or None — for endpoints that serve everyone but have
+    something extra to say to a signed-in caller.
+
+    The public deck detail endpoint is the case this exists for: it must stay
+    readable without an account, but a signed-in reader needs to know whether
+    they've already saved the deck. Without this they'd have to fetch their
+    entire saved list on every deck they open just to render one bookmark icon.
+
+    A bad or expired token is treated as "not signed in" rather than a 401 —
+    this endpoint has nothing to protect, so refusing to serve it would be
+    punishing the wrong request.
+    """
+    header = request.headers.get("Authorization") or ""
+    scheme, _, token = header.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        return None
+    try:
+        claims = _verify_token(token)
+    except jwt.PyJWTError:
+        return None
+    return resolve_user_from_claims(claims, db)
 
 
 def require_admin(

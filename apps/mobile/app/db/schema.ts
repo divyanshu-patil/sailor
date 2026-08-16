@@ -145,7 +145,30 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_script_versions_position
   ON script_versions (generation_id, position);
 `;
 
-export const MIGRATIONS: readonly string[] = [V1, V2];
+/**
+ * Publish state, mirrored so the deck detail screen's menu can say "Publish" or
+ * "Unpublish" on the first frame — before the API refresh lands, and at all on
+ * a cold start with no network.
+ *
+ * `tags` is a JSON array in a TEXT column rather than a join table: nothing
+ * queries by tag locally (tag filtering is a server concern, on the feed), so a
+ * second table would only buy joins nobody makes.
+ *
+ * All four are nullable with no default, unlike the V1 columns. That's what
+ * makes the upsert's COALESCE work: `GET /decks` returns none of them, so a
+ * grid refresh has to leave them alone — and it can only tell "not sent" from
+ * "sent as false" if an absent value stays NULL instead of being defaulted to 0
+ * on the way in. A NULL here means "never fetched the detail", which reads as
+ * not-public, no tags, no category.
+ */
+const V3 = `
+ALTER TABLE decks ADD COLUMN is_public      INTEGER;
+ALTER TABLE decks ADD COLUMN tags           TEXT;
+ALTER TABLE decks ADD COLUMN category       TEXT;
+ALTER TABLE decks ADD COLUMN practice_count INTEGER;
+`;
+
+export const MIGRATIONS: readonly string[] = [V1, V2, V3];
 
 /** Target version — always the number of migrations. */
 export const SCHEMA_VERSION = MIGRATIONS.length;

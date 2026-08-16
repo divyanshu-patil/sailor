@@ -36,7 +36,9 @@ import { lightenColor } from "./utils/lightenColor";
 import DurationText from "./components/DurationText";
 import { useCards } from "@/hooks";
 
-type ScriptPracticeParams = { id: string; color: string };
+/** `public: "1"` when the deck being practised came from Discover rather than
+ *  the user's own library — see the `local` flag passed to useCards below. */
+type ScriptPracticeParams = { id: string; color: string; public?: string };
 
 const ScriptPracticeScreen = () => {
   const headerHeight = useHeaderHeight();
@@ -48,6 +50,10 @@ const ScriptPracticeScreen = () => {
     error: cardsError,
   } = useCards({
     deckId: params.id,
+    // Someone else's deck is never written to the offline mirror: `cards` is
+    // foreign-keyed to the user's own `decks`, and a public deck has no row
+    // there — nor should it, since it isn't in their library.
+    local: params.public !== "1",
     onError: () => {
       // Error is handled by the hook
     },
@@ -304,6 +310,9 @@ const ScriptPracticeScreen = () => {
 
         <RecordButton
           deckId={params.id}
+          // Someone else's deck: record and play back locally, sync nothing.
+          // The audio endpoints are owner-only.
+          syncRecording={params.public !== "1"}
           isRecordingBool={isRecordingBool}
           isRecording={isRecording}
           isPaused={isPaused}

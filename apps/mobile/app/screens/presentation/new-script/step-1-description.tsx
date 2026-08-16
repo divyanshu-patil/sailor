@@ -42,8 +42,6 @@ export default function StepDescription() {
     descriptionState,
     handleSetDescriptionValue,
     linkDraftState,
-    isPublic,
-    setIsPublic,
   } = usePresentationForm();
 
   const { colors } = useColors();
@@ -163,15 +161,6 @@ export default function StepDescription() {
               />
             </HStack>
           </Section>
-          <Section>
-            <Toggle
-              isOn={isPublic}
-              onIsOnChange={setIsPublic}
-              modifiers={[tint(colors.rust)]}
-              label="Is Public"
-            />
-          </Section>
-
           {/* Links stay in the form. There is nothing to preview for a URL, so
               a text row says more than a thumbnail could — the tiles below are
               for files that actually look like something. */}

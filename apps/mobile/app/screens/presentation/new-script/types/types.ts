@@ -6,7 +6,6 @@ export type PresentationFormState = {
   durationMinutes: number;
   audienceIndex: number;
   cardCount: number;
-  isPublic: boolean;
 };
 
 // Labels only — `audienceIndex` indexes into AUDIENCE_OPTIONS, which is what
@@ -19,5 +18,4 @@ export const DEFAULT_STATE: PresentationFormState = {
   audienceIndex: 0,
   cardCount: 8,
   description: "",
-  isPublic: false,
 };

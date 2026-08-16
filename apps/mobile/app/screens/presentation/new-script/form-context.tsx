@@ -29,8 +29,6 @@ type PresentationFormContextValue = {
   /** True while any file is still uploading. The wizard's Next button is
    *  disabled on this — a brief can't reference a file that isn't stored yet. */
   isUploading: boolean;
-  isPublic: boolean;
-  setIsPublic: (value: boolean) => void;
   /** Server ids of every uploaded file, in the order they were added. */
   attachmentIds: number[];
   addAttachment: (attachment: Attachment) => void;
@@ -232,13 +230,6 @@ export function PresentationFormProvider({
     setForm((prev) => ({ ...prev, description: text }));
   }, []);
 
-  const setIsPublic = useCallback((isPublic: boolean) => {
-    setForm((prev) => ({
-      ...prev,
-      isPublic,
-    }));
-  }, []);
-
   const isUploading = useMemo(
     () => form.attachments.some((a) => a.status === "uploading"),
     [form.attachments],
@@ -261,9 +252,6 @@ export function PresentationFormProvider({
       isUploading,
       attachmentIds,
 
-      isPublic: form.isPublic,
-      setIsPublic,
-
       addAttachment,
       removeAttachment,
       retryAttachment,
@@ -279,7 +267,6 @@ export function PresentationFormProvider({
       descriptionValue,
       isUploading,
       attachmentIds,
-      setIsPublic,
       addAttachment,
       removeAttachment,
       retryAttachment,

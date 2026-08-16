@@ -5,9 +5,23 @@ from sqlalchemy import pool
 
 from app.config.settings import settings
 
-from app.models.user_model import User
-from app.models.deck_model import Deck
+# Every model module, imported for its side effect of registering the table on
+# Base.metadata — not for the names themselves.
+#
+# This list being incomplete is not a style problem, it's a data-loss one:
+# autogenerate diffs the database against `target_metadata`, so a table whose
+# model isn't imported here looks like an orphan and gets a `drop_table` in the
+# generated migration. That is exactly how `user_preferences` was dropped in
+# 063c8b0da287 ("revalidate all models") while its model sat untouched in the
+# codebase — every `GET /preferences` has 500'd since. Adding a model file
+# means adding it here.
+from app.models.attachment_model import Attachment
 from app.models.card_model import Card
+from app.models.deck_model import Deck
+from app.models.deck_save_model import DeckSave
+from app.models.preferences_model import UserPreferences
+from app.models.script_model import ScriptGeneration, ScriptVersion
+from app.models.user_model import User
 
 from app.db.base import Base
 

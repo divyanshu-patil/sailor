@@ -30,11 +30,8 @@ import {
   DeckSortOption,
   searchDecks as dbSearchDecks,
 } from "@/db/decks.repo";
-import ShimmerBar from "@/components/ui/shared/shimmer-bar";
 import StartSearchingState from "./start-searching.state";
 import NoResultsFoundState from "./no-results.state";
-
-const SHIMMER_BAR_HEIGHT = 5;
 
 const AnimatedFlashList = Animated.createAnimatedComponent(
   FlashList,
@@ -107,8 +104,10 @@ const SearchScreen = () => {
   // leave the previous results on screen behind an empty search box.
   const visibleResults = hasQuery ? results : [];
 
-  // `isSearching` is set during render-phase-free user input (below) rather than
-  // in the effect, so a keystroke shows the shimmer immediately.
+  // No progress bar: a local SQLite query returns in single-digit milliseconds,
+  // so a loading indicator on top of the search field only ever flickered. This
+  // now exists solely to hold the "nothing found" art back until the query has
+  // actually run.
   const isLoading = (isSearching && hasQuery) || isRefreshing;
 
   const renderItem: ListRenderItem<DeckItem> = useCallback(
@@ -144,9 +143,9 @@ const SearchScreen = () => {
         onChangeText={(text) => {
           const next = text.nativeEvent.text;
           setQuery(next);
-          // Flag the search as in-flight here, on the event, rather than in the
-          // effect: the effect is debounced, so setting it there would leave the
-          // list looking settled for 180ms while the query is already stale.
+          // Flagged here, on the event, rather than in the effect: the effect
+          // is debounced, so setting it there would leave the empty state
+          // flashing for 180ms while the query is already stale.
           setIsSearching(next.trim().length > 0);
         }}
       />
@@ -202,10 +201,6 @@ const SearchScreen = () => {
           </Stack.Toolbar.Menu>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
-
-      {isLoading ? (
-        <ShimmerBar height={SHIMMER_BAR_HEIGHT} color={"#A0C4E2"} />
-      ) : null}
 
       {!hasQuery ? (
         <StartSearchingState />

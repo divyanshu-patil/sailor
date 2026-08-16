@@ -284,7 +284,6 @@ def build_deck_from_generation(self, generation_id: int) -> None:
             card_count=len(card_data),
             duration_mins=generation.duration_mins,
             audience=generation.audience,
-            is_public=generation.is_public,
             color=pick_deck_color(generation.user_id, db),
             generation_status=GenerationStatus.COMPLETED,
             cards_generation_status=GenerationStatus.COMPLETED,
