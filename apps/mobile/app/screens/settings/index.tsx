@@ -69,7 +69,7 @@ const SettingsScreen = () => {
             selectedMood={preferences?.defaultMood ?? "confident"}
             onUpdate={updatePreference}
           />
-          <SubscriptionSection />
+          <SubscriptionSection onMessage={showAlert} />
           <LegalSection />
           <CacheSection onCleared={handleCacheCleared} />
           <VersionSection />

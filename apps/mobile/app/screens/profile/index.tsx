@@ -109,7 +109,7 @@ const ProfileScreen = () => {
             support mail. */}
         <PlanCard
           onManagePress={isPro ? openCustomerCenter : openPaywall}
-          planName={isPro ? "Sailors Pro" : "Free"}
+          planName={isPro ? "Pro" : "Basic"}
           usagePercent={90}
           remainingCount={5}
           cardColor={theme.planCardColor}

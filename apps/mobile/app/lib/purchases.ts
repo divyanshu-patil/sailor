@@ -24,7 +24,7 @@ import { ENV } from "./config/env";
  * sensitive, and it is *not* the product id: products come and go (monthly,
  * yearly, a launch promo), the entitlement is the access they all grant.
  */
-export const PRO_ENTITLEMENT = "Sailors Pro";
+export const PRO_ENTITLEMENT = "pro";
 
 /**
  * Purchases can't run at all without a native module, so web is out — and the
@@ -76,7 +76,9 @@ export const hasProEntitlement = (info: CustomerInfo | null): boolean =>
 // Purchases made before sign-in are aliased onto that id automatically on the
 // first logIn, so an anonymous trial purchase is never stranded.
 
-export async function loginPurchases(appUserId: string): Promise<CustomerInfo | null> {
+export async function loginPurchases(
+  appUserId: string,
+): Promise<CustomerInfo | null> {
   if (!configured) return null;
   try {
     const { customerInfo } = await Purchases.logIn(appUserId);
@@ -181,7 +183,11 @@ export async function restorePurchases(): Promise<CustomerInfo | null> {
 // release. The app's job is to open them at the right moment and to trust the
 // entitlement afterwards, not to re-implement a purchase flow around them.
 
-export type PaywallOutcome = "purchased" | "restored" | "dismissed" | "unavailable";
+export type PaywallOutcome =
+  | "purchased"
+  | "restored"
+  | "dismissed"
+  | "unavailable";
 
 const toPaywallOutcome = (result: PAYWALL_RESULT): PaywallOutcome => {
   switch (result) {
