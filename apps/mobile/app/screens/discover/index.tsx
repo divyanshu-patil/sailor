@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { Host, ContentUnavailableView } from "@expo/ui/swift-ui";
 import Animated, {
@@ -93,6 +93,16 @@ const DiscoverScreen = () => {
   return (
     <View style={styles.screen}>
       <Stack.Title>Discover</Stack.Title>
+
+      {/*
+        Discover is the first screen of its own stack, so there is no native
+        back button to inherit — the push that got here happened in the parent
+        stack, one level up. This is the only way out that doesn't rely on the
+        swipe gesture.
+      */}
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button icon="chevron.backward" onPress={router.back} />
+      </Stack.Toolbar>
 
       {/*
         placement="automatic" + the SearchBarSlot below is what puts the field
