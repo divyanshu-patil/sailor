@@ -21,7 +21,10 @@ const DiscoverLayout = () => (
     {/* Header stays (transparent) rather than hidden: the native back button
         is the only affordance out of a public deck, and the screen scrolls
         under it. */}
-    <Stack.Screen name="[id]" options={{ headerTitle: "" }} />
+    <Stack.Screen
+      name="[id]"
+      options={{ headerTitle: "", headerLargeTitleEnabled: false }}
+    />
   </Stack>
 );
 

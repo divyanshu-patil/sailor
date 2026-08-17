@@ -39,8 +39,15 @@ const DiscoverScreen = () => {
   // through and short enough that the results feel attached to the typing.
   const debouncedQuery = useDebouncedValue(query, 220);
 
-  const { decks, isLoading, isRefreshing, isLoadingMore, error, refresh, loadMore } =
-    usePublicDecks({ q: debouncedQuery, category, sort });
+  const {
+    decks,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    error,
+    refresh,
+    loadMore,
+  } = usePublicDecks({ q: debouncedQuery, category, sort });
 
   const renderItem = useCallback(
     ({ item, index }: { item: PublicDeck; index: number }) => (
@@ -123,10 +130,6 @@ const DiscoverScreen = () => {
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
 
-      <Stack.Toolbar placement="bottom">
-        <Stack.Toolbar.SearchBarSlot />
-      </Stack.Toolbar>
-
       {/*
         One scroll view, always mounted.
 
@@ -137,9 +140,8 @@ const DiscoverScreen = () => {
         the list header and the empty state is ListEmptyComponent, so filtering
         only ever changes the cards.
 
-        Keeping the FlashList as the screen's single, direct scroll view is also
-        what lets the native large title collapse against it — nesting it inside
-        a wrapper broke the contentInset relationship the header depends on.
+        Keeping the FlashList as the screen's first native view is also what
+        lets the large title collapse against it (see the toolbar note below).
       */}
       <FlashList
         data={decks}
@@ -186,6 +188,17 @@ const DiscoverScreen = () => {
           ) : null
         }
       />
+
+      {/*
+        Rendered *after* the list, and that order matters: the bottom toolbar is
+        a real native view, and iOS finds the scroll view the large title
+        collapses against by walking the first-child chain. With the toolbar
+        first, that walk hit the toolbar instead of the list — so the title got
+        no scroll view to attach to and just floated over the grid.
+      */}
+      <Stack.Toolbar placement="bottom">
+        <Stack.Toolbar.SearchBarSlot />
+      </Stack.Toolbar>
 
       {/* Errors while decks are already on screen are non-blocking: the list
           stays, and this says why it stopped growing. */}
