@@ -24,8 +24,12 @@ export function useSavedDecks(): UseSavedDecksReturn {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setIsRefreshing(true);
+  // `isRefreshing` belongs to the pull gesture and nothing else. The mount and
+  // focus fetches below reload the same list, but they aren't something the user
+  // asked for, and driving a RefreshControl from them made the spinner appear
+  // on its own every time the screen came back.
+  const load = useCallback(async (fromPull: boolean) => {
+    if (fromPull) setIsRefreshing(true);
     try {
       setDecks(await publicDeckService.listSaved());
       setError(null);
@@ -39,15 +43,17 @@ export function useSavedDecks(): UseSavedDecksReturn {
     }
   }, []);
 
+  const refresh = useCallback(() => load(true), [load]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refresh();
-  }, [refresh]);
+    void load(false);
+  }, [load]);
 
   useFocusEffect(
     useCallback(() => {
-      void refresh();
-    }, [refresh]),
+      void load(false);
+    }, [load]),
   );
 
   return { decks, isLoading, isRefreshing, error, refresh };

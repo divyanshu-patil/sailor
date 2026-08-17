@@ -4,7 +4,11 @@ import { FlashList } from "@shopify/flash-list";
 import { Stack } from "expo-router";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { Host, ContentUnavailableView } from "@expo/ui/swift-ui";
-import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+} from "react-native-reanimated";
 
 import { usePublicDecks } from "@/hooks";
 import { useDebouncedValue } from "@/hooks/use-debounce";
@@ -12,8 +16,11 @@ import { PublicDeck, PublicDeckSort } from "@/services/public-deck.service";
 import { DECK_CATEGORIES } from "@/constants/deck-categories";
 import { fonts } from "@/constants/fonts";
 import { SCREEN_PADDING } from "@/screens/presentation/decks/components/constants";
+import ShimmerBar from "@/components/ui/shared/shimmer-bar";
 import { PublicDeckCard } from "./components/public-deck-card";
 import { CategoryChips } from "./components/category-chips";
+
+const SHIMMER_BAR_HEIGHT = 4;
 
 /**
  * Discover — every published deck in the app.
@@ -40,22 +47,45 @@ const DiscoverScreen = () => {
     decks,
     isLoading,
     isRefreshing,
+    isQuerying,
     isLoadingMore,
     error,
     refresh,
     loadMore,
   } = usePublicDecks({ q: debouncedQuery, category, sort });
 
+  // Same wrapper the library grid uses: the layout transition is what makes a
+  // filter change slide the surviving cards to their new rows instead of
+  // teleporting them, and fade covers the ones that join or leave.
   const renderItem = useCallback(
     ({ item, index }: { item: PublicDeck; index: number }) => (
-      <PublicDeckCard deck={item} index={index} />
+      <Animated.View
+        layout={LinearTransition.springify().damping(100)}
+        entering={FadeIn}
+        exiting={FadeOut}
+      >
+        <PublicDeckCard deck={item} index={index} />
+      </Animated.View>
     ),
     [],
   );
 
+  // The chips plus the only progress the re-query gets. A shimmer under the row
+  // that just changed says "these results are being replaced" without the
+  // RefreshControl's pull-to-refresh vocabulary, and it animates its own height
+  // so the cards don't jump when it appears.
   const header = useMemo(
-    () => <CategoryChips selected={category} onSelect={setCategory} />,
-    [category],
+    () => (
+      <View>
+        <CategoryChips selected={category} onSelect={setCategory} />
+        {isQuerying ? (
+          <View style={styles.shimmer}>
+            <ShimmerBar height={SHIMMER_BAR_HEIGHT} color="#D5DBE8" />
+          </View>
+        ) : null}
+      </View>
+    ),
+    [category, isQuerying],
   );
 
   const hasFilters = !!category || debouncedQuery.trim().length > 0;
@@ -145,6 +175,10 @@ const DiscoverScreen = () => {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListHeaderComponent={header}
+        // Off for the same reason the library grid turns it off: scroll
+        // anchoring measures rows while the layout transition is still moving
+        // them, and the two together make the list twitch on a filter change.
+        maintainVisibleContentPosition={{ disabled: true }}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -231,6 +265,12 @@ const styles = StyleSheet.create({
     // Clears the floating bottom toolbar — content scrolls *under* translucent
     // chrome, but must be able to come out from behind it.
     paddingBottom: 120,
+  },
+  shimmer: {
+    marginHorizontal: 6,
+    marginBottom: 10,
+    borderRadius: 100,
+    overflow: "hidden",
   },
   footer: { paddingVertical: 24 },
   errorBar: { position: "absolute", left: 16, right: 16, bottom: 110 },

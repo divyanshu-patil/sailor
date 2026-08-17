@@ -18,6 +18,9 @@ export interface UsePublicDecksReturn {
    *  the current list on screen and use the two flags below instead. */
   isLoading: boolean;
   isRefreshing: boolean;
+  /** A re-query (search, category, sort) with results already on screen. The
+   *  RefreshControl deliberately doesn't fire for these — see `load`. */
+  isQuerying: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
   error: string | null;
@@ -45,6 +48,7 @@ export function usePublicDecks(
   const [decks, setDecks] = useState<PublicDeck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isQuerying, setIsQuerying] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,14 +72,20 @@ export function usePublicDecks(
   const queryId = useRef(0);
 
   const load = useCallback(
-    async (mode: "reset" | "more") => {
+    async (mode: "reset" | "more", fromPull = false) => {
       if (mode === "more" && (busy.current || !hasMore.current)) return;
 
       busy.current = true;
       const runId = mode === "reset" ? ++queryId.current : queryId.current;
 
-      if (mode === "reset") setIsRefreshing(true);
-      else setIsLoadingMore(true);
+      // `isRefreshing` drives the RefreshControl, so only an actual pull sets
+      // it. A reset also happens on mount and on every query change (typing,
+      // category, sort), and spinning the control for those made it look like
+      // the list refreshed itself every keystroke.
+      if (mode === "reset") {
+        if (fromPull) setIsRefreshing(true);
+        else setIsQuerying(true);
+      } else setIsLoadingMore(true);
 
       try {
         const page = await publicDeckService.list({
@@ -109,6 +119,7 @@ export function usePublicDecks(
         if (runId === queryId.current) {
           setIsLoading(false);
           setIsRefreshing(false);
+          setIsQuerying(false);
           setIsLoadingMore(false);
           busy.current = false;
         }
@@ -136,13 +147,14 @@ export function usePublicDecks(
   const refresh = useCallback(async () => {
     cursor.current = null;
     hasMore.current = true;
-    await load("reset");
+    await load("reset", true);
   }, [load]);
 
   return {
     decks,
     isLoading,
     isRefreshing,
+    isQuerying,
     isLoadingMore,
     hasMore: hasMoreState,
     error,
