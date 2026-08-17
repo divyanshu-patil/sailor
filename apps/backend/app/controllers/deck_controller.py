@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from sqlalchemy import or_, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -18,6 +19,7 @@ from app.schemas.deck_schema import (
     PublicDecksPage,
 )
 from app.services.realtime.deck_events import read_deck_status, write_deck_status
+from app.tasks.deck_tasks import revise_deck_script
 
 from app.utils.enums.deck_enums import DeckCategory, GenerationStatus
 from app.utils.pagination import InvalidCursorError, decode_cursor, encode_cursor
@@ -93,20 +95,39 @@ def update_deck(
 def request_script_revision(
     deck_id: int, payload: DeckReviseRequest, current_user: User, db: Session
 ) -> Deck:
-    """AI revision is gone for now.
+    """AI revision — async, same status lifecycle as the initial generation, so
+    the client polls /decks/{id}/status for both."""
+    deck = get_deck(deck_id, current_user, db)
 
-    It ran through the staged script pipeline that was removed — a routing call
-    to pick the affected beats, then one rewrite call per beat. Script
-    generation is a single direct model call now, and nothing has been written
-    to replace revision on top of it. The prompts it used
-    (`build_revision_prompt`, `build_section_revision_prompt`) are still in
-    prompts.py, untouched, for whenever it comes back.
-    """
-    get_deck(deck_id, current_user, db)  # 404s for a deck that isn't the user's
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Script revision is temporarily unavailable.",
-    )
+    if not deck.script:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="There's no script to revise yet — wait for generation to finish.",
+        )
+    if deck.generation_status in (GenerationStatus.PENDING, GenerationStatus.PROCESSING):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This script is already being generated or revised.",
+        )
+
+    deck.generation_status = GenerationStatus.PENDING
+    deck.generation_error = None
+
+    # Same as start_generation: the task id is chosen here so it lands in the
+    # same UPDATE as the status change, rather than an UPDATE-and-commit after
+    # the job is queued.
+    task_id = str(uuid4())
+    deck.celery_task_id = task_id
+    db.commit()
+
+    # Overwrite the cached "completed" payload immediately: without this the
+    # client's first poll after kicking off a revision would read the finished
+    # pre-revision deck out of Redis and stop polling.
+    write_deck_status(deck_id, {"status": "pending"})
+
+    revise_deck_script.apply_async(args=[deck.id, payload.instruction], task_id=task_id)
+
+    return deck
 
 
 def revoke_task(task_id: str | None) -> None:

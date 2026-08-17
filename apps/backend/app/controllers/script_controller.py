@@ -26,7 +26,11 @@ from app.services.realtime.script_events import (
 from app.services.scripts.fingerprint import brief_fingerprint
 from app.services.scripts.versions import append_version, version_count
 from app.services.storage_service import AttachmentStorageError, delete_attachment
-from app.tasks.script_tasks import build_deck_from_generation, generate_script_task
+from app.tasks.script_tasks import (
+    build_deck_from_generation,
+    generate_script_task,
+    revise_script_task,
+)
 from app.utils.enums.deck_enums import GenerationStatus, ScriptVersionKind
 
 # Statuses a generation can be handed back in instead of starting a new job for
@@ -274,14 +278,40 @@ def get_generation_status(generation_id: int, current_user: User, db: Session) -
 def request_revision(
     generation_id: int, payload: ScriptReviseRequest, current_user: User, db: Session
 ) -> dict:
-    """AI revision is gone for now — see deck_controller.request_script_revision
-    for the why. Manual edits (PATCH /scripts/{id}) still work and still append
-    a version, so the undo history is unaffected."""
-    get_generation(generation_id, current_user, db)
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Script revision is temporarily unavailable.",
+    generation = get_generation(generation_id, current_user, db)
+
+    if not generation.script:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="There's no script to revise yet — wait for generation to finish.",
+        )
+    if generation.status in (GenerationStatus.PENDING, GenerationStatus.PROCESSING):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This script is already being generated or revised.",
+        )
+
+    generation.status = GenerationStatus.PENDING
+    generation.error = None
+    generation.last_seen_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # Overwrite the cached "completed" payload immediately: without this the
+    # client's first poll after kicking off a revision reads the finished
+    # pre-revision script out of Redis and stops polling.
+    write_script_status(generation_id, {"status": "pending"})
+
+    # Same trick as start_generation: the id is chosen here so it lands in the
+    # same UPDATE as the status change, instead of a second commit afterwards.
+    task_id = str(uuid4())
+    generation.celery_task_id = task_id
+    db.commit()
+
+    revise_script_task.apply_async(
+        args=[generation.id, payload.instruction], task_id=task_id
     )
+
+    return serialize_generation(db, generation)
 
 
 def edit_script(

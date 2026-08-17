@@ -11,6 +11,7 @@ const ModalLayout = () => {
         options={{
           headerShown: true,
           headerTitle: "Publish",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen

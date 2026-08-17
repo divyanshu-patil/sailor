@@ -8,8 +8,23 @@ celery_app = Celery(
     "sailor",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.card_tasks", "app.tasks.script_tasks"],
+    include=["app.tasks.card_tasks", "app.tasks.deck_tasks", "app.tasks.script_tasks"],
 )
+
+# One queue per kind of work, because they have completely different shapes and
+# starve each other on a shared one: a card job is minutes of model calls, a
+# script generation is the thing a user is actively staring at, and the sweeps
+# are seconds of maintenance nobody is waiting for. With prefetch=1 and two
+# worker slots, two card jobs were enough to leave a script generation queued
+# behind them.
+#
+# The dev worker consumes all three (see package.json), so nothing changes for a
+# single-process setup. Scaling out is then a matter of running one worker per
+# queue — `celery -A app.core.celery_app worker -Q scripts -c 4` — and giving
+# the user-facing one the concurrency.
+QUEUE_SCRIPTS = "scripts"
+QUEUE_CARDS = "cards"
+QUEUE_MAINTENANCE = "maintenance"
 
 celery_app.conf.update(
     task_serializer="json",
@@ -29,6 +44,38 @@ celery_app.conf.update(
     # provider connection would otherwise pin a worker slot indefinitely.
     task_soft_time_limit=600,
     task_time_limit=660,
+    # Default for a task with no explicit route — nothing should land here, but
+    # a new task that forgets its route still runs rather than sitting unqueued.
+    task_default_queue=QUEUE_SCRIPTS,
+    task_routes={
+        "app.tasks.script_tasks.generate_script_task": {"queue": QUEUE_SCRIPTS},
+        "app.tasks.script_tasks.revise_script_task": {"queue": QUEUE_SCRIPTS},
+        # Revising a deck someone is looking at is user-facing work, so it
+        # shares the queue with generation rather than waiting behind cards.
+        "app.tasks.deck_tasks.revise_deck_script": {"queue": QUEUE_SCRIPTS},
+        "app.tasks.script_tasks.build_deck_from_generation": {"queue": QUEUE_CARDS},
+        "app.tasks.card_tasks.*": {"queue": QUEUE_CARDS},
+        "app.tasks.script_tasks.sweep_stale_generations": {"queue": QUEUE_MAINTENANCE},
+        "app.tasks.script_tasks.sweep_orphan_attachments": {"queue": QUEUE_MAINTENANCE},
+    },
+    worker_concurrency=settings.CELERY_WORKER_CONCURRENCY,
+    # Bounds the memory a long-lived worker can leak through an SDK or parser.
+    worker_max_tasks_per_child=settings.CELERY_MAX_TASKS_PER_CHILD,
+    # Results are written to Redis and never read — the app polls the generation
+    # row and its status key instead. Without this they accumulate forever.
+    result_expires=settings.CELERY_RESULT_EXPIRES,
+    # Redis re-delivers a task whose worker went quiet for longer than this.
+    # It has to stay comfortably above task_time_limit or a slow-but-healthy
+    # generation gets handed to a second worker while the first is still on it.
+    broker_transport_options={"visibility_timeout": 3600},
+    # Celery 6 stops retrying the broker at startup by default; the worker and
+    # the API come up alongside Redis in compose, so losing that race should be
+    # a retry, not a crash.
+    broker_connection_retry_on_startup=True,
+    # Task events, so `celery -A app.core.celery_app flower` (or events) can see
+    # what a worker is doing without adding logging to every task.
+    worker_send_task_events=True,
+    task_send_sent_event=True,
     beat_schedule={
         # Backing out of the preview screen deliberately no longer cancels a
         # generation. The cost is a job with nobody waiting for it whenever the

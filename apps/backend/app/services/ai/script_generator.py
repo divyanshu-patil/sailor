@@ -1,100 +1,84 @@
 """
-Script generation, stripped to one direct Ollama call.
+Script generation: one model call, whatever the configured provider is.
 
 What used to be here: a plan call that returned JSON, seven beat calls fanned
-out across a thread pool, per-beat undershoot repair, de-list repair, a
-provider abstraction over four vendors, an adaptive rate limiter, and a fallback
-model. All of it is gone. This module now builds one prompt, sends it to Ollama,
-and returns what comes back.
+out across a thread pool, per-beat undershoot repair and de-list repair. That
+architecture is gone and is what made a generation take minutes — one call for
+the whole script is the shape now.
 
-The prompts themselves were left alone — `build_plan_prompt` and
-`build_section_prompt` are still in prompts.py, untouched, so the staged
-pipeline can be rebuilt on top of them without rewriting a single instruction.
+What is *not* gone is the plumbing around the call. This goes through `chat()`,
+so it inherits provider neutrality (ollama, anthropic, openai, gemini), the
+fallback model, the shared concurrency limiter and rate-limit backoff. None of
+that costs latency on a healthy call; all of it is what stops a burst of users
+turning into 429s.
 
-Everything this module does is logged: the model, the prompt it sent, how long
-the call took, and the raw text that came back.
+The prompts were left alone — `build_plan_prompt` and `build_section_prompt`
+are still in prompts.py, untouched, so the staged pipeline can be rebuilt on top
+of them without rewriting a single instruction.
+
+Everything this module does is logged: the provider and models in play, the
+prompt it sent, how long the call took, and the raw text that came back.
 """
 
 import logging
 import re
 import time
-from functools import lru_cache
 from typing import Sequence
 
 from app.config.settings import settings
-from app.services.ai.prompts import build_whole_script_prompt
+from app.services.ai.chat import ModelCallError, chat
+from app.services.ai.prompts import build_revision_prompt, build_whole_script_prompt
+from app.services.ai.providers import get_provider
 from app.services.ai.providers.base import ImageInput
 from app.utils.enums.deck_enums import AudienceType
 
 logger = logging.getLogger("celery")
-
-OLLAMA_CLOUD_HOST = "https://ollama.com"
 
 # The model is asked to open with this line; everything after it is the script.
 TITLE_LINE_PATTERN = re.compile(r"^\s*TITLE:\s*(.+?)\s*$", re.MULTILINE)
 
 
 class ScriptGenerationError(Exception):
-    """Raised when the model could not produce a script."""
+    """Raised when no configured model could produce a script."""
 
 
-@lru_cache(maxsize=None)
-def _client(host: str, api_key: str, timeout: float):
-    """One client for the process — see the note in ollama_provider: building it
-    per call meant a fresh TLS handshake every time, and no timeout meant a
-    wedged request could hang until Celery killed the task."""
-    from ollama import Client
-
-    return Client(
-        host=host,
-        headers={"Authorization": f"Bearer {api_key}"},
-        timeout=timeout,
-    )
+# A revision that comes back shorter than this fraction of the original has
+# deleted the presenter's content rather than edited it. Losing the requested
+# edit is recoverable; losing their script is not.
+MIN_REVISION_RETENTION = 0.6
 
 
-def _call_ollama(messages: list[dict], images: Sequence[ImageInput]) -> str:
-    """One request. No retries, no fallback model, no rate limiter."""
-    model = settings.AI_MODEL
-    if not model:
-        raise ScriptGenerationError("No model configured — set AI_MODEL.")
+def _call_model(messages: list[dict], images: Sequence[ImageInput]) -> str:
+    """One completion, logged end to end.
 
-    payload = [dict(message) for message in messages]
-    if images:
-        for message in reversed(payload):
-            if message.get("role") == "user":
-                message["images"] = [image.base64_data for image in images]
-                break
+    `chat()` owns which provider and model answer it, and what happens when the
+    provider pushes back — this owns saying what went in and what came out.
+    """
+    provider = get_provider()
 
     logger.info("=" * 72)
-    logger.info(f"[ai] MODEL   : {model}")
-    logger.info(f"[ai] HOST    : {settings.OLLAMA_HOST or OLLAMA_CLOUD_HOST}")
+    logger.info(f"[ai] PROVIDER: {provider.name}")
+    logger.info(f"[ai] MODELS  : {provider.models()} (first is primary)")
+    logger.info(f"[ai] FAST    : {settings.AI_FAST} | TIMEOUT: {settings.AI_REQUEST_TIMEOUT}s")
     logger.info(f"[ai] IMAGES  : {len(images)}")
-    for message in payload:
+    for message in messages:
         role = message.get("role", "?").upper()
         logger.info(f"[ai] --- {role} PROMPT ---\n{message.get('content', '')}")
     logger.info("=" * 72)
 
     started = time.perf_counter()
     try:
-        response = _client(
-            settings.OLLAMA_HOST or OLLAMA_CLOUD_HOST,
-            settings.OLLAMA_API_KEY,
-            settings.AI_REQUEST_TIMEOUT,
-        ).chat(model=model, messages=payload, stream=False)
-    except Exception as exc:
-        elapsed = time.perf_counter() - started
-        logger.error(f"[ai] FAILED after {elapsed:.2f}s: {type(exc).__name__}: {exc}")
-        raise ScriptGenerationError(f"'{model}' failed: {exc}") from exc
+        content = chat(messages, images=images)
+    except ModelCallError as exc:
+        logger.error(f"[ai] FAILED after {time.perf_counter() - started:.2f}s: {exc}")
+        raise ScriptGenerationError(str(exc)) from exc
 
     elapsed = time.perf_counter() - started
-    content = (response.get("message", {}) or {}).get("content", "").strip()
-
-    logger.info(f"[ai] RESPONSE in {elapsed:.2f}s — {len(content)} chars, {len(content.split())} words")
+    logger.info(
+        f"[ai] RESPONSE in {elapsed:.2f}s — {len(content)} chars, {len(content.split())} words"
+    )
     logger.info(f"[ai] --- RAW RESPONSE ---\n{content}")
     logger.info("=" * 72)
-
-    if not content:
-        raise ScriptGenerationError(f"'{model}' returned empty content")
     return content
 
 
@@ -161,6 +145,66 @@ def _split_title(raw: str, description: str) -> tuple[str, str]:
     return title, script
 
 
+def revise_script(
+    script: str,
+    instruction: str,
+    title: str,
+    audience: AudienceType,
+    source_text: str | None = None,
+    links: str | None = None,
+) -> str:
+    """Apply a presenter instruction to an existing script. Returns the revised
+    script.
+
+    One whole-script call, matching the generation path. The version this
+    replaced routed the instruction to individual beats and re-sent only those,
+    which guaranteed untouched beats came back byte-for-byte — a guarantee this
+    cannot make, because "change only what I asked" is a negative instruction
+    with nothing behind it. Two things stand in for it: the prompt states an
+    explicit word floor (see build_revision_prompt, unchanged), and the check
+    below refuses a result that came back gutted.
+
+    `source_text` is sent, unlike a beat in the old pipeline: "add the Q3
+    numbers from my deck" is exactly the instruction that fails without the
+    user's own material in context.
+    """
+    original_words = len(script.split())
+    logger.info(
+        f"[ai] revise_script: {original_words} words, audience={audience.value}, "
+        f"source_text={'yes' if source_text else 'no'}"
+    )
+    logger.info(f"[ai] INSTRUCTION: {instruction}")
+
+    revised = _call_model(
+        build_revision_prompt(
+            script=script,
+            instruction=instruction,
+            title=title,
+            audience=audience,
+            source_text=source_text,
+            links=links,
+        ),
+        images=(),
+    ).strip()
+
+    revised_words = len(revised.split())
+    if revised_words < MIN_REVISION_RETENTION * original_words:
+        # Raised rather than silently returning the original: the task's failure
+        # path restores the previous script *and* attaches a reason, so the user
+        # is told their script is unchanged instead of quietly getting nothing.
+        logger.warning(
+            f"[ai] revision lost too much content ({original_words} -> "
+            f"{revised_words} words), refusing it"
+        )
+        raise ScriptGenerationError(
+            "The revision came back substantially shorter than the original, so it "
+            "was discarded and your script is unchanged. Try a more specific instruction."
+        )
+
+    logger.info(f"[ai] REVISED: {original_words} -> {revised_words} words")
+    return revised
+
+
 def generate_script(
     description: str,
     duration_mins: int,
@@ -180,7 +224,7 @@ def generate_script(
     messages = build_whole_script_prompt(
         description, duration_mins, audience, source_text=source_text, links=links
     )
-    raw = _call_ollama(messages, images)
+    raw = _call_model(messages, images)
     title, script = _split_title(raw, description)
 
     logger.info(f"[ai] TITLE : {title}")

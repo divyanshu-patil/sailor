@@ -1,5 +1,7 @@
+from celery.signals import worker_process_init
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from app.config.settings import settings
 
 # Opening a connection to the Supabase pooler measures ~5.5s from here; a warm
@@ -18,6 +20,9 @@ from app.config.settings import settings
 #                  for a NAT or the pooler to drop a silent connection.
 engine = create_engine(
     url=settings.DATABASE_URL,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_pre_ping=True,
     pool_recycle=1800,
     connect_args={
@@ -37,6 +42,21 @@ engine = create_engine(
 # is no long-lived object here to go stale, and the handful of places that
 # genuinely want the database's version still call db.refresh() explicitly.
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
+@worker_process_init.connect
+def _reset_pool_after_fork(**_kwargs) -> None:
+    """Celery's prefork pool forks *after* this module is imported, so a child
+    inherits the parent's pool — including any live socket in it. Two processes
+    then take turns writing to the same connection, which surfaces as garbled
+    results or "another operation is in progress" rather than as anything that
+    names the real cause.
+
+    `dispose(close=False)` drops the inherited connections from this child's
+    pool without closing the underlying sockets (they still belong to the
+    parent), so the child opens its own on first use.
+    """
+    engine.dispose(close=False)
+
 
 def get_db():
     db = SessionLocal()
