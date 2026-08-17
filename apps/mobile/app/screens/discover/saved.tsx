@@ -6,10 +6,7 @@ import { Host, ContentUnavailableView } from "@expo/ui/swift-ui";
 
 import { useSavedDecks } from "@/hooks/use-saved-decks";
 import { PublicDeck } from "@/services/public-deck.service";
-import {
-  COLUMN_GAP,
-  SCREEN_PADDING,
-} from "@/screens/presentation/decks/components/constants";
+import { SCREEN_PADDING } from "@/screens/presentation/decks/components/constants";
 import { PublicDeckCard } from "./components/public-deck-card";
 
 /**
@@ -37,9 +34,6 @@ const SavedDecksScreen = () => {
         data={decks}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        masonry
-        numColumns={2}
-        optimizeItemArrangement
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -73,7 +67,7 @@ export default SavedDecksScreen;
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   listContent: {
-    paddingHorizontal: SCREEN_PADDING - COLUMN_GAP / 2,
+    paddingHorizontal: SCREEN_PADDING + 4,
     paddingTop: 8,
     paddingBottom: 40,
   },

@@ -11,10 +11,7 @@ import { useDebouncedValue } from "@/hooks/use-debounce";
 import { PublicDeck, PublicDeckSort } from "@/services/public-deck.service";
 import { DECK_CATEGORIES } from "@/constants/deck-categories";
 import { fonts } from "@/constants/fonts";
-import {
-  COLUMN_GAP,
-  SCREEN_PADDING,
-} from "@/screens/presentation/decks/components/constants";
+import { SCREEN_PADDING } from "@/screens/presentation/decks/components/constants";
 import { PublicDeckCard } from "./components/public-deck-card";
 import { CategoryChips } from "./components/category-chips";
 
@@ -148,9 +145,6 @@ const DiscoverScreen = () => {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListHeaderComponent={header}
-        masonry
-        numColumns={2}
-        optimizeItemArrangement
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -232,7 +226,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   listContent: {
-    paddingHorizontal: SCREEN_PADDING - COLUMN_GAP / 2,
+    paddingHorizontal: SCREEN_PADDING + 4,
     paddingTop: 8,
     // Clears the floating bottom toolbar — content scrolls *under* translucent
     // chrome, but must be able to come out from behind it.
