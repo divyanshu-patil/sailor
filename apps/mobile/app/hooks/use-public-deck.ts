@@ -64,12 +64,25 @@ export function usePublicDeck(id: string | null): UsePublicDeckReturn {
   const toggleSaved = useCallback(async () => {
     if (!detail) return;
     const next = !detail.isSaved;
-    setDetail({ ...detail, isSaved: next });
+    // The count moves with the icon. It's the reader's own save either way, so
+    // ±1 is exactly what the server will report on the next fetch.
+    const step = next ? 1 : -1;
+    setDetail({
+      ...detail,
+      isSaved: next,
+      saveCount: Math.max(0, detail.saveCount + step),
+    });
     try {
       await publicDeckService.setSaved(detail.id, next);
     } catch {
       setDetail((current) =>
-        current ? { ...current, isSaved: !next } : current,
+        current
+          ? {
+              ...current,
+              isSaved: !next,
+              saveCount: Math.max(0, current.saveCount - step),
+            }
+          : current,
       );
       setError(next ? "Couldn't save this deck" : "Couldn't remove this deck");
     }
@@ -93,6 +106,7 @@ export function usePublicDeck(id: string | null): UsePublicDeckReturn {
         tags: detail.tags,
         category: detail.category,
         practiceCount: detail.practiceCount,
+        saveCount: detail.saveCount,
       };
 
   return {

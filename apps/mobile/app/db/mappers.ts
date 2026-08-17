@@ -36,6 +36,7 @@ export interface DeckDetailPayload {
   tags?: string[] | null;
   category?: string | null;
   practice_count?: number | null;
+  save_count?: number | null;
   generation_status?: string | null;
   generation_error?: string | null;
   created_at: string;
@@ -86,6 +87,7 @@ export function deckDetailToUpsert(payload: DeckDetailPayload): DeckUpsert {
     tags: payload.tags ?? null,
     category: payload.category ?? null,
     practiceCount: payload.practice_count ?? null,
+    saveCount: payload.save_count ?? null,
     generationStatus: payload.generation_status ?? null,
     createdAt: payload.created_at,
     updatedAt: payload.updated_at,
@@ -151,6 +153,7 @@ export function deckItemToUpsert(deck: DeckItem): DeckUpsert {
     tags: deck.tags ?? null,
     category: deck.category ?? null,
     practiceCount: deck.practiceCount ?? null,
+    saveCount: deck.saveCount ?? null,
     updatedAt: deck.updatedAt,
   };
 }

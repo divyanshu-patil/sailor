@@ -1,10 +1,11 @@
 from datetime import datetime
 import enum
 
-from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func, Boolean, Enum as SAEnum, text
+from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func, select, Boolean, Enum as SAEnum, text
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import relationship, Mapped, column_property, mapped_column
 from app.db.base import Base
+from app.models.deck_save_model import DeckSave
 from typing import TYPE_CHECKING, Optional
 from app.utils.enums.deck_enums import DeckCategory, GenerationStatus, AudienceType
 if TYPE_CHECKING:
@@ -214,3 +215,25 @@ class Deck(Base):
     )
 
     __mapper_args__ = {"version_id_col": version}
+
+
+# How many people have bookmarked this deck.
+#
+# Read from deck_saves instead of a counter column beside practice_count: the
+# save rows already are the truth, so a stored number could only drift from
+# them — and unsaving would have to remember whether a row was actually deleted
+# before decrementing. practice_count has no such table behind it, which is why
+# that one *is* a column.
+#
+# Declared as a column_property so it rides along in the same SELECT as the deck
+# (a deferred one would be a query per row on a 20-card feed page). The cost is
+# one indexed count per row — see ix_deck_saves_deck_id.
+Deck.save_count = column_property(
+    select(func.count(DeckSave.id))
+    .where(DeckSave.deck_id == Deck.id)
+    .correlate_except(DeckSave)
+    .scalar_subquery(),
+    # Ordinary attribute access on a detached deck (e.g. after commit) would
+    # otherwise emit a fresh query; the feed serialises before detaching.
+    deferred=False,
+)

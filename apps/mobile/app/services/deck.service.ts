@@ -39,6 +39,7 @@ interface DeckDetailResponse {
   tags: string[];
   category: string | null;
   practice_count: number;
+  save_count: number;
   published_at: string | null;
   generation_status: string;
   generation_error: string | null;
@@ -86,6 +87,7 @@ const toDeckItem = (deck: DeckDetailResponse): DeckItem => ({
   tags: deck.tags ?? [],
   category: deck.category,
   practiceCount: deck.practice_count ?? 0,
+  saveCount: deck.save_count ?? 0,
 });
 
 /** Detail responses carry the script, which DeckItem doesn't model. Returned

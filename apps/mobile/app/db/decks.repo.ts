@@ -17,6 +17,7 @@ interface DeckRow {
   tags: string | null;
   category: string | null;
   practice_count: number | null;
+  save_count: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +41,7 @@ export interface DeckUpsert {
   tags?: string[] | null;
   category?: string | null;
   practiceCount?: number | null;
+  saveCount?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -70,7 +72,7 @@ const DECK_COLUMNS = `
   d.id, d.title, d.description, d.script, d.color,
   d.duration_mins, d.card_count, d.is_favourite,
   d.generation_status, d.cards_generation_status,
-  d.is_public, d.tags, d.category, d.practice_count,
+  d.is_public, d.tags, d.category, d.practice_count, d.save_count,
   d.created_at, d.updated_at
 `;
 
@@ -91,6 +93,7 @@ function toDeckItem(row: DeckRow): DeckItem {
     tags: parseTags(row.tags),
     category: row.category,
     practiceCount: row.practice_count ?? 0,
+    saveCount: row.save_count ?? 0,
   };
 }
 
@@ -125,12 +128,12 @@ export async function upsertDecks(decks: DeckUpsert[]): Promise<void> {
     INSERT INTO decks (
       id, title, description, script, color, duration_mins, card_count,
       is_favourite, generation_status, cards_generation_status,
-      is_public, tags, category, practice_count,
+      is_public, tags, category, practice_count, save_count,
       created_at, updated_at, synced_at
     )
     VALUES (?, COALESCE(?, ''), COALESCE(?, ''), ?, COALESCE(?, '#A1AFDE'),
             COALESCE(?, 0), COALESCE(?, 0), COALESCE(?, 0), ?, ?,
-            ?, ?, ?, ?,
+            ?, ?, ?, ?, ?,
             COALESCE(?, ''), COALESCE(?, ''), ?)
     ON CONFLICT (id) DO UPDATE SET
       title                   = COALESCE(excluded.title, decks.title),
@@ -146,6 +149,7 @@ export async function upsertDecks(decks: DeckUpsert[]): Promise<void> {
       tags                    = COALESCE(NULLIF(excluded.tags, '[]'), decks.tags),
       category                = COALESCE(excluded.category, decks.category),
       practice_count          = COALESCE(excluded.practice_count, decks.practice_count),
+      save_count              = COALESCE(excluded.save_count, decks.save_count),
       created_at              = COALESCE(NULLIF(excluded.created_at, ''), decks.created_at),
       updated_at              = COALESCE(NULLIF(excluded.updated_at, ''), decks.updated_at),
       synced_at               = excluded.synced_at
@@ -170,6 +174,7 @@ export async function upsertDecks(decks: DeckUpsert[]): Promise<void> {
         deck.tags == null ? null : JSON.stringify(deck.tags),
         deck.category ?? null,
         deck.practiceCount ?? null,
+        deck.saveCount ?? null,
         deck.createdAt ?? null,
         deck.updatedAt ?? null,
         syncedAt,

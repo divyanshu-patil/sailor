@@ -27,6 +27,9 @@ export type DeckItem = {
   tags?: string[];
   category?: string | null;
   practiceCount?: number;
+  /** How many people have bookmarked it. Counted server-side from the saves
+   *  themselves, so it doesn't drift the way a stored counter would. */
+  saveCount?: number;
 };
 
 export interface DeckCreateParams {

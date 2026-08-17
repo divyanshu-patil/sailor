@@ -121,6 +121,7 @@ export default function PublishSheetScreen() {
       tags,
       category,
       practiceCount: deck?.practiceCount ?? 0,
+      saveCount: deck?.saveCount ?? 0,
       publishedAt: null,
       creator: {
         id: 0,

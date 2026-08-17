@@ -23,6 +23,9 @@ class DeckSave(Base):
         UniqueConstraint("user_id", "deck_id", name="uq_deck_saves_user_deck"),
         # The saved list is "my saves, newest first" — one index, one scan.
         Index("ix_deck_saves_user_created", "user_id", "created_at"),
+        # The other direction: "how many saves does this deck have?", which the
+        # unique constraint above can't serve because it leads with user_id.
+        Index("ix_deck_saves_deck_id", "deck_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

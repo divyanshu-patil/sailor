@@ -168,7 +168,18 @@ ALTER TABLE decks ADD COLUMN category       TEXT;
 ALTER TABLE decks ADD COLUMN practice_count INTEGER;
 `;
 
-export const MIGRATIONS: readonly string[] = [V1, V2, V3];
+/**
+ * How many people have saved the deck, mirrored for the same reason
+ * practice_count is: the detail screen shows it beside the practice count, and
+ * a number that appears as 0 and then corrects itself a second later reads as a
+ * bug. Nullable and COALESCE'd on upsert like the V3 columns — the grid
+ * endpoint doesn't send it.
+ */
+const V4 = `
+ALTER TABLE decks ADD COLUMN save_count INTEGER;
+`;
+
+export const MIGRATIONS: readonly string[] = [V1, V2, V3, V4];
 
 /** Target version — always the number of migrations. */
 export const SCHEMA_VERSION = MIGRATIONS.length;

@@ -64,6 +64,9 @@ class DeckResponse(BaseModel):
     tags: list[str] = Field(default_factory=list)
     category: Optional[DeckCategory] = None
     practice_count: int = 0
+    # The author sees their own deck's save count too — it's the one number on
+    # the detail screen that says anyone kept it.
+    save_count: int = 0
     published_at: Optional[datetime] = None
     generation_status: GenerationStatus
     generation_error: Optional[str] = None
@@ -145,6 +148,9 @@ class PublicDeckItem(BaseModel):
     tags: list[str] = Field(default_factory=list)
     category: DeckCategory | None = None
     practiceCount: int = Field(default=0, alias="practice_count")
+    # Counted live from deck_saves (see Deck.save_count), so it's the same number
+    # whichever way the reader arrives at the deck.
+    saveCount: int = Field(default=0, alias="save_count")
     publishedAt: datetime | None = Field(default=None, alias="published_at")
     creator: PublicDeckCreator = Field(alias="user")
 

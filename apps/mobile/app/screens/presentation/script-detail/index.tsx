@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Link, router, Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
+import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { Host, Text as SwiftUIText } from "@expo/ui/swift-ui";
 import {
   Animation,
@@ -391,28 +392,6 @@ export default function ScriptDetailScreen() {
                 <Text style={[styles.heroTitle, { color: textDarkColor }]}>
                   {currentScript.title}
                 </Text>
-                {/* Whose deck this is, when it isn't yours. Same slot the
-                    author's own "In Discover" badge uses below. */}
-                {isOtherPersonsDeck && creatorName && (
-                  <View style={styles.publicBadge}>
-                    <Text
-                      style={[styles.publicBadgeText, { color: textDarkColor }]}
-                    >
-                      by {creatorName} · {currentScript.practiceCount ?? 0} practices
-                    </Text>
-                  </View>
-                )}
-                {/* The author's own status line: if a deck is live in Discover,
-                    that should be visible on the deck, not only inside a menu. */}
-                {!isOtherPersonsDeck && isPublic && (
-                  <View style={styles.publicBadge}>
-                    <Text
-                      style={[styles.publicBadgeText, { color: textDarkColor }]}
-                    >
-                      In Discover · {currentScript.practiceCount ?? 0} practices
-                    </Text>
-                  </View>
-                )}
                 <CtaButton
                   label="GO"
                   accentColor={currentScript.color}
@@ -472,6 +451,40 @@ export default function ScriptDetailScreen() {
           </View>
         </View>
 
+        {/*
+          Who and how often — its own row, not a badge crammed into the hero.
+          The hero card is the deck's identity and the GO button; attribution and
+          social proof are facts *about* it, and they read as facts at this size
+          instead of as fine print under the title.
+
+          Only rendered when there's something public to say: a private deck of
+          your own has no author to credit and no practice count worth a row.
+        */}
+        {(isOtherPersonsDeck || isPublic) && (
+          <View style={styles.creditRow}>
+            <StatChip
+              color={currentScript.color}
+              icon={isOtherPersonsDeck ? "account" : "earth"}
+              label={
+                isOtherPersonsDeck ? (creatorName ?? "Anonymous") : "In Discover"
+              }
+            />
+            <StatChip
+              color={currentScript.color}
+              icon="fire"
+              label={`${currentScript.practiceCount ?? 0}`}
+            />
+            {/* Saves, counted from the bookmarks themselves rather than a
+                stored number — and it moves the moment the reader taps the
+                bookmark in the toolbar. */}
+            <StatChip
+              color={currentScript.color}
+              icon="bookmark"
+              label={`${currentScript.saveCount ?? 0}`}
+            />
+          </View>
+        )}
+
         <View style={[styles.scriptContainer]}>
           <Text style={[styles.scriptHeaderText, { color: textDarkColor }]}>
             Script
@@ -517,6 +530,51 @@ export default function ScriptDetailScreen() {
   );
 }
 
+/**
+ * A small fact about the deck: an icon in its own disc, then a value.
+ *
+ * The same tones `Pill` derives, one size down — this row sits under the big
+ * duration and date pills and would compete with them at their scale.
+ */
+const StatChip = ({
+  color,
+  icon,
+  label,
+}: {
+  color: string;
+  icon: "account" | "earth" | "fire" | "bookmark";
+  label: string;
+}) => (
+  <View
+    style={[
+      styles.statChip,
+      { backgroundColor: colord(color).lighten(0.05).toHex() },
+    ]}
+  >
+    <View
+      style={[
+        styles.statIcon,
+        { backgroundColor: colord(color).darken(0.07).desaturate(0.2).toHex() },
+      ]}
+    >
+      <MaterialDesignIcons
+        name={icon}
+        size={17}
+        color={colord(color).darken(0.35).desaturate(0.5).toHex()}
+      />
+    </View>
+    <Text
+      style={[
+        styles.statLabel,
+        { color: colord(color).darken(0.25).desaturate(0.5).toHex() },
+      ]}
+      numberOfLines={1}
+    >
+      {label}
+    </Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: 16, paddingTop: 24, paddingBottom: 48 },
@@ -531,15 +589,30 @@ const styles = StyleSheet.create({
     left: 0,
   },
   heroContent: { padding: 20, width: "80%", gap: 16 },
-  publicBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
+  creditRow: {
+    marginTop: 28,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  statChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingLeft: 6,
+    paddingRight: 18,
     paddingVertical: 6,
     borderRadius: 100,
-    backgroundColor: "rgba(255,255,255,0.45)",
-    marginTop: -8,
   },
-  publicBadgeText: { fontSize: 11, fontWeight: "700" },
+  statIcon: {
+    width: 32,
+    aspectRatio: 1,
+    borderRadius: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statLabel: { fontFamily: "KronaOne", fontSize: 15 },
   heroTitle: { fontSize: 34, marginBottom: 10, fontFamily: "KronaOne" },
   ctaPill: {
     flexDirection: "row",

@@ -39,6 +39,7 @@ export interface PublicDeck {
   tags: string[];
   category: string | null;
   practiceCount: number;
+  saveCount: number;
   publishedAt: string | null;
   creator: PublicDeckCreator;
 }
@@ -79,6 +80,7 @@ interface PublicDeckApiResponse {
   tags: string[] | null;
   category: string | null;
   practiceCount: number;
+  saveCount?: number;
   publishedAt: string | null;
   creator: PublicDeckCreator;
   script?: string | null;
@@ -96,6 +98,7 @@ const toPublicDeck = (deck: PublicDeckApiResponse): PublicDeck => ({
   tags: deck.tags ?? [],
   category: deck.category,
   practiceCount: deck.practiceCount ?? 0,
+  saveCount: deck.saveCount ?? 0,
   publishedAt: deck.publishedAt,
   creator: deck.creator,
 });
