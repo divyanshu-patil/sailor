@@ -9,7 +9,7 @@ import {
   StoredCard,
   upsertCards,
 } from "@/db/cards.repo";
-import { cardToUpsert } from "@/db/mappers";
+import { cardToStoredCard, cardToUpsert } from "@/db/mappers";
 
 export interface UseCardsOptions {
   deckId: string;
@@ -17,6 +17,15 @@ export interface UseCardsOptions {
   onError?: (error: Error) => void;
   /** Auto-refresh from the API on mount. */
   immediate?: boolean;
+  /**
+   * Whether these cards belong in the offline mirror. False for someone else's
+   * public deck: the local `cards` table is foreign-keyed to `decks`, which is
+   * *the user's own* decks, so writing a stranger's cards there would either
+   * fail the constraint or drag their deck into the user's library. Remote-only
+   * mode keeps them in memory for the length of the practice session, which is
+   * exactly as long as they're wanted.
+   */
+  local?: boolean;
 }
 
 /** What `saveCard` reports back, so the caller can branch on a conflict without
@@ -47,7 +56,7 @@ export interface UseCardsReturn {
  * one leaves survivors coloured against a ranking that no longer exists.
  */
 export function useCards(options: UseCardsOptions): UseCardsReturn {
-  const { deckId, onSuccess, onError, immediate = true } = options;
+  const { deckId, onSuccess, onError, immediate = true, local = true } = options;
 
   const [data, setData] = useState<StoredCard[] | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +78,9 @@ export function useCards(options: UseCardsOptions): UseCardsReturn {
   }, [deckId]);
 
   useEffect(() => {
+    // Remote-only decks have nothing on disk to read or to subscribe to —
+    // `data` is written straight from the fetch below.
+    if (!local) return;
     let active = true;
     const read = () => {
       readFromDb().catch(() => {
@@ -81,24 +93,32 @@ export function useCards(options: UseCardsOptions): UseCardsReturn {
       active = false;
       unsubscribe();
     };
-  }, [readFromDb]);
+  }, [local, readFromDb]);
 
   const fetchCards = useCallback(async () => {
     setIsRefreshing(true);
     setError(null);
     try {
       const cards = await cardService.getCards(deckId);
+      if (!local) {
+        const rows = cards.map(cardToStoredCard);
+        setData(rows);
+        setIsLoading(false);
+        onSuccessRef.current?.(rows);
+        return;
+      }
       await replaceDeckCards(deckId, cards.map(cardToUpsert));
       onSuccessRef.current?.(await dbListCards(deckId));
     } catch (e: any) {
       setError(
         e?.response?.data?.detail || e?.message || "Couldn't load these cards",
       );
+      if (!local) setIsLoading(false);
       onErrorRef.current?.(e);
     } finally {
       setIsRefreshing(false);
     }
-  }, [deckId]);
+  }, [deckId, local]);
 
   /**
    * Save a manual card edit.

@@ -61,6 +61,10 @@ def revise_deck_script(self, deck_id: int, instruction: str) -> None:
         deck.generation_status = GenerationStatus.COMPLETED
         deck.generation_error = None
         db.commit()
+        # This refresh earns its round trip, unlike the one dropped from
+        # generate_script_task: the payload below is a full DeckResponse, which
+        # carries `updated_at` and `version` — values Postgres computes on the
+        # write, not ones this function holds.
         db.refresh(deck)
 
         write_deck_status(

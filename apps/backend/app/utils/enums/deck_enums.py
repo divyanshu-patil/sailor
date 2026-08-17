@@ -18,6 +18,23 @@ class ScriptVersionKind(str, enum.Enum):
     EDITED = "edited"
 
 
+class DeckCategory(str, enum.Enum):
+    """The fixed, curated list a deck is filed under when it is published.
+
+    Closed on purpose: the discover screen's filter row is only usable if the
+    set of categories is small, stable, and the same for everyone. Users get
+    free-text expressiveness through tags instead.
+    """
+    INTERVIEW = "interview"
+    SALES = "sales"
+    ACADEMIC = "academic"
+    BUSINESS = "business"
+    CONFERENCE = "conference"
+    SOCIAL = "social"
+    TEACHING = "teaching"
+    OTHER = "other"
+
+
 class AudienceType(str, enum.Enum):
     """Audience type for script generation."""
     GENERAL = "general"

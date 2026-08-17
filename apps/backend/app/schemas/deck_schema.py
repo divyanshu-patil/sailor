@@ -1,11 +1,11 @@
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import List, Literal
 from datetime import datetime
 from typing import Optional
 
 from app.utils.enums.speaking_style import SpeakingStyle
-from app.utils.enums.deck_enums import GenerationStatus, AudienceType
+from app.utils.enums.deck_enums import DeckCategory, GenerationStatus, AudienceType
 
 
 class AttachmentRequest(BaseModel):
@@ -32,6 +32,10 @@ class DeckUpdateRequest(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=200)
     script: Optional[str] = Field(default=None, min_length=1)
     is_favorite: Optional[bool] = Field(default=None, alias="isFavourite")
+    # `is_public` is deliberately *not* here. Publishing is an explicit,
+    # validated action (POST /decks/{id}/publish) because it can't happen
+    # without a description, tags and a category — a PATCH that flipped the flag
+    # would put a deck in the feed with none of them.
 
 
 class DeckReviseRequest(BaseModel):
@@ -55,6 +59,15 @@ class DeckResponse(BaseModel):
     duration_mins: int
     card_count: int
     is_favorite: bool
+    is_public: bool
+    # Retained after an unpublish, so the publish sheet reopens pre-filled.
+    tags: list[str] = Field(default_factory=list)
+    category: Optional[DeckCategory] = None
+    practice_count: int = 0
+    # The author sees their own deck's save count too — it's the one number on
+    # the detail screen that says anyone kept it.
+    save_count: int = 0
+    published_at: Optional[datetime] = None
     generation_status: GenerationStatus
     generation_error: Optional[str] = None
     created_at: datetime
@@ -95,3 +108,113 @@ class AllDeckInfoResponse(BaseModel):
     slideCount: int = Field(alias="card_count")
     durationMins: int = Field(alias="duration_mins")
     isFavourite: bool = Field(alias="is_favorite")
+
+class PublicDeckCreator(BaseModel):
+    """Just enough about the creator to show a byline — never email,
+    clerk_user_id, subscription_tier, or role. Those are account internals,
+    not something a stranger browsing the feed should see."""
+
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_user(cls, user):
+
+        if isinstance(user, dict):
+            return user
+        name = getattr(user, "nickname", None) or getattr(user, "full_name", None) or "Anonymous"
+        return {"id": user.id, "name": name}
+
+
+class PublicDeckItem(BaseModel):
+    """One public deck as it appears in the discover grid.
+
+    Everything the card renders and nothing more — in particular *not* the
+    script. A page is 20 of these, and 20 full scripts is a payload measured in
+    hundreds of kilobytes for text no card ever shows. Tapping a card fetches
+    the detail below.
+    """
+
+    id: int
+    title: str | None = None
+    description: str | None = None
+    durationMins: int = Field(alias="duration_mins")
+    slideCount: int = Field(alias="card_count")
+    color: str
+    audience: AudienceType
+    tags: list[str] = Field(default_factory=list)
+    category: DeckCategory | None = None
+    practiceCount: int = Field(default=0, alias="practice_count")
+    # Counted live from deck_saves (see Deck.save_count), so it's the same number
+    # whichever way the reader arrives at the deck.
+    saveCount: int = Field(default=0, alias="save_count")
+    publishedAt: datetime | None = Field(default=None, alias="published_at")
+    creator: PublicDeckCreator = Field(alias="user")
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+
+class PublicDeckDetail(PublicDeckItem):
+    """The deck behind a tapped card. Adds the script; the cards themselves come
+    from `GET /decks/{id}/cards`, which serves a published deck to anyone."""
+
+    script: str | None = None
+    # False for a signed-out reader, which is also what they see: the save
+    # button asks them to sign in rather than lying about their state.
+    isSaved: bool = Field(default=False, alias="is_saved")
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+
+class PublicDecksPage(BaseModel):
+    """The envelope the feed endpoint returns."""
+
+    items: list[PublicDeckItem]
+    nextCursor: str | None = Field(default=None, alias="next_cursor")
+    hasMore: bool = Field(alias="has_more")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class DeckPublishRequest(BaseModel):
+    """What the review sheet collects before a deck can enter discovery.
+
+    All three are required — a feed of untitled, uncategorised decks is not
+    browsable — and they're validated here rather than in the controller so a
+    bad payload never reaches the visibility switch.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    description: str = Field(..., min_length=10, max_length=280)
+    tags: list[str] = Field(..., min_length=1, max_length=8)
+    category: DeckCategory
+
+    @field_validator("tags")
+    @classmethod
+    def _normalise_tags(cls, tags: list[str]) -> list[str]:
+        """Lowercase, trimmed, de-duplicated, order preserved.
+
+        Tags are a filter key, so "Interview", "interview " and "interview"
+        have to be the same key or the filter row fills up with near-duplicates
+        that each match a different subset of decks.
+        """
+        seen: list[str] = []
+        for tag in tags:
+            cleaned = " ".join(tag.lower().split())[:24]
+            if cleaned and cleaned not in seen:
+                seen.append(cleaned)
+        if not seen:
+            raise ValueError("At least one tag is required")
+        return seen
+
+
+class DeckPracticeResponse(BaseModel):
+    """Echoes the counter back so the card can update without a refetch."""
+
+    practiceCount: int = Field(alias="practice_count")
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)

@@ -5,6 +5,7 @@ import {
   Stack,
   router,
   useFocusEffect,
+  useNavigation,
 } from "expo-router";
 import {
   useScriptGeneration,
@@ -32,6 +33,10 @@ type GeneratePreviewParams = {
 
 const PreviewScreen = () => {
   const reviseBarRef = useRef<ReviseBarRef>(null);
+  // Untyped on purpose: expo-router's generated route types don't reach
+  // `navigation.reset`, which is typed against the parent navigator's own route
+  // list rather than the file-based one.
+  const navigation = useNavigation<any>();
 
   const headerHeight = useHeaderHeight();
   const { form, generationId: resumeId } =
@@ -136,9 +141,15 @@ const PreviewScreen = () => {
     try {
       setIsConfirming(true);
       await createDeck(generationId);
-      router.push({
-        pathname: "/(authenticated)/(script)/results",
-        params: { generationId },
+
+      // Replace the whole creation stack with the results screen, rather than
+      // pushing onto it. Accepting a script is the end of the flow: backing out
+      // of the results should go home, not walk back through the script the
+      // user just accepted and the wizard that produced it — neither of which
+      // can be returned to meaningfully once a deck exists.
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "results", params: { generationId } }],
       });
     } catch {
       // The hook surfaces the reason through its own error state.

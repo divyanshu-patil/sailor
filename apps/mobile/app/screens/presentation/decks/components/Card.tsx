@@ -7,11 +7,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { colord } from "colord";
 import { Link } from "expo-router";
 
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { getCardTitleMargin } from "@/utils/getCardTitleMargin";
+import { deckCardColors } from "@/utils/deck-colors";
 import { DeckItem } from "@/services/deck.service";
 import { COLUMN_GAP } from "./constants";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
@@ -50,12 +50,11 @@ export const Card = React.memo(
       marginBottom: COLUMN_GAP,
     }));
 
-    const titleColor = colord(item.color).darken(0.5).toHex();
-    const accentColor = colord(item.color)
-      .darken(0.35)
-      .desaturate(0.24)
-      .toHex();
-    const pillColor = colord(item.color).lighten(0.08).desaturate(0.08).toHex();
+    const {
+      title: titleColor,
+      accent: accentColor,
+      pill: pillColor,
+    } = deckCardColors(item.color);
 
     return (
       <Link

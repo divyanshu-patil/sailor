@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { deckService, DeckItem, DeckUpdateParams } from "@/services/deck.service";
+import {
+  deckService,
+  DeckItem,
+  DeckPublishParams,
+  DeckUpdateParams,
+} from "@/services/deck.service";
+import { apiErrorMessage } from "@/lib/api/client";
 import { subscribeToTables, TABLES } from "@/db";
 import {
   deleteDeck as dbDeleteDeck,
@@ -35,6 +41,10 @@ export interface UseDeckReturn {
   refresh: () => Promise<void>;
   fetchDeck: () => Promise<void>;
   updateDeck: (payload: DeckUpdateParams) => Promise<DeckItem | undefined>;
+  /** Both resolve to the updated deck, or undefined if the call failed — the
+   *  caller reads that to decide whether to close its sheet. */
+  publish: (payload: DeckPublishParams) => Promise<DeckItem | undefined>;
+  unpublish: () => Promise<DeckItem | undefined>;
   deleteDeck: () => Promise<boolean>;
   toggleFavourite: () => Promise<boolean | undefined>;
   clearError: () => void;
@@ -132,6 +142,47 @@ export function useDeck(options: UseDeckOptions): UseDeckReturn {
   );
 
   /**
+   * Publishing and unpublishing are not optimistic, unlike the favourite toggle.
+   *
+   * Publishing can be rejected by the server (a deck still generating, a
+   * description that didn't validate), and showing a deck as "live in discover"
+   * when it isn't is a lie about who can see the user's work — the one kind of
+   * optimism worth paying a round trip to avoid.
+   */
+  const publish = useCallback(
+    async (payload: DeckPublishParams): Promise<DeckItem | undefined> => {
+      setIsMutating(true);
+      setError(null);
+      try {
+        const deck = await deckService.publish(deckId, payload);
+        await upsertDeck(deckItemToUpsert(deck));
+        return deck;
+      } catch (e: any) {
+        setError(apiErrorMessage(e, "Couldn't publish this deck"));
+        return undefined;
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [deckId],
+  );
+
+  const unpublish = useCallback(async (): Promise<DeckItem | undefined> => {
+    setIsMutating(true);
+    setError(null);
+    try {
+      const deck = await deckService.unpublish(deckId);
+      await upsertDeck(deckItemToUpsert(deck));
+      return deck;
+    } catch (e: any) {
+      setError(apiErrorMessage(e, "Couldn't unpublish this deck"));
+      return undefined;
+    } finally {
+      setIsMutating(false);
+    }
+  }, [deckId]);
+
+  /**
    * Returns whether the delete went through, so the caller knows whether it's
    * safe to navigate away. Previously it swallowed the failure and returned
    * undefined either way, which meant a failed delete still popped the screen and
@@ -189,6 +240,8 @@ export function useDeck(options: UseDeckOptions): UseDeckReturn {
     refresh: fetchDeck,
     fetchDeck,
     updateDeck,
+    publish,
+    unpublish,
     deleteDeck,
     toggleFavourite,
     clearError,

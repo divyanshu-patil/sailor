@@ -8,7 +8,7 @@
  */
 import { DeckItem } from "@/types/presentation/deck";
 import { DeckUpsert } from "./decks.repo";
-import { CardUpsert } from "./cards.repo";
+import { CardUpsert, StoredCard } from "./cards.repo";
 
 /** `GET /api/v1/decks` — AllDeckInfoResponse. No script, so it must not clear one. */
 export interface DeckSummaryPayload {
@@ -32,6 +32,11 @@ export interface DeckDetailPayload {
   duration_mins: number;
   card_count: number;
   is_favorite: boolean;
+  is_public?: boolean;
+  tags?: string[] | null;
+  category?: string | null;
+  practice_count?: number | null;
+  save_count?: number | null;
   generation_status?: string | null;
   generation_error?: string | null;
   created_at: string;
@@ -78,9 +83,37 @@ export function deckDetailToUpsert(payload: DeckDetailPayload): DeckUpsert {
     durationMins: payload.duration_mins,
     slideCount: payload.card_count,
     isFavourite: payload.is_favorite,
+    isPublic: payload.is_public ?? null,
+    tags: payload.tags ?? null,
+    category: payload.category ?? null,
+    practiceCount: payload.practice_count ?? null,
+    saveCount: payload.save_count ?? null,
     generationStatus: payload.generation_status ?? null,
     createdAt: payload.created_at,
     updatedAt: payload.updated_at,
+  };
+}
+
+/**
+ * The same payload, but straight to the domain shape without going through the
+ * DB. Used only by the remote-only path in `useCards` — practising a public
+ * deck, whose cards must not be written to the local mirror (see the `local`
+ * option there). Everything else goes through `cardToUpsert` and reads back out
+ * of SQLite.
+ */
+export function cardToStoredCard(payload: CardPayload): StoredCard {
+  return {
+    id: String(payload.id),
+    deckId: String(payload.deck_id),
+    position: payload.position,
+    // CardItem calls these text/reveal; the API calls them title/description.
+    text: payload.title,
+    reveal: payload.description,
+    keywords: payload.keywords ?? [],
+    color: payload.color,
+    impact: payload.impact,
+    delivery: payload.delivery as StoredCard["delivery"],
+    version: payload.version,
   };
 }
 
@@ -116,6 +149,11 @@ export function deckItemToUpsert(deck: DeckItem): DeckUpsert {
     durationMins: deck.durationMins,
     slideCount: deck.slideCount,
     isFavourite: deck.isFavourite ?? null,
+    isPublic: deck.isPublic ?? null,
+    tags: deck.tags ?? null,
+    category: deck.category ?? null,
+    practiceCount: deck.practiceCount ?? null,
+    saveCount: deck.saveCount ?? null,
     updatedAt: deck.updatedAt,
   };
 }

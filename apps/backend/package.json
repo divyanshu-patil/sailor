@@ -3,9 +3,12 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "docker compose up -d && uv run fastapi dev main.py --port 3000 --host 0.0.0.0",
-    "celery": "uv run celery -A app.core.celery_app worker --loglevel=info --concurrency=2 --beat",
-    "celery:worker": "uv run celery -A app.core.celery_app worker --loglevel=info --concurrency=2",
+    "celery": "uv run celery -A app.core.celery_app worker --loglevel=info -Q scripts,cards,maintenance --beat",
+    "celery:worker": "uv run celery -A app.core.celery_app worker --loglevel=info -Q scripts,cards,maintenance",
     "celery:beat": "uv run celery -A app.core.celery_app beat --loglevel=info",
-    "redis": "docker compose up -d redis"
+    "docker": "docker compose up -d",
+    "celery:scripts": "uv run celery -A app.core.celery_app worker --loglevel=info -Q scripts -c 4",
+    "celery:cards": "uv run celery -A app.core.celery_app worker --loglevel=info -Q cards -c 2",
+    "celery:maintenance": "uv run celery -A app.core.celery_app worker --loglevel=info -Q maintenance -c 1"
   }
 }

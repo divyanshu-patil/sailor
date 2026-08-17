@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api/client";
 import {
   DeckCreateParams,
   DeckItem,
+  DeckPublishParams,
   DeckUpdateParams,
   IDeckService,
 } from "@/types/presentation/deck";
@@ -34,6 +35,12 @@ interface DeckDetailResponse {
   duration_mins: number;
   card_count: number;
   is_favorite: boolean;
+  is_public: boolean;
+  tags: string[];
+  category: string | null;
+  practice_count: number;
+  save_count: number;
+  published_at: string | null;
   generation_status: string;
   generation_error: string | null;
   created_at: string;
@@ -76,6 +83,11 @@ const toDeckItem = (deck: DeckDetailResponse): DeckItem => ({
   slideCount: deck.card_count,
   durationMins: deck.duration_mins,
   isFavourite: deck.is_favorite,
+  isPublic: deck.is_public,
+  tags: deck.tags ?? [],
+  category: deck.category,
+  practiceCount: deck.practice_count ?? 0,
+  saveCount: deck.save_count ?? 0,
 });
 
 /** Detail responses carry the script, which DeckItem doesn't model. Returned
@@ -89,6 +101,8 @@ export interface DeckWithScript {
 
 export const deckService: IDeckService & {
   getDeckDetail(id: string): Promise<DeckWithScript>;
+  publish(id: string, payload: DeckPublishParams): Promise<DeckItem>;
+  unpublish(id: string): Promise<DeckItem>;
 } = {
   /**
    * The deck grid.
@@ -161,6 +175,41 @@ export const deckService: IDeckService & {
       return toDeckItem(response.data);
     } catch (e: any) {
       console.log("updateDeck error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  /**
+   * Enter discovery.
+   *
+   * Its own endpoint rather than `updateDeck({ isPublic: true })`, because the
+   * API refuses to publish without a description, tags and a category — a PATCH
+   * that could flip the flag would be a way to land in the feed with none of
+   * them. Idempotent: publishing an already-public deck edits its metadata.
+   */
+  publish: async (id: string, payload: DeckPublishParams): Promise<DeckItem> => {
+    try {
+      const response = await apiClient.post<DeckDetailResponse>(
+        `/api/v1/decks/${id}/publish`,
+        payload,
+      );
+      return toDeckItem(response.data);
+    } catch (e: any) {
+      console.log("publishDeck error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
+  /** Leave discovery. The metadata stays on the deck, so republishing later
+   *  needs no retyping. */
+  unpublish: async (id: string): Promise<DeckItem> => {
+    try {
+      const response = await apiClient.post<DeckDetailResponse>(
+        `/api/v1/decks/${id}/unpublish`,
+      );
+      return toDeckItem(response.data);
+    } catch (e: any) {
+      console.log("unpublishDeck error", e.response?.data, e.response?.status);
       throw e;
     }
   },

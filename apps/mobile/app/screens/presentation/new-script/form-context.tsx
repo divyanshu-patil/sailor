@@ -127,7 +127,9 @@ export function PresentationFormProvider({
           status: "failed",
           progress: undefined,
           error:
-            typeof detail === "string" ? detail : "Upload failed. Tap to retry.",
+            typeof detail === "string"
+              ? detail
+              : "Upload failed. Tap to retry.",
         });
       }
     },
@@ -179,7 +181,8 @@ export function PresentationFormProvider({
       const target = prev.attachments.find((a) => a.id === id);
       // Fire-and-forget: the file is out of the user's form either way, and the
       // server sweeps anything that was never submitted with a brief.
-      if (target?.remoteId != null) void attachmentService.remove(target.remoteId);
+      if (target?.remoteId != null)
+        void attachmentService.remove(target.remoteId);
       return {
         ...prev,
         attachments: prev.attachments.filter((a) => a.id !== id),
@@ -195,12 +198,17 @@ export function PresentationFormProvider({
       // A file rejected on size never reached the network, and retrying it
       // would fail identically. Removing it is the only way forward.
       if (
-        checkSize(target.kind as AttachmentKindApi, target.sizeBytes, 0) !== null
+        checkSize(target.kind as AttachmentKindApi, target.sizeBytes, 0) !==
+        null
       ) {
         return;
       }
 
-      patchAttachment(id, { status: "uploading", progress: 0, error: undefined });
+      patchAttachment(id, {
+        status: "uploading",
+        progress: 0,
+        error: undefined,
+      });
       void startUpload(target);
     },
     [form.attachments, patchAttachment, startUpload],
@@ -243,6 +251,7 @@ export function PresentationFormProvider({
       descriptionValue,
       isUploading,
       attachmentIds,
+
       addAttachment,
       removeAttachment,
       retryAttachment,

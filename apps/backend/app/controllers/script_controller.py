@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -82,10 +83,16 @@ def get_generation(generation_id: int, current_user: User, db: Session) -> Scrip
     return generation
 
 
-def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
+def serialize_generation(
+    db: Session, generation: ScriptGeneration, *, versions: int | None = None
+) -> dict:
     """The response body every endpoint here returns. `version_count` is what the
     client's undo/redo arrows enable themselves from, so it travels with every
-    response rather than needing a second call."""
+    response rather than needing a second call.
+
+    `versions` short-circuits that count for a caller that already knows it — a
+    generation created moments ago has none, and counting rows to be told zero
+    is a round trip nobody needs."""
     return {
         "id": generation.id,
         "description": generation.description,
@@ -97,7 +104,7 @@ def serialize_generation(db: Session, generation: ScriptGeneration) -> dict:
         "status": generation.status,
         "error": generation.error,
         "deck_id": generation.deck_id,
-        "version_count": version_count(db, generation.id),
+        "version_count": version_count(db, generation.id) if versions is None else versions,
         "created_at": generation.created_at,
         "updated_at": generation.updated_at,
     }
@@ -168,6 +175,12 @@ def start_generation(
         status=GenerationStatus.PENDING,
         last_seen_at=datetime.now(timezone.utc),
     )
+    # Chosen here rather than read back from Celery, which is what lets the id
+    # be stored in the same INSERT as the row instead of an UPDATE-and-commit
+    # afterwards. Celery accepts the id it is given, so the two agree.
+    task_id = str(uuid4())
+    generation.celery_task_id = task_id
+
     try:
         db.add(generation)
         db.flush()
@@ -179,12 +192,10 @@ def start_generation(
             attachment.generation_id = generation.id
 
         db.commit()
-        db.refresh(generation)
 
-        task = generate_script_task.delay(generation.id)
-        generation.celery_task_id = task.id
-        db.commit()
-        db.refresh(generation)
+        # Queued only once the row is committed: the worker looks the generation
+        # up by id, and a task that overtakes its own row finds nothing there.
+        generate_script_task.apply_async(args=[generation.id], task_id=task_id)
     except Exception as exc:
         db.rollback()
 
@@ -202,7 +213,7 @@ def start_generation(
             detail="Could not queue script generation. Please try again.",
         ) from exc
 
-    return {"generation": serialize_generation(db, generation), "reused": False}
+    return {"generation": serialize_generation(db, generation, versions=0), "reused": False}
 
 
 # Only every Nth poll actually writes. The client polls every 2s, and the sweep
@@ -284,17 +295,21 @@ def request_revision(
     generation.error = None
     generation.last_seen_at = datetime.now(timezone.utc)
     db.commit()
-    db.refresh(generation)
 
     # Overwrite the cached "completed" payload immediately: without this the
     # client's first poll after kicking off a revision reads the finished
     # pre-revision script out of Redis and stops polling.
     write_script_status(generation_id, {"status": "pending"})
 
-    task = revise_script_task.delay(generation.id, payload.instruction)
-    generation.celery_task_id = task.id
+    # Same trick as start_generation: the id is chosen here so it lands in the
+    # same UPDATE as the status change, instead of a second commit afterwards.
+    task_id = str(uuid4())
+    generation.celery_task_id = task_id
     db.commit()
-    db.refresh(generation)
+
+    revise_script_task.apply_async(
+        args=[generation.id, payload.instruction], task_id=task_id
+    )
 
     return serialize_generation(db, generation)
 

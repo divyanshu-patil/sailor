@@ -1,4 +1,8 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import axios, {
+  type AxiosError,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { ENV } from "../config/env";
 
 const API_BASE_URL = ENV.API_URL;
@@ -26,15 +30,43 @@ export function setupApiAuth(getToken: () => Promise<string | null>) {
   );
 }
 
+// AxiosRequestConfig, not InternalAxiosRequestConfig: the "internal" shape is
+// what axios hands *interceptors* after it has filled in the defaults, so it
+// requires `headers`. Typing the call sites with it meant no caller could pass
+// `{ params }` without also inventing a headers object — which is why the
+// public config type is the right one here.
 export const apiClient = {
-  get: <T>(url: string, config?: InternalAxiosRequestConfig) =>
-    api.get<T>(url, config),
-  post: <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig) =>
+  get: <T>(url: string, config?: AxiosRequestConfig) => api.get<T>(url, config),
+  post: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
     api.post<T>(url, data, config),
-  patch: <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig) =>
+  patch: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
     api.patch<T>(url, data, config),
-  delete: <T>(url: string, config?: InternalAxiosRequestConfig) =>
+  delete: <T>(url: string, config?: AxiosRequestConfig) =>
     api.delete<T>(url, config),
 };
+
+/**
+ * The message to show a user for a failed request.
+ *
+ * FastAPI's `detail` is a plain string for the errors we raise ourselves, but a
+ * *list* of `{loc, msg}` objects for a 422 from request validation. Reading it
+ * as a string put "[object Object]" in front of users — and, worse, hid which
+ * field was actually rejected while debugging.
+ */
+export function apiErrorMessage(error: any, fallback = "Something went wrong"): string {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === "string" && detail) return detail;
+  if (Array.isArray(detail) && detail.length) {
+    return detail
+      .map((item: any) => {
+        // loc is ["body", "description"]; the field name is the useful half.
+        const field = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : null;
+        return field ? `${field}: ${item?.msg ?? "invalid"}` : item?.msg;
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  return error?.message || fallback;
+}
 
 export default apiClient;

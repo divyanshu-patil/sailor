@@ -1,5 +1,6 @@
 # app/controllers/card_controller.py
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.card_model import Card
@@ -26,7 +27,23 @@ def _get_owned_deck(deck_id: int, current_user: User, db: Session) -> Deck:
 
 
 def list_cards(deck_id: int, current_user: User, db: Session) -> list[Card]:
-    deck = _get_owned_deck(deck_id, current_user, db)
+    """The one card endpoint a non-owner can reach.
+
+    Practising a public deck *is* reading its cards, so ownership can't be the
+    test here — but it stays the test for get_card and update_card below, which
+    are editing surfaces. Read of a published deck, write of your own.
+    """
+    deck = (
+        db.query(Deck)
+        .filter(
+            Deck.id == deck_id,
+            Deck.is_deleted == False,  # noqa: E712
+            or_(Deck.user_id == current_user.id, Deck.is_public == True),  # noqa: E712
+        )
+        .one_or_none()
+    )
+    if deck is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deck not found")
     return db.query(Card).filter(Card.deck_id == deck.id).order_by(Card.position).all()
 
 

@@ -18,6 +18,8 @@ from app.services.ai.script_generator import (
 from app.services.cards.impact_colors import assign_colors_by_impact
 from app.services.decks.deck_colors import pick_deck_color
 from app.services.realtime.script_events import (
+    had_recent_generation_activity,
+    mark_generation_activity,
     write_generation_cards_status,
     write_script_status,
 )
@@ -66,6 +68,8 @@ def generate_script_task(self, generation_id: int) -> None:
         generation.celery_task_id = self.request.id
         db.commit()
         write_script_status(generation_id, {"status": "processing"})
+        # Outlives the staleness window, so the sweep can trust its absence.
+        mark_generation_activity(int(STALE_AFTER.total_seconds()) * 2)
 
         try:
             images, source_text = load_generation_sources(generation_id, db)
@@ -93,8 +97,10 @@ def generate_script_task(self, generation_id: int) -> None:
             db, generation, title=title, script=script_text, kind=ScriptVersionKind.GENERATED
         )
         db.commit()
-        db.refresh(generation)
-
+        # No db.refresh() here. Every round trip to the pooler costs ~0.4s, and
+        # this one re-read three columns this function had just written from
+        # values it still holds — paid on the user's clock, at the exact moment
+        # they are waiting for the script to appear.
         write_script_status(generation_id, _status_payload(generation))
 
     except Retry:
@@ -145,6 +151,8 @@ def revise_script_task(self, generation_id: int, instruction: str) -> None:
         generation.celery_task_id = self.request.id
         db.commit()
         write_script_status(generation_id, {"status": "processing"})
+        # Outlives the staleness window, so the sweep can trust its absence.
+        mark_generation_activity(int(STALE_AFTER.total_seconds()) * 2)
 
         try:
             _, source_text = load_generation_sources(generation_id, db)
@@ -176,8 +184,8 @@ def revise_script_task(self, generation_id: int, instruction: str) -> None:
             instruction=instruction,
         )
         db.commit()
-        db.refresh(generation)
-
+        # No db.refresh(): the payload below is built from values this function
+        # just wrote and still holds — see the same note in generate_script_task.
         write_script_status(generation_id, _status_payload(generation))
 
     except Retry:
@@ -358,6 +366,13 @@ def sweep_stale_generations() -> int:
     """
     from app.controllers.deck_controller import revoke_task
 
+    # Nothing has started in the last STALE_AFTER window, so nothing can have
+    # gone stale in it. Returning here is the difference between a five-minute
+    # beat that costs one Redis lookup and one that opens a fresh connection to
+    # Postgres — ~6s of the ~7s this task was taking to find zero rows.
+    if not had_recent_generation_activity():
+        return 0
+
     db = SessionLocal()
     try:
         cutoff = datetime.now(timezone.utc) - STALE_AFTER
@@ -386,7 +401,6 @@ def sweep_stale_generations() -> int:
             # different script. Orphans are handled below.
 
         db.commit()
-        _sweep_orphan_attachments(db)
         return len(stale)
     finally:
         db.close()
@@ -397,6 +411,23 @@ def sweep_stale_generations() -> int:
 # it up. Generous enough that a user who leaves the form open over lunch and
 # comes back still has their uploads.
 ORPHAN_ATTACHMENT_AFTER = timedelta(hours=24)
+
+
+@celery_app.task
+def sweep_orphan_attachments() -> int:
+    """Its own beat, on its own clock.
+
+    This used to ride along with the stale-generation sweep every five minutes,
+    which was 288 scans a day for rows that are only eligible once they are 24
+    hours old — and it would now be skipped entirely on an idle instance, since
+    that sweep returns early when nothing has run. Hourly is still 24x more
+    often than the cutoff requires.
+    """
+    db = SessionLocal()
+    try:
+        return _sweep_orphan_attachments(db)
+    finally:
+        db.close()
 
 
 def _sweep_orphan_attachments(db) -> int:

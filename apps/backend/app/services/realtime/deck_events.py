@@ -25,7 +25,7 @@ def write_deck_status(deck_id: int, payload: dict) -> None:
     """Called by the Celery task on every status change. This — not pub/sub —
     is what the polling endpoint actually reads. Failures here are logged and
     swallowed rather than raised: Postgres is already the source of truth by
-    the time this is called (see deck_tasks.py — DB commit always happens
+    the time this is called (the DB commit always happens
     first), so a Redis blip should degrade polling to the DB fallback, not
     crash script generation."""
     try:

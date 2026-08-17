@@ -36,6 +36,13 @@ interface RecordButtonProps {
   accentColor: string;
   /** Whose recording this is. One per deck, server-side and on disk. */
   deckId: string;
+  /**
+   * Whether takes belong on the server. False when practising someone else's
+   * public deck: the audio endpoints are owner-only, so every call would 404 —
+   * and if they didn't, a listener's take would overwrite the author's. Public
+   * practice records and plays back locally and syncs nothing.
+   */
+  syncRecording?: boolean;
   dragX: SharedValue<number>;
   isRecording: SharedValue<number>;
   isRecordingBool: SharedValue<boolean>;
@@ -59,6 +66,7 @@ const RecordButton = React.memo(
     onTrash,
     onPlaybackProgress,
     deckId,
+    syncRecording = true,
   }: RecordButtonProps) => {
     const [paused, setPaused] = useState<boolean>(false);
     const [finished, setFinished] = useState<boolean>(false);
@@ -131,6 +139,10 @@ const RecordButton = React.memo(
 
       (async () => {
         try {
+          // Nothing of the user's was ever stored for a public deck, and the
+          // author's recording is not theirs to hear.
+          if (!syncRecording) return;
+
           const cached = getCachedAudioUri(deckId);
           if (cached) {
             restore(cached);
@@ -160,7 +172,7 @@ const RecordButton = React.memo(
       };
       // Runs once per deck. `audioPlayer` and `isRecording` are stable refs.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [deckId]);
+    }, [deckId, syncRecording]);
 
     // FIX: Once the player has loaded the stopped recording and duration is known,
     // fire onRecordingFinished with the accurate duration from the player itself.
@@ -314,6 +326,7 @@ const RecordButton = React.memo(
       recordingUriRef.current = null;
       awaitingDurationRef.current = false;
       onTrash?.();
+      if (!syncRecording) return;
       try {
         await audioService.deleteRecording(deckId);
       } catch (e: any) {
@@ -374,7 +387,7 @@ const RecordButton = React.memo(
 
       setUploading(true);
       try {
-        await audioService.uploadRecording(deckId, uri);
+        if (syncRecording) await audioService.uploadRecording(deckId, uri);
         try {
           cacheLocalAudio(deckId, uri);
         } catch (e) {
@@ -418,9 +431,11 @@ const RecordButton = React.memo(
               if (saved) {
                 setSaved(false);
                 deleteCachedAudio(deckId);
-                audioService.deleteRecording(deckId).catch((e) => {
-                  console.log("delete recording failed", e?.response?.status);
-                });
+                if (syncRecording) {
+                  audioService.deleteRecording(deckId).catch((e) => {
+                    console.log("delete recording failed", e?.response?.status);
+                  });
+                }
               }
 
               await AudioModule.setAudioModeAsync({

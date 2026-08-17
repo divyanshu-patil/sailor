@@ -633,3 +633,77 @@ def build_delist_prompt(text: str) -> list[dict]:
         "Respond with only the rewritten section, no commentary."
     )
     return [{"role": "system", "content": system}, {"role": "user", "content": text}]
+
+
+def build_whole_script_prompt(
+    description: str,
+    duration_mins: int,
+    audience: AudienceType,
+    source_text: str | None = None,
+    links: str | None = None,
+) -> list[dict]:
+    """
+    The entire script in one call.
+
+    Composed from the same constants the two-phase pipeline used — TONE_RULES,
+    MARKDOWN_RULES, GOOD_EXAMPLE, BAD_EXAMPLE — plus the beat outline built from
+    SECTION_SPECS and their word targets. Nothing above this function is
+    modified: the plan and per-section builders are left exactly as they were,
+    so restoring the staged pipeline is a matter of calling them again.
+
+    The model writes its own `## [BEAT] · ~Ns` headers here, because there is no
+    longer a per-beat step to measure a beat's word count and write the header
+    from it.
+    """
+    audience_note = AUDIENCE_GUIDANCE.get(audience, AUDIENCE_GUIDANCE[AudienceType.GENERAL])
+    hook_menu = "\n".join(f"  - {name}: {desc}" for name, desc in HOOK_TYPES.items())
+
+    # _markdown_rules with a header rule of this builder's own, rather than the
+    # module-level MARKDOWN_RULES: that constant carries NO_HEADER_RULE, which
+    # told the model not to write headers because the per-beat pipeline measured
+    # each beat and wrote them itself. There is no per-beat step any more, so the
+    # model has to write them — and the two instructions together produced a
+    # script with no structure at all.
+    markdown_rules = _markdown_rules(
+        "- Write each beat's `## [LABEL] · ~time` header on its own line, exactly "
+        "as given in the structure below, then the spoken words beneath it.\n"
+    )
+
+    outline = "\n".join(
+        f"{index}. ## [{spec.label}] · ~{speaking_time(target)} — {spec.role} "
+        f"Write approximately {target} words."
+        for index, (spec, target) in enumerate(section_plan(duration_mins), start=1)
+    )
+
+    system = (
+        "You are an expert presentation scriptwriter. Write a complete spoken-"
+        "word script in one response.\n\n"
+        + TONE_RULES
+        + "\n"
+        + markdown_rules
+        + "\n"
+        + GOOD_EXAMPLE
+        + "\n"
+        + BAD_EXAMPLE
+        + "\n"
+        "STRUCTURE — write every beat below, in this order, each introduced by "
+        "its own header line exactly as shown:\n"
+        f"{outline}\n\n"
+        f"Total length: approximately {total_word_budget(duration_mins)} spoken "
+        "words. Treat each beat's word count as a floor rather than a ceiling.\n\n"
+        "Open the very first line with `TITLE: ` followed by the talk's own "
+        "title — 3-4 words, a punchy noun phrase, no subtitle, no colon, no "
+        "lead-in like 'How to' or 'The Future of'. Then the beats, and nothing "
+        "else: no preamble, no closing commentary.\n\n"
+        f"Choose the opening hook's shape from this menu and commit to it:\n{hook_menu}\n\n"
+        f"Tailor vocabulary, tone, and examples to this audience: "
+        f"{audience.value} — {audience_note}"
+    )
+    user = (
+        f"Brief: {description}\n"
+        f"Audience: {audience.value}\n"
+        f"Duration: {duration_mins} minutes."
+        f"{reference_links_block(links)}"
+        f"{source_material_block(source_text)}"
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]

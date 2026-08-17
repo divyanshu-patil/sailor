@@ -20,6 +20,10 @@ export default function AuthenticatedLayout() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(script)" />
+        {/* Sibling of (tabs), not a child: pushing Discover covers the tab bar,
+            which is what keeps its floating bottom search toolbar from landing
+            on top of the tabs. */}
+        <Stack.Screen name="discover" />
       </Stack>
     </GestureHandlerRootView>
   );

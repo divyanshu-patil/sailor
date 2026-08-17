@@ -49,6 +49,39 @@ class Settings(BaseSettings):
     # if you start seeing 429s.
     AI_MAX_CONCURRENCY: int = 12
 
+    # Seconds a single model call may take before it is abandoned.
+    #
+    # The script's beats run concurrently, so wall-clock time is the *slowest*
+    # call, not the average — one straggler sets the user's wait. Measured on
+    # ollama cloud: a healthy beat call is 2-50s, but a call that has gone wrong
+    # can sit open for minutes before the provider admits it (one measured run
+    # hung for 170s and then returned a 500). Cutting it loose hands the work to
+    # the fallback model, which answers in seconds.
+    AI_REQUEST_TIMEOUT: float = 90.0
+
+    # ---- database pool ---------------------------------------------------
+    # FastAPI runs these sync sessions on its threadpool (40 threads by
+    # default), so a pool of 5 + 10 overflow was the ceiling on concurrent
+    # requests long before Postgres was. Sized per process: API workers and
+    # Celery workers each get their own, so keep
+    # (processes x (POOL_SIZE + MAX_OVERFLOW)) under the pooler's limit.
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    # Fail fast rather than piling up requests behind an exhausted pool.
+    DB_POOL_TIMEOUT: int = 10
+
+    # ---- Celery ----------------------------------------------------------
+    # Concurrency is per worker process. The CLI flag still wins, so a
+    # per-queue worker can be given its own value without touching this.
+    CELERY_WORKER_CONCURRENCY: int = 2
+    # Task results live in Redis and are never read by this app — the status
+    # endpoints answer from the generation row and its own status key. Without
+    # an expiry they accumulate forever.
+    CELERY_RESULT_EXPIRES: int = 3600
+    # Recycled after this many tasks, which bounds the memory a long-lived
+    # worker can leak through an SDK or a parser.
+    CELERY_MAX_TASKS_PER_CHILD: int = 200
+
     # ---- per-provider credentials ---------------------------------------
     OLLAMA_API_KEY: str = ""
     OLLAMA_HOST: str = ""

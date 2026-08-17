@@ -15,7 +15,9 @@ function ApiAuthSetup() {
 
   useEffect(() => {
     if (!isSignedIn) return; // wait until signed in
-    getToken().then((t) => console.log("token:", t ? t : "null"));
+    // Nothing is logged here on purpose: a session JWT in the Metro console
+    // ends up in terminal scrollback, screen shares and bug reports, and it is
+    // a working credential until it expires.
     setupApiAuth(getToken);
   }, [getToken, isSignedIn]);
 

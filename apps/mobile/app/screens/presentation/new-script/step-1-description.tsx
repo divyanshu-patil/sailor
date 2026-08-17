@@ -14,6 +14,7 @@ import {
   Image,
   List,
   Menu,
+  Toggle,
 } from "@expo/ui/swift-ui";
 import {
   buttonStyle,
@@ -25,10 +26,12 @@ import {
   animation,
   Animation,
   tint,
+  toggleStyle,
 } from "@expo/ui/swift-ui/modifiers";
 import { usePresentationForm } from "./form-context";
 import AttachmentStrip from "./components/AttachmentStrip";
 import { Attachment } from "@/types/presentation";
+import { useColors } from "@/constants/theme";
 
 export default function StepDescription() {
   const {
@@ -40,6 +43,8 @@ export default function StepDescription() {
     handleSetDescriptionValue,
     linkDraftState,
   } = usePresentationForm();
+
+  const { colors } = useColors();
 
   const linkDraft = linkDraftState;
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -156,7 +161,6 @@ export default function StepDescription() {
               />
             </HStack>
           </Section>
-
           {/* Links stay in the form. There is nothing to preview for a URL, so
               a text row says more than a thumbnail could — the tiles below are
               for files that actually look like something. */}
@@ -201,10 +205,16 @@ export default function StepDescription() {
               {links.length > 0 && (
                 <List>
                   {links.map((item: Attachment) => (
-                    <HStack key={item.id} modifiers={[padding({ vertical: 4 })]}>
+                    <HStack
+                      key={item.id}
+                      modifiers={[padding({ vertical: 4 })]}
+                    >
                       <Image systemName="link" size={18} color="#8E8E93" />
                       <Text
-                        modifiers={[padding({ leading: 8 }), font({ size: 15 })]}
+                        modifiers={[
+                          padding({ leading: 8 }),
+                          font({ size: 15 }),
+                        ]}
                       >
                         {item.name}
                       </Text>
