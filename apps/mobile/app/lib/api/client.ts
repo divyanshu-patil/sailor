@@ -56,6 +56,9 @@ export const apiClient = {
 export function apiErrorMessage(error: any, fallback = "Something went wrong"): string {
   const detail = error?.response?.data?.detail;
   if (typeof detail === "string" && detail) return detail;
+  // Quota refusals (402) carry an object: a machine-readable `code` alongside
+  // copy already written for the user. See backend app/services/quota.py.
+  if (typeof detail?.message === "string") return detail.message;
   if (Array.isArray(detail) && detail.length) {
     return detail
       .map((item: any) => {

@@ -8,6 +8,7 @@ from app.models.deck_model import Deck
 from app.models.user_model import User
 from app.controllers.deck_controller import revoke_task
 from app.schemas.card_schema import CardCreateParams, CardResponse, CardUpdateParams
+from app.services.quota import consume_generation
 from app.services.ai.card_generator import CardGenerationError, split_script_into_segments
 from app.services.cards.impact_colors import assign_colors_by_impact
 from app.services.realtime.deck_events import read_card_status, write_card_status
@@ -125,6 +126,12 @@ def request_card_generation(deck_id: int, current_user: User, db: Session) -> di
         split_script_into_segments(deck.script, deck.card_count)
     except CardGenerationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    # Regenerating cards throws away the existing set and runs the batched card
+    # model calls again. The first pass, on the way in from an accepted script,
+    # is covered by the credit that script already cost; every pass after that
+    # is a fresh one.
+    consume_generation(current_user, db)
 
     db.query(Card).filter(Card.deck_id == deck.id).delete()
 

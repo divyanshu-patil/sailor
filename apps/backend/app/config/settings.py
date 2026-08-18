@@ -82,6 +82,24 @@ class Settings(BaseSettings):
     # worker can leak through an SDK or a parser.
     CELERY_MAX_TASKS_PER_CHILD: int = 200
 
+    # ---- subscription quota ----------------------------------------------
+    # Server-side secret key from the RevenueCat dashboard (Project settings ->
+    # API keys -> Secret). Distinct from the public SDK keys the app ships with;
+    # this one reads any subscriber's entitlements, so it never leaves here.
+    #
+    # Left empty, quota still enforces — it just trusts the tier already on the
+    # user row instead of confirming it, which is what makes local development
+    # and the test suite work without a RevenueCat account.
+    REVENUECAT_API_KEY: str = ""
+    # Must match PRO_ENTITLEMENT in the mobile app's lib/purchases.ts.
+    REVENUECAT_ENTITLEMENT_ID: str = "pro"
+
+    # Generations per rolling 30 days. Tuned from the dashboard side of the
+    # business, not the code, which is why they're env vars rather than
+    # constants — pricing changes shouldn't need a deploy.
+    FREE_MONTHLY_GENERATIONS: int = 3
+    PRO_MONTHLY_GENERATIONS: int = 100
+
     # ---- per-provider credentials ---------------------------------------
     OLLAMA_API_KEY: str = ""
     OLLAMA_HOST: str = ""

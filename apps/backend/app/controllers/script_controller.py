@@ -23,6 +23,7 @@ from app.services.realtime.script_events import (
     write_generation_cards_status,
     write_script_status,
 )
+from app.services.quota import consume_generation, refund_generation
 from app.services.scripts.fingerprint import brief_fingerprint
 from app.services.scripts.versions import append_version, version_count
 from app.services.storage_service import AttachmentStorageError, delete_attachment
@@ -164,6 +165,12 @@ def start_generation(
             touch_generation(existing, db)
             return {"generation": serialize_generation(db, existing), "reused": True}
 
+    # Charged here and not a line earlier: the reuse path above returns a script
+    # the user has already paid for, and billing them again for pressing
+    # Generate on an unchanged brief is the bug this endpoint's dedupe exists to
+    # avoid in the first place. Raises 402 when the tier is out of credits.
+    consume_generation(current_user, db)
+
     generation = ScriptGeneration(
         user_id=current_user.id,
         description=payload.description,
@@ -207,6 +214,10 @@ def start_generation(
         generation.deleted_at = datetime.now(timezone.utc)
         generation.status = GenerationStatus.CANCELLED
         db.commit()
+
+        # No model call will ever happen, so the credit goes back. Our broker
+        # being down is not a thing to bill someone for.
+        refund_generation(current_user, db)
 
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -290,6 +301,11 @@ def request_revision(
             status_code=status.HTTP_409_CONFLICT,
             detail="This script is already being generated or revised.",
         )
+
+    # A revision is a full model call over the whole script — the same cost as
+    # producing it, so it costs the same credit. Left ungated, it would be the
+    # obvious way to get unlimited generation out of one paid-for draft.
+    consume_generation(current_user, db)
 
     generation.status = GenerationStatus.PENDING
     generation.error = None
@@ -448,6 +464,14 @@ def retry_generation(generation_id: int, current_user: User, db: Session) -> dic
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="This script is already generating."
         )
+
+    # Retrying a *failure* is free — the first attempt was already charged, and
+    # billing someone a second credit because our provider fell over is how a
+    # user ends up out of credits having never seen a script. Retrying something
+    # they cancelled is not the same thing: without a charge there, cancel-then-
+    # retry is an unlimited generation loop for one credit.
+    if generation.status == GenerationStatus.CANCELLED:
+        consume_generation(current_user, db)
 
     generation.status = GenerationStatus.PENDING
     generation.error = None

@@ -9,6 +9,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
+import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
 
 function ApiAuthSetup() {
   const { getToken, isSignedIn } = useAuth();
@@ -21,6 +22,18 @@ function ApiAuthSetup() {
     setupApiAuth(getToken);
   }, [getToken, isSignedIn]);
 
+  return null;
+}
+
+/**
+ * RevenueCat, configured once and kept in step with the Clerk session.
+ *
+ * Inside ClerkLoaded like ApiAuthSetup, and for the same reason: it reads the
+ * signed-in user id, and acting on a half-loaded session would attach purchases
+ * to the wrong app user.
+ */
+function PurchasesSetup() {
+  useRevenueCatBootstrap();
   return null;
 }
 
@@ -71,6 +84,7 @@ export default function RootLayout() {
       <ClerkLoaded>
         <KeyboardProvider>
           <ApiAuthSetup />
+          <PurchasesSetup />
           <InitialLayout />
         </KeyboardProvider>
       </ClerkLoaded>

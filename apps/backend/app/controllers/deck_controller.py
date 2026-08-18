@@ -18,6 +18,7 @@ from app.schemas.deck_schema import (
     PublicDeckItem,
     PublicDecksPage,
 )
+from app.services.quota import consume_generation
 from app.services.realtime.deck_events import read_deck_status, write_deck_status
 from app.tasks.deck_tasks import revise_deck_script
 
@@ -109,6 +110,10 @@ def request_script_revision(
             status_code=status.HTTP_409_CONFLICT,
             detail="This script is already being generated or revised.",
         )
+
+    # Same call, same cost, same credit as a revision on a draft — see
+    # script_controller.request_revision.
+    consume_generation(current_user, db)
 
     deck.generation_status = GenerationStatus.PENDING
     deck.generation_error = None
