@@ -1,8 +1,9 @@
-import { Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 import Purchases, {
   CustomerInfo,
   LOG_LEVEL,
   PurchasesOffering,
+  REFUND_REQUEST_STATUS,
   PurchasesPackage,
 } from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
@@ -244,16 +245,92 @@ export async function presentPaywallIfNeeded(): Promise<PaywallOutcome> {
  * restorePurchases while it's open.
  */
 export async function presentCustomerCenter(
-  onRestore?: (info: CustomerInfo) => void,
-): Promise<void> {
-  if (!configured) return;
+  onCustomerInfo?: (info: CustomerInfo) => void,
+): Promise<boolean> {
+  if (!configured) return false;
   try {
     await RevenueCatUI.presentCustomerCenter({
       callbacks: {
-        onRestoreCompleted: ({ customerInfo }) => onRestore?.(customerInfo),
+        onRestoreCompleted: ({ customerInfo }) => onCustomerInfo?.(customerInfo),
+        onManagementOptionSelected: (event: any) => {
+          // A `custom_url` option is a link the dashboard configured — support
+          // contact, a help page — and nothing opens it but us.
+          if (event?.option === "custom_url" && event?.url) {
+            void Linking.openURL(event.url);
+          }
+        },
       },
     });
+    // Cancelling doesn't revoke the entitlement (they keep it to the end of the
+    // period), but it does flip `willRenew` — so the "Renews 3 Mar" line only
+    // becomes "Ends 3 Mar" if something re-reads customer info on the way out.
+    const info = await fetchCustomerInfo();
+    if (info) onCustomerInfo?.(info);
+    return true;
   } catch (e) {
+    // Not configured in the dashboard, or no store to manage (Test Store).
+    // Callers fall back to the individual actions below.
     console.warn("[RevenueCat] presentCustomerCenter failed", e);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Individual management actions
+// ---------------------------------------------------------------------------
+//
+// The Customer Center covers all of these behind one screen, and it's the
+// better door when it's available. These exist because it isn't always: it has
+// to be configured in the dashboard, it needs a live store connection, and on
+// the Test Store there's nothing for it to manage. Each one drops straight to
+// the platform's own flow instead.
+
+/**
+ * The store's own subscription screen — where cancelling and switching plans
+ * actually happen. Neither store lets an app cancel on the user's behalf; the
+ * most any app can do is take them to the right sheet.
+ */
+export async function openManageSubscriptions(): Promise<boolean> {
+  if (!configured) return false;
+  try {
+    await Purchases.showManageSubscriptions();
+    return true;
+  } catch (e) {
+    // Older iOS, or no store account attached. `managementURL` is the same
+    // destination as a plain link, which is why RevenueCat ships it on every
+    // customer info payload.
+    const info = await fetchCustomerInfo();
+    if (info?.managementURL) {
+      await Linking.openURL(info.managementURL);
+      return true;
+    }
+    console.warn("[RevenueCat] showManageSubscriptions failed", e);
+    return false;
+  }
+}
+
+export type RefundOutcome = "submitted" | "cancelled" | "unavailable";
+
+/**
+ * Apple's refund sheet, for the transaction behind the active entitlement.
+ *
+ * iOS 15+ only, and deliberately not faked on Android: Google has no in-app
+ * equivalent, so the Play subscriptions screen (above) is where an Android user
+ * goes, and telling them otherwise would be a dead end.
+ */
+export async function requestRefund(): Promise<RefundOutcome> {
+  if (!configured || Platform.OS !== "ios") return "unavailable";
+  try {
+    const status = await Purchases.beginRefundRequestForActiveEntitlement();
+    return status === REFUND_REQUEST_STATUS.USER_CANCELLED
+      ? "cancelled"
+      : status === REFUND_REQUEST_STATUS.SUCCESS
+        ? "submitted"
+        : "unavailable";
+  } catch (e) {
+    // Thrown when there's no active entitlement, more than one, or the platform
+    // is too old — none of which is worth an error dialog on a refund button.
+    console.warn("[RevenueCat] beginRefundRequestForActiveEntitlement failed", e);
+    return "unavailable";
   }
 }

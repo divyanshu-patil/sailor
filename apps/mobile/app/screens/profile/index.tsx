@@ -18,7 +18,7 @@ import { useSubscription } from "@/hooks/use-subscription";
 const ProfileScreen = () => {
   const theme = useProfileTheme();
   const { confirmLogout } = useLogout();
-  const { isPro, openCustomerCenter, openPaywall } = useSubscription();
+  const { isPro, openManageMenu } = useSubscription();
   const appUser = useAppUserStore((s) => s.appUser);
   const setAppUser = useAppUserStore((s) => s.setAppUser);
 
@@ -103,12 +103,11 @@ const ProfileScreen = () => {
 
         <SectionHeading>Plan</SectionHeading>
         {/* One button, two jobs, decided by entitlement: a subscriber gets the
-            Customer Center (cancel, change plan, refund, restore — all of it
-            native and dashboard-configured), everyone else gets the paywall.
-            Sending a subscriber to a paywall is how apps get "I already paid"
-            support mail. */}
+            management sheet (details, change plan, cancel, refund), everyone
+            else goes straight to the paywall. Sending a subscriber to a paywall
+            is how apps get "I already paid" support mail. */}
         <PlanCard
-          onManagePress={isPro ? openCustomerCenter : openPaywall}
+          onManagePress={openManageMenu}
           planName={isPro ? "Pro" : "Basic"}
           usagePercent={90}
           remainingCount={5}

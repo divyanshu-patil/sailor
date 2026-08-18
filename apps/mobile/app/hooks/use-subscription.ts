@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Alert, Platform } from "react-native";
 import { useAuth } from "@clerk/expo";
 import Purchases, { type CustomerInfo } from "react-native-purchases";
 
@@ -11,6 +12,8 @@ import {
   presentPaywall,
   presentPaywallIfNeeded,
   isPurchasesSupported,
+  openManageSubscriptions,
+  requestRefund,
 } from "@/lib/purchases";
 import { useSubscriptionStore } from "@/store/subscription.store";
 
@@ -94,10 +97,76 @@ export function useSubscription() {
     return outcome;
   }, [refresh]);
 
-  const openCustomerCenter = useCallback(
-    () => presentCustomerCenter((info) => useSubscriptionStore.getState().applyCustomerInfo(info)),
+  const apply = useCallback(
+    (info: CustomerInfo) => useSubscriptionStore.getState().applyCustomerInfo(info),
     [],
   );
+
+  const openCustomerCenter = useCallback(
+    () => presentCustomerCenter(apply),
+    [apply],
+  );
+
+  /** The store's own subscription screen: cancel, switch plan, resubscribe. */
+  const manageSubscription = useCallback(async () => {
+    const opened = await openManageSubscriptions();
+    if (!opened) {
+      Alert.alert(
+        "Not available",
+        "Subscription management opens in the App Store. Sign in to the store account that bought the subscription and try again.",
+      );
+    }
+    await refresh();
+  }, [refresh]);
+
+  /** Apple's refund sheet. iOS 15+; Android has no in-app equivalent. */
+  const askForRefund = useCallback(async () => {
+    const outcome = await requestRefund();
+    if (outcome === "submitted") {
+      Alert.alert(
+        "Refund requested",
+        "Apple has your request. They'll email you their decision.",
+      );
+    } else if (outcome === "unavailable") {
+      Alert.alert(
+        "Not available",
+        Platform.OS === "ios"
+          ? "We couldn't find a purchase to refund on this account."
+          : "Refunds for Play Store purchases are requested from Google Play.",
+      );
+    }
+    await refresh();
+  }, [refresh]);
+
+  /**
+   * Every management action behind one tap.
+   *
+   * The Customer Center is the first option because it's the whole set in one
+   * native screen; the rest are the same actions unbundled, for when it isn't
+   * configured or the user knows exactly what they came for. A native action
+   * sheet rather than a custom menu — this list is four items and platform
+   * chrome already renders it correctly on both.
+   */
+  const openManageMenu = useCallback(() => {
+    if (!isPro) {
+      void openPaywall();
+      return;
+    }
+
+    const buttons: Parameters<typeof Alert.alert>[2] = [
+      { text: "Subscription details", onPress: () => void openCustomerCenter() },
+      { text: "Change plan", onPress: () => void openPaywall() },
+      { text: "Cancel subscription", onPress: () => void manageSubscription() },
+    ];
+    // iOS only: Google has no in-app refund flow, and an option that leads
+    // nowhere is worse than no option.
+    if (Platform.OS === "ios") {
+      buttons.push({ text: "Request a refund", onPress: () => void askForRefund() });
+    }
+    buttons.push({ text: "Close", style: "cancel" });
+
+    Alert.alert("Manage subscription", undefined, buttons);
+  }, [isPro, openCustomerCenter, openPaywall, manageSubscription, askForRefund]);
 
   return {
     isPro,
@@ -112,6 +181,12 @@ export function useSubscription() {
     requirePro,
     openPaywall,
     openCustomerCenter,
+    /** Store sheet where a subscription is actually cancelled or switched. */
+    manageSubscription,
+    /** iOS refund sheet for the active entitlement. */
+    askForRefund,
+    /** All of the above in one native action sheet. */
+    openManageMenu,
     restore,
     refresh,
   };
