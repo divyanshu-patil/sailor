@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.models.user_model import ExperienceLevel, Profession, SubscriptionTier, UserRole
 
@@ -21,6 +21,17 @@ class UserProfileResponse(BaseModel):
     monthly_generations_used: int
     created_at: datetime
     updated_at: datetime
+
+    @computed_field
+    @property
+    def monthly_generation_limit(self) -> int:
+        """Derived rather than stored: a limit column would be a second copy of
+        a number the tier already determines, free to drift the moment pricing
+        changes. Paired with monthly_generations_used above, this is everything
+        the app needs to show "2 of 3 left" without a second endpoint."""
+        from app.services.quota import limit_for
+
+        return limit_for(self.subscription_tier)
 
 class UserProfileUpdateRequest(BaseModel):
     """All fields optional — PATCH is a partial update."""

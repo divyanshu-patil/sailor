@@ -94,10 +94,11 @@ class User(Base):
     )
 
     # --- usage tracking for rate limiting / quota enforcement -------------------
-    # Check-and-increment this before queuing a script-generation Celery task,
-    # gate it against a per-tier limit, and reset usage_period_started_at on
-    # a schedule (cron/beat task). Keeps one user from drowning out everyone
-    # else's queue when load is high.
+    # Written only by app/services/quota.py, and only through a single atomic
+    # UPDATE — never read-then-write from Python, or two requests arriving
+    # together both spend the last credit. The period is a rolling 30 days that
+    # rolls itself forward on first use after it lapses, so nothing has to run
+    # on a schedule to reset it.
     monthly_generations_used: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -106,6 +107,14 @@ class User(Base):
     )
     usage_period_started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
+    )
+
+    # When subscription_tier above was last confirmed against RevenueCat, which
+    # is what makes that column a *cache* rather than a fact of its own. Null
+    # means never checked — treated as stale, so the first gated request looks
+    # it up. See quota.resolve_tier.
+    entitlement_checked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -9,6 +9,7 @@
     "docker": "docker compose up -d",
     "celery:scripts": "uv run celery -A app.core.celery_app worker --loglevel=info -Q scripts -c 4",
     "celery:cards": "uv run celery -A app.core.celery_app worker --loglevel=info -Q cards -c 2",
-    "celery:maintenance": "uv run celery -A app.core.celery_app worker --loglevel=info -Q maintenance -c 1"
+    "celery:maintenance": "uv run celery -A app.core.celery_app worker --loglevel=info -Q maintenance -c 1",
+    "quota": "uv run python -m scripts.quota"
   }
 }
