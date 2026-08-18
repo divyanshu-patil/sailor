@@ -17,6 +17,7 @@ import { SubscriptionSection } from "./SubscriptionSection";
 import { LegalSection } from "./LegalSection";
 import { VersionSection } from "./VersionSection";
 import { AccountSecuritySection } from "./AccountSecuritySection";
+import { SentryTestSection } from "./SentryTestSection";
 
 const SettingsScreen = () => {
   const router = useRouter();
@@ -77,6 +78,7 @@ const SettingsScreen = () => {
             onDeleted={() => router.replace("/")}
             onError={showAlert}
           />
+          {__DEV__ && <SentryTestSection onMessage={showAlert} />}
         </Form>
 
         <Alert

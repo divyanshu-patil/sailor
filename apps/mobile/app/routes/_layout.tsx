@@ -10,6 +10,24 @@ import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
+import * as Sentry from "@sentry/react-native";
+
+if (__DEV__ && !ENV.SENTRY_DSN) {
+  // Silent-by-default is how a whole afternoon gets lost: with no DSN the SDK
+  // installs fine and captureException returns an id, it just never sends.
+  console.warn("EXPO_PUBLIC_SENTRY_DSN is empty — Sentry is disabled.");
+}
+
+Sentry.init({
+  dsn: ENV.SENTRY_DSN,
+  enabled: !!ENV.SENTRY_DSN,
+  debug: __DEV__,
+  sendDefaultPii: true,
+  enableLogs: true,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+});
 
 function ApiAuthSetup() {
   const { getToken, isSignedIn } = useAuth();
@@ -75,7 +93,7 @@ function InitialLayout() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ClerkProvider
       publishableKey={ENV.CLERK_PUBLISHABLE_KEY}
@@ -91,3 +109,5 @@ export default function RootLayout() {
     </ClerkProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

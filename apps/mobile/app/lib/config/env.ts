@@ -19,4 +19,8 @@ export const ENV = {
   REVENUECAT_IOS_API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "",
   REVENUECAT_ANDROID_API_KEY:
     process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? "",
+
+  // Public by design (a DSN only grants "send events here"). Optional: without
+  // it Sentry stays off rather than crashing a fresh clone at import.
+  SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN ?? "",
 } as const;
