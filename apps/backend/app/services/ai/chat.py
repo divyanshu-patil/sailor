@@ -1,11 +1,14 @@
 import logging
 import random
+import sys
+import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Callable, Iterable, Sequence, TypeVar
 
 from app.config.settings import settings
 from app.services.ai.providers import (
+    ChatProvider,
     ChatRequest,
     ImageInput,
     ProviderError,
@@ -54,23 +57,29 @@ def _rate_limit_delay(attempt: int, retry_after: float | None) -> float:
     return backoff * (0.5 + random.random())
 
 
-def _complete_with_retry(provider, request: ChatRequest, model: str) -> str:
-    """One model, retried for as long as it's only rate limiting us."""
+def _complete_with_retry(
+    provider, request: ChatRequest, model: str, retries: int = MAX_RATE_LIMIT_RETRIES
+) -> str:
+    """One model, retried for as long as it's only rate limiting us.
+
+    `retries` is 0 when another provider is queued behind this one: waiting out
+    a limit only makes sense when there is nothing else to ask.
+    """
     last_error: RateLimitedError | None = None
 
-    for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+    for attempt in range(retries + 1):
         try:
             with _limiter.slot():
                 result = provider.complete(request, model)
         except RateLimitedError as e:
             _limiter.record_rate_limited()
             last_error = e
-            if attempt == MAX_RATE_LIMIT_RETRIES:
+            if attempt == retries:
                 break
             delay = _rate_limit_delay(attempt, e.retry_after)
             logger.info(
                 f"[ai] {provider.name}:{model} rate limited, retrying in {delay:.1f}s "
-                f"({attempt + 1}/{MAX_RATE_LIMIT_RETRIES})"
+                f"({attempt + 1}/{retries})"
             )
             time.sleep(delay)
             continue
@@ -81,6 +90,104 @@ def _complete_with_retry(provider, request: ChatRequest, model: str) -> str:
         return result
 
     raise last_error if last_error else ProviderError("rate limited")
+
+
+# ANSI colour, only when a terminal is watching — a log file gets plain text.
+# Celery's own formatter colours by *level*; this colours by which provider
+# answered, which is the thing being watched while the free tier is on.
+_COLOR = sys.stderr.isatty()
+_CODES = {"green": "32", "yellow": "33", "cyan": "36"}
+
+
+def _paint(text: str, color: str) -> str:
+    return f"\033[{_CODES[color]}m{text}\033[0m" if _COLOR else text
+
+
+def _openrouter_expected() -> bool:
+    """Whether OpenRouter should have taken this call. False and the configured
+    provider is simply the primary, not a fallback — worth saying which."""
+    return bool(settings.AI_USE_OPENROUTER and settings.OPENROUTER_API_KEY)
+
+
+def _log_served(provider, model: str) -> None:
+    if provider.name == "openrouter":
+        logger.info(_paint(f"[ai] ● FREE      openrouter:{model}", "green"))
+    elif _openrouter_expected():
+        logger.info(_paint(f"[ai] ● FALLBACK  {provider.name}:{model}", "yellow"))
+    else:
+        logger.info(_paint(f"[ai] ● {provider.name}:{model}", "cyan"))
+
+
+# When OpenRouter's free budget is spent, every subsequent call would otherwise
+# pay a doomed round trip before falling through. The first 429 parks it and the
+# configured provider answers alone until the window is up.
+#
+# ponytail: per process, like the limiter above — each Celery worker discovers
+# the limit once for itself. Shared state in Redis if that ever costs more than
+# it saves.
+_openrouter_ready_at = 0.0
+_breaker_lock = threading.Lock()
+
+# Shortest useful park. See _park_openrouter.
+MIN_PARK_SECONDS = 5.0
+
+
+def _park_openrouter(retry_after: float | None, reason: str = "rate limited") -> None:
+    global _openrouter_ready_at
+    # Floored: a reset header can point at a timestamp that has already passed,
+    # and a 0s park is no park at all — the fan-out just walks straight back
+    # into the limit on the next call.
+    delay = max(
+        retry_after if retry_after is not None else settings.OPENROUTER_COOLDOWN_SECONDS,
+        MIN_PARK_SECONDS,
+    )
+    with _breaker_lock:
+        _openrouter_ready_at = max(_openrouter_ready_at, time.monotonic() + delay)
+    logger.warning(
+        _paint(
+            f"[ai] ⇄ SWITCH  openrouter {reason} → {settings.AI_PROVIDER} "
+            f"for the next {delay:.0f}s",
+            "yellow",
+        )
+    )
+
+
+def _openrouter_parked() -> bool:
+    """True while OpenRouter is being skipped. Announces the moment it isn't —
+    a silent recovery leaves the log saying "switched to ollama" and nothing
+    ever taking it back."""
+    global _openrouter_ready_at
+    with _breaker_lock:
+        if not _openrouter_ready_at:
+            return False
+        if time.monotonic() < _openrouter_ready_at:
+            return True
+        _openrouter_ready_at = 0.0
+    logger.info(_paint("[ai] ⇄ SWITCH  cooldown over → openrouter free tier", "green"))
+    return False
+
+
+def provider_chain() -> list[ChatProvider]:
+    """Providers to try, in order: free first, configured behind it.
+
+    OpenRouter is only ever a prefix to the existing path — drop it (flag off,
+    no key, no free model configured, or currently parked) and what's left is
+    exactly the provider this app used before.
+    """
+    chain: list[ChatProvider] = []
+    if (
+        settings.AI_USE_OPENROUTER
+        and settings.OPENROUTER_API_KEY
+        and not _openrouter_parked()
+    ):
+        free = get_provider("openrouter")
+        if free.models():
+            chain.append(free)
+
+    configured = get_provider()
+    if not any(p.name == configured.name for p in chain):
+        chain.append(configured)
+    return chain
 
 
 def _split_system(messages: list[dict]) -> tuple[str, list[dict]]:
@@ -119,37 +226,61 @@ def chat(
     prompt already states, on the user's clock. Each adapter maps it onto
     whatever its provider actually exposes.
     """
-    provider = get_provider()
     request = ChatRequest(
         *_split_system(messages),
         images=tuple(images)[:MAX_IMAGES_PER_REQUEST],
         fast=settings.AI_FAST if fast is None else fast,
     )
 
-    models = provider.models()
-    if not models:
-        raise ModelCallError("No models configured — set AI_MODEL.")
-
+    chain = provider_chain()
     last_error: Exception | None = None
-    for model in models:
-        try:
-            return _complete_with_retry(provider, request, model)
-        except RateLimitedError as e:
-            # Still limited after backing off. Trying the fallback model is
-            # pointless where the limit is per-account — it draws on the same
-            # exhausted budget and fails instantly, which is what doubled the
-            # 429s in the logs. Stop here and let the task's own retry pick it
-            # up once the burst has cleared.
-            logger.warning(f"[ai] {provider.name}:{model} still rate limited, giving up")
-            raise ModelCallError(f"{provider.name} rate limited: {e}") from e
-        except ProviderError as e:
-            logger.warning(f"[ai] {provider.name}:{model} failed: {e}")
-            last_error = e
-        except Exception as e:  # anything an adapter failed to wrap
-            logger.warning(f"[ai] {provider.name}:{model} failed: {e}")
-            last_error = e
 
-    raise ModelCallError(f"All {provider.name} models failed. Last error: {last_error}")
+    for index, provider in enumerate(chain):
+        has_fallback = index < len(chain) - 1
+        models = provider.models()
+        if not models:
+            last_error = last_error or ModelCallError(
+                f"No models configured for {provider.name} — set AI_MODEL."
+            )
+            continue
+
+        for model in models:
+            try:
+                content = _complete_with_retry(
+                    provider,
+                    request,
+                    model,
+                    retries=0 if has_fallback else MAX_RATE_LIMIT_RETRIES,
+                )
+                _log_served(provider, model)
+                return content
+            except RateLimitedError as e:
+                if provider.name == "openrouter":
+                    _park_openrouter(e.retry_after)
+                last_error = e
+                if has_fallback:
+                    # The limit is on the account, not the model, so the sibling
+                    # model draws on the same exhausted budget — skip straight to
+                    # the next provider.
+                    break
+                # Nothing left behind this one. Still limited after backing off,
+                # so stop and let the task's own retry pick it up once the burst
+                # has cleared.
+                logger.warning(f"[ai] {provider.name}:{model} still rate limited, giving up")
+                raise ModelCallError(f"{provider.name} rate limited: {e}") from e
+            except Exception as e:  # ProviderError, or anything an adapter missed
+                logger.warning(f"[ai] {provider.name}:{model} failed: {e}")
+                last_error = e
+        else:
+            # Every model refused, and not over a rate limit — a retired id, a
+            # privacy setting, an outage. Whatever it is, it won't have fixed
+            # itself by the next beat, and asking anyway adds a doomed round
+            # trip to every call in the fan-out.
+            if provider.name == "openrouter" and has_fallback:
+                _park_openrouter(None, reason="unavailable")
+
+    names = " -> ".join(p.name for p in chain) or "none"
+    raise ModelCallError(f"All models failed ({names}). Last error: {last_error}")
 
 
 def map_parallel(fn: Callable[[T], object], items: Iterable[T]) -> list:

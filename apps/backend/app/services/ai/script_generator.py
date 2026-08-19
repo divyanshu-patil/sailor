@@ -26,9 +26,8 @@ import time
 from typing import Sequence
 
 from app.config.settings import settings
-from app.services.ai.chat import ModelCallError, chat
+from app.services.ai.chat import ModelCallError, chat, provider_chain
 from app.services.ai.prompts import build_revision_prompt, build_whole_script_prompt
-from app.services.ai.providers import get_provider
 from app.services.ai.providers.base import ImageInput
 from app.utils.enums.deck_enums import AudienceType
 
@@ -54,11 +53,12 @@ def _call_model(messages: list[dict], images: Sequence[ImageInput]) -> str:
     `chat()` owns which provider and model answer it, and what happens when the
     provider pushes back — this owns saying what went in and what came out.
     """
-    provider = get_provider()
+    chain = provider_chain()
 
     logger.info("=" * 72)
-    logger.info(f"[ai] PROVIDER: {provider.name}")
-    logger.info(f"[ai] MODELS  : {provider.models()} (first is primary)")
+    logger.info(f"[ai] PROVIDER: {' -> '.join(p.name for p in chain)}")
+    for provider in chain:
+        logger.info(f"[ai] MODELS  : {provider.name} {provider.models()} (first is primary)")
     logger.info(f"[ai] FAST    : {settings.AI_FAST} | TIMEOUT: {settings.AI_REQUEST_TIMEOUT}s")
     logger.info(f"[ai] IMAGES  : {len(images)}")
     for message in messages:

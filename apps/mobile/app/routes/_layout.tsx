@@ -21,7 +21,10 @@ if (__DEV__ && !ENV.SENTRY_DSN) {
 Sentry.init({
   dsn: ENV.SENTRY_DSN,
   enabled: !!ENV.SENTRY_DSN,
-  debug: __DEV__,
+  // Off even in dev: the SDK's own logger warns on every hot reload
+  // ("Overwriting already set root component creation timestamp") and buries
+  // the app's console output. Flip to __DEV__ to debug the SDK itself.
+  debug: false,
   sendDefaultPii: true,
   enableLogs: true,
   replaysSessionSampleRate: 0.1,

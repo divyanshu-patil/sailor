@@ -10,6 +10,7 @@ import {
   registerActiveGeneration,
   releaseActiveGeneration,
 } from "@/lib/generation-guard";
+import { apiErrorMessage } from "@/lib/api/client";
 import {
   upsertDraft,
   replaceVersions,
@@ -224,9 +225,7 @@ export function useScriptGeneration() {
         attach(generation.id);
         return { id: generation.id, reused, alreadyComplete: false };
       } catch (e: any) {
-        setMutationError(
-          e?.response?.data?.detail ?? e?.message ?? "Couldn't start generation",
-        );
+        setMutationError(apiErrorMessage(e, "Couldn't start generation"));
         throw e;
       }
     },
@@ -295,11 +294,7 @@ export function useScriptGeneration() {
         // The API's `detail` is the only thing that says *why* — a 409 for a job
         // already in flight reads very differently to a 400 for a missing
         // script, and swallowing both left the user with a bare "failed".
-        setMutationError(
-          e?.response?.data?.detail ??
-            e?.message ??
-            "Couldn't start the revision",
-        );
+        setMutationError(apiErrorMessage(e, "Couldn't start the revision"));
         return false;
       } finally {
         setIsRevising(false);
@@ -337,9 +332,7 @@ export function useScriptGeneration() {
         void loadVersions(id);
         return next;
       } catch (e: any) {
-        setMutationError(
-          e?.response?.data?.detail ?? e?.message ?? "Couldn't save the script",
-        );
+        setMutationError(apiErrorMessage(e, "Couldn't save the script"));
         return undefined;
       } finally {
         setIsRevising(false);

@@ -27,8 +27,9 @@ class Settings(BaseSettings):
 
     # ---- AI provider -----------------------------------------------------
     # Which service generates scripts and cards: "ollama", "anthropic",
-    # "openai", or "gemini". The prompts and the pipeline are provider-neutral;
-    # only the adapter under services/ai/providers/ differs.
+    # "openai", "gemini", or "openrouter". The prompts and the pipeline are
+    # provider-neutral; only the adapter under services/ai/providers/ differs.
+    # Also the fallback when AI_USE_OPENROUTER is on — see below.
     AI_PROVIDER: str = "ollama"
     AI_MODEL: str = ""
     AI_FALLBACK_MODEL: str = ""
@@ -99,6 +100,31 @@ class Settings(BaseSettings):
     # constants — pricing changes shouldn't need a deploy.
     FREE_MONTHLY_GENERATIONS: int = 3
     PRO_MONTHLY_GENERATIONS: int = 100
+
+    # ---- OpenRouter (free tier) ------------------------------------------
+    # A switch rather than another AI_PROVIDER value, because OpenRouter is not
+    # an alternative to the configured provider here — it sits *in front* of it.
+    # On, every call tries OpenRouter's free models first and falls through to
+    # AI_PROVIDER the moment the free budget is spent; off, nothing about the
+    # existing path changes. One flag also means the fallback stays configured
+    # and warm rather than needing an env edit and a restart at the exact moment
+    # the free tier runs out.
+    #
+    # On by default: the free tier costs nothing and the fallback catches
+    # everything it can't serve. Without OPENROUTER_API_KEY set it is skipped
+    # anyway, so an install that never heard of OpenRouter is unaffected.
+    AI_USE_OPENROUTER: bool = True
+    OPENROUTER_API_KEY: str = ""
+    # Free ids only — the adapter drops anything without the ':free' suffix, so
+    # a typo costs nothing instead of quietly billing. The primary must be
+    # vision-capable: briefs can carry reference images.
+    OPENROUTER_MODEL: str = "google/gemma-4-31b-it:free"
+    OPENROUTER_FALLBACK_MODEL: str = "google/gemma-4-26b-a4b-it:free"
+    # How long OpenRouter is skipped entirely after it rate-limits, when it
+    # doesn't tell us itself. Re-asking a spent free budget on every call just
+    # adds a round trip to every generation, so the first 429 parks it and the
+    # configured provider takes over until the window is up.
+    OPENROUTER_COOLDOWN_SECONDS: float = 600.0
 
     # ---- per-provider credentials ---------------------------------------
     OLLAMA_API_KEY: str = ""

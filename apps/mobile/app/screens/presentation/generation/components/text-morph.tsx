@@ -95,6 +95,11 @@ function layoutCharacters(
   font: any,
   maxWidth: number,
 ): CharEntry[] {
+  // A non-string took the whole screen down mid-render: an API error object
+  // reached `text`, and `text.split` isn't a function. Everything here is
+  // user-facing copy, so rendering nothing is the right worst case.
+  if (typeof text !== "string") return [];
+
   const counts: Record<string, number> = {};
   const tokens = text.split(/(\s+)/).filter((t) => t.length > 0);
 
