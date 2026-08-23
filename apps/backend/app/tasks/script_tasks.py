@@ -24,6 +24,7 @@ from app.services.realtime.script_events import (
     write_script_status,
 )
 from app.services.scripts.versions import append_version
+from app.services.scripts.voice import voice_of
 from app.services.sources import load_generation_sources
 from app.utils.enums.deck_enums import GenerationStatus, ScriptVersionKind
 from app.utils.enums.speaking_style import SpeakingStyle
@@ -73,6 +74,7 @@ def generate_script_task(self, generation_id: int) -> None:
 
         try:
             images, source_text = load_generation_sources(generation_id, db)
+            mood, profession, experience_level = voice_of(generation)
             title, script_text = generate_script(
                 description=generation.description,
                 duration_mins=generation.duration_mins,
@@ -80,6 +82,9 @@ def generate_script_task(self, generation_id: int) -> None:
                 images=images,
                 source_text=source_text,
                 links=generation.links,
+                mood=mood,
+                profession=profession,
+                experience_level=experience_level,
             )
         except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:
@@ -156,6 +161,9 @@ def revise_script_task(self, generation_id: int, instruction: str) -> None:
 
         try:
             _, source_text = load_generation_sources(generation_id, db)
+            # The same voice the script was generated in — a revision that
+            # dropped it would quietly rewrite a playful script in house style.
+            mood, profession, experience_level = voice_of(generation)
             revised = revise_script(
                 script=original_script,
                 instruction=instruction,
@@ -163,6 +171,9 @@ def revise_script_task(self, generation_id: int, instruction: str) -> None:
                 audience=generation.audience,
                 source_text=source_text,
                 links=generation.links,
+                mood=mood,
+                profession=profession,
+                experience_level=experience_level,
             )
         except ScriptGenerationError as exc:
             if self.request.retries < self.max_retries:

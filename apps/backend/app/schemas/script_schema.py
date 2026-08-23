@@ -12,6 +12,7 @@ _HOSTNAME = re.compile(
 )
 
 from app.utils.enums.deck_enums import AudienceType, GenerationStatus, ScriptVersionKind
+from app.utils.enums.user_enums import ExperienceLevel, Profession, ScriptMood
 
 
 class ScriptGenerateRequest(BaseModel):
@@ -34,6 +35,15 @@ class ScriptGenerateRequest(BaseModel):
     # anything that isn't an http(s) URL is dropped rather than 422ing the
     # brief, since a malformed link is not a reason to refuse the script.
     links: list[str] = Field(default_factory=list, max_length=20)
+
+    # How the script should sound, as opposed to what it is about. All three
+    # default to the user's settings (preferences.default_mood, users.profession,
+    # users.experience_level) when the client leaves them out — the wizard sends
+    # them explicitly because it shows them pre-selected and lets the presenter
+    # change any of them for this one script.
+    mood: Optional[ScriptMood] = None
+    profession: Optional[Profession] = None
+    experience_level: Optional[ExperienceLevel] = Field(default=None, alias="experienceLevel")
 
     @field_validator("links")
     @classmethod

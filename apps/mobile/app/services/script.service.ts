@@ -4,6 +4,8 @@ import {
   AUDIENCE_OPTIONS,
   AudienceType,
 } from "@/types/presentation";
+import { ScriptMood } from "@/types/settings/preferences";
+import { ExperienceLevel, Profession } from "@/types/user";
 
 /**
  * Scripts are their own resource now.
@@ -54,6 +56,12 @@ export interface GenerateScriptPayload {
   durationMinutes: number;
   audienceIndex: number;
   cardCount: number;
+  /** How the script should sound. The wizard seeds all three from settings, so
+   *  they're always sent; the API falls back to the same settings server-side
+   *  when they aren't. */
+  mood?: ScriptMood;
+  profession?: Profession | null;
+  experienceLevel?: ExperienceLevel;
 }
 
 export interface ScriptGeneration {
@@ -266,6 +274,11 @@ export const scriptService = {
         audience,
         attachmentIds,
         links,
+        mood: payload.mood,
+        // Omitted rather than sent as null: the API reads an absent field as
+        // "use my settings", and null would be a value it has to reject.
+        profession: payload.profession ?? undefined,
+        experienceLevel: payload.experienceLevel,
       });
 
       return {
