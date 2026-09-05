@@ -25,6 +25,7 @@ from app.services.realtime.script_events import (
 )
 from app.services.quota import consume_generation, refund_generation
 from app.services.scripts.fingerprint import brief_fingerprint
+from app.services.scripts.voice import resolve_voice
 from app.services.scripts.versions import append_version, version_count
 from app.services.storage_service import AttachmentStorageError, delete_attachment
 from app.tasks.script_tasks import (
@@ -134,11 +135,19 @@ def start_generation(
     """
     attachments = get_owned_attachments(payload.attachment_ids, current_user, db)
 
+    # Anything the wizard didn't send falls back to the user's settings, and the
+    # result is pinned to the row — see ScriptGeneration.mood for why the
+    # generation owns its voice rather than re-reading the user's at run time.
+    mood, profession, experience_level = resolve_voice(payload, current_user, db)
+
     fingerprint = brief_fingerprint(
         description=payload.description,
         duration_mins=payload.duration_mins,
         card_count=payload.card_count,
         audience=payload.audience,
+        mood=mood,
+        profession=profession,
+        experience_level=experience_level,
     )
 
     # The text-only fingerprint describes neither the attached material nor the
@@ -177,6 +186,9 @@ def start_generation(
         duration_mins=payload.duration_mins,
         card_count=payload.card_count,
         audience=payload.audience,
+        mood=mood.value if mood else None,
+        profession=profession.value if profession else None,
+        experience_level=experience_level.value if experience_level else None,
         fingerprint=fingerprint,
         links="\n".join(payload.links) or None,
         status=GenerationStatus.PENDING,

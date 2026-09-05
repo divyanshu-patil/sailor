@@ -72,6 +72,18 @@ class ScriptGeneration(Base):
         server_default=AudienceType.GENERAL.value,
     )
 
+    # The presenter's voice for this script: the mood they picked, plus the
+    # profile fields (users.profession, users.experience_level) as they stood
+    # when the brief was submitted. Copied onto the row rather than read off the
+    # user at generation time for two reasons — the wizard lets either be
+    # overridden for one script, and a revision months later has to be written
+    # in the same voice as the script it is editing, not in whatever the user's
+    # settings say today. Plain strings, validated by the request schema; the
+    # native enum types would each need their own migration for no gain here.
+    mood: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    profession: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    experience_level: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
     # Hash of the four fields above. Recomputed on write rather than trusted from
     # the client, so "the same brief" means the same thing on every device — see
     # services/scripts/fingerprint.py.

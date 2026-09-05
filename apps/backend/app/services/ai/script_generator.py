@@ -30,6 +30,7 @@ from app.services.ai.chat import ModelCallError, chat, provider_chain
 from app.services.ai.prompts import build_revision_prompt, build_whole_script_prompt
 from app.services.ai.providers.base import ImageInput
 from app.utils.enums.deck_enums import AudienceType
+from app.utils.enums.user_enums import ExperienceLevel, Profession, ScriptMood
 
 logger = logging.getLogger("celery")
 
@@ -152,6 +153,9 @@ def revise_script(
     audience: AudienceType,
     source_text: str | None = None,
     links: str | None = None,
+    mood: ScriptMood | None = None,
+    profession: Profession | None = None,
+    experience_level: ExperienceLevel | None = None,
 ) -> str:
     """Apply a presenter instruction to an existing script. Returns the revised
     script.
@@ -183,6 +187,9 @@ def revise_script(
             audience=audience,
             source_text=source_text,
             links=links,
+            mood=mood,
+            profession=profession,
+            experience=experience_level,
         ),
         images=(),
     ).strip()
@@ -212,6 +219,9 @@ def generate_script(
     images: Sequence[ImageInput] = (),
     source_text: str | None = None,
     links: str | None = None,
+    mood: ScriptMood | None = None,
+    profession: Profession | None = None,
+    experience_level: ExperienceLevel | None = None,
 ) -> tuple[str, str]:
     """Returns (title, script). One prompt in, one script out."""
     logger.info(
@@ -221,8 +231,21 @@ def generate_script(
     )
     logger.info(f"[ai] BRIEF: {description}")
 
+    logger.info(
+        f"[ai] VOICE: mood={mood.value if mood else '-'} "
+        f"profession={profession.value if profession else '-'} "
+        f"experience={experience_level.value if experience_level else '-'}"
+    )
+
     messages = build_whole_script_prompt(
-        description, duration_mins, audience, source_text=source_text, links=links
+        description,
+        duration_mins,
+        audience,
+        source_text=source_text,
+        links=links,
+        mood=mood,
+        profession=profession,
+        experience=experience_level,
     )
     raw = _call_model(messages, images)
     title, script = _split_title(raw, description)

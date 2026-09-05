@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 from app.utils.enums.deck_enums import AudienceType
+from app.utils.enums.user_enums import ExperienceLevel, Profession, ScriptMood
 
 AUDIENCE_GUIDANCE: dict[AudienceType, str] = {
     AudienceType.FACULTY: (
@@ -347,6 +348,113 @@ def source_material_block(source_text: str | None) -> str:
     )
 
 
+# ---- the presenter ---------------------------------------------------------
+#
+# Audience guidance above says who is being spoken *to*. Everything below says
+# who is speaking and how they want to sound — the mood they picked for this
+# script, the field they work in, and how much stage time they have behind them.
+# All three come from settings by default and can be overridden per script.
+
+MOOD_GUIDANCE: dict[ScriptMood, str] = {
+    ScriptMood.CONFIDENT: (
+        "Assured and direct. Make claims flatly and stand behind them — no "
+        "hedging, no 'I think', no 'sort of'. Short declaratives carry the "
+        "weight. Assertive, never arrogant: the confidence comes from being "
+        "specific, not from telling the room how important this is."
+    ),
+    ScriptMood.CALM: (
+        "Measured and grounded. Longer, even breathing room between ideas; let "
+        "points land instead of stacking them. Steady, unhurried phrasing, more "
+        "*(pause)* beats than usual, and no exclamation or urgency language."
+    ),
+    ScriptMood.PLAYFUL: (
+        "Light and quick-witted. Allow a wry aside, a well-placed joke, and "
+        "self-aware humour — earning a smile, never clowning. Keep the substance "
+        "intact: the humour rides on top of the argument, it does not replace it."
+    ),
+    ScriptMood.REFLECTIVE: (
+        "Thoughtful and searching. Think out loud, sit with the tension in the "
+        "topic, and let a question stay open rather than resolving it in the "
+        "next sentence. Personal observation is welcome; certainty is not the "
+        "goal."
+    ),
+    ScriptMood.ENERGETIC: (
+        "High tempo and driving. Short sentences, forward momentum, an urgency "
+        "the audience can feel. Build toward peaks and use emphasis to push "
+        "them. Never manic, and never energy substituting for a real point."
+    ),
+}
+
+EXPERIENCE_GUIDANCE: dict[ExperienceLevel, str] = {
+    ExperienceLevel.BEGINNER: (
+        "New to speaking. Keep sentences short and physically easy to say out "
+        "loud — no tongue-twisters, no long subordinate clauses, no sentence "
+        "they could lose their place in. Include more delivery cues than usual "
+        "(*(pause)*, *(breathe)*, *(look up)*), and avoid anything that depends "
+        "on precise comic timing or on improvising with the room."
+    ),
+    ExperienceLevel.INTERMEDIATE: (
+        "Comfortable on stage but still leaning on the script. Normal sentence "
+        "variety, a moderate number of delivery cues, and no delivery move that "
+        "only works if it is nailed."
+    ),
+    ExperienceLevel.ADVANCED: (
+        "Experienced. Trust them with longer builds, callbacks to an earlier "
+        "line, deliberate silence, and rhetorical turns that need timing. Fewer "
+        "delivery cues — only where the timing is genuinely non-obvious."
+    ),
+    ExperienceLevel.PRO: (
+        "A seasoned speaker. Write to their ceiling: extended narrative arcs, "
+        "callbacks, sharp tonal shifts, and lines that land on delivery rather "
+        "than on wording. Minimal delivery cues — they do not need to be told "
+        "when to pause."
+    ),
+}
+
+PROFESSION_CONTEXT: dict[Profession, str] = {
+    Profession.BUSINESS: "corporate and operational settings",
+    Profession.TECH: "software, startups, and engineering teams",
+    Profession.SALES_MARKETING: "sales, brand, and go-to-market work",
+    Profession.ACADEMIC: "teaching, research, and academic settings",
+    Profession.STUDENT: "coursework, campus, and early-career settings",
+    Profession.HEALTHCARE: "clinical and healthcare settings",
+    Profession.FINANCE_CONSULTING: "finance, consulting, and advisory work",
+    Profession.LEGAL: "legal practice and regulatory work",
+    Profession.CREATIVE: "design, creative, and studio work",
+    Profession.GOVERNMENT_NONPROFIT: "public sector and nonprofit work",
+    Profession.OTHER: "",
+}
+
+
+def speaker_profile_block(
+    mood: ScriptMood | None = None,
+    profession: Profession | None = None,
+    experience: ExperienceLevel | None = None,
+) -> str:
+    """Who is speaking, appended to the system prompt.
+
+    Returns "" when nothing is known, so an older generation with no profile
+    stored produces byte-for-byte the prompt it always did rather than an empty
+    heading the model has to interpret.
+    """
+    lines: list[str] = []
+    if mood is not None and mood in MOOD_GUIDANCE:
+        lines.append(f"- Mood — this is the one the presenter chose, so hold it "
+                     f"for the whole script: {MOOD_GUIDANCE[mood]}")
+    if experience is not None and experience in EXPERIENCE_GUIDANCE:
+        lines.append(f"- Speaking experience: {EXPERIENCE_GUIDANCE[experience]}")
+    if profession is not None and PROFESSION_CONTEXT.get(profession):
+        lines.append(
+            "- The presenter works in "
+            f"{PROFESSION_CONTEXT[profession]}. Reach for examples, analogies, "
+            "and vocabulary they could deliver credibly from that background — "
+            "without making the talk be about their job."
+        )
+    if not lines:
+        return ""
+    return "\n\nTHE PRESENTER — write in their voice, not a generic one:\n" + "\n".join(lines)
+
+
 def build_plan_prompt(
     description: str,
     duration_mins: int,
@@ -571,6 +679,9 @@ def build_revision_prompt(
     audience: AudienceType,
     source_text: str | None = None,
     links: str | None = None,
+    mood: ScriptMood | None = None,
+    profession: Profession | None = None,
+    experience: ExperienceLevel | None = None,
 ) -> list[dict]:
     """Whole-script revision. Only used as a fallback for a script with no
     section headers to work with — the section-scoped path above is what
@@ -598,6 +709,10 @@ def build_revision_prompt(
         "commentary, no explanation of what you changed, no preamble.\n\n"
         f"Presentation title: {title}\n"
         f"Audience: {audience.value} — {audience_note}"
+        # The script being revised was written to this profile, so the edit has
+        # to be made in the same voice — otherwise one revision quietly flips a
+        # playful script back to house style.
+        + speaker_profile_block(mood, profession, experience)
     )
     user = (
         f"Revision instruction: {instruction}\n\nCurrent script:\n\n{script}"
@@ -641,6 +756,9 @@ def build_whole_script_prompt(
     audience: AudienceType,
     source_text: str | None = None,
     links: str | None = None,
+    mood: ScriptMood | None = None,
+    profession: Profession | None = None,
+    experience: ExperienceLevel | None = None,
 ) -> list[dict]:
     """
     The entire script in one call.
@@ -698,6 +816,10 @@ def build_whole_script_prompt(
         f"Choose the opening hook's shape from this menu and commit to it:\n{hook_menu}\n\n"
         f"Tailor vocabulary, tone, and examples to this audience: "
         f"{audience.value} — {audience_note}"
+        # Last in the system prompt on purpose: the presenter's own mood and
+        # experience are the thing that has to survive every other rule, and the
+        # closest instruction to the end is the one a model holds best.
+        + speaker_profile_block(mood, profession, experience)
     )
     user = (
         f"Brief: {description}\n"

@@ -10,6 +10,10 @@ import {
 import { useNativeState } from "@expo/ui/swift-ui";
 import { PresentationFormState, DEFAULT_STATE } from "./types/types";
 import { Attachment } from "@/types/presentation";
+import { usePreferenceStore } from "@/store/preference-store";
+import { useAppUserStore } from "@/store/app-user.store";
+import { ScriptMood } from "@/types/settings/preferences";
+import { ExperienceLevel, Profession } from "@/types/user";
 import {
   attachmentService,
   checkSize,
@@ -37,6 +41,9 @@ type PresentationFormContextValue = {
   setDurationMinutes: (value: number) => void;
   setAudienceIndex: (value: number) => void;
   setCardCount: (value: number) => void;
+  setMood: (value: ScriptMood) => void;
+  setProfession: (value: Profession) => void;
+  setExperienceLevel: (value: ExperienceLevel) => void;
   handleSetDescriptionValue: (text: string) => void;
 };
 
@@ -51,7 +58,19 @@ export function PresentationFormProvider({
 }: {
   children: ReactNode;
 }) {
-  const [form, setForm] = useState<PresentationFormState>(DEFAULT_STATE);
+  // Read once, at mount, rather than subscribed to: these seed the form, and a
+  // settings change made in another tab mid-wizard must not silently rewrite a
+  // choice the presenter already made on this screen.
+  const [form, setForm] = useState<PresentationFormState>(() => {
+    const { defaultMood } = usePreferenceStore.getState().preferences;
+    const appUser = useAppUserStore.getState().appUser;
+    return {
+      ...DEFAULT_STATE,
+      mood: defaultMood,
+      profession: appUser?.profession ?? null,
+      experienceLevel: appUser?.experienceLevel ?? "intermediate",
+    };
+  });
   const descriptionState = useNativeState("");
   const linkDraftState = useNativeState("");
 
@@ -226,6 +245,18 @@ export function PresentationFormProvider({
     setForm((prev) => ({ ...prev, cardCount }));
   }, []);
 
+  const setMood = useCallback((mood: ScriptMood) => {
+    setForm((prev) => ({ ...prev, mood }));
+  }, []);
+
+  const setProfession = useCallback((profession: Profession) => {
+    setForm((prev) => ({ ...prev, profession }));
+  }, []);
+
+  const setExperienceLevel = useCallback((experienceLevel: ExperienceLevel) => {
+    setForm((prev) => ({ ...prev, experienceLevel }));
+  }, []);
+
   const handleSetDescriptionValue = useCallback((text: string) => {
     setForm((prev) => ({ ...prev, description: text }));
   }, []);
@@ -258,6 +289,9 @@ export function PresentationFormProvider({
       setDurationMinutes,
       setAudienceIndex,
       setCardCount,
+      setMood,
+      setProfession,
+      setExperienceLevel,
       handleSetDescriptionValue,
     }),
     [
@@ -273,6 +307,9 @@ export function PresentationFormProvider({
       setDurationMinutes,
       setAudienceIndex,
       setCardCount,
+      setMood,
+      setProfession,
+      setExperienceLevel,
       handleSetDescriptionValue,
     ],
   );

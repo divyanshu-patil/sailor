@@ -2,17 +2,10 @@ import React from "react";
 import { Section, Picker, Text } from "@expo/ui/swift-ui";
 import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 import {
+  MOOD_OPTIONS,
   ScriptMood,
   UserPreferences,
 } from "@/types/settings/preferences";
-
-const MOOD_OPTIONS: { tag: ScriptMood; label: string }[] = [
-  { tag: "confident", label: "Confident" },
-  { tag: "calm", label: "Calm" },
-  { tag: "playful", label: "Playful" },
-  { tag: "reflective", label: "Reflective" },
-  { tag: "energetic", label: "Energetic" },
-];
 
 interface DefaultMoodSectionProps {
   selectedMood: ScriptMood;
@@ -31,8 +24,8 @@ export function DefaultMoodSection({
       title="Default Mood"
       footer={
         <Text>
-          Sets the emotional tone used when a new script is generated. You can
-          always change it per-script afterward.
+          The emotional tone new scripts are written in. Pre-selected in the
+          generator, where you can change it for a single script.
         </Text>
       }
     >

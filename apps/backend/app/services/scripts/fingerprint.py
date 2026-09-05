@@ -2,12 +2,20 @@ import hashlib
 import re
 
 from app.utils.enums.deck_enums import AudienceType
+from app.utils.enums.user_enums import ExperienceLevel, Profession, ScriptMood
 
 _WHITESPACE = re.compile(r"\s+")
 
 
 def brief_fingerprint(
-    *, description: str, duration_mins: int, card_count: int, audience: AudienceType
+    *,
+    description: str,
+    duration_mins: int,
+    card_count: int,
+    audience: AudienceType,
+    mood: ScriptMood | None = None,
+    profession: Profession | None = None,
+    experience_level: ExperienceLevel | None = None,
 ) -> str:
     """
     Stable hash of everything that would change the generated script.
@@ -35,6 +43,13 @@ def brief_fingerprint(
             str(duration_mins),
             str(card_count),
             audience.value,
+            # The voice profile is part of the brief: the same topic asked for
+            # playfully and asked for calmly are two different scripts, so
+            # changing one in the wizard has to start a new generation rather
+            # than hand back the previous voice's result.
+            mood.value if mood else "",
+            profession.value if profession else "",
+            experience_level.value if experience_level else "",
         ]
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()

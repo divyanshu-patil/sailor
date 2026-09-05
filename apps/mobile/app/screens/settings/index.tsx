@@ -12,6 +12,7 @@ import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { AppearanceSection } from "./AppearanceSection";
 import { PracticeSection } from "./PracticeSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
+import { SpeakingProfileSection } from "./SpeakingProfileSection";
 import { CacheSection } from "./CacheSection";
 import { SubscriptionSection } from "./SubscriptionSection";
 import { LegalSection } from "./LegalSection";
@@ -70,6 +71,7 @@ const SettingsScreen = () => {
             selectedMood={preferences?.defaultMood ?? "confident"}
             onUpdate={updatePreference}
           />
+          <SpeakingProfileSection />
           <SubscriptionSection onMessage={showAlert} />
           <LegalSection />
           <CacheSection onCleared={handleCacheCleared} />

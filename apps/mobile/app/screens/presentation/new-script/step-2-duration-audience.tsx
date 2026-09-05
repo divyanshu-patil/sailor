@@ -12,6 +12,14 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { usePresentationForm } from "./form-context";
 import { AUDIENCES } from "./types/types";
+import { MOOD_OPTIONS, ScriptMood } from "@/types/settings/preferences";
+import {
+  ExperienceLevel,
+  Profession,
+  PROFESSIONS,
+  PROFESSION_LABELS,
+} from "@/types/user";
+import { EXPERIENCE_LEVELS } from "@/screens/profile/edit-profile/components/constants";
 import AnimatedSlider from "./components/Slider";
 import { View } from "react-native";
 
@@ -24,7 +32,14 @@ function formatMinutes(value: number) {
 }
 
 export default function StepDurationAudience() {
-  const { form, setDurationMinutes, setAudienceIndex } = usePresentationForm();
+  const {
+    form,
+    setDurationMinutes,
+    setAudienceIndex,
+    setMood,
+    setProfession,
+    setExperienceLevel,
+  } = usePresentationForm();
 
   return (
     <>
@@ -41,6 +56,49 @@ export default function StepDurationAudience() {
               {AUDIENCES.map((label, index) => (
                 <Text key={label} modifiers={[tag(index)]}>
                   {label}
+                </Text>
+              ))}
+            </Picker>
+          </Section>
+
+          {/* Delivery — pre-selected from Settings, changed here for this
+              script only. Nothing written back: Settings stays the default. */}
+          <Section title="Delivery">
+            <Picker
+              label="Mood"
+              modifiers={[pickerStyle("menu"), tint("#c11b5c")]}
+              selection={form.mood}
+              onSelectionChange={(value) => setMood(value as ScriptMood)}
+            >
+              {MOOD_OPTIONS.map((mood) => (
+                <Text key={mood.tag} modifiers={[tag(mood.tag)]}>
+                  {mood.label}
+                </Text>
+              ))}
+            </Picker>
+            <Picker
+              label="Speaking as"
+              modifiers={[pickerStyle("menu"), tint("#c11b5c")]}
+              selection={form.profession}
+              onSelectionChange={(value) => setProfession(value as Profession)}
+            >
+              {PROFESSIONS.map((p) => (
+                <Text key={p} modifiers={[tag(p)]}>
+                  {PROFESSION_LABELS[p]}
+                </Text>
+              ))}
+            </Picker>
+            <Picker
+              label="Experience"
+              modifiers={[pickerStyle("menu"), tint("#c11b5c")]}
+              selection={form.experienceLevel}
+              onSelectionChange={(value) =>
+                setExperienceLevel(value as ExperienceLevel)
+              }
+            >
+              {EXPERIENCE_LEVELS.map((level) => (
+                <Text key={level.tag} modifiers={[tag(level.tag)]}>
+                  {level.label}
                 </Text>
               ))}
             </Picker>
