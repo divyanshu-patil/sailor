@@ -23,7 +23,11 @@ import { scheduleOnRN } from "react-native-worklets";
 
 import { fonts } from "@/constants/fonts";
 import { usePresentationForm } from "./form-context";
-import { CardsHero, ClockHero } from "./components/output-heroes";
+import {
+  CARDS_PER_LAYER,
+  CardsHero,
+  ClockHero,
+} from "./components/output-heroes";
 import ValueDial from "./components/value-dial";
 
 const { width: W, height: SCREEN_H } = Dimensions.get("window");
@@ -260,6 +264,7 @@ export default function StepOutput({
                     unit={CARDS.unit}
                     presets={[...CARDS.presets]}
                     accent={CARDS.accent}
+                    group={CARDS_PER_LAYER}
                     onChange={setCardCount}
                     raw={cardsRaw}
                   />

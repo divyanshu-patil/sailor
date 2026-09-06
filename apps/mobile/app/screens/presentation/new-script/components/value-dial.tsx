@@ -62,6 +62,10 @@ interface ValueDialProps {
   presets: number[];
   /** Pointer, chip outline, and the highlight on the middle tick. */
   accent: string;
+  /** How many units make a group worth feeling differently — the cards dial
+   *  passes its per-plate count, so crossing into a new plate is a firmer tick
+   *  than crossing a single card. Left out, every detent feels the same. */
+  group?: number;
   onChange: (value: number) => void;
   /** Continuous position, owned by the screen so the artwork above can be drawn
    *  from the same number the ruler is. */
@@ -86,6 +90,7 @@ function ValueDial({
   unit,
   presets,
   accent,
+  group,
   onChange,
   raw,
 }: ValueDialProps) {
@@ -118,11 +123,15 @@ function ValueDial({
 
           const detent = Math.round(raw.value);
           if (detent !== stepped.value) {
-            // Crossing a ten is a different event from crossing a one — it adds
-            // or takes a card off the stack — so it gets a firmer tick.
-            // Pulsar's presets are worklets, so both land on the UI thread with
-            // the crossing rather than a hop through JS a frame later.
-            if (Math.floor(detent / 10) !== Math.floor(stepped.value / 10)) {
+            // Crossing into a new group is a different event from crossing a
+            // single unit — on the cards dial it adds or takes a plate off the
+            // deck — so it gets a firmer tick. Pulsar's presets are worklets,
+            // so both land on the UI thread with the crossing rather than a hop
+            // through JS a frame later.
+            if (
+              group !== undefined &&
+              Math.floor(detent / group) !== Math.floor(stepped.value / group)
+            ) {
               Presets.System.impactLight();
             } else {
               Presets.System.selection();
@@ -134,7 +143,7 @@ function ValueDial({
           const settled = Math.min(Math.max(Math.round(raw.value), min), max);
           raw.value = withSpring(settled, { damping: 70 });
         }),
-    [max, min, raw, start, stepped],
+    [group, max, min, raw, start, stepped],
   );
 
   // Only the fraction: the whole part is carried by the numbers printed on it.

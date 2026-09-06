@@ -13,7 +13,7 @@ import Animated, {
 import { fonts } from "@/constants/fonts";
 
 /** The stack gains a layer every ten cards. */
-export const CARDS_PER_LAYER = 10;
+export const CARDS_PER_LAYER = 7;
 
 /** What the design asks for on a layer arriving: a spring with only its damping
  *  named, so the rest is Reanimated's own. */
@@ -174,7 +174,12 @@ const CLOCK_R = 158;
 const FACE = Array.from({ length: 60 }, (_, i) => (i / 60) * Math.PI * 2);
 
 const styles = StyleSheet.create({
-  cardsRoot: { flex: 1, justifyContent: "center", paddingHorizontal: 26 },
+  cardsRoot: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 26,
+    paddingTop: 60,
+  },
   word: {
     // Krona is wide, so the word runs smaller than a grotesque would to keep
     // three of its letters inside the card.
