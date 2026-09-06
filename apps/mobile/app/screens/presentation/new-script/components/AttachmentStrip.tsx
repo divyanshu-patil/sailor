@@ -30,9 +30,10 @@ export default function AttachmentStrip({
   onRemove,
   onRetry,
 }: AttachmentStripProps) {
-  const [preview, setPreview] = useState<{ uri: string; from: TileRect } | null>(
-    null,
-  );
+  const [preview, setPreview] = useState<{
+    uri: string;
+    from: TileRect;
+  } | null>(null);
 
   if (attachments.length === 0) return null;
 

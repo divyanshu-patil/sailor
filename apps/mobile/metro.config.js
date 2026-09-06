@@ -13,6 +13,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(workspaceRoot, "node_modules"),
 ];
+// dotLottie files ship as a zip; Metro must copy them verbatim rather than
+// try to parse them.
+config.resolver.assetExts.push("lottie");
 config.resolver.alias = {
   "@": path.resolve(projectRoot, "src"),
   "@/assets": path.resolve(projectRoot, "assets"),

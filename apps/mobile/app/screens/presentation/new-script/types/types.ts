@@ -29,6 +29,6 @@ export const DEFAULT_STATE: Omit<
   attachments: [],
   durationMinutes: 10,
   audienceIndex: 0,
-  cardCount: 8,
+  cardCount: 35,
   description: "",
 };
