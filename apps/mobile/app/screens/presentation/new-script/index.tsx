@@ -31,7 +31,7 @@ import {
 import { PresentationFormProvider, usePresentationForm } from "./form-context";
 import StepDescription from "./step-1-description";
 import StepDelivery from "./step-2-delivery";
-import StepCardCount from "./step-3-card-count";
+import StepOutput from "./step-3-output";
 import Icon from "@react-native-vector-icons/lucide";
 import { matchFont } from "@shopify/react-native-skia";
 import { TextMorph } from "@/screens/presentation/generation/components/text-morph";
@@ -57,6 +57,10 @@ const LABEL_SIZE = 18;
 const LABEL_FAMILY = fonts.krona;
 /** Room the footer occupies over the steps that show it, above the inset. */
 const FOOTER_SPACE = BUTTON_HEIGHT + 24;
+/** The pagination bar's own height, which is what stands between the top of the
+ *  screen and the top of a step. A step that wants to cover the whole screen —
+ *  step three's cards do — has to be told how far up that is. */
+const TOPBAR_H = 33;
 
 // Matches ScriptGenerateRequest.description's min_length on the API.
 const MIN_DESCRIPTION_LENGTH = 10;
@@ -308,10 +312,20 @@ function FlowContent() {
   }, [goTo]);
 
   // Step 0 is left to the native back button in the route's toolbar.
-  const goBack = useCallback(
-    () => goTo(Math.max(0, stepRef.current - 1)),
-    [goTo],
-  );
+  //
+  // Past that, one back button serves two depths: a card in step three that has
+  // taken the whole screen is what "back" means while it is open, and only once
+  // it is closed does back mean the previous step. Step three parks its way out
+  // here rather than drawing a second chevron over the route's own.
+  const overlayClose = useRef<(() => void) | null>(null);
+  const goBack = useCallback(() => {
+    const close = overlayClose.current;
+    if (close) {
+      close();
+      return;
+    }
+    goTo(Math.max(0, stepRef.current - 1));
+  }, [goTo]);
 
   // Past the first step, leaving the screen means stepping back through the
   // wizard: the swipe and the native back button walk the steps instead of
@@ -346,7 +360,17 @@ function FlowContent() {
     () => <StepDelivery onFocusChange={setDialFocused} />,
     [],
   );
-  const cardCount = useMemo(() => <StepCardCount />, []);
+  const output = useMemo(
+    () => (
+      <StepOutput
+        onFocusChange={setDialFocused}
+        insetTop={insets.top + TOPBAR_H}
+        insetBottom={FOOTER_SPACE + insets.bottom}
+        closeRef={overlayClose}
+      />
+    ),
+    [insets.top, insets.bottom],
+  );
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -375,7 +399,7 @@ function FlowContent() {
             step={currentStep}
             reserveFooter={FOOTER_SPACE + insets.bottom}
           >
-            {cardCount}
+            {output}
           </StepLayer>
         )}
       </View>
