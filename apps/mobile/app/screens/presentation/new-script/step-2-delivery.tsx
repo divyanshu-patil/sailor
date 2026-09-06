@@ -201,10 +201,33 @@ const PUCK = Math.round(RING_R * 0.9);
 
 // ---- Layers ---------------------------------------------------------------
 // The reveal is the focused band's own circle, so it has to sit in that band's
-// place in the stack: above the bands over it, below the bands under it. That
+// place in the stack: above the bands under it, below the bands over it. That
 // is the only way it can start out indistinguishable from the arc it grows out
-// of. The cost is that the bands under it are never covered by it, so they are
-// what clears out of the way — the circle itself never fades.
+// of.
+//
+// Which means the stack is per band, not per kind. Each band owns a decade —
+// its fill, then its options, then its markings — and the focused band's circle
+// takes the top of its own decade:
+//
+//   band k    k*10 + 1  fill
+//             k*10 + 2  options
+//             k*10 + 3  name and ruler
+//             k*10 + 4  the circle, when this band is the one focused
+//
+// so a growing circle buries every band below it whole, exactly as it covers
+// them. Hoisting all the options above all the fills — which is what this used
+// to do — left a lower band's icons floating over a higher band's circle for as
+// long as they took to fade.
+//
+// Bands *above* the focused one are the ones the circle can never reach, and
+// they are what clears out of the way. The focused band's own markings sit out
+// above everything (90) so its circle does not cut its name out from under it
+// on the first frame, and its options sit above that (100) to fly to the ring.
+
+/** Where the focused dial's own pieces go, clear of every band's decade. */
+const Z_FOCUSED_MARKS = 90;
+const Z_CHROME = 95;
+const Z_FOCUSED_ITEMS = 100;
 
 /** One band's fill. */
 const BandArc = memo(
@@ -229,7 +252,7 @@ const BandArc = memo(
     });
     return (
       <Animated.View
-        style={[styles.layer, { zIndex: band + 1 }, style]}
+        style={[styles.layer, { zIndex: band * 10 + 1 }, style]}
         pointerEvents="none"
       >
         <View
@@ -249,12 +272,16 @@ BandArc.displayName = "BandArc";
 const BandMarks = memo(
   ({
     band,
+    focused,
     caption,
     ink,
     height,
     marks,
   }: {
     band: number;
+    /** The focused band's name rides above every decade; the others stay in
+     *  their own, where a higher band's circle can bury them. */
+    focused: boolean;
     caption: string;
     ink: string;
     height: number;
@@ -263,7 +290,11 @@ const BandMarks = memo(
     const style = useAnimatedStyle(() => ({ opacity: 1 - marks.value }));
     return (
       <Animated.View
-        style={[styles.layer, { zIndex: 7 + band }, style]}
+        style={[
+          styles.layer,
+          { zIndex: focused ? Z_FOCUSED_MARKS : band * 10 + 3 },
+          style,
+        ]}
         pointerEvents="none"
       >
         <Text
@@ -319,7 +350,11 @@ const ItemGroup = memo(
     }));
     return (
       <Animated.View
-        style={[styles.layer, { zIndex: focused ? 12 : 4 + band }, style]}
+        style={[
+          styles.layer,
+          { zIndex: focused ? Z_FOCUSED_ITEMS : band * 10 + 2 },
+          style,
+        ]}
         pointerEvents="none"
       >
         {children}
@@ -707,7 +742,7 @@ export default function StepDelivery({ onFocusChange }: StepDeliveryProps) {
               <Animated.View
                 style={[
                   styles.circle,
-                  { zIndex: (focusId ?? 0) + 1 },
+                  { zIndex: (focusId ?? 0) * 10 + 4 },
                   circleStyle,
                 ]}
                 pointerEvents="none"
@@ -718,6 +753,7 @@ export default function StepDelivery({ onFocusChange }: StepDeliveryProps) {
                   key={`marks-${d.caption}`}
                   marks={marks}
                   band={k}
+                  focused={focusId === k}
                   caption={d.caption}
                   ink={d.ink}
                   height={height}
@@ -889,9 +925,8 @@ const styles = StyleSheet.create({
     width: ARC_R * 2,
     height: ARC_R * 2,
     borderRadius: ARC_R,
-    zIndex: 10,
   },
-  chrome: { zIndex: 11 },
+  chrome: { zIndex: Z_CHROME },
   chromeHead: {
     position: "absolute",
     left: 24,
