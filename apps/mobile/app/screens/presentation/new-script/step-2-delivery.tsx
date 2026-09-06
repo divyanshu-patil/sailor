@@ -110,7 +110,7 @@ const BASE: Timing = {
   marksDelay: 150,
   settleIn: 300,
   settleOut: 350,
-  chromeInDelay: 410,
+  chromeInDelay: 150,
   chromeIn: 340,
   chromeOut: 150,
 };
