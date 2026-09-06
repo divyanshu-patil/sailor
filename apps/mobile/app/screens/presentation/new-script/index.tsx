@@ -1,286 +1,410 @@
-import React, { useCallback, useState } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Dimensions,
+  InteractionManager,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import { router, Stack } from "expo-router";
+import { usePreventRemove } from "expo-router/react-navigation";
 import Animated, {
+  LinearTransition,
   useSharedValue,
   useAnimatedStyle,
+  withDelay,
   withTiming,
   withSpring,
-  Easing,
-  FadeInLeft,
-  FadeOutLeft,
-  LinearTransition,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { PresentationFormProvider, usePresentationForm } from "./form-context";
 import StepDescription from "./step-1-description";
-import StepDurationAudience from "./step-2-duration-audience";
+import StepDelivery from "./step-2-delivery";
 import StepCardCount from "./step-3-card-count";
-import { Text } from "@expo/ui/swift-ui";
-import {
-  Animation,
-  animation,
-  contentTransition,
-  foregroundStyle,
-} from "@expo/ui/swift-ui/modifiers";
-import {
-  AnimatedHost,
-  AnimatedPressable,
-} from "@/components/ui/animated/AnimatedComponents";
-import { colord } from "colord";
+import Icon from "@react-native-vector-icons/lucide";
+import { matchFont } from "@shopify/react-native-skia";
+import { TextMorph } from "@/screens/presentation/generation/components/text-morph";
+import { fonts } from "@/constants/fonts";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const STEP_COUNT = 3;
-const ACTIVE_COLOR = "#c11b5c";
-const INACTIVE_COLOR = "#E5E5EA";
+const RUST = "#C57C7C";
 
-const STEP_TITLES = ["Describe", "Audience", "Cards"];
+export const CANVAS = "#E9E4E0";
+const SEGMENT_COLOR = "#6F6B67";
+/** The active segment is wide enough to read as "you are here" without a label. */
+const SEGMENT_ACTIVE_WIDTH = 76;
+const SEGMENT_IDLE_WIDTH = 34;
+
+const BUTTON_HEIGHT = 62;
+const LABEL_SIZE = 18;
+/** Krona is the family the preview's morph already renders with. Skia matches
+ *  by *family* name through its own font manager, not by the PostScript name
+ *  React Native's `fontFamily` takes — ask it for "AlanSans-Regular" and it
+ *  matches nothing, hands back a font with no typeface, and that font measures
+ *  zero and draws nothing. */
+const LABEL_FAMILY = fonts.krona;
+/** Room the footer occupies over the steps that show it, above the inset. */
+const FOOTER_SPACE = BUTTON_HEIGHT + 24;
 
 // Matches ScriptGenerateRequest.description's min_length on the API.
 const MIN_DESCRIPTION_LENGTH = 10;
+
+const SPRING = { damping: 18, stiffness: 160, mass: 0.6 } as const;
 
 // ---- Top pagination bar -------------------------------------------------
 
 const PaginationSegment = React.memo(
   ({ index, currentStep }: { index: number; currentStep: number }) => {
-    const progress = useSharedValue(index <= currentStep ? 1 : 0);
-
-    // Re-run whenever currentStep changes.
-    React.useEffect(() => {
-      progress.value = withTiming(index <= currentStep ? 1 : 0, {
-        duration: 320,
-        easing: Easing.out(Easing.cubic),
-      });
-    }, [currentStep, index, progress]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      width: `${progress.value * 100}%`,
-    }));
-
-    return (
-      <View style={styles.segmentTrack}>
-        <Animated.View
-          style={[
-            styles.segmentFill,
-            { backgroundColor: ACTIVE_COLOR },
-            animatedStyle,
-          ]}
-        />
-      </View>
+    const width = useSharedValue(
+      index === currentStep ? SEGMENT_ACTIVE_WIDTH : SEGMENT_IDLE_WIDTH,
     );
+
+    React.useEffect(() => {
+      width.value = withSpring(
+        index === currentStep ? SEGMENT_ACTIVE_WIDTH : SEGMENT_IDLE_WIDTH,
+        { damping: 18, stiffness: 180, mass: 0.6 },
+      );
+    }, [currentStep, index, width]);
+
+    const animatedStyle = useAnimatedStyle(() => ({ width: width.value }));
+
+    return <Animated.View style={[styles.segment, animatedStyle]} />;
   },
 );
 
 PaginationSegment.displayName = "PaginationSegment";
 
-function TopPagination({ currentStep }: { currentStep: number }) {
+function TopBar({ currentStep }: { currentStep: number }) {
   return (
-    <View style={styles.paginationWrap}>
-      <View style={styles.segmentsRow}>
-        {Array.from({ length: STEP_COUNT }).map((_, i) => (
-          <PaginationSegment key={i} index={i} currentStep={currentStep} />
-        ))}
-      </View>
-      <Animated.Text style={styles.stepLabel}>
-        Step {currentStep + 1} of {STEP_COUNT} · {STEP_TITLES[currentStep]}
-      </Animated.Text>
+    <View style={styles.segmentsRow}>
+      {Array.from({ length: STEP_COUNT }).map((_, i) => (
+        <PaginationSegment key={i} index={i} currentStep={currentStep} />
+      ))}
     </View>
   );
 }
 
-// ---- Animated step transition -------------------------------------------
+// ---- Step layers ---------------------------------------------------------
 
-const AnimatedStep = React.memo(
+/**
+ * One step, stacked on the others and shown by animation rather than by
+ * mounting.
+ *
+ * Every step in this wizard is expensive to build — SwiftUI hosts, gesture
+ * handlers, a Skia canvas — and building one while a transition is running is
+ * what dropped the frame rate: the React commit and the native mount land in
+ * the same frames the spring is trying to use. Once a step is mounted it stays
+ * mounted, so a step change is one small render and three style updates.
+ */
+const StepLayer = React.memo(
   ({
+    index,
+    step,
+    reserveFooter,
     children,
-    direction,
-    stepKey,
   }: {
+    index: number;
+    /** The wizard's position. */
+    step: number;
+    /** Points of bottom room to leave for the footer, 0 when it isn't shown. */
+    reserveFooter?: number;
     children: React.ReactNode;
-    direction: "forward" | "back";
-    stepKey: number;
   }) => {
-    const translateX = useSharedValue(
-      direction === "forward" ? SCREEN_WIDTH : -SCREEN_WIDTH,
-    );
-    const opacity = useSharedValue(0);
-
-    React.useEffect(() => {
-      translateX.value =
-        direction === "forward" ? SCREEN_WIDTH * 0.25 : -SCREEN_WIDTH * 0.25;
-      opacity.value = 0;
-      translateX.value = withSpring(0, {
-        damping: 18,
-        stiffness: 160,
-        mass: 0.6,
-      });
-      opacity.value = withTiming(1, { duration: 220 });
-      // stepKey intentionally re-triggers this effect on every step change.
-    }, [stepKey, direction, translateX, opacity]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      opacity: opacity.value,
-      transform: [{ translateX: translateX.value }],
-    }));
+    const active = index === step;
+    const animatedStyle = useAnimatedStyle(() => {
+      const distance = index - step;
+      return {
+        opacity: withTiming(distance === 0 ? 1 : 0, { duration: 200 }),
+        transform: [
+          { translateX: withSpring(distance * SCREEN_WIDTH * 0.25, SPRING) },
+        ],
+      };
+    });
 
     return (
-      <Animated.View style={[styles.stepContainer, animatedStyle]}>
+      <Animated.View
+        style={[
+          styles.layer,
+          !!reserveFooter && { paddingBottom: reserveFooter },
+          animatedStyle,
+        ]}
+        // An inactive layer is invisible but still laid out, so it has to be
+        // told to keep its hands off the touches.
+        pointerEvents={active ? "auto" : "none"}
+      >
         {children}
       </Animated.View>
     );
   },
 );
+StepLayer.displayName = "StepLayer";
 
-AnimatedStep.displayName = "AnimatedStep";
+// ---- Footer --------------------------------------------------------------
+// Mounted for the life of the screen and shown by animation. Mounting it on
+// the step change would put a SwiftUI host's creation in the middle of the
+// transition, which is exactly what this screen can't afford.
 
-// ---- Footer nav buttons ---------------------------------------------------
-
-const FooterButton = React.memo(
+const Rise = React.memo(
   ({
-    label,
-    onPress,
-    variant,
-    disabled,
-    currentStep,
+    visible,
+    delay,
+    style,
+    children,
   }: {
-    label: string;
-    onPress: () => void;
-    variant: "primary" | "secondary";
-    disabled?: boolean;
-    currentStep: number;
+    visible: boolean;
+    delay: number;
+    style?: object;
+    children: React.ReactNode;
   }) => {
-    const pressed = useSharedValue(0);
-
     const animatedStyle = useAnimatedStyle(() => ({
+      opacity: withDelay(delay, withTiming(visible ? 1 : 0, { duration: 220 })),
       transform: [
-        { scale: withTiming(pressed.value ? 0.97 : 1, { duration: 100 }) },
+        { translateY: withDelay(delay, withSpring(visible ? 0 : 40, SPRING)) },
       ],
     }));
 
     return (
-      <AnimatedPressable
-        disabled={disabled}
-        onPress={onPress}
-        onPressIn={() => (pressed.value = 1)}
-        onPressOut={() => (pressed.value = 0)}
-        entering={FadeInLeft.duration(250).withInitialValues({
-          opacity: 0,
-          transform: [{ translateX: -20 }, { scale: 0.7 }],
-        })}
-        exiting={FadeOutLeft.duration(150)}
-        layout={LinearTransition.springify().damping(75)}
-        style={[
-          styles.footerButton,
-          variant === "primary"
-            ? styles.footerButtonPrimary
-            : styles.footerButtonSecondary,
-          disabled && {
-            backgroundColor: colord(ACTIVE_COLOR)
-              .lighten(0.12)
-              .desaturate(0.5)
-              .toHex(),
-          },
-          animatedStyle,
-        ]}
-      >
-        <AnimatedHost
-          layout={LinearTransition.springify().damping(100)}
-          matchContents
-          modifiers={[animation(Animation.default, currentStep)]}
-        >
-          <Text
-            modifiers={[
-              foregroundStyle(variant === "primary" ? "#fff" : "#000"),
-              contentTransition("numericText", { countsDown: false }),
-              animation(Animation.spring(), currentStep),
-            ]}
-          >
-            {label}
-          </Text>
-        </AnimatedHost>
-      </AnimatedPressable>
+      <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
     );
   },
 );
-FooterButton.displayName = "FooterButton";
+Rise.displayName = "Rise";
+
+const Footer = React.memo(
+  ({
+    label,
+    visible,
+    bottomInset,
+    onBack,
+    onNext,
+    disabled,
+  }: {
+    label: string;
+    visible: boolean;
+    bottomInset: number;
+    onBack: () => void;
+    onNext: () => void;
+    disabled?: boolean;
+  }) => {
+    // The label's box hugs its text so the button can centre it. `TextMorph`
+    // lays characters out from the left of whatever width it is given, so a
+    // box the size of the button would leave the words against its edge.
+    //
+    // Measured the way it lays out — per character, summed — because the
+    // bounds of the whole string are tighter than the advances it will use.
+    // The floor keeps the box visible even if the family ever stops matching.
+    const labelWidth = useMemo(() => {
+      const font = matchFont({
+        fontSize: LABEL_SIZE,
+        fontFamily: LABEL_FAMILY,
+      });
+      let width = 0;
+      for (const character of label) {
+        const advance = font.measureText(character).width;
+        width += advance > 0 ? advance : LABEL_SIZE * 0.28;
+      }
+      return Math.max(110, Math.ceil(width) + 8);
+    }, [label]);
+
+    return (
+      <View
+        style={[styles.footer, { paddingBottom: bottomInset + 12 }]}
+        pointerEvents={visible ? "box-none" : "none"}
+        // Back leads and Continue follows, so the pair reads left to right.
+      >
+        <Rise visible={visible} delay={0}>
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Icon name="chevron-left" size={26} color="#1B1B1B" />
+          </Pressable>
+        </Rise>
+        <Rise visible={visible} delay={80} style={styles.continueWrap}>
+          <Pressable
+            disabled={disabled}
+            onPress={onNext}
+            style={({ pressed }) => [
+              styles.continueButton,
+              disabled && styles.continueButtonDisabled,
+              pressed && { transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            {/* The same per-character morph the preview screen uses for
+              stop/stopped: Continue → Generate rewrites itself letter by
+              letter. It replaced a SwiftUI host, which laid its content out
+              top-leading against a size that only settled a layout pass later
+              — so the label sat high until some other update corrected it. */}
+            <Animated.View
+              style={{ width: labelWidth }}
+              layout={LinearTransition.springify().damping(18)}
+            >
+              <TextMorph
+                text={label}
+                fontSize={LABEL_SIZE}
+                fontFamily={LABEL_FAMILY}
+                color="#FFFFFF"
+                maxWidth={labelWidth}
+                maxLines={1}
+              />
+            </Animated.View>
+          </Pressable>
+        </Rise>
+      </View>
+    );
+  },
+);
+Footer.displayName = "Footer";
 
 // ---- Flow content (needs context, so split from provider) ---------------
 
 function FlowContent() {
   const { form, descriptionValue, isUploading } = usePresentationForm();
+  const insets = useSafeAreaInsets();
   const [currentStep, setCurrentStep] = useState(0);
-  const [direction, setDirection] = useState<"forward" | "back">("forward");
+
+  // How much of the wizard has been built. The later steps are expensive, so
+  // they go up in the quiet after the push animation — one per tick, so no
+  // single commit is large — rather than in the middle of a step change.
+  const [warm, setWarm] = useState(0);
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const task = InteractionManager.runAfterInteractions(() => {
+      // Staggered, and after the push animation has had its own time: the
+      // point is to spend idle frames, never the ones something is moving in.
+      timers.push(setTimeout(() => setWarm(1), 250));
+      timers.push(setTimeout(() => setWarm(2), 650));
+    });
+    return () => {
+      task.cancel();
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+
+  // The step and the brief, mirrored where a callback can read them without
+  // being rebuilt. `form` changes on every keystroke, and a nav handler that
+  // changed with it would re-render the footer — SwiftUI host and all — on
+  // every letter typed into step one.
+  const stepRef = useRef(0);
+  const formRef = useRef(form);
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  const goTo = useCallback((next: number) => {
+    stepRef.current = next;
+    // Nothing should ever be waiting on the warm-up; if the user is quicker
+    // than it is, the step goes up now.
+    setWarm((w) => Math.max(w, next));
+    setCurrentStep(next);
+  }, []);
 
   const goNext = useCallback(() => {
-    if (currentStep < STEP_COUNT - 1) {
-      setDirection("forward");
-      setCurrentStep((s) => s + 1);
-    } else {
-      // Final step — hand off to your generation pipeline.
-      console.log("Generate presentation with:", form);
-      router.navigate({
-        pathname: "/(authenticated)/(script)/preview",
-        params: {
-          form: JSON.stringify(form),
-        },
-      });
-    }
-  }, [currentStep, form]);
-
-  const goBack = useCallback(() => {
-    if (currentStep === 0) {
-      router.back();
+    const step = stepRef.current;
+    if (step < STEP_COUNT - 1) {
+      goTo(step + 1);
       return;
     }
-    setDirection("back");
-    setCurrentStep((s) => s - 1);
-  }, [currentStep]);
+    // Final step — hand off to the generation pipeline.
+    router.navigate({
+      pathname: "/(authenticated)/(script)/preview",
+      params: { form: JSON.stringify(formRef.current) },
+    });
+  }, [goTo]);
+
+  // Step 0 is left to the native back button in the route's toolbar.
+  const goBack = useCallback(
+    () => goTo(Math.max(0, stepRef.current - 1)),
+    [goTo],
+  );
+
+  // Past the first step, leaving the screen means stepping back through the
+  // wizard: the swipe and the native back button walk the steps instead of
+  // popping the route and throwing the brief away.
+  usePreventRemove(currentStep > 0, goBack);
+
+  // The same two gates the footer button used: the API's own min_length, and
+  // "every file has landed" — a brief can't reference an id that doesn't exist.
+  const canAdvance =
+    descriptionValue.trim().length >= MIN_DESCRIPTION_LENGTH && !isUploading;
+
+  const built = (index: number) => index <= Math.max(warm, currentStep);
+
+  // Each step's element is memoised on what that step actually depends on.
+  // Without this, a keystroke in step one re-renders every mounted step —
+  // including the third one's slider, which is a few dozen views of its own.
+  const description = useMemo(
+    () => (
+      <StepDescription
+        onSend={goNext}
+        canSend={canAdvance}
+        active={currentStep === 0}
+      />
+    ),
+    [goNext, canAdvance, currentStep],
+  );
+  const delivery = useMemo(
+    () => <StepDelivery active={currentStep === 1} />,
+    [currentStep],
+  );
+  const cardCount = useMemo(() => <StepCardCount />, []);
 
   return (
-    <SafeAreaView style={styles.flex} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.screen} edges={["top"]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <TopPagination currentStep={currentStep} />
+      <TopBar currentStep={currentStep} />
 
       <View style={styles.flex}>
-        <AnimatedStep stepKey={currentStep} direction={direction}>
-          {currentStep === 0 && <StepDescription />}
-          {currentStep === 1 && <StepDurationAudience />}
-          {currentStep === 2 && <StepCardCount />}
-        </AnimatedStep>
+        <StepLayer index={0} step={currentStep}>
+          {description}
+        </StepLayer>
+
+        {built(1) && (
+          <StepLayer
+            index={1}
+            step={currentStep}
+            reserveFooter={FOOTER_SPACE + insets.bottom}
+          >
+            {delivery}
+          </StepLayer>
+        )}
+
+        {built(2) && (
+          <StepLayer
+            index={2}
+            step={currentStep}
+            reserveFooter={FOOTER_SPACE + insets.bottom}
+          >
+            {cardCount}
+          </StepLayer>
+        )}
       </View>
 
-      <View style={styles.footer}>
-        {currentStep > 0 ? (
-          <FooterButton
-            label={"Back"}
-            onPress={goBack}
-            variant="secondary"
-            currentStep={currentStep}
-          />
-        ) : null}
-        <FooterButton
-          label={
-            isUploading
-              ? "Uploading…"
-              : currentStep < 2
-                ? "Next"
-                : "Generate"
-          }
-          onPress={goNext}
-          variant="primary"
-          currentStep={currentStep}
-          // Two gates. The description one is the API's own min_length, checked
-          // here rather than letting the create call 422. The upload one is
-          // what stops the brief being submitted with attachment ids that do
-          // not exist yet — a file only has an id once its upload lands.
-          disabled={
-            descriptionValue.trim().length < MIN_DESCRIPTION_LENGTH ||
-            isUploading
-          }
+      {built(1) && (
+        <Footer
+          label={currentStep < STEP_COUNT - 1 ? "Continue" : "Generate"}
+          visible={currentStep > 0}
+          bottomInset={insets.bottom}
+          onBack={goBack}
+          onNext={goNext}
+          disabled={!canAdvance}
         />
-      </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -299,71 +423,57 @@ export default function CreateNewScriptScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  paginationWrap: {
-    paddingHorizontal: 20,
-    marginTop: 72,
-    paddingBottom: 14,
-    gap: 8,
-  },
+  screen: { flex: 1, backgroundColor: CANVAS },
   segmentsRow: {
     flexDirection: "row",
-    gap: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 24,
+    paddingBottom: 4,
   },
-  segmentTrack: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: INACTIVE_COLOR,
-    overflow: "hidden",
+  segment: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: SEGMENT_COLOR,
   },
-  segmentFill: {
-    flex: 1,
-    height: "100%",
-    borderRadius: 2,
-  },
-  stepLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#8E8E93",
-  },
-  stepContainer: {
-    flex: 1,
+  // Every step occupies the same box; only one of them is visible. The base
+  // opacity is 0 so a step that is built in the background starts from hidden
+  // — animating down from the default 1 would flash it over the live step.
+  layer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
   },
   footer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 8,
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 16,
   },
-  footerButton: {
-    borderRadius: 999,
+  backButton: {
+    width: 96,
+    height: BUTTON_HEIGHT,
+    borderRadius: BUTTON_HEIGHT / 2,
+    backgroundColor: "#F7F5F3",
     alignItems: "center",
     justifyContent: "center",
-    // paddingHorizontal: 24,
-    flex: 1,
-    paddingVertical: 12,
   },
-  footerButtonText: {
-    color: "white",
+  continueWrap: { flex: 1 },
+  continueButton: {
+    width: "100%",
+    height: BUTTON_HEIGHT,
+    borderRadius: BUTTON_HEIGHT / 2,
+    backgroundColor: RUST,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  footerButtonPrimary: {
-    backgroundColor: ACTIVE_COLOR,
-  },
-  footerButtonSecondary: {
-    backgroundColor: "#ddd",
-  },
-  footerButtonDisabled: {
-    opacity: 0.4,
-  },
-  footerButtonTextPrimary: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  footerButtonTextSecondary: {
-    color: "#1C1C1E",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  continueButtonDisabled: { opacity: 0.5 },
 });

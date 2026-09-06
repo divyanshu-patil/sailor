@@ -28,7 +28,6 @@ type PresentationFormContextValue = {
   // not a plain string — these live in context so they survive the step
   // unmounting/remounting as the user moves back and forth.
   descriptionState: ReturnType<typeof useNativeState<string>>;
-  linkDraftState: ReturnType<typeof useNativeState<string>>;
   descriptionValue: string;
   /** True while any file is still uploading. The wizard's Next button is
    *  disabled on this — a brief can't reference a file that isn't stored yet. */
@@ -72,7 +71,6 @@ export function PresentationFormProvider({
     };
   });
   const descriptionState = useNativeState("");
-  const linkDraftState = useNativeState("");
 
   // Progress arrives many times a second per file. Writing each tick straight
   // to `form` would re-render the whole wizard on every chunk, so the latest
@@ -278,7 +276,6 @@ export function PresentationFormProvider({
     () => ({
       form,
       descriptionState,
-      linkDraftState,
       descriptionValue,
       isUploading,
       attachmentIds,
@@ -297,7 +294,6 @@ export function PresentationFormProvider({
     [
       form,
       descriptionState,
-      linkDraftState,
       descriptionValue,
       isUploading,
       attachmentIds,

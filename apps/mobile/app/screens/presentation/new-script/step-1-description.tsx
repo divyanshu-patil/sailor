@@ -1,39 +1,66 @@
-/* eslint-disable react-hooks/immutability */
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect } from "react";
+import { Dimensions, StyleSheet, View } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import {
+  KeyboardController,
+  useKeyboardHandler,
+} from "react-native-keyboard-controller";
 import {
   Host,
-  Form,
-  Section,
   TextField,
+  Text,
+  Menu,
   Button,
   HStack,
+  VStack,
   Spacer,
-  Text,
   Image,
-  List,
-  Menu,
-  Toggle,
 } from "@expo/ui/swift-ui";
 import {
+  buttonBorderShape,
   buttonStyle,
+  controlSize,
+  disabled,
   font,
   foregroundStyle,
-  padding,
-  frame,
-  keyboardType,
-  animation,
-  Animation,
+  imageScale,
+  lineLimit,
   tint,
-  toggleStyle,
 } from "@expo/ui/swift-ui/modifiers";
-import { usePresentationForm } from "./form-context";
-import AttachmentStrip from "./components/AttachmentStrip";
-import { Attachment } from "@/types/presentation";
-import { useColors } from "@/constants/theme";
 
-export default function StepDescription() {
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import Mascot from "@/components/ui/mascot";
+import { usePresentationForm } from "./form-context";
+import AttachmentStack from "./components/AttachmentStack";
+
+/** Fixed, so the canvas never re-measures. A canvas that changes size resizes
+ *  its composition on the spot — no animation — which is what made the mascot
+ *  jump instead of easing when the keyboard came up. */
+const MASCOT_SIZE = Math.min(Dimensions.get("window").width * 0.66, 300);
+
+const RUST = "#B75C5C";
+const INK = "#1B1B1B";
+
+interface StepDescriptionProps {
+  /** The arrow in the composer is the only way forward on this step. */
+  onSend: () => void;
+  canSend: boolean;
+  /** False while another step is on screen. This one stays mounted behind it. */
+  active: boolean;
+}
+
+export default function StepDescription({
+  onSend,
+  canSend,
+  active,
+}: StepDescriptionProps) {
   const {
     form,
     addAttachment,
@@ -41,21 +68,69 @@ export default function StepDescription() {
     retryAttachment,
     descriptionState,
     handleSetDescriptionValue,
-    linkDraftState,
   } = usePresentationForm();
 
-  const { colors } = useColors();
+  // This step stays mounted behind the others now, and a focused field would
+  // otherwise keep the keyboard up over them.
+  useEffect(() => {
+    if (!active) KeyboardController.dismiss();
+  }, [active]);
 
-  const linkDraft = linkDraftState;
-  const [showLinkInput, setShowLinkInput] = useState(false);
+  const insets = useSafeAreaInsets();
 
-  // Split by what each can show: a URL is a row, a file is a thumbnail.
-  const links = form.attachments.filter((a) => a.kind === "link");
-  const files = form.attachments.filter((a) => a.kind !== "link");
+  // Where the keyboard actually is, sampled every frame.
+  //
+  // Not `useReanimatedKeyboardAnimation`: on iOS that hook writes its shared
+  // values from `onKeyboardMoveStart`, and that event carries the *destination*
+  // height — so the value teleports and anything driven off it snaps. `onMove`
+  // is the per-frame event, fed by a display link reading the keyboard's real
+  // position, so following it is as close to the keyboard as it is possible to
+  // be. No easing of our own to go out of step with it.
+  const keyboard = useSharedValue(0);
+  const progress = useSharedValue(0);
+  useKeyboardHandler(
+    {
+      onMove: (e) => {
+        "worklet";
+        keyboard.value = e.height;
+        progress.value = e.progress;
+      },
+      onInteractive: (e) => {
+        "worklet";
+        keyboard.value = e.height;
+        progress.value = e.progress;
+      },
+      // The last frame can be missed by a display link; this pins the ends.
+      onEnd: (e) => {
+        "worklet";
+        keyboard.value = e.height;
+        progress.value = e.progress;
+      },
+    },
+    [],
+  );
+
+  // Lifting the bottom block rather than resizing the screen: the card's height
+  // changes as the user types, and a translation doesn't care what that height
+  // is. The screen's bottom inset is under the keyboard anyway, so it comes
+  // back off the lift.
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ translateY: -Math.max(0, keyboard.value - insets.bottom) }],
+  }));
+
+  // The mascot follows a fraction of the way and gives up some size with it, so
+  // the top half reads as compressing rather than sitting still while the
+  // composer slides over it.
+  const squeeze = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -keyboard.value * 0.3 },
+      { scale: 1 - 0.22 * progress.value },
+    ],
+  }));
 
   const addImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsMultipleSelection: true,
       quality: 0.8,
     });
@@ -97,154 +172,126 @@ export default function StepDescription() {
     });
   }, [addAttachment]);
 
-  const addLink = useCallback(() => {
-    const trimmed = linkDraft.value.trim();
-    if (!trimmed) return;
-    addAttachment({ id: `link-${Date.now()}`, kind: "link", name: trimmed });
-
-    linkDraft.value = "";
-    setShowLinkInput(false);
-  }, [linkDraft, addAttachment]);
-
   return (
-    <>
-      <Host style={{ flex: 1 }}>
-        <Form>
-          <Section
-            title="Description"
-            footer={
-              <Text
-                modifiers={[
-                  font({ size: 13 }),
-                  foregroundStyle({ type: "hierarchical", style: "secondary" }),
-                ]}
-              >
-                Describe the topic, goal, and tone of your presentation.
-              </Text>
-            }
-          >
-            <HStack spacing={8} alignment={"top"}>
-              <Menu
-                label=""
-                systemImage="plus"
-                modifiers={[
-                  tint("#c11b5c"),
-                  foregroundStyle("#c11b5c"),
-                  padding({ top: 10 }),
-                ]}
-              >
-                <Button onPress={addImage}>
-                  <HStack spacing={6}>
-                    <Image systemName="photo" size={15} />
-                    <Text>Image</Text>
-                  </HStack>
-                </Button>
-                <Button onPress={addDocument}>
-                  <HStack spacing={6}>
-                    <Image systemName="doc.text" size={15} />
-                    <Text>Document</Text>
-                  </HStack>
-                </Button>
-                <Button onPress={() => setShowLinkInput((v) => !v)}>
-                  <HStack spacing={6}>
-                    <Image systemName="link" size={15} />
-                    <Text>Link</Text>
-                  </HStack>
-                </Button>
-              </Menu>
-              <TextField
-                axis="vertical"
-                text={descriptionState}
-                placeholder="e.g. A persuasive pitch deck for a seed-stage climate tech startup..."
-                modifiers={[padding({ vertical: 4 }), keyboardType("url")]}
-                onTextChange={handleSetDescriptionValue}
-              />
-            </HStack>
-          </Section>
-          {/* Links stay in the form. There is nothing to preview for a URL, so
-              a text row says more than a thumbnail could — the tiles below are
-              for files that actually look like something. */}
-          {(showLinkInput || links.length > 0) && (
-            <Section
-              title="Links"
-              modifiers={[animation(Animation.default, showLinkInput)]}
-              footer={
-                <Text
+    <View style={styles.root}>
+      {/* The multiline field has no return key to dismiss with, so the empty
+          space above it is the way out. */}
+      <AnimatedPressable
+        style={[styles.mascotWrap, squeeze]}
+        onPress={() => KeyboardController.dismiss()}
+      >
+        <Mascot size={MASCOT_SIZE} playing={active} />
+      </AnimatedPressable>
+
+      <Animated.View style={lift}>
+        <AttachmentStack
+          attachments={form.attachments}
+          onRemove={removeAttachment}
+          onRetry={retryAttachment}
+        />
+
+        <View
+          style={[styles.composerWrap, { paddingBottom: insets.bottom + 8 }]}
+        >
+          <View style={styles.composer}>
+            <Host
+              matchContents={{ vertical: true }}
+              style={styles.hostFill}
+              // SwiftUI does its own keyboard avoidance; left on, the card gets
+              // shifted twice — once by the host, once by the lift above.
+              ignoreSafeArea="keyboard"
+            >
+              <VStack spacing={14} alignment="leading">
+                <TextField
+                  axis="vertical"
+                  text={descriptionState}
+                  onTextChange={handleSetDescriptionValue}
                   modifiers={[
-                    font({ size: 13 }),
-                    foregroundStyle({
-                      type: "hierarchical",
-                      style: "secondary",
-                    }),
+                    font({ size: 16 }),
+                    foregroundStyle(INK),
+                    tint(RUST),
+                    // One line to start — reserving two left an empty line
+                    // hanging over the + and the arrow. Six is where it stops
+                    // growing; past that the composer would eat the mascot.
+                    lineLimit({ min: 1, max: 6 }),
                   ]}
                 >
-                  Optional — add images, documents, or links to ground the
-                  presentation in your own material.
-                </Text>
-              }
-            >
-              {showLinkInput && (
-                <HStack
-                  spacing={8}
-                  modifiers={[animation(Animation.spring(), showLinkInput)]}
-                >
-                  <TextField
-                    placeholder="https://example.com"
-                    text={linkDraft}
-                    modifiers={[frame({ minWidth: 0 }), keyboardType("url")]}
-                  />
-                  <Button
-                    modifiers={[buttonStyle("glassProminent")]}
-                    onPress={addLink}
+                  <TextField.Placeholder>
+                    <Text
+                      modifiers={[
+                        font({ size: 16 }),
+                        foregroundStyle("#A39B94"),
+                      ]}
+                    >
+                      What is this script about?
+                    </Text>
+                  </TextField.Placeholder>
+                </TextField>
+
+                <HStack>
+                  <Menu
+                    label=""
+                    systemImage="plus"
+                    modifiers={[
+                      tint(INK),
+                      foregroundStyle(INK),
+                      imageScale("large"),
+                      font({ size: 22 }),
+                    ]}
                   >
-                    <Text>Add</Text>
+                    <Button onPress={addImage}>
+                      <HStack spacing={6}>
+                        <Image systemName="photo" size={15} />
+                        <Text>Image</Text>
+                      </HStack>
+                    </Button>
+                    <Button onPress={addDocument}>
+                      <HStack spacing={6}>
+                        <Image systemName="doc.text" size={15} />
+                        <Text>Document</Text>
+                      </HStack>
+                    </Button>
+                  </Menu>
+
+                  <Spacer />
+
+                  <Button
+                    onPress={onSend}
+                    modifiers={[
+                      buttonStyle("borderedProminent"),
+                      buttonBorderShape("capsule"),
+                      controlSize("extraLarge"),
+                      tint(RUST),
+                      disabled(!canSend),
+                    ]}
+                  >
+                    <Image systemName="arrow.right" size={18} />
                   </Button>
                 </HStack>
-              )}
-
-              {links.length > 0 && (
-                <List>
-                  {links.map((item: Attachment) => (
-                    <HStack
-                      key={item.id}
-                      modifiers={[padding({ vertical: 4 })]}
-                    >
-                      <Image systemName="link" size={18} color="#8E8E93" />
-                      <Text
-                        modifiers={[
-                          padding({ leading: 8 }),
-                          font({ size: 15 }),
-                        ]}
-                      >
-                        {item.name}
-                      </Text>
-                      <Spacer />
-                      <Button
-                        modifiers={[buttonStyle("plain")]}
-                        onPress={() => removeAttachment(item.id)}
-                      >
-                        <Image
-                          systemName="xmark.circle.fill"
-                          size={18}
-                          color="#C7C7CC"
-                        />
-                      </Button>
-                    </HStack>
-                  ))}
-                </List>
-              )}
-            </Section>
-          )}
-        </Form>
-      </Host>
-
-      {/* Below the form, not inside it — see AttachmentStrip for why the
-          thumbnails can't live in a SwiftUI section. */}
-      <AttachmentStrip
-        attachments={files}
-        onRemove={removeAttachment}
-        onRetry={retryAttachment}
-      />
-    </>
+              </VStack>
+            </Host>
+          </View>
+        </View>
+      </Animated.View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, justifyContent: "flex-end" },
+  mascotWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  composerWrap: { paddingHorizontal: 16 },
+  composer: {
+    backgroundColor: "#FCFBFA",
+    borderRadius: 36,
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 14,
+  },
+  hostFill: { width: "100%" },
+});
