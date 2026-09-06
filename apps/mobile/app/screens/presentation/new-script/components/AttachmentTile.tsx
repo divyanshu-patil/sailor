@@ -103,7 +103,12 @@ const AttachmentTile = memo(
             />
           ) : (
             <View style={styles.pillBody}>
-              <Icon name={look.icon} iconStyle="solid" size={20} color={look.tint} />
+              <Icon
+                name={look.icon}
+                iconStyle="solid"
+                size={20}
+                color={look.tint}
+              />
               <View style={styles.pillText}>
                 <Text numberOfLines={1} style={styles.pillName}>
                   {item.name}
@@ -127,7 +132,12 @@ const AttachmentTile = memo(
 
           {failed && (
             <View style={[StyleSheet.absoluteFill, styles.failedOverlay]}>
-              <Icon name="arrow-rotate-right" iconStyle="solid" size={18} color={RED} />
+              <Icon
+                name="arrow-rotate-right"
+                iconStyle="solid"
+                size={18}
+                color={RED}
+              />
             </View>
           )}
         </Pressable>

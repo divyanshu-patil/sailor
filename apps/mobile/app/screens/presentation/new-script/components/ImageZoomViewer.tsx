@@ -86,7 +86,9 @@ export default function ImageZoomViewer({
       onRequestClose={close}
       statusBarTranslucent
     >
-      <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}
+      />
       <Pressable style={StyleSheet.absoluteFill} onPress={close}>
         <Animated.View style={[styles.image, imageStyle]}>
           {uri && (

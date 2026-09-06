@@ -15,12 +15,13 @@ import {
 import { router, Stack } from "expo-router";
 import { usePreventRemove } from "expo-router/react-navigation";
 import Animated, {
+  FadeInDown,
+  FadeOutDown,
   LinearTransition,
-  useSharedValue,
   useAnimatedStyle,
-  withDelay,
-  withTiming,
+  useSharedValue,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import {
   SafeAreaView,
@@ -151,47 +152,23 @@ const StepLayer = React.memo(
 StepLayer.displayName = "StepLayer";
 
 // ---- Footer --------------------------------------------------------------
-// Mounted for the life of the screen and shown by animation. Mounting it on
-// the step change would put a SwiftUI host's creation in the middle of the
-// transition, which is exactly what this screen can't afford.
+// Mounted only while it is wanted, and taken away by `exiting` — so when a dial
+// in step two claims the screen the buttons leave with it, on the same commit,
+// rather than lingering a beat as a prop change works its way through.
 
-const Rise = React.memo(
-  ({
-    visible,
-    delay,
-    style,
-    children,
-  }: {
-    visible: boolean;
-    delay: number;
-    style?: object;
-    children: React.ReactNode;
-  }) => {
-    const animatedStyle = useAnimatedStyle(() => ({
-      opacity: withDelay(delay, withTiming(visible ? 1 : 0, { duration: 220 })),
-      transform: [
-        { translateY: withDelay(delay, withSpring(visible ? 0 : 40, SPRING)) },
-      ],
-    }));
-
-    return (
-      <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
-    );
-  },
-);
-Rise.displayName = "Rise";
+/** How long the pair takes to clear out. Short: they are getting out of the
+ *  way of something else, not making an exit. */
+const FOOTER_OUT_MS = 130;
 
 const Footer = React.memo(
   ({
     label,
-    visible,
     bottomInset,
     onBack,
     onNext,
     disabled,
   }: {
     label: string;
-    visible: boolean;
     bottomInset: number;
     onBack: () => void;
     onNext: () => void;
@@ -218,12 +195,13 @@ const Footer = React.memo(
     }, [label]);
 
     return (
-      <View
+      <Animated.View
         style={[styles.footer, { paddingBottom: bottomInset + 12 }]}
-        pointerEvents={visible ? "box-none" : "none"}
+        pointerEvents="box-none"
+        exiting={FadeOutDown.duration(FOOTER_OUT_MS)}
         // Back leads and Continue follows, so the pair reads left to right.
       >
-        <Rise visible={visible} delay={0}>
+        <Animated.View entering={FadeInDown.duration(260)}>
           <Pressable
             onPress={onBack}
             style={({ pressed }) => [
@@ -233,8 +211,11 @@ const Footer = React.memo(
           >
             <Icon name="chevron-left" size={26} color="#1B1B1B" />
           </Pressable>
-        </Rise>
-        <Rise visible={visible} delay={80} style={styles.continueWrap}>
+        </Animated.View>
+        <Animated.View
+          style={styles.continueWrap}
+          entering={FadeInDown.duration(260).delay(80)}
+        >
           <Pressable
             disabled={disabled}
             onPress={onNext}
@@ -263,8 +244,8 @@ const Footer = React.memo(
               />
             </Animated.View>
           </Pressable>
-        </Rise>
-      </View>
+        </Animated.View>
+      </Animated.View>
     );
   },
 );
@@ -357,9 +338,13 @@ function FlowContent() {
     ),
     [goNext, canAdvance, currentStep],
   );
+  // A dial in step two takes over the whole screen while it is being dragged.
+  // That state is a gesture, not a page, so the footer gets out of its way —
+  // unmounting, and coming back the same way it does on a step change.
+  const [dialFocused, setDialFocused] = useState(false);
   const delivery = useMemo(
-    () => <StepDelivery active={currentStep === 1} />,
-    [currentStep],
+    () => <StepDelivery onFocusChange={setDialFocused} />,
+    [],
   );
   const cardCount = useMemo(() => <StepCardCount />, []);
 
@@ -395,10 +380,9 @@ function FlowContent() {
         )}
       </View>
 
-      {built(1) && (
+      {built(1) && currentStep > 0 && !dialFocused && (
         <Footer
           label={currentStep < STEP_COUNT - 1 ? "Continue" : "Generate"}
-          visible={currentStep > 0}
           bottomInset={insets.bottom}
           onBack={goBack}
           onNext={goNext}
