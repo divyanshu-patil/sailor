@@ -53,6 +53,16 @@ const Home = () => {
         >
           New Script
         </Stack.Toolbar.Button>
+        {/*  TEMP: mascot state machine harness */}
+        <Stack.Toolbar.Button
+          variant="prominent"
+          tintColor={"#B75C5C"}
+          onPress={() =>
+            router.push("/(authenticated)/(tabs)/(home)/mascot-lab")
+          }
+        >
+          Mascot
+        </Stack.Toolbar.Button>
         {/*  TEMP: Health check button */}
         <Stack.Toolbar.Button
           variant="prominent"

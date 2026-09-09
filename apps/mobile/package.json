@@ -10,6 +10,7 @@
     "@expo-google-fonts/krona-one": "^0.4.1",
     "@expo-google-fonts/newsreader": "^0.4.1",
     "@expo/ui": "~57.0.4",
+    "@lottiefiles/dotlottie-react-native": "^0.12.1",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-vector-icons/entypo": "^13.1.2",
     "@react-native-vector-icons/fontawesome6": "^13.1.2",

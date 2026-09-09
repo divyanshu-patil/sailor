@@ -9,6 +9,7 @@ import Animated, {
 import {
   KeyboardController,
   useKeyboardHandler,
+  useKeyboardState,
 } from "react-native-keyboard-controller";
 import {
   Host,
@@ -77,6 +78,10 @@ export default function StepDescription({
   }, [active]);
 
   const insets = useSafeAreaInsets();
+
+  // The mascot leans in while the keyboard is up. Visibility, not focus: the
+  // field can hold focus with the keyboard dismissed.
+  const keyboardVisible = useKeyboardState((s) => s.isVisible);
 
   // Where the keyboard actually is, sampled every frame.
   //
@@ -180,7 +185,11 @@ export default function StepDescription({
         style={[styles.mascotWrap, squeeze]}
         onPress={() => KeyboardController.dismiss()}
       >
-        <Mascot size={MASCOT_SIZE} playing={active} />
+        <Mascot
+          size={MASCOT_SIZE}
+          playing={active}
+          observing={keyboardVisible}
+        />
       </AnimatedPressable>
 
       <Animated.View style={lift}>
