@@ -1,0 +1,25 @@
+packages:
+  - apps/mobile
+  - apps/backend
+
+allowBuilds:
+  "@sentry/cli": true
+  "@shopify/react-native-skia": true
+  browser-tabs-lock: true
+  bufferutil: true
+  core-js: true
+  unrs-resolver: true
+  utf-8-validate: true
+
+# Metro and eslint-plugin-import both resolve by walking node_modules, so the
+# isolated layout hides packages they expect to find. Same layout yarn gave us.
+nodeLinker: hoisted
+
+onlyBuiltDependencies:
+  - "@sentry/cli"
+  - "@shopify/react-native-skia"
+  - browser-tabs-lock
+  - bufferutil
+  - core-js
+  - unrs-resolver
+  - utf-8-validate

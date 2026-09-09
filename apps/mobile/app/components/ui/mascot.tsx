@@ -1,70 +1,81 @@
-import { useEffect, useMemo } from "react";
-import { Canvas, Group, Skia, Skottie } from "@shopify/react-native-skia";
-import {
-  Easing,
-  cancelAnimation,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { DotLottie, type Dotlottie } from "@lottiefiles/dotlottie-react-native";
 
-import source from "./mascot-source";
+import source from "@/assets/animations/watching.lottie";
 
 /**
- * The mascot, rendered by Skia rather than a native Lottie view.
+ * The mascot, played by the dotLottie runtime straight from the .lottie file.
  *
- * The composition is parsed once for the whole app and shared: `Skottie.Make`
- * takes a few milliseconds on a 100KB file, and paying that on every mount is
- * what made a step change stutter. The frame counter is a shared value, so
- * playback never touches the JS thread.
+ * The file carries its own state machine: `watching` idles, and a boolean input
+ * tweens it to `observe` and back over 300ms. The morph, its duration and its
+ * curve are all declared in the file — nothing here interpolates anything, it
+ * only sets the input.
+ *
+ * Both names below are addresses into the .lottie, and a wrong one fails in
+ * silence: `stateMachineLoad` returns false, the native side discards that, and
+ * a machine that never loaded raises no error. They must match the manifest's
+ * `stateMachines[].id` and the machine's `inputs[].name`.
  */
-let composition: ReturnType<typeof Skia.Skottie.Make> | null = null;
-const mascot = () => (composition ??= Skia.Skottie.Make(source));
+const MACHINE_ID = "watching";
+const TYPING_INPUT = "isTyping";
 
 interface MascotProps {
   /** Square side in points. */
   size: number;
   /** Off-screen copies hold their pose instead of burning frames. */
   playing?: boolean;
+  /** Drives the file's `isTyping` input, so the machine picks the state. */
+  observing?: boolean;
+  /** Reports every state the machine enters. Debug harnesses only. */
+  onStateEntered?: (state: string) => void;
 }
 
-export default function Mascot({ size, playing = true }: MascotProps) {
-  const animation = mascot();
-  const frame = useSharedValue(0);
+/** Forwarded so a debug screen can read the playhead back off the player. */
+const Mascot = forwardRef<Dotlottie | null, MascotProps>(function Mascot(
+  { size, playing = true, observing = false, onStateEntered },
+  outerRef,
+) {
+  const ref = useRef<Dotlottie>(null);
+  useImperativeHandle(outerRef, () => ref.current as Dotlottie, []);
 
   useEffect(() => {
-    if (!playing) {
-      cancelAnimation(frame);
-      return;
-    }
-    const seconds = animation.duration();
-    frame.value = 0;
-    frame.value = withRepeat(
-      withTiming(seconds * animation.fps(), {
-        duration: seconds * 1000,
-        easing: Easing.linear,
-      }),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(frame);
-  }, [animation, frame, playing]);
+    ref.current?.stateMachineSetBooleanInput(TYPING_INPUT, observing);
+  }, [observing]);
 
-  // Straight arithmetic on the size it was given. Measuring the canvas instead
-  // (Skia's `onSize`) meant the scale — and with it where the drawing sat —
-  // depended on a value that arrives a layout pass late and is worth nothing
-  // here anyway: the canvas is a square of a known side, and the artwork is
-  // centred in its own square, so scaling from the origin is all it takes.
-  const transform = useMemo(
-    () => [{ scale: size / animation.size().width }],
-    [animation, size],
-  );
+  // Freeze, not pause: the state machine owns playback now, and it is the
+  // thing that put the playhead inside a segment. `play()` restarts the whole
+  // loaded animation, which threw the playhead back to frame 0 and let it run
+  // the full 0-226 timeline — both poses, one after the other. Freezing only
+  // stops the render loop, so the machine's segment survives it.
+  useEffect(() => {
+    if (playing) ref.current?.unfreeze();
+    else ref.current?.freeze();
+  }, [playing]);
 
   return (
-    <Canvas style={{ width: size, height: size, alignSelf: "center" }}>
-      <Group transform={transform}>
-        <Skottie animation={animation} frame={frame} />
-      </Group>
-    </Canvas>
+    <DotLottie
+      ref={ref}
+      source={source}
+      stateMachineId={MACHINE_ID}
+      useFrameInterpolation
+      style={{ width: size, height: size, alignSelf: "center" }}
+      // Loaded here, not left to the `stateMachineId` prop: that setter runs
+      // when the prop lands, which on first mount is before the view has built
+      // its animation, so its load is a no-op on nil and is never retried.
+      onLoad={() => {
+        ref.current?.stateMachineLoad(MACHINE_ID);
+        ref.current?.stateMachineStart();
+        ref.current?.stateMachineSetBooleanInput(TYPING_INPUT, observing);
+      }}
+      // The only failure this reports is a machine already running; a machine
+      // that never loaded says nothing at all, so treat silence as suspicious.
+      onStateMachineError={(m) => console.warn("[mascot] state machine:", m)}
+      onStateMachineStateEntered={(s) => {
+        if (__DEV__) console.log("[mascot] entered", s);
+        onStateEntered?.(s);
+      }}
+    />
   );
-}
+});
+
+export default Mascot;

@@ -10,7 +10,8 @@
     "ios": {
       "icon": "./assets/sailor.icon",
       "bundleIdentifier": "com.sailor.presentation",
-      "appleTeamId": "MY2RYL82UV"
+      "appleTeamId": "MY2RYL82UV",
+      "deploymentTarget": "17.0"
     },
     "android": {
       "adaptiveIcon": {
@@ -99,6 +100,7 @@
       "@react-native-vector-icons/fontawesome6",
       "@react-native-vector-icons/lucide",
       "expo-audio",
+      "@lottiefiles/dotlottie-react-native/plugins/withDotLottie",
       "expo-image",
       "expo-status-bar",
       "expo-sqlite",

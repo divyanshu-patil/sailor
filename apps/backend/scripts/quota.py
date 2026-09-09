@@ -8,9 +8,9 @@ SQL, and the SQL is easy to get subtly wrong (the counter and the period start
 have to move together, or a "reset" user is still locked out until the window
 rolls).
 
-    yarn quota you@example.com              # show
-    yarn quota you@example.com --tier pro   # unlock
-    yarn quota you@example.com --reset      # credits back to zero
+    pnpm run quota you@example.com              # show
+    pnpm run quota you@example.com --tier pro   # unlock
+    pnpm run quota you@example.com --reset      # credits back to zero
 
 Deliberately not an endpoint: this edits the monetization boundary, and the one
 thing that must never exist is an authenticated route that grants entitlement.
