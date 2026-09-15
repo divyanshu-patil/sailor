@@ -84,9 +84,34 @@ const BUTTON_KEYBOARD_GAP = 20;
  */
 const KEYBOARD_DISMISS_SWIPE_DISTANCE = 40;
 
+/**
+ * FLIP ANIMATION CONSTANTS
+ */
+const FLIP_ROTATION = 180;
+const FLIP_SPRING_CONFIG = {
+  damping: 70,
+};
+const PERSPECTIVE = 1000;
+
+/**
+ * Long-press timing for the flip gesture.
+ */
+const FLIP_MIN_DURATION_MS = 350;
+
+/**
+ * How far the finger can drift during the hold
+ * before we treat it as a swipe instead of a
+ * long press, and bail out.
+ *
+ * Keep this SMALL and this must stay a single
+ * gesture.
+ */
+const FLIP_MAX_DISTANCE = 10;
+
 const Card = React.memo(
   ({
     text,
+    reveal,
     color,
     index,
     currentIndexSV,
@@ -104,48 +129,43 @@ const Card = React.memo(
     const [localText, setLocalText] = useState(text);
     const [draftText, setDraftText] = useState(text);
 
-    useEffect(() => {
+    /**
+     * Derived-state sync of `text` prop -> `localText`.
+     */
+    const [prevText, setPrevText] = useState(text);
+
+    if (text !== prevText) {
+      setPrevText(text);
       setLocalText(text);
-    }, [text]);
+    }
 
     /**
-     * Normal ref is used for focus/blur
+     * Normal ref used for focus/blur
      * on the JS thread.
      */
     const inputRef = useRef<TextInput>(null);
 
     /**
-     * Animated ref is used by Reanimated
+     * Animated ref used by Reanimated
      * measure() on the UI thread.
      */
     const animatedInputRef = useAnimatedRef<TextInput>();
 
     /**
      * Animated ref for the edit button wrapper.
-     *
-     * We measure the wrapper rather than the
-     * AnimatedPressable itself.
      */
     const editButtonRef = useAnimatedRef<Animated.View>();
 
     const editScale = useSharedValue(1);
 
     /**
+     * One shared rotation controls both
+     * complete card surfaces.
+     */
+    const flipRotation = useSharedValue(0);
+
+    /**
      * Keyboard animation shared value.
-     *
-     * IMPORTANT: `keyboardHeight.value` from
-     * react-native-keyboard-controller is NOT
-     * a plain positive height.
-     *
-     * It is 0 when the keyboard is closed and
-     * goes NEGATIVE (e.g. -300) as it opens —
-     * that's what makes `transform: [{ translateY: height.value }]`
-     * slide something upward "for free" elsewhere in the app.
-     *
-     * So everywhere below:
-     *   - "keyboard is open"   => keyboardHeight.value < 0
-     *   - "keyboard is closed" => keyboardHeight.value >= 0
-     *   - actual pixel height  => -keyboardHeight.value
      */
     const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
 
@@ -159,22 +179,23 @@ const Card = React.memo(
     }, [editScale, isEditing]);
 
     /**
-     * Start editing.
+     * ----------------------------------------------------
+     * START EDITING
+     * ----------------------------------------------------
      */
     const startEditing = () => {
       setDraftText(localText);
       setIsEditing(true);
 
-      /**
-       * Wait until TextInput has mounted.
-       */
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
     };
 
     /**
-     * Commit editing.
+     * ----------------------------------------------------
+     * COMMIT EDITING
+     * ----------------------------------------------------
      */
     const commitEditing = () => {
       inputRef.current?.blur();
@@ -193,24 +214,8 @@ const Card = React.memo(
      *
      * Only move the button if the button itself
      * is covered by the keyboard.
-     *
-     * If:
-     *
-     *     buttonBottom <= keyboardTop
-     *
-     * then:
-     *
-     *     translateY = 0
-     *
-     * Otherwise move it upward only by the
-     * amount required to clear the keyboard.
      */
     const editButtonKeyboardStyle = useAnimatedStyle(() => {
-      /**
-       * keyboardHeight.value is 0 (closed) or
-       * negative (open) — NOT positive. So "closed"
-       * is >= 0, and "open" is < 0.
-       */
       if (!isEditing || keyboardHeight.value >= 0) {
         return {
           transform: [{ translateY: 0 }],
@@ -225,30 +230,12 @@ const Card = React.memo(
         };
       }
 
-      /**
-       * Top edge of the keyboard in screen coordinates.
-       *
-       * keyboardHeight.value is already negative here,
-       * so adding it is the same as subtracting the
-       * actual (positive) keyboard height.
-       */
       const keyboardTop = screenHeight + keyboardHeight.value;
 
-      /**
-       * Bottom edge of the button in screen coordinates.
-       */
       const buttonBottom = button.pageY + button.height;
 
-      /**
-       * Keep a small gap between the button
-       * and keyboard.
-       */
       const safeBottom = keyboardTop - BUTTON_KEYBOARD_GAP;
 
-      /**
-       * Positive = button is covered.
-       * Zero/negative = button is already safe.
-       */
       const overlap = buttonBottom - safeBottom;
 
       return {
@@ -262,8 +249,16 @@ const Card = React.memo(
 
     /**
      * ----------------------------------------------------
-     * MAIN CARD ANIMATION
+     * MAIN CARD POSITION / SWIPE ANIMATION
      * ----------------------------------------------------
+     *
+     * IMPORTANT:
+     *
+     * This animation controls the CARD POSITION,
+     * not the flip itself.
+     *
+     * The flip is handled by frontCardStyle
+     * and backCardStyle below.
      */
     const animatedStyle = useAnimatedStyle(() => {
       const depth = index - currentIndexSV.value;
@@ -321,55 +316,20 @@ const Card = React.memo(
          * --------------------------------
          * KEYBOARD → TEXT COLLISION
          * --------------------------------
-         *
-         * Do NOT do:
-         *
-         * translateY -= keyboardHeight
-         *
-         * because that moves the entire card
-         * whenever the keyboard opens.
-         *
-         * Instead:
-         *
-         * 1. Measure the TextInput.
-         * 2. Find the keyboard top.
-         * 3. Check whether the TextInput is covered.
-         * 4. Move only enough to reveal it.
-         *
-         * Same negative-height convention as above:
-         * keyboard is open when keyboardHeight.value < 0.
          */
         if (isEditing && keyboardHeight.value < 0) {
           const input = measure(animatedInputRef);
 
           if (input) {
-            /**
-             * Keyboard top in screen coordinates.
-             */
             const keyboardTop = screenHeight + keyboardHeight.value;
 
-            /**
-             * Bottom of the actual TextInput.
-             */
             const inputBottom = input.pageY + input.height;
 
-            /**
-             * Desired safe bottom position
-             * for the TextInput.
-             */
             const safeBottom = keyboardTop - KEYBOARD_TEXT_GAP;
 
-            /**
-             * Positive = TextInput is underneath
-             * the keyboard.
-             */
             const overlap = inputBottom - safeBottom;
 
             if (overlap > 0) {
-              /**
-               * Move only enough to make the
-               * TextInput visible.
-               */
               translateY -= overlap;
             }
           }
@@ -412,14 +372,84 @@ const Card = React.memo(
       ],
     }));
 
+    /**
+     * ----------------------------------------------------
+     * WHOLE FRONT CARD FLIP
+     * ----------------------------------------------------
+     *
+     * The FRONT surface contains:
+     *
+     * - colored background
+     * - text
+     * - edit button
+     *
+     * Everything rotates together.
+     *
+     * 0deg -> 180deg
+     */
+    const frontCardStyle = useAnimatedStyle(() => {
+      const isBackHalf = flipRotation.value > 90;
+
+      return {
+        transform: [
+          {
+            perspective: PERSPECTIVE,
+          },
+          {
+            rotateY: `${flipRotation.value}deg`,
+          },
+        ],
+        opacity: isBackHalf ? 0 : 1,
+        zIndex: isBackHalf ? 0 : 1,
+      };
+    });
+
+    /**
+     * ----------------------------------------------------
+     * WHOLE BACK CARD FLIP
+     * ----------------------------------------------------
+     *
+     * The BACK surface is already conceptually
+     * facing the opposite direction.
+     *
+     * At:
+     *
+     * flipRotation = 0
+     *     rotateY = -180deg
+     *
+     * At:
+     *
+     * flipRotation = 180
+     *     rotateY = 0deg
+     *
+     * This means the reveal is right-side-up
+     * when the card finishes flipping.
+     */
+    const backCardStyle = useAnimatedStyle(() => {
+      const isBackHalf = flipRotation.value > 90;
+
+      return {
+        transform: [
+          {
+            perspective: PERSPECTIVE,
+          },
+          {
+            rotateY: `${flipRotation.value - 180}deg`,
+          },
+        ],
+        opacity: isBackHalf ? 1 : 0,
+        zIndex: isBackHalf ? 1 : 0,
+      };
+    });
+
     const inputTextColor = colord(color).darken(0.4).desaturate(0.3).toHex();
 
     /**
-     * Downward swipe on the input.
+     * ----------------------------------------------------
+     * KEYBOARD DISMISS GESTURE
+     * ----------------------------------------------------
      *
-     * This remains as a local fallback,
-     * while ScriptPracticeScreen also has
-     * the full-screen gesture.
+     * UNCHANGED.
      */
     const dismissKeyboardGesture = Gesture.Pan()
       .enabled(isEditing)
@@ -432,91 +462,136 @@ const Card = React.memo(
         }
       });
 
+    /**
+     * ----------------------------------------------------
+     * HOLD-TO-REVEAL FLIP GESTURE
+     * ----------------------------------------------------
+     *
+     * UNCHANGED.
+     *
+     * This remains a SINGLE LongPress gesture so it
+     * doesn't interfere with the parent's swipe gesture.
+     */
+    const flipGesture = Gesture.LongPress()
+      .minDuration(FLIP_MIN_DURATION_MS)
+      .maxDistance(FLIP_MAX_DISTANCE)
+      .onStart(() => {
+        flipRotation.value = withSpring(FLIP_ROTATION, FLIP_SPRING_CONFIG);
+      })
+      .onFinalize(() => {
+        flipRotation.value = withSpring(0, FLIP_SPRING_CONFIG);
+      });
+
     return (
       <Animated.View
         style={[
+          /**
+           * The outer view is now ONLY the positioning
+           * and swipe layer.
+           *
+           * There is intentionally NO backgroundColor here.
+           */
           styles.card,
           {
-            backgroundColor: color,
             zIndex,
           },
           animatedStyle,
         ]}
       >
-        {isEditing ? (
-          <GestureDetector gesture={dismissKeyboardGesture}>
-            <TextInput
-              ref={(node) => {
-                inputRef.current = node;
+        <GestureDetector gesture={flipGesture}>
+          <Animated.View collapsable={false} style={styles.flipContainer}>
+            {/* ================================================= */}
+            {/* FRONT — ENTIRE COLORED CARD */}
+            {/* ================================================= */}
 
-                /**
-                 * Attach the same native TextInput
-                 * to Reanimated's animated ref so
-                 * measure(animatedInputRef) works.
-                 */
-                if (node) {
-                  animatedInputRef(node);
-                }
-              }}
+            <Animated.View
               collapsable={false}
               style={[
-                styles.input,
+                styles.cardFace,
                 {
-                  color: inputTextColor,
+                  backgroundColor: color,
                 },
+                frontCardStyle,
               ]}
-              value={draftText}
-              onChangeText={setDraftText}
-              onBlur={commitEditing}
-              onSubmitEditing={commitEditing}
-              multiline
-              autoFocus
-              selectionColor={inputTextColor}
-              returnKeyType="done"
-              blurOnSubmit
-            />
-          </GestureDetector>
-        ) : (
-          <ScriptLine line={localText} color={color} />
-        )}
+            >
+              {isEditing ? (
+                <GestureDetector gesture={dismissKeyboardGesture}>
+                  <TextInput
+                    ref={(node) => {
+                      inputRef.current = node;
 
-        {/*
-         * ------------------------------------------------
-         * EDIT / CHECK BUTTON
-         * ------------------------------------------------
-         *
-         * This wrapper is what we measure.
-         *
-         * It only moves if it actually overlaps
-         * the keyboard.
-         *
-         * collapsable={false} is required on Android:
-         * without it, the view can get flattened away
-         * by the native renderer and measure() returns
-         * stale/incorrect coordinates.
-         */}
-        <Animated.View
-          ref={editButtonRef}
-          collapsable={false}
-          style={[styles.editButtonContainer, editButtonKeyboardStyle]}
-        >
-          <AnimatedPressable
-            style={[styles.editButton, pressedStyle]}
-            onPressIn={() => {
-              pressed.value = 1;
-            }}
-            onPressOut={() => {
-              pressed.value = 0;
-            }}
-            onPress={() => (isEditing ? commitEditing() : startEditing())}
-          >
-            <Lucide
-              name={isEditing ? "check" : "pen-line"}
-              size={32}
-              color="white"
-            />
-          </AnimatedPressable>
-        </Animated.View>
+                      /**
+                       * Attach the same native TextInput
+                       * to Reanimated's animated ref.
+                       */
+                      if (node) {
+                        animatedInputRef(node);
+                      }
+                    }}
+                    collapsable={false}
+                    style={[
+                      styles.input,
+                      {
+                        color: inputTextColor,
+                      },
+                    ]}
+                    value={draftText}
+                    onChangeText={setDraftText}
+                    onBlur={commitEditing}
+                    onSubmitEditing={commitEditing}
+                    multiline
+                    autoFocus
+                    selectionColor={inputTextColor}
+                    returnKeyType="done"
+                    blurOnSubmit
+                  />
+                </GestureDetector>
+              ) : (
+                <ScriptLine line={localText} color={color} />
+              )}
+
+              <Animated.View
+                ref={editButtonRef}
+                collapsable={false}
+                style={[styles.editButtonContainer, editButtonKeyboardStyle]}
+              >
+                <AnimatedPressable
+                  style={[styles.editButton, pressedStyle]}
+                  onPressIn={() => {
+                    pressed.value = 1;
+                  }}
+                  onPressOut={() => {
+                    pressed.value = 0;
+                  }}
+                  onPress={() => (isEditing ? commitEditing() : startEditing())}
+                >
+                  <Lucide
+                    name={isEditing ? "check" : "pen-line"}
+                    size={32}
+                    color="white"
+                  />
+                </AnimatedPressable>
+              </Animated.View>
+            </Animated.View>
+
+            {/* ================================================= */}
+            {/* BACK — ENTIRE COLORED CARD */}
+            {/* ================================================= */}
+
+            <Animated.View
+              collapsable={false}
+              style={[
+                styles.cardFace,
+                {
+                  backgroundColor: color,
+                },
+                backCardStyle,
+              ]}
+            >
+              <ScriptLine line={reveal} color={color} />
+            </Animated.View>
+          </Animated.View>
+        </GestureDetector>
       </Animated.View>
     );
   },
@@ -535,14 +610,60 @@ const useStyles = () => {
   const CARD_WIDTH = width - 48 * 2;
 
   return StyleSheet.create({
+    /**
+     * OUTER POSITIONING CONTAINER
+     *
+     * This is deliberately transparent.
+     *
+     * Swipe / stack transforms are applied here.
+     */
     card: {
       width: CARD_WIDTH,
       position: "absolute",
       aspectRatio: 0.75,
-      borderRadius: 77,
       justifyContent: "center",
       alignItems: "center",
+    },
+
+    /**
+     * Container holding the two opposite-facing
+     * complete card surfaces.
+     */
+    flipContainer: {
+      width: "100%",
+      height: "100%",
+    },
+
+    /**
+     * COMPLETE CARD SURFACE
+     *
+     * The background color lives here now.
+     *
+     * Therefore:
+     *
+     * ┌─────────────────────┐
+     * │                     │
+     * │       TEXT          │
+     * │                     │
+     * │              EDIT   │
+     * │                     │
+     * └─────────────────────┘
+     *
+     * rotates as ONE object.
+     */
+    cardFace: {
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+
+      borderRadius: 77,
+
+      justifyContent: "center",
+      alignItems: "center",
+
       paddingHorizontal: 24,
+
+      backfaceVisibility: "hidden",
     },
 
     input: {
@@ -553,10 +674,9 @@ const useStyles = () => {
     },
 
     /**
-     * The wrapper owns the absolute position.
+     * Edit button wrapper owns the absolute position.
      *
-     * The wrapper is also the element measured
-     * for keyboard collision detection.
+     * This is still measured for keyboard collision.
      */
     editButtonContainer: {
       position: "absolute",
