@@ -1,5 +1,6 @@
 import { Dimensions } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
+import { KeyboardController } from "react-native-keyboard-controller";
 import { SharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/spring";
 import { scheduleOnRN } from "react-native-worklets";
@@ -229,6 +230,9 @@ export const useSwipeGesture = ({
   onRetreat,
 }: UseSwipeGestureParams) => {
   return Gesture.Pan()
+    .onStart((e) => {
+      scheduleOnRN(KeyboardController.dismiss);
+    })
     .onUpdate((e) => {
       if (isAnimating.value) return;
       if (e.translationX >= 0) {
