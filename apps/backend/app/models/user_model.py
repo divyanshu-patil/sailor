@@ -1,8 +1,8 @@
 import enum
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import DateTime, Enum as SAEnum, Integer, String, func, text
+from sqlalchemy import Date, DateTime, Enum as SAEnum, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.enums.user_enums import ExperienceLevel, Profession
 
@@ -116,6 +116,21 @@ class User(Base):
     entitlement_checked_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True,
     )
+
+    # --- daily practice streak -------------------------------------------------
+    # Three columns on `users` rather than a table of their own: there is exactly
+    # one row per user, it is never queried without the user, and a separate
+    # table would only add a join and a row that has to be created before the
+    # first write. `last_practiced_on` is a *local* date supplied by the client
+    # (see daily_controller) — a streak is about the user's calendar days, and
+    # storing it as UTC would break the boundary for anyone west of London.
+    streak_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+    longest_streak: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+    last_practiced_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

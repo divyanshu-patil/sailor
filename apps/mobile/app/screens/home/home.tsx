@@ -26,6 +26,7 @@ import {
 import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { usePreferences } from "@/hooks";
+import { useDailyStore } from "@/store/daily-store";
 
 const messages = ["Hello", "Namaste", "Bonjour", "Hola", "Ciao"];
 
@@ -41,6 +42,10 @@ const HomeScreen = () => {
     onError: (error) =>
       Alert.alert("Error", error.message ?? "Failed to create preferences."),
   });
+
+  // Read straight from the cache, not through useDailyPractice: home should
+  // never fire the daily fetch, it just reflects whatever the screen last saw.
+  const streak = useDailyStore((s) => s.streak);
 
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -98,6 +103,29 @@ const HomeScreen = () => {
   return (
     <Host style={{ flex: 1 }}>
       <Form>
+        {/* Today's practice. A section on home rather than a tab: it's a
+            ten-second habit, not a place to live. Same sibling-of-(tabs) route
+            shape as Discover below. */}
+        <Section
+          title="Today"
+          footer={
+            <Text modifiers={[foregroundStyle("#8E8E93")]}>
+              {streak && streak.currentStreak > 0
+                ? `${streak.currentStreak} day streak. ${
+                    streak.completedToday ? "Done for today." : "Not done yet today."
+                  }`
+                : "A short snippet to read aloud, new every day."}
+            </Text>
+          }
+        >
+          <Button
+            systemImage="sun.max"
+            onPress={() => router.push("/(authenticated)/daily-practice")}
+            modifiers={[buttonStyle("glassProminent"), tint("#F4D35E")]}
+          >
+            <Text>Daily practice</Text>
+          </Button>
+        </Section>
         {/* Discover is a full-screen route outside the tab group, so entering
             it hides the tab bar — see routes/(authenticated)/discover. */}
         <Section

@@ -12,6 +12,10 @@ export interface EditablePreferences {
 export interface UserPreferences extends EditablePreferences {
   appearance: AppearanceOption;
   emotionHapticsEnabled: boolean;
+  /** Background of the home-screen streak widget. Local-only, like
+   *  `appearance` — the server has no opinion about a widget's colour, and
+   *  round-tripping it would only add a write nothing reads. */
+  streakWidgetColor: string;
 }
 
 export type ScriptMood =

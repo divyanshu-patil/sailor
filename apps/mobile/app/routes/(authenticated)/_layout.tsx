@@ -24,6 +24,9 @@ export default function AuthenticatedLayout() {
             which is what keeps its floating bottom search toolbar from landing
             on top of the tabs. */}
         <Stack.Screen name="discover" />
+        {/* Also a sibling of (tabs): daily practice is entered from the home
+            screen, a widget and a notification, and left again. See its layout. */}
+        <Stack.Screen name="daily-practice" />
       </Stack>
     </GestureHandlerRootView>
   );

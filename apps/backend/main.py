@@ -9,6 +9,7 @@ from app.db.database import engine
 from app.db.base import Base
 from app.api.v1 import deck_router, preferences_router
 from app.api.v1 import card_router, script_router, audio_router, attachment_router
+from app.api.v1 import daily_router
 from app.core.minio_client import ensure_buckets
 
 import app.models
@@ -62,6 +63,7 @@ app.include_router(card_router.router, prefix="/api/v1")
 app.include_router(script_router.router, prefix="/api/v1")
 app.include_router(audio_router.router, prefix="/api/v1")
 app.include_router(attachment_router.router, prefix="/api/v1")
+app.include_router(daily_router.router, prefix="/api/v1")
 app.include_router(webhook_router.router)
 
 @app.get("/health", tags=["Health"])

@@ -11,6 +11,7 @@ import { syncPreferences } from "@/services/preferences-sync.service";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { AppearanceSection } from "./AppearanceSection";
 import { PracticeSection } from "./PracticeSection";
+import { StreakWidgetSection } from "./StreakWidgetSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
 import { SpeakingProfileSection } from "./SpeakingProfileSection";
 import { CacheSection } from "./CacheSection";
@@ -26,6 +27,7 @@ const SettingsScreen = () => {
   const [alertMessage, setAlertMessage] = useState("");
 
   const preferences = usePreferenceStore((state) => state.preferences);
+  const setPreference = usePreferenceStore((state) => state.setPreference);
   const appearance = preferences?.appearance ?? defaultPreferences.appearance;
 
   const { updatePreference } = usePreferences({
@@ -66,6 +68,14 @@ const SettingsScreen = () => {
             }
             practiceReminderTime={preferences?.practiceReminderTime ?? "18:00"}
             onUpdate={updatePreference}
+          />
+          {/* Local-only, so it goes straight to the store rather than through
+              updatePreference — there is no server field to keep in step, and
+              the store subscription in lib/widget-sync's caller pushes it to
+              the widget. */}
+          <StreakWidgetSection
+            selectedColor={preferences.streakWidgetColor}
+            onSelect={(hex) => setPreference("streakWidgetColor", hex)}
           />
           <DefaultMoodSection
             selectedMood={preferences?.defaultMood ?? "confident"}

@@ -111,6 +111,36 @@
           "project": "sailors",
           "organization": "sailors-j6"
         }
+      ],
+      "expo-notifications",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.sailor.presentation",
+          "widgets": [
+            {
+              "name": "TodaysPracticeWidget",
+              "displayName": "Today's Practice",
+              "description": "Your daily presentation-practice snippet",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ]
+              }
+            },
+            {
+              "name": "StreakWidget",
+              "displayName": "Practice Streak",
+              "description": "Your daily practice streak",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall"
+                ]
+              }
+            }
+          ]
+        }
       ]
     ],
     "extra": {

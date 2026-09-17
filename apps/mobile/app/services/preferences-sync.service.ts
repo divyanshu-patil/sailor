@@ -13,6 +13,7 @@ export async function syncPreferences(): Promise<void> {
       ...serverPreferences,
       appearance: store.preferences.appearance,
       emotionHapticsEnabled: store.preferences.emotionHapticsEnabled,
+      streakWidgetColor: store.preferences.streakWidgetColor,
     });
 
     debugService.log("preferences-sync", "Synced preferences from server", serverPreferences);

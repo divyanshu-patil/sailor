@@ -33,6 +33,7 @@ export const defaultPreferences: UserPreferences = {
   practiceRemindersEnabled: true,
   practiceReminderTime: "18:00",
   defaultMood: "confident",
+  streakWidgetColor: "#F4D35E",
 };
 
 interface PreferenceStore {
