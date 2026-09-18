@@ -9,7 +9,26 @@ class DailyContentUnitResponse(BaseModel):
     endpoint (see preferences_schema) — the client has no case-mapping layer."""
     id: str
     date: date
-    type: str
+    #: What this snippet is about, e.g. "Pitching a slower rollout".
+    title: str
+    framework: str
+    #: Human label for `framework`, resolved server-side. Sent with the unit so
+    #: the client never holds its own copy of the framework table — that table
+    #: is a growing seed set, and a second copy in the app would drift the day
+    #: someone adds an entry.
+    frameworkLabel: str
+    #: The framework's step order, e.g. ["Point", "Reason", "Example", "Point"].
+    #: Sent so the practice screen can teach the structure the body is
+    #: demonstrating — the whole reason the content is framework-based.
+    frameworkSteps: list[str]
+    #: One line on what the framework is for, shown behind the info button.
+    frameworkDescription: str
+    #: One gloss per step, positionally aligned with `frameworkSteps`.
+    frameworkStepHints: list[str]
+    #: Human labels for the situations this framework suits.
+    frameworkBestFor: list[str]
+    #: Lucide glyph name for the explainer's header tile.
+    frameworkIcon: str
     mood: str
     situation: str
     body: str

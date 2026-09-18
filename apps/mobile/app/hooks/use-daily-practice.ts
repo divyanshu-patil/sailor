@@ -78,14 +78,34 @@ export function useDailyPractice(): UseDailyPracticeReturn {
         setPendingComplete(null);
       }
 
-      const [content, currentStreak] = await Promise.all([
+      // allSettled, not all: the content and the streak are independent reads,
+      // and one failing is no reason to withhold the other. Today's paragraph
+      // is the whole point of the screen — it should not disappear because the
+      // streak endpoint was slow.
+      const [contentResult, streakResult] = await Promise.allSettled([
         dailyPracticeService.getToday(date),
         dailyPracticeService.getStreak(date),
       ]);
 
-      setContent(content.today, content.tomorrow);
-      syncPracticeWidget(content.today, content.tomorrow);
-      applyStreak(currentStreak);
+      if (contentResult.status === "fulfilled") {
+        const { today: unitForToday, tomorrow: unitForTomorrow } = contentResult.value;
+        // Tomorrow may legitimately be null when the server's buffer is short.
+        // Cached and pushed as-is — the widget sync treats it as optional.
+        setContent(unitForToday, unitForTomorrow);
+        syncPracticeWidget(unitForToday, unitForTomorrow);
+      }
+
+      if (streakResult.status === "fulfilled") {
+        applyStreak(streakResult.value);
+      }
+
+      if (contentResult.status === "rejected") {
+        const reason: any = contentResult.reason;
+        setError(
+          reason?.response?.data?.detail ??
+            "Couldn't reach practice. Showing what's saved.",
+        );
+      }
     } catch (e: any) {
       // Non-fatal by design: whatever is in the cache stays on screen.
       setError(
@@ -100,6 +120,21 @@ export function useDailyPractice(): UseDailyPracticeReturn {
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
+
+    // The daily-practice flow is three screens, each of which mounts this hook.
+    // Without this guard, walking intro -> practice -> complete fetches today's
+    // content and streak three times over. A cache that already holds today's
+    // unit and a streak is good enough to render every one of those screens, so
+    // the later mounts read it instead of re-fetching. `refresh()` stays
+    // available for anything that genuinely needs fresh data.
+    const cached = useDailyStore.getState();
+    if (cached.unit?.date === localDate() && cached.streak) return;
+
+    // refresh() sets isLoading synchronously, which is the point: this is the
+    // mount fetch, and the alternative is a first frame that claims "no
+    // practice today" before the request has even left. The guard above means
+    // it only runs when there is genuinely nothing cached to render instead.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 

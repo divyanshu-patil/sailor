@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import {
   userService,
   UserProfile,
@@ -54,10 +54,8 @@ export function useUser(options: UseUserOptions = {}): UseUserReturn {
     data,
     isLoading,
     isRefreshing,
-    isMutating,
     error,
     execute,
-    refresh,
     clearError,
     setData,
   } = useApiState<UserProfile>({
@@ -83,16 +81,23 @@ export function useUser(options: UseUserOptions = {}): UseUserReturn {
     [execute, setData, service],
   );
 
-  // Auto-fetch on mount if immediate is true
-  if (immediate && !data && !isLoading && !error) {
-    fetchProfile();
-  }
+  // Auto-fetch on mount if immediate is true.
+  //
+  // In an effect, not in the render body. This used to call fetchProfile()
+  // directly during render, which starts a request and sets state as a side
+  // effect of rendering — React may render a component more than once (and
+  // this project builds with the React Compiler, which makes that routine), so
+  // it was a fetch whose count depended on how often React happened to render.
+  useEffect(() => {
+    if (immediate && !data && !isLoading && !error) {
+      void fetchProfile();
+    }
+  }, [immediate, data, isLoading, error, fetchProfile]);
 
   return {
     data,
     isLoading,
     isRefreshing,
-    isMutating,
     error,
     execute,
     refresh: fetchProfile,

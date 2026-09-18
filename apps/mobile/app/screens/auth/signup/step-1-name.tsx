@@ -30,7 +30,7 @@ export default function StepName() {
                 }),
               ]}
             >
-              What's your name?
+              What&apos;s your name?
             </Text>
           </VStack>
           <VStack

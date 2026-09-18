@@ -148,9 +148,12 @@ const FooterButton = React.memo(
         onPress={onPress}
         onPressIn={() => (pressed.value = 1)}
         onPressOut={() => (pressed.value = 0)}
+        // FadeInLeft only animates opacity and translateX — its build() runs
+        // `pickTransformValues([{ translateX }], initialValues)`, so a `scale`
+        // entry here was silently dropped at runtime and never did anything.
         entering={FadeInLeft.duration(250).withInitialValues({
           opacity: 0,
-          transform: [{ translateX: -20 }, { scale: 0.7 }],
+          transform: [{ translateX: -20 }],
         })}
         exiting={FadeOutLeft.duration(150)}
         layout={LinearTransition.springify().damping(75)}

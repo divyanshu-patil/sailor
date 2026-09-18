@@ -17,7 +17,6 @@ import {
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
 
@@ -34,7 +33,6 @@ const HEADLINES = [
 
 export default function Base() {
   const { width: windowWidth } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const contentWidth = windowWidth - HORIZONTAL_PADDING * 2;
   const router = useRouter();
   const [headlineIndex1, setHeadlineIndex1] = useState(0);

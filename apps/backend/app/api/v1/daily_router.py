@@ -25,7 +25,7 @@ def read_today(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DailyTodayResponse:
-    return get_today(db, current_user.id, local_date)
+    return get_today(db, current_user.public_id, local_date)
 
 
 @router.post("/complete", response_model=StreakResponse)

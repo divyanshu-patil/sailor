@@ -1,6 +1,6 @@
 import React from "react";
-import DailyPracticeScreen from "@/screens/daily-practice";
+import DailyPracticeIntro from "@/screens/daily-practice";
 
-const DailyPractice = () => <DailyPracticeScreen />;
+const DailyPractice = () => <DailyPracticeIntro />;
 
 export default DailyPractice;

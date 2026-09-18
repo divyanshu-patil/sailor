@@ -1,20 +1,9 @@
-import { Alert, StyleSheet } from "react-native";
+import { Alert } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { useAppUserStore } from "@/store/app-user.store";
 // import useAuthenticated from "@/hooks/use-authenticated";
-import {
-  Host,
-  Form,
-  Section,
-  Text,
-  Button,
-  Toggle,
-  HStack,
-  Image,
-  Spacer,
-  SwipeActions,
-} from "@expo/ui/swift-ui";
+import { Host, Form, Section, Text, Button, Toggle, HStack, Spacer, SwipeActions } from "@expo/ui/swift-ui";
 import {
   Animation,
   animation,

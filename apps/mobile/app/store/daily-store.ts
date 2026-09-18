@@ -50,6 +50,20 @@ export const useDailyStore = create<DailyStore>()(
     {
       name: "daily-store",
       storage: createJSONStorage(() => createMMKVStorage("daily-storage")),
+      // Bumped whenever the cached unit's shape changes, because a persisted
+      // unit is only ever as new as the build that wrote it.
+      //   1: `type` (a vague subject) became `framework` + `frameworkLabel`.
+      //   2: `frameworkSteps` added — units cached at v1 lack it, and the intro
+      //      screen crashed on `.map` of undefined before this was bumped.
+      // Dropping the cache costs one screen of "no practice yet" and fixes
+      // itself on the first refresh.
+      version: 2,
+      migrate: (persisted, version) => {
+        if (version < 2) {
+          return { unit: null, tomorrow: null, streak: null, pendingCompleteDate: null };
+        }
+        return persisted as DailyStore;
+      },
     },
   ),
 );

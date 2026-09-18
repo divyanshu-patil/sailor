@@ -10,7 +10,7 @@ import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSignIn, useSignUp } from "@clerk/expo";
 
-import { Href, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Host, Text, VStack, Button } from "@expo/ui/swift-ui";
 import {
   buttonBorderShape,
@@ -201,7 +201,7 @@ export default function Verify() {
             </VStack>
           </Host>
           {codeError && (
-            <RNText style={styles.error}>Oops! That's incorrect.</RNText>
+            <RNText style={styles.error}>Oops! That&apos;s incorrect.</RNText>
           )}
         </View>
         <View style={styles.footer}>

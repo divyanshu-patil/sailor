@@ -1,6 +1,6 @@
 import { AppleSignInButton } from "@/components/ui/auth/AppleSignInButton";
 import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { fonts } from "@/constants/fonts";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";

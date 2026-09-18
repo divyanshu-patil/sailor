@@ -1,4 +1,4 @@
-import { usePreferenceStore, defaultPreferences } from "@/store/preference-store";
+import { usePreferenceStore } from "@/store/preference-store";
 import { preferencesService } from "@/services/preferences.service";
 import { debugService } from "@/services/debug.service";
 

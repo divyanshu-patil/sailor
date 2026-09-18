@@ -14,7 +14,8 @@
     "android": "turbo run android",
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "practice:regenerate": "pnpm --filter=@sailor/backend practice:regenerate"
   },
   "devDependencies": {
     "prettier": "^3.1.1",

@@ -1,22 +1,22 @@
 import { ScriptMood } from "@/types/settings/preferences";
 
 /**
- * A day's theme. Mirrors DailyContentType on the API
- * (app/models/daily_model.py) — the same type for every user on a given day,
- * so this label is a statement about today rather than about the account.
+ * The named structure a day's snippet demonstrates — "PREP", "STAR", "SCQA", ...
+ *
+ * Typed as a plain string rather than a union of the 22 current ids, on purpose.
+ * The framework library (backend: services/daily/frameworks.py) is an explicitly
+ * growing seed set, and the app does nothing per-framework: it shows the label
+ * the API sends and derives a colour by hashing the id. A union here would be a
+ * second copy of that table, needing a client release every time someone adds a
+ * framework, for no type safety anyone would use.
  */
-export type ContentType =
-  | "opening_hook"
-  | "ending"
-  | "structure"
-  | "filler_alternative"
-  | "story_anecdote"
-  | "general_tip";
+export type FrameworkId = string;
 
 export type MoodTag = ScriptMood;
 
-/** Mirrors DeckCategory on the API — the same closed list Discover files decks
- *  under, reused rather than duplicated as a parallel "situation" vocabulary. */
+/** Mirrors SituationTag on the API (app/utils/enums/daily_enums.py). The first
+ *  eight match DeckCategory; the last four are speaking scenarios a deck
+ *  category never covered. */
 export type SituationTag =
   | "interview"
   | "sales"
@@ -25,18 +25,40 @@ export type SituationTag =
   | "conference"
   | "social"
   | "teaching"
-  | "other";
+  | "other"
+  | "technical_explanation"
+  | "networking"
+  | "leadership_talk"
+  | "product_demo";
 
 export interface DailyContentUnit {
   id: string;
+  /** What this snippet is ABOUT ("Explaining Cloud Computing") — the speech's
+   *  topic, not the framework it uses. Shown as "Today's topic". */
+  title: string;
   /** ISO date (YYYY-MM-DD) this was generated for. */
   date: string;
-  type: ContentType;
+  framework: FrameworkId;
+  /** Human label for `framework`, resolved server-side so the app never holds
+   *  its own copy of the framework table. */
+  frameworkLabel: string;
+  /** The framework's step order, e.g. ["Point", "Reason", "Example", "Point"].
+   *  Shown on the intro screen so the user knows the structure before reading
+   *  the snippet that demonstrates it. */
+  frameworkSteps: string[];
+  /** One line on what the framework is for, shown behind the info button. */
+  frameworkDescription: string;
+  /** One gloss per step, positionally aligned with `frameworkSteps`. */
+  frameworkStepHints: string[];
+  /** Human labels for the situations this framework suits. */
+  frameworkBestFor: string[];
+  /** Lucide glyph name for the explainer's header tile. */
+  frameworkIcon: string;
   mood: MoodTag;
   situation: SituationTag;
-  /** 2-3 speakable sentences. The screen's whole visual focus. */
+  /** 2-3 speakable sentences applying the framework. The screen's visual focus. */
   body: string;
-  /** One line, under ~15 words. */
+  /** One line, names the framework and gives a delivery cue. */
   tip: string;
   variationIndex: number;
 }
@@ -47,15 +69,6 @@ export interface StreakState {
   lastCompletedDate: string | null;
   completedToday: boolean;
 }
-
-export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
-  opening_hook: "Openings",
-  ending: "Endings",
-  structure: "Structure",
-  filler_alternative: "Instead of filler",
-  story_anecdote: "Stories",
-  general_tip: "Delivery",
-};
 
 /**
  * The device's local calendar date, as YYYY-MM-DD.

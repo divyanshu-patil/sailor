@@ -6,6 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.daily_model import DailyContent
+from app.services.daily.frameworks import FRAMEWORK_LABELS, FRAMEWORKS_BY_ID
+from app.utils.enums.daily_enums import SITUATION_LABELS
 from app.models.user_model import User
 from app.schemas.daily_schema import (
     DailyContentUnitResponse,
@@ -14,7 +16,7 @@ from app.schemas.daily_schema import (
 )
 
 
-def select_variation(user_id: int, day: date, count: int) -> int:
+def select_variation(user_key: str, day: date, count: int) -> int:
     """Which of the day's variations this user gets.
 
     A hash of (user, date) rather than a random draw or a stored choice: the app
@@ -22,18 +24,35 @@ def select_variation(user_id: int, day: date, count: int) -> int:
     is nothing to keep in sync between them and no "chosen variation" row to
     write on first view. Stable for the whole day, different tomorrow, and
     different for the user sitting next to you.
+
+    `user_key` is `User.public_id` — the random hex, never the integer primary
+    key. The integer is 1, 2, 3, 4 in signup order, so hashing it makes each
+    user's whole schedule of variations derivable from their position in the
+    signup queue.
     """
     if count <= 0:
         raise ValueError("count must be positive")
-    digest = hashlib.sha256(f"{user_id}:{day.isoformat()}".encode()).hexdigest()
+    digest = hashlib.sha256(f"{user_key}:{day.isoformat()}".encode()).hexdigest()
     return int(digest[:8], 16) % count
 
 
 def _to_response(unit: DailyContent) -> DailyContentUnitResponse:
+    framework = FRAMEWORKS_BY_ID.get(unit.framework)
     return DailyContentUnitResponse(
         id=str(unit.id),
         date=unit.date,
-        type=unit.type,
+        title=unit.title or FRAMEWORK_LABELS.get(unit.framework, unit.framework),
+        framework=unit.framework,
+        # Falls back to the raw id, so content generated under a framework that
+        # was later renamed or removed still renders something sensible.
+        frameworkLabel=FRAMEWORK_LABELS.get(unit.framework, unit.framework),
+        frameworkSteps=list(framework.steps) if framework else [],
+        frameworkDescription=framework.description if framework else "",
+        frameworkStepHints=list(framework.step_hints) if framework else [],
+        frameworkBestFor=(
+            [SITUATION_LABELS[tag] for tag in framework.best_for] if framework else []
+        ),
+        frameworkIcon=framework.icon if framework else "book-open",
         mood=unit.mood,
         situation=unit.situation,
         body=unit.body,
@@ -42,7 +61,7 @@ def _to_response(unit: DailyContent) -> DailyContentUnitResponse:
     )
 
 
-def _unit_for(db: Session, user_id: int, day: date) -> DailyContent | None:
+def _unit_for(db: Session, user_key: str, day: date) -> DailyContent | None:
     variations = (
         db.execute(
             select(DailyContent)
@@ -54,11 +73,11 @@ def _unit_for(db: Session, user_id: int, day: date) -> DailyContent | None:
     )
     if not variations:
         return None
-    return variations[select_variation(user_id, day, len(variations))]
+    return variations[select_variation(user_key, day, len(variations))]
 
 
-def get_today(db: Session, user_id: int, local_date: date) -> DailyTodayResponse:
-    today = _unit_for(db, user_id, local_date)
+def get_today(db: Session, user_key: str, local_date: date) -> DailyTodayResponse:
+    today = _unit_for(db, user_key, local_date)
     if today is None:
         # The buffer ran dry — a generation failure, not a user error. 503 so the
         # client shows its cached unit and retries later rather than treating the
@@ -68,7 +87,7 @@ def get_today(db: Session, user_id: int, local_date: date) -> DailyTodayResponse
             detail="Today's practice isn't ready yet. Try again shortly.",
         )
 
-    tomorrow = _unit_for(db, user_id, local_date + timedelta(days=1))
+    tomorrow = _unit_for(db, user_key, local_date + timedelta(days=1))
     return DailyTodayResponse(
         today=_to_response(today),
         tomorrow=_to_response(tomorrow) if tomorrow else None,

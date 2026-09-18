@@ -1,4 +1,5 @@
 import enum
+import secrets
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
@@ -42,6 +43,29 @@ class User(Base):
         unique=True,
         index=True,
         nullable=False,
+    )
+
+    # A 32-character cryptographically random hex identifier, assigned on insert.
+    #
+    # `id` stays the integer primary key — every foreign key in the schema points
+    # at it, and changing that is a different job entirely. This exists because
+    # the integer is *guessable*: it is 1, 2, 3, 4 in creation order, so anything
+    # derived from it is predictable across users and leaks how many accounts
+    # exist. Daily practice derives each user's content variation from it (see
+    # daily_controller.select_variation), which is exactly the kind of use that
+    # wants an unguessable value.
+    #
+    # Defaulted on the column rather than at the two call sites that build a User
+    # (auth/dependencies.py and controllers/webhook_controller.py), so a row
+    # cannot be inserted without one and the next call site that gets added
+    # doesn't have to remember. `secrets`, not `random` — the latter is a
+    # deterministic Mersenne Twister and is not safe for identifiers.
+    public_id: Mapped[str] = mapped_column(
+        String(32),
+        unique=True,
+        index=True,
+        nullable=False,
+        default=lambda: secrets.token_hex(16),
     )
 
     email: Mapped[str] = mapped_column(

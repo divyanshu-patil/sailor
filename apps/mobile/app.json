@@ -126,7 +126,8 @@
                 "supportedFamilies": [
                   "systemSmall",
                   "systemMedium"
-                ]
+                ],
+                "contentMarginsDisabled": true
               }
             },
             {
@@ -136,7 +137,8 @@
               "ios": {
                 "supportedFamilies": [
                   "systemSmall"
-                ]
+                ],
+                "contentMarginsDisabled": true
               }
             }
           ]
