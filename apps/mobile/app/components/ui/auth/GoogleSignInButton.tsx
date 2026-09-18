@@ -54,6 +54,10 @@ interface GoogleSignInButtonProps {
     | "Sign in with Google"
     | "Sign up with Google"
     | "Continue with Google";
+  /** Corner radius in points. Defaults to Google's 8. */
+  cornerRadius?: number;
+  /** Fixed height in points. Defaults to the 46pt minimum touch target. */
+  height?: number;
 }
 
 export function GoogleSignInButton({
@@ -62,6 +66,8 @@ export function GoogleSignInButton({
   logoSource,
   variant = "white",
   label = "Sign in with Google",
+  cornerRadius = 8,
+  height = 46,
 }: GoogleSignInButtonProps) {
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
   const router = useRouter();
@@ -97,7 +103,11 @@ export function GoogleSignInButton({
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity
-        style={[styles.googleButton, isWhite && styles.googleButtonWhite]}
+        style={[
+          styles.googleButton,
+          isWhite && styles.googleButtonWhite,
+          { borderRadius: cornerRadius, minHeight: height, height },
+        ]}
         onPress={handleGoogleSignIn}
         activeOpacity={0.85}
       >
