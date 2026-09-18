@@ -11,13 +11,28 @@
  *
  * The SVG source lives in shapes.mjs, in-repo, so these PNGs stay regenerable
  * rather than becoming binaries nobody can edit.
+ *
+ * Existing files are LEFT ALONE. The artwork here is placeholder — it is meant
+ * to be replaced by hand, and a bake that silently overwrote a hand-drawn plate
+ * with the generated one destroyed a morning's work once already. Pass --force
+ * to regenerate everything, which is what you want after editing shapes.mjs.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { confetti, mascotCelebrate, mascotReading, widgetMascots, widgetPlates } from "./shapes.mjs";
+import {
+  confetti,
+  mascotCelebrate,
+  mascotReading,
+  widgetFlame,
+  widgetMascots,
+  widgetPlates,
+} from "./shapes.mjs";
+
+const FORCE = process.argv.includes("--force");
+let skipped = 0;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(HERE, "../../assets/mascots");
@@ -57,6 +72,11 @@ mkdirSync(TMP, { recursive: true });
  * window and removes the margin.
  */
 function rasterise(svg, target, width, height) {
+  if (!FORCE && existsSync(target)) {
+    skipped++;
+    return false;
+  }
+
   const page = `<!doctype html><html><body style="margin:0;padding:0;background:transparent">` +
     svg
       .replace(/width="\d+"/, `width="${width}"`)
@@ -76,16 +96,24 @@ function rasterise(svg, target, width, height) {
     `--force-device-scale-factor=1`,
     `file://${pagePath}`,
   ], { stdio: "ignore" });
+  return true;
+}
+
+/** The .svg beside each PNG is its editable source, and just as replaceable. */
+function writeSource(target, svg) {
+  if (!FORCE && existsSync(target)) return;
+  writeFileSync(target, svg);
 }
 
 for (const art of ART) {
   // Keep the SVG next to the PNGs: it is the editable source of truth.
-  writeFileSync(join(OUT, `${art.name}.svg`), art.svg);
+  writeSource(join(OUT, `${art.name}.svg`), art.svg);
 
   for (const scale of [1, 2, 3]) {
     const suffix = scale === 1 ? "" : `@${scale}x`;
-    rasterise(art.svg, join(OUT, `${art.name}${suffix}.png`), art.w * scale, art.h * scale);
-    console.log(`  ${art.name}${suffix}.png  ${art.w * scale}x${art.h * scale}`);
+    if (rasterise(art.svg, join(OUT, `${art.name}${suffix}.png`), art.w * scale, art.h * scale)) {
+      console.log(`  ${art.name}${suffix}.png  ${art.w * scale}x${art.h * scale}`);
+    }
   }
 }
 
@@ -99,9 +127,10 @@ for (const art of ART) {
  */
 const WIDGET_ART = widgetMascots();
 for (const art of WIDGET_ART) {
-  writeFileSync(join(WIDGET_OUT, `${art.name}.svg`), art.svg);
-  rasterise(art.svg, join(WIDGET_OUT, `${art.name}.png`), 512, 360);
-  console.log(`  widgets/${art.name}.png  512x360`);
+  writeSource(join(WIDGET_OUT, `${art.name}.svg`), art.svg);
+  if (rasterise(art.svg, join(WIDGET_OUT, `${art.name}.png`), 512, 360)) {
+    console.log(`  widgets/${art.name}.png  512x360`);
+  }
 }
 
 /**
@@ -112,15 +141,23 @@ for (const art of WIDGET_ART) {
  */
 const PLATES = widgetPlates();
 for (const art of PLATES) {
-  writeFileSync(join(WIDGET_OUT, `${art.name}.svg`), art.svg);
+  writeSource(join(WIDGET_OUT, `${art.name}.svg`), art.svg);
   const width = art.layout.w * 3;
   const height = art.layout.h * 3;
-  rasterise(art.svg, join(WIDGET_OUT, `${art.name}.png`), width, height);
-  console.log(`  widgets/${art.name}.png  ${width}x${height}`);
+  if (rasterise(art.svg, join(WIDGET_OUT, `${art.name}.png`), width, height)) {
+    console.log(`  widgets/${art.name}.png  ${width}x${height}`);
+  }
+}
+
+/** The streak flame. Square, because the widget draws it in a 1:1 frame. */
+writeSource(join(WIDGET_OUT, "widget-flame.svg"), widgetFlame());
+if (rasterise(widgetFlame(), join(WIDGET_OUT, "widget-flame.png"), 150, 150)) {
+  console.log("  widgets/widget-flame.png  150x150");
 }
 
 rmSync(TMP, { recursive: true, force: true });
 console.log(
-  `\nBaked ${ART.length * 3} PNG(s) into assets/mascots/ and ` +
-    `${WIDGET_ART.length + PLATES.length} into assets/widgets/, plus their SVG sources.`,
+  skipped
+    ? `\nSkipped ${skipped} file(s) that already exist — pass --force to regenerate them.`
+    : "\nNothing left to bake.",
 );

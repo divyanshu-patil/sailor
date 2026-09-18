@@ -24,16 +24,12 @@ import { widgetsDirectory } from "expo-widgets";
  *  one square plate stretched between them would smear every shape. */
 const SOURCES = {
   "mascot-cream": require("../../assets/widgets/widget-mascot-cream.png"),
-  "mascot-pink": require("../../assets/widgets/widget-mascot-pink.png"),
-  "mascot-blue": require("../../assets/widgets/widget-mascot-blue.png"),
   "mascot-purple": require("../../assets/widgets/widget-mascot-purple.png"),
   "mascot-green": require("../../assets/widgets/widget-mascot-green.png"),
-  "bg-warm-small": require("../../assets/widgets/widget-bg-warm-small.png"),
-  "bg-warm-medium": require("../../assets/widgets/widget-bg-warm-medium.png"),
   "bg-cool-small": require("../../assets/widgets/widget-bg-cool-small.png"),
   "bg-cool-medium": require("../../assets/widgets/widget-bg-cool-medium.png"),
-  "bg-streak-warm": require("../../assets/widgets/widget-bg-streak-warm.png"),
   "bg-streak-cool": require("../../assets/widgets/widget-bg-streak-cool.png"),
+  flame: require("../../assets/widgets/widget-flame.png"),
 };
 
 export type WidgetArt = keyof typeof SOURCES;

@@ -239,27 +239,29 @@ const WIDGETS = [
 /** Everything WidgetKit puts a layout through, including the empty cases. */
 const PROP_CASES = [
   ["no props at all (gallery preview / placeholder)", {}],
-  ["null-ish props", { variation: null, situationLabel: null, oneLiner: null,
-    oneLinerShort: null, tip: null, dateLabel: null, note: null, plateUri: null,
+  ["null-ish props", { situationLabel: null, oneLiner: null,
+    oneLinerShort: null, tip: null, dateLabel: null, note: null, flameUri: null, plateUri: null,
     plateSmallUri: null, mascotUri: null, mascotSmallUri: null, streakCount: null,
     accentColor: null, label: null }],
-  ["wrong types", { variation: 7, situationLabel: 3, oneLiner: {}, oneLinerShort: 0,
-    tip: [], dateLabel: true, note: 0, plateUri: 5, plateSmallUri: {}, mascotUri: 12,
+  ["wrong types", { situationLabel: 3, oneLiner: {}, oneLinerShort: 0,
+    tip: [], dateLabel: true, note: 0, flameUri: [], plateUri: 5, plateSmallUri: {}, mascotUri: 12,
     mascotSmallUri: {}, streakCount: "nine", accentColor: "#ff0", label: [] }],
-  ["warm, full", { variation: "warm", situationLabel: "Product Demo",
+  ["full, long copy", { situationLabel: "Product Demo",
     oneLiner: "Once, I completely failed at something, and it turned out well.",
     oneLinerShort: "Once, I completely failed at\u2026",
     tip: "Keep it personal and specific.", dateLabel: "Thu, Sep 18",
-    note: "Keep going!", plateUri: "file:///g/widget-bg-warm-medium.png",
-    plateSmallUri: "file:///g/widget-bg-warm-small.png",
-    mascotUri: "file:///g/widget-mascot-pink.png",
-    mascotSmallUri: "file:///g/widget-mascot-cream.png", streakCount: 12,
+    note: "Keep going!", flameUri: "file:///g/widget-flame.png",
+    plateUri: "file:///g/widget-bg-cool-medium.png",
+    plateSmallUri: "file:///g/widget-bg-cool-small.png",
+    mascotUri: "file:///g/widget-mascot-cream.png",
+    mascotSmallUri: "file:///g/widget-mascot-purple.png", streakCount: 12,
     accentColor: "#F4D35E", label: "day streak" }],
-  ["cool, full", { variation: "cool", situationLabel: "Explaining Tech",
+  ["full, short copy", { situationLabel: "Explaining Tech",
     oneLiner: "It's normal to feel nervous before speaking.",
     oneLinerShort: "It's normal to feel nervous\u2026",
     tip: "Breathe slowly and focus on your message.", dateLabel: "Thu, Sep 18",
-    note: "Same you, brighter ideas.", plateUri: "file:///g/widget-bg-cool-medium.png",
+    note: "Same you, brighter ideas.", flameUri: "file:///g/widget-flame.png",
+    plateUri: "file:///g/widget-bg-cool-medium.png",
     plateSmallUri: "file:///g/widget-bg-cool-small.png",
     mascotUri: "file:///g/widget-mascot-cream.png",
     mascotSmallUri: "file:///g/widget-mascot-purple.png", streakCount: 0,
@@ -318,9 +320,12 @@ const baked = new Set(
   readdirSync(resolve(ROOT, "assets/widgets")).filter((f) => f.endsWith(".png")),
 );
 const sync = readFileSync(resolve(ROOT, "app/lib/widget-sync.ts"), "utf8");
-const named = [...sync.matchAll(/: "((?:mascot|bg)-[\w-]+)"/g)].map(([, n]) => n);
-assert.ok(named.length >= 12,
-  `expected both variations' plates and characters in widget-sync, found ${named.length}`);
+const named = [
+  ...sync.matchAll(/: "((?:mascot|bg)-[\w-]+)"/g),
+  ...sync.matchAll(/widgetArtUri\("([\w-]+)"\)/g),
+].map(([, n]) => n);
+assert.ok(named.length >= 7,
+  `expected every plate, character and icon in widget-sync, found ${named.length}`);
 for (const name of named) {
   assert.ok(baked.has(`widget-${name}.png`),
     `widget-sync names "${name}" but assets/widgets/widget-${name}.png is not baked`);

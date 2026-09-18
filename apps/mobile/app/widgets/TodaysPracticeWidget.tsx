@@ -3,6 +3,7 @@ import {
   background,
   clipped,
   containerBackground,
+  fixedSize,
   font,
   foregroundStyle,
   frame,
@@ -18,9 +19,6 @@ import {
 import { createWidget, WidgetEnvironment } from "expo-widgets";
 
 export interface TodaysPracticeProps {
-  /** Which of the two colour stories to draw. Alternates by day so the home
-   *  screen isn't the same picture every morning — see widget-sync.ts. */
-  variation?: "warm" | "cool";
   /** What today's snippet is for — "Product Demo", "Handling Nerves". The
    *  framework it is built from ("PREP", "Feynman") is deliberately NOT here:
    *  that is craft detail for the screen, and on a tile it reads as jargon. */
@@ -82,50 +80,40 @@ export interface TodaysPracticeProps {
  * than an import, and why the app resolves everything it alone knows — the
  * locale-formatted date, the situation's label, the artwork's paths.
  */
-function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironment) {
+function TodaysPractice(
+  props: TodaysPracticeProps,
+  environment: WidgetEnvironment,
+) {
   "widget";
 
   const isDark = environment.colorScheme === "dark";
   const isSmall = environment.widgetFamily === "systemSmall";
 
-  const PALETTES = {
-    warm: {
-      base: "#FFFCF7",
-      ink: "#262533",
-      inkSoft: "#7E7A88",
-      pillBg: "#FFD7E5",
-      pillInk: "#D6336C",
-      accent: "#7FA9F5",
-      tipBg: "#F6EFE4",
-    },
-    cool: {
-      base: "#FBFCFF",
-      ink: "#262533",
-      inkSoft: "#7E7A88",
-      pillBg: "#D6E3FD",
-      pillInk: "#3C67C4",
-      accent: "#6E9BF0",
-      tipBg: "#EEECF8",
-    },
+  const palette = {
+    base: "#FBFCFF",
+    baseDark: "#15161E",
+    ink: "#262533",
+    inkSoft: "#7E7A88",
+    pillBg: "#D6E3FD",
+    pillInk: "#3C67C4",
+    accent: "#6E9BF0",
+    tipBg: "#EEECF8",
   };
 
-  const palette = props.variation === "cool" ? PALETTES.cool : PALETTES.warm;
-
-  // On a dark home screen the pastels are dimmed rather than swapped, so the
-  // tile reads as the same tile in both appearances. The alpha goes in FRONT —
-  // @expo/ui reads an 8-digit hex as #AARRGGBB, so appending it swaps channels.
-  function dim(color: string, alpha: string) {
-    return isDark ? `#${alpha}${color.slice(1)}` : color;
-  }
-
-  const ink = isDark ? "#F7F5F0" : palette.ink;
-  const inkSoft = isDark ? "#B5F7F5F0" : palette.inkSoft;
+  // The tile's own fill. In dark mode this is a real dark colour rather than a
+  // dimmed light one: alpha-blending the cream base left the tile near-white,
+  // and the light ink below then sat on a light ground and vanished.
+  const base = isDark ? palette.baseDark : palette.base;
+  const ink = isDark ? "#F4F2EE" : palette.ink;
+  const inkSoft = isDark ? "#BFBBC7" : palette.inkSoft;
 
   const rawTag = props.situationLabel;
   const situationLabel =
     typeof rawTag === "string" && rawTag.length > 0 ? rawTag : "Speaking";
 
-  const rawLiner = isSmall ? props.oneLinerShort ?? props.oneLiner : props.oneLiner;
+  const rawLiner = isSmall
+    ? (props.oneLinerShort ?? props.oneLiner)
+    : props.oneLiner;
   const hasContent = typeof rawLiner === "string" && rawLiner.length > 0;
   const oneLiner = hasContent
     ? `“${rawLiner}”`
@@ -138,7 +126,8 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
   const dateLabel = typeof rawDate === "string" ? rawDate : "";
 
   const rawPlate = isSmall ? props.plateSmallUri : props.plateUri;
-  const plateUri = typeof rawPlate === "string" && rawPlate.length > 0 ? rawPlate : "";
+  const plateUri =
+    typeof rawPlate === "string" && rawPlate.length > 0 ? rawPlate : "";
 
   const rawMascot = isSmall ? props.mascotSmallUri : props.mascotUri;
   const mascotUri =
@@ -154,11 +143,15 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
     <ZStack
       alignment="topLeading"
       modifiers={[
-        frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "topLeading" }),
+        frame({
+          maxWidth: Infinity,
+          maxHeight: Infinity,
+          alignment: "topLeading",
+        }),
         // The plate covers this; it is what the tile falls back to while the
         // artwork is still being copied into the App Group on a fresh install.
-        background(dim(palette.base, "F2")),
-        containerBackground(dim(palette.base, "F2"), "widget"),
+        background(base),
+        containerBackground(base, "widget"),
         // The character deliberately overhangs. This turns that into a crop.
         clipped(),
         // One tap target for the whole widget, which is what WidgetKit supports
@@ -175,7 +168,10 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
           modifiers={[
             resizable(),
             frame({ maxWidth: Infinity, maxHeight: Infinity }),
-            opacity(isDark ? 0.42 : 1),
+            // A light plate over a dark base. At 0.3 the composite came out a
+            // mid grey that read as neither light nor dark; this keeps the tile
+            // properly dark while the pastel shapes still show as faint tints.
+            opacity(isDark ? 0.22 : 1),
           ]}
         />
       ) : null}
@@ -183,7 +179,11 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
       {mascotUri ? (
         <VStack
           modifiers={[
-            frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "bottomTrailing" }),
+            frame({
+              maxWidth: Infinity,
+              maxHeight: Infinity,
+              alignment: "bottomTrailing",
+            }),
           ]}
         >
           <Image
@@ -205,26 +205,73 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
         alignment="leading"
         spacing={isSmall ? 7 : 6}
         modifiers={[
-          frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "topLeading" }),
+          frame({
+            maxWidth: Infinity,
+            maxHeight: Infinity,
+            alignment: "topLeading",
+          }),
           padding({ all: isSmall ? 15 : 16 }),
         ]}
       >
         <HStack spacing={isSmall ? 6 : 9}>
-          <Image systemName="sparkle" size={isSmall ? 19 : 23} color={palette.accent} />
-          <Text
-            modifiers={[
-              font({ size: isSmall ? 18 : 22, weight: "bold", design: "rounded" }),
-              foregroundStyle(ink),
-              lineLimit(2),
-              minimumScaleFactor(0.85),
-            ]}
-          >
-            Today&apos;s Practice
-          </Text>
+          <Image
+            systemName="sparkle"
+            size={isSmall ? 28 : 23}
+            color={palette.accent}
+          />
+          {/* Two lines on systemSmall, one on systemMedium.
+              Two Text views rather than a "Today's\\nPractice" string: this
+              function's whole body is serialised to source and re-evaluated on
+              device, and a newline inside a string literal comes out the other
+              side as a real line break that leaves the string unterminated.
+              Stacking them also lets the two lines sit tighter than the font's
+              own leading, which is what the reference art does. */}
+          {isSmall ? (
+            <VStack
+              alignment="leading"
+              spacing={-2}
+              modifiers={[padding({ top: 4 })]}
+            >
+              <Text
+                modifiers={[
+                  font({ size: 22, weight: "bold", design: "rounded" }),
+                  foregroundStyle(ink),
+                  lineLimit(1),
+                  minimumScaleFactor(0.85),
+                ]}
+              >
+                {"Today's"}
+              </Text>
+              <Text
+                modifiers={[
+                  font({ size: 22, weight: "bold", design: "rounded" }),
+                  foregroundStyle(ink),
+                  lineLimit(1),
+                  minimumScaleFactor(0.85),
+                ]}
+              >
+                {"Practice"}
+              </Text>
+            </VStack>
+          ) : (
+            <Text
+              modifiers={[
+                font({ size: 22, weight: "bold", design: "rounded" }),
+                foregroundStyle(ink),
+                lineLimit(2),
+                minimumScaleFactor(0.85),
+              ]}
+            >
+              {"Today's Practice"}
+            </Text>
+          )}
           <Spacer />
           {dateLabel && !isSmall ? (
             <Text
-              modifiers={[font({ size: 12, weight: "medium" }), foregroundStyle(inkSoft)]}
+              modifiers={[
+                font({ size: 12, weight: "medium" }),
+                foregroundStyle(inkSoft),
+              ]}
             >
               {dateLabel}
             </Text>
@@ -238,9 +285,13 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
             <Text
               modifiers={[
                 font({ size: 12.5, weight: "bold", design: "rounded" }),
-                foregroundStyle(dim(palette.pillInk, "E8")),
+                foregroundStyle(isDark ? "#076E5E" : "#c98c47"),
                 padding({ horizontal: 11, vertical: 4 }),
-                background(dim(palette.pillBg, "4D"), shapes.capsule()),
+                background(
+                  // Alpha first: @expo/ui reads 8-digit hex as #AARRGGBB.
+                  isDark ? "#2EFADB" : "#fadbb9",
+                  shapes.capsule(),
+                ),
               ]}
             >
               {situationLabel}
@@ -253,13 +304,27 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
           modifiers={[
             // The default face, not the rounded one — the snippet is a sentence
             // to read aloud and it should not compete with the title.
-            font({ size: isSmall ? 13.5 : 16.5, weight: "semibold" }),
+            font({
+              size: isSmall ? 14 : 18,
+              weight: "semibold",
+              family: "Amarna", // from fonts constant
+            }),
             foregroundStyle(hasContent ? ink : inkSoft),
-            lineLimit(3),
-            minimumScaleFactor(0.7),
-            // Keeps the sentence off the character rather than wrapping under
-            // it — a widget has no way to flow text around a shape.
-            padding({ trailing: isSmall ? 30 : 136 }),
+            lineLimit(isSmall ? 5 : 3),
+            minimumScaleFactor(0.72),
+            // A hard width cap, not a trailing inset — see the file doc
+            // comment. This is what keeps the sentence off the character
+            // instead of wrapping under it, since a widget has no way to
+            // flow text around a shape.
+            frame({ width: isSmall ? 108 : 210, alignment: "leading" }),
+            padding({ top: isSmall ? 0 : 5 }),
+            // frame(width) only fixes the wrap WIDTH. Without this, the
+            // Spacer right below competes for space and the text accepts
+            // whatever (short) height it's proposed instead of the taller
+            // height its wrapped lines need — which is what was rendering
+            // as a single truncated line even with lineLimit(3) set. This
+            // is Expo's own documented fix for exactly this symptom.
+            fixedSize({ horizontal: false, vertical: true }),
           ]}
         >
           {oneLiner}
@@ -267,12 +332,15 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
 
         <Spacer />
 
-        {tip && !isSmall ? (
+        {/* {tip && !isSmall ? (
           <HStack
             spacing={7}
             modifiers={[
               padding({ horizontal: 11, vertical: 7 }),
-              background(dim(palette.tipBg, "59"), shapes.roundedRectangle({ cornerRadius: 13 })),
+              background(
+                dim(palette.tipBg, "59"),
+                shapes.roundedRectangle({ cornerRadius: 13 }),
+              ),
               frame({ width: 190, alignment: "leading" }),
             ]}
           >
@@ -289,7 +357,7 @@ function TodaysPractice(props: TodaysPracticeProps, environment: WidgetEnvironme
             </Text>
             <Spacer />
           </HStack>
-        ) : null}
+        ) : null} */}
       </VStack>
     </ZStack>
   );

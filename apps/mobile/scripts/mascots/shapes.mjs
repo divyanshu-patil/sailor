@@ -210,8 +210,6 @@ ${widgetStrips(strip, { x: 66, y: 74, rotate: -22 })}
 
 export const widgetMascots = () => [
   { name: "widget-mascot-cream",  svg: widgetMascot({ fill: WIDGET_PALETTE.cream,  eyes: widgetEyesHappy() }) },
-  { name: "widget-mascot-pink",   svg: widgetMascot({ fill: WIDGET_PALETTE.pink,   eyes: widgetEyesHappy() }) },
-  { name: "widget-mascot-blue",   svg: widgetMascot({ fill: WIDGET_PALETTE.blue,   eyes: widgetEyesWink() }) },
   { name: "widget-mascot-purple", svg: widgetMascot({ fill: WIDGET_PALETTE.purple, eyes: widgetEyesOpen(), strip: WIDGET_PALETTE.stripCool }) },
   { name: "widget-mascot-green",  svg: widgetMascot({ fill: WIDGET_PALETTE.green,  eyes: widgetEyesOpen() }) },
 ];
@@ -334,15 +332,13 @@ const PLATES = {
   },
 };
 
-/** Five pastels per story: four fills and the curl's stroke. */
+/** Five pastels: four fills and the curl's stroke. */
 const PLATE_COLOURS = {
-  warm: ["#FFC9DB", "#FFE4B5", "#CFE0FB", "#EFE2FF", "#FFA8C0"],
-  cool: ["#C7DBFB", "#FFE4B5", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
-  streakWarm: ["#FFD9E4", "#FFE4B5", "#D9EFD5", "#CFE0FB", "#FFA8C0"],
-  streakCool: ["#CFE0FB", "#D6EFD8", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
+  practice: ["#C7DBFB", "#FFE4B5", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
+  streak: ["#CFE0FB", "#D6EFD8", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
 };
 
-const PLATE_BASE = { warm: "#FFFCF7", cool: "#FBFCFF" };
+const PLATE_BASE = "#FBFCFF";
 
 function plate({ layout, colours, base, seed }) {
   const rand = prng(seed);
@@ -372,16 +368,36 @@ ${curls}
 }
 
 export const widgetPlates = () => [
-  { name: "widget-bg-warm-small", layout: PLATES.practiceSmall,
-    svg: plate({ layout: PLATES.practiceSmall, colours: PLATE_COLOURS.warm, base: PLATE_BASE.warm, seed: 20260918 }) },
-  { name: "widget-bg-warm-medium", layout: PLATES.practiceMedium,
-    svg: plate({ layout: PLATES.practiceMedium, colours: PLATE_COLOURS.warm, base: PLATE_BASE.warm, seed: 20260919 }) },
   { name: "widget-bg-cool-small", layout: PLATES.practiceSmall,
-    svg: plate({ layout: PLATES.practiceSmall, colours: PLATE_COLOURS.cool, base: PLATE_BASE.cool, seed: 20260920 }) },
+    svg: plate({ layout: PLATES.practiceSmall, colours: PLATE_COLOURS.practice, base: PLATE_BASE, seed: 20260920 }) },
   { name: "widget-bg-cool-medium", layout: PLATES.practiceMedium,
-    svg: plate({ layout: PLATES.practiceMedium, colours: PLATE_COLOURS.cool, base: PLATE_BASE.cool, seed: 20260921 }) },
-  { name: "widget-bg-streak-warm", layout: PLATES.streak,
-    svg: plate({ layout: PLATES.streak, colours: PLATE_COLOURS.streakWarm, base: PLATE_BASE.warm, seed: 20260922 }) },
+    svg: plate({ layout: PLATES.practiceMedium, colours: PLATE_COLOURS.practice, base: PLATE_BASE, seed: 20260921 }) },
   { name: "widget-bg-streak-cool", layout: PLATES.streak,
-    svg: plate({ layout: PLATES.streak, colours: PLATE_COLOURS.streakCool, base: PLATE_BASE.cool, seed: 20260923 }) },
+    svg: plate({ layout: PLATES.streak, colours: PLATE_COLOURS.streak, base: PLATE_BASE, seed: 20260923 }) },
 ];
+
+/* --------------------------------------------------------------- the flame */
+
+/**
+ * The streak flame.
+ *
+ * [REPLACE-LATER] — placeholder art. A PNG rather than SF Symbols' `flame.fill`
+ * because the symbol is a single flat tint: the reference flame has a lighter
+ * core inside a warmer outer, and that two-tone is most of what makes it read
+ * as fire rather than as a leaf.
+ *
+ * Square canvas with the 4:5 drawing centred in it, because the widget draws it
+ * in a 1:1 frame — a 4:5 plate there would stretch it.
+ */
+export const widgetFlame = () => `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
+  <g transform="translate(15 0)">
+  <path d="M 60 6 C 76 34 96 44 104 70 C 114 102 92 144 60 144
+           C 28 144 6 102 16 70 C 23 47 40 40 48 20
+           C 54 34 52 46 60 56 C 66 44 64 24 60 6 Z"
+        fill="#FF7A3D"/>
+  <path d="M 60 62 C 70 78 82 88 82 104 C 82 124 72 136 60 136
+           C 48 136 38 124 38 104 C 38 90 48 80 52 68
+           C 56 78 55 86 60 92 C 64 84 62 72 60 62 Z"
+        fill="#FFC93C"/>
+  </g>
+</svg>`;

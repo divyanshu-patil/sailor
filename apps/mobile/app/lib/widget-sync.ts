@@ -20,40 +20,16 @@ import { widgetArtUri } from "./widget-assets";
  * of the mascot PNGs in the App Group.
  */
 
-/**
- * Which of the two colour stories today gets.
- *
- * By the day of the month, so it alternates every morning and both widgets
- * agree without either having to be told about the other. Derived rather than
- * stored: a value in the preference store would be one more thing that can
- * drift out of step between the two tiles.
- */
-function variationFor(date: string): "warm" | "cool" {
-  const day = Number(date.slice(8, 10));
-  return Number.isFinite(day) && day % 2 === 0 ? "cool" : "warm";
-}
-
-/** The artwork each variation wears. All five baked characters are used: the
- *  small tile and the medium tile get different ones, the way the reference art
- *  does, which is why both paths are pushed — only the widget knows which
- *  family it is being drawn at. */
+/** The artwork the tiles wear. The small tile and the medium tile get
+ *  different characters, the way the reference art does, which is why both
+ *  paths are pushed — only the widget knows which family it is drawn at. */
 const ART = {
-  warm: {
-    mascotSmall: "mascot-cream",
-    mascotMedium: "mascot-pink",
-    mascotStreak: "mascot-blue",
-    plateSmall: "bg-warm-small",
-    plateMedium: "bg-warm-medium",
-    plateStreak: "bg-streak-warm",
-  },
-  cool: {
-    mascotSmall: "mascot-purple",
-    mascotMedium: "mascot-cream",
-    mascotStreak: "mascot-green",
-    plateSmall: "bg-cool-small",
-    plateMedium: "bg-cool-medium",
-    plateStreak: "bg-streak-cool",
-  },
+  mascotSmall: "mascot-purple",
+  mascotMedium: "mascot-cream",
+  mascotStreak: "mascot-green",
+  plateSmall: "bg-cool-small",
+  plateMedium: "bg-cool-medium",
+  plateStreak: "bg-streak-cool",
 } as const;
 
 /**
@@ -157,20 +133,17 @@ export function syncPracticeWidget(
   if (!today?.body) return;
 
   const entryFor = (unit: DailyContentUnit) => {
-    const variation = variationFor(unit.date);
-    const art = ART[variation];
     return {
-      variation,
       situationLabel: SITUATION_LABELS[unit.situation] ?? "Speaking",
       oneLiner: trim(firstSentenceOf(unit.body), 76),
       oneLinerShort: trim(firstSentenceOf(unit.body), 48),
       // One short line inside the tip box. A longer tip is the app's job.
       tip: trim(unit.tip ?? "", 62),
       dateLabel: dateLabelFrom(unit.date),
-      plateUri: widgetArtUri(art.plateMedium) ?? "",
-      plateSmallUri: widgetArtUri(art.plateSmall) ?? "",
-      mascotUri: widgetArtUri(art.mascotMedium) ?? "",
-      mascotSmallUri: widgetArtUri(art.mascotSmall) ?? "",
+      plateUri: widgetArtUri(ART.plateMedium) ?? "",
+      plateSmallUri: widgetArtUri(ART.plateSmall) ?? "",
+      mascotUri: widgetArtUri(ART.mascotMedium) ?? "",
+      mascotSmallUri: widgetArtUri(ART.mascotSmall) ?? "",
     };
   };
 
@@ -219,18 +192,17 @@ export function syncStreakWidget(
   // — the one thing types/daily warns against, because it hands the wrong day
   // to everyone east of GMT in the morning.
   const date = localDate();
-  const variation = variationFor(date);
 
   try {
     StreakWidget.updateSnapshot({
-      variation,
       streakCount: streak.currentStreak,
       // The number sits above it, so one label reads correctly for any count.
       label: "day streak",
       note: noteFor(STREAK_NOTES, date),
       accentColor: backgroundColor,
-      plateUri: widgetArtUri(ART[variation].plateStreak) ?? "",
-      mascotUri: widgetArtUri(ART[variation].mascotStreak) ?? "",
+      flameUri: widgetArtUri("flame") ?? "",
+      plateUri: widgetArtUri(ART.plateStreak) ?? "",
+      mascotUri: widgetArtUri(ART.mascotStreak) ?? "",
     });
   } catch (e) {
     console.log("streak widget update failed", e);

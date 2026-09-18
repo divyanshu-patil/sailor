@@ -18,9 +18,6 @@ import {
 import { createWidget, WidgetEnvironment } from "expo-widgets";
 
 export interface StreakProps {
-  /** Matches the practice tile's, so two Sailor widgets side by side read as
-   *  one set rather than two apps. */
-  variation?: "warm" | "cool";
   streakCount?: number;
   label?: string;
   note?: string;
@@ -30,6 +27,7 @@ export interface StreakProps {
    *  visibly did nothing would be worse than no picker. */
   accentColor?: string;
   /** `file://` paths inside the App Group — see lib/widget-assets.ts. */
+  flameUri?: string;
   plateUri?: string;
   mascotUri?: string;
 }
@@ -54,21 +52,25 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
 
   const isDark = environment.colorScheme === "dark";
 
-  const PALETTES = {
-    warm: { base: "#FFFCF7", ink: "#262533", inkSoft: "#7E7A88", heart: "#FF8FB2", showFlame: true },
-    cool: { base: "#FBFCFF", ink: "#262533", inkSoft: "#7E7A88", heart: "#A99BF0", showFlame: false },
-
+  const palette = {
+    base: "#FBFCFF",
+    baseDark: "#15161E",
+    ink: "#262533",
+    inkSoft: "#7E7A88",
+    heart: "#A99BF0",
   };
-
-  const palette = props.variation === "cool" ? PALETTES.cool : PALETTES.warm;
 
   // Alpha first: @expo/ui reads 8-digit hex as #AARRGGBB.
   function dim(color: string, alpha: string) {
     return isDark ? `#${alpha}${color.slice(1)}` : color;
   }
 
-  const ink = isDark ? "#F7F5F0" : palette.ink;
-  const inkSoft = isDark ? "#B5F7F5F0" : palette.inkSoft;
+  // The tile's own fill. In dark mode this is a real dark colour rather than a
+  // dimmed light one: alpha-blending the cream base left the tile near-white,
+  // and the light ink below then sat on a light ground and vanished.
+  const base = isDark ? palette.baseDark : palette.base;
+  const ink = isDark ? "#F4F2EE" : palette.ink;
+  const inkSoft = isDark ? "#BFBBC7" : palette.inkSoft;
 
   const raw = props.streakCount;
   // A real number, including 0, is data. Anything else means the app hasn't
@@ -81,7 +83,7 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
   const label = hasData
     ? typeof rawLabel === "string" && rawLabel.length > 0
       ? rawLabel
-      : "day streak"
+      : "Day Streak"
     : "Open Sailor";
 
   const rawNote = props.note;
@@ -89,10 +91,17 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
 
   const rawAccent = props.accentColor;
   const heart =
-    typeof rawAccent === "string" && rawAccent.length === 7 ? rawAccent : palette.heart;
+    typeof rawAccent === "string" && rawAccent.length === 7
+      ? rawAccent
+      : palette.heart;
 
   const rawPlate = props.plateUri;
-  const plateUri = typeof rawPlate === "string" && rawPlate.length > 0 ? rawPlate : "";
+  const plateUri =
+    typeof rawPlate === "string" && rawPlate.length > 0 ? rawPlate : "";
+
+  const rawFlame = props.flameUri;
+  const flameUri =
+    typeof rawFlame === "string" && rawFlame.length > 0 ? rawFlame : "";
 
   const rawMascot = props.mascotUri;
   const mascotUri =
@@ -102,9 +111,13 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
     <ZStack
       alignment="topLeading"
       modifiers={[
-        frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "topLeading" }),
-        background(dim(palette.base, "F2")),
-        containerBackground(dim(palette.base, "F2"), "widget"),
+        frame({
+          maxWidth: Infinity,
+          maxHeight: Infinity,
+          alignment: "topLeading",
+        }),
+        background(base),
+        containerBackground(base, "widget"),
         clipped(),
         widgetURL("sailor://daily-practice"),
       ]}
@@ -115,7 +128,10 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
           modifiers={[
             resizable(),
             frame({ maxWidth: Infinity, maxHeight: Infinity }),
-            opacity(isDark ? 0.42 : 1),
+            // A light plate over a dark base. At 0.3 the composite came out a
+            // mid grey that read as neither light nor dark; this keeps the tile
+            // properly dark while the pastel shapes still show as faint tints.
+            opacity(isDark ? 0.22 : 1),
           ]}
         />
       ) : null}
@@ -123,7 +139,11 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
       {mascotUri ? (
         <VStack
           modifiers={[
-            frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "bottom" }),
+            frame({
+              maxWidth: Infinity,
+              maxHeight: Infinity,
+              alignment: "bottom",
+            }),
           ]}
         >
           <Image
@@ -143,7 +163,11 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
       {note ? (
         <VStack
           modifiers={[
-            frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "topTrailing" }),
+            frame({
+              maxWidth: Infinity,
+              maxHeight: Infinity,
+              alignment: "topTrailing",
+            }),
           ]}
         >
           <Text
@@ -166,7 +190,11 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
 
       <VStack
         modifiers={[
-          frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "trailing" }),
+          frame({
+            maxWidth: Infinity,
+            maxHeight: Infinity,
+            alignment: "trailing",
+          }),
         ]}
       >
         <Image
@@ -181,15 +209,26 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
         alignment="leading"
         spacing={0}
         modifiers={[
-          frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "topLeading" }),
+          frame({
+            maxWidth: Infinity,
+            maxHeight: Infinity,
+            alignment: "topLeading",
+          }),
           padding({ all: 15 }),
         ]}
       >
         <HStack spacing={5}>
-          {palette.showFlame && hasData ? (
-            <Image systemName="flame.fill" size={28} color="#FF7A3D" />
+          {/* A PNG, not SF Symbols' `flame.fill`: the symbol is one flat tint,
+              and the lighter core inside the warmer outer is most of what makes
+              this read as fire — and because the star it replaced said nothing
+              about a streak. */}
+          {flameUri ? (
+            <Image
+              uiImage={flameUri}
+              modifiers={[resizable(), frame({ width: 36, height: 36 })]}
+            />
           ) : (
-            <Image systemName="star.fill" size={26} color="#FFC933" />
+            <Image systemName="flame.fill" size={28} color="#FF7A3D" />
           )}
           <Text
             modifiers={[
@@ -207,7 +246,11 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
 
         <Text
           modifiers={[
-            font({ size: 17, weight: "bold", design: "rounded" }),
+            font({
+              size: 17,
+              weight: "bold",
+              design: "rounded",
+            }),
             foregroundStyle(ink),
             lineLimit(1),
             minimumScaleFactor(0.8),
