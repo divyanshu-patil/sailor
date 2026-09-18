@@ -74,6 +74,24 @@ export const toLines = (body: string): string[] =>
  */
 export const DAILY_SPRING: WithSpringConfig = { damping: 70 };
 
+/**
+ * The teleprompter's settle, which `DAILY_SPRING` is the wrong shape for.
+ *
+ * Damping 70 against Reanimated's default stiffness of 100 is a damping ratio
+ * of 3.5 — heavily overdamped. Over the few points a button press travels that
+ * reads as calm; over the ~110pt a paragraph moves it takes about two and a
+ * half seconds to visually arrive, so the reel appears to stall after the
+ * finger lifts.
+ *
+ * Stiffness 190 with damping 26 is a ratio of 0.94: just inside critical, so it
+ * lands in roughly a third of a second with no overshoot to bounce the text.
+ */
+export const TELEPROMPTER_SPRING: WithSpringConfig = {
+  stiffness: 190,
+  damping: 26,
+  mass: 1,
+};
+
 /** Corner radii, kept in one place so the card, rows and buttons stay a family. */
 export const radius = {
   card: 30,

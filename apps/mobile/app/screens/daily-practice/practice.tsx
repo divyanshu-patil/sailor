@@ -25,14 +25,15 @@ import { useDailyStore } from "@/store/daily-store";
 import { haptics } from "@/lib/haptics";
 
 import { PressableCard } from "./components/PressableCard";
+import { pageTarget, rubberBand } from "./reel";
 import { TeleprompterLine } from "./components/TeleprompterLine";
 import {
-  DAILY_SPRING,
   dailyFonts,
   dailyTheme,
   estimateMinutes,
   HEADER_INSET,
   radius,
+  TELEPROMPTER_SPRING,
   toLines,
 } from "./theme";
 import { useHeaderHeight } from "expo-router/react-navigation";
@@ -40,6 +41,21 @@ import { scheduleOnRN } from "react-native-worklets";
 
 /** Drag distance that advances exactly one line. */
 const LINE_TRAVEL = 110;
+/**
+ * How far past the first and last paragraph the reel can be pulled, in lines.
+ *
+ * Just over half a slot: enough that the end reads as an edge you can feel,
+ * not so much that the last paragraph leaves the middle of the screen.
+ */
+const OVERSCROLL_GIVE = 0.55;
+/** Fraction of a line's travel past which letting go commits to the next one. */
+const COMMIT_FRACTION = 0.28;
+/**
+ * Lines per second above which a flick commits on its own, however short the
+ * drag. ~165pt/s: a deliberate flick clears it, a slow drag that happens to
+ * end moving does not.
+ */
+const FLICK_VELOCITY = 1.5;
 /**
  * Slot pitch — the distance between two consecutive paragraphs.
  *
@@ -106,6 +122,8 @@ const DailyPracticeSession = () => {
     measuredHeights.value = heights;
   }, [heights, measuredHeights]);
   const dragStart = useSharedValue(0);
+  /** The paragraph the current gesture pages from — see `pageTarget`. */
+  const pageBase = useSharedValue(0);
   const [index, setIndex] = useState(0);
 
   const finish = useCallback(() => {
@@ -138,26 +156,40 @@ const DailyPracticeSession = () => {
     () =>
       Gesture.Pan()
         .onStart(() => {
+          // Where the finger picks up, unrounded, so grabbing the reel mid-
+          // settle doesn't make it jump. The page is rounded separately.
           dragStart.value = offset.value;
+          pageBase.value = Math.round(offset.value);
         })
         .onUpdate((event) => {
           // Dragging up pulls later lines toward the centre, like a reel.
           const next = dragStart.value - event.translationY / LINE_TRAVEL;
-          // Allowed half a line past each end rather than hard-stopping: a wall
-          // at the last line feels broken, a little give reads as "that's the end".
-          offset.value = Math.min(Math.max(next, -0.5), total - 0.5);
+          // One paragraph per gesture. The drag is bounded to the neighbours
+          // of the paragraph it started on — not just the release — so the
+          // reel never shows a paragraph it is then going to snap back past.
+          // Past those bounds it rubber-bands instead of hitting a wall.
+          const lower = Math.max(0, pageBase.value - 1);
+          const upper = Math.min(total - 1, pageBase.value + 1);
+          offset.value = rubberBand(next, lower, upper, OVERSCROLL_GIVE);
         })
         .onEnd((event) => {
-          // Carry a little of the throw into the landing so a flick can move
-          // more than one line.
-          const projected = offset.value - event.velocityY / (LINE_TRAVEL * 14);
-          const target = Math.min(
-            Math.max(Math.round(projected), 0),
+          // Lines per second, in the direction the offset runs: dragging up
+          // (negative translationY) advances.
+          const velocity = -event.velocityY / LINE_TRAVEL;
+          const target = pageTarget(
+            pageBase.value,
+            offset.value,
+            velocity,
             total - 1,
+            COMMIT_FRACTION,
+            FLICK_VELOCITY,
           );
-          offset.value = withSpring(target, DAILY_SPRING);
+          // Handing the spring the finger's own velocity is what makes the
+          // release continuous with the drag. Without it the reel stops dead
+          // and restarts from zero.
+          offset.value = withSpring(target, { ...TELEPROMPTER_SPRING, velocity });
         }),
-    [dragStart, offset, total],
+    [dragStart, offset, pageBase, total],
   );
 
   /**
@@ -257,7 +289,7 @@ const DailyPracticeSession = () => {
               return;
             }
             const next = Math.min(index + 1, total - 1);
-            offset.value = withSpring(next, DAILY_SPRING);
+            offset.value = withSpring(next, TELEPROMPTER_SPRING);
           }}
           accessibilityRole="button"
           accessibilityLabel={isLast ? "Finish practice" : "Next line"}
