@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useMemo, ReactNode } from "react";
-import { useNativeState } from "@expo/ui/swift-ui";
+import { createContext, useContext, useState, useMemo, ReactNode, useCallback } from "react";
 import {
   EMAIL_REGEX,
   MIN_PASSWORD_LENGTH,
@@ -40,12 +39,19 @@ export function SignupFormProvider({ children }: { children: ReactNode }) {
   const isEmailValid = EMAIL_REGEX.test(email) && COMMON_TLD_REGEX.test(email);
   const isPasswordValid = passwordState.length >= MIN_PASSWORD_LENGTH;
 
-  const getSnapshot = (): SignupFormState => ({
-    firstName: firstNameState.trim(),
-    lastName: lastNameState.trim(),
-    email: emailState.trim(),
-    password: passwordState,
-  });
+  // useCallback so its identity is tied to the four values it closes over,
+  // rather than changing on every render. The memo below already listed all
+  // four, so the context value was never actually stale — this just makes that
+  // relationship explicit instead of incidental.
+  const getSnapshot = useCallback(
+    (): SignupFormState => ({
+      firstName: firstNameState.trim(),
+      lastName: lastNameState.trim(),
+      email: emailState.trim(),
+      password: passwordState,
+    }),
+    [firstNameState, lastNameState, emailState, passwordState],
+  );
 
   const value = useMemo<SignupFormContextValue>(
     () => ({
@@ -81,6 +87,7 @@ export function SignupFormProvider({ children }: { children: ReactNode }) {
       isEmailValid,
       isPasswordValid,
       errorMessage,
+      getSnapshot,
     ],
   );
 

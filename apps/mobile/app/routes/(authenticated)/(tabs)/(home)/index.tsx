@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View, Alert } from "react-native";
+import { Alert } from "react-native";
 import React, { useCallback, useState } from "react";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import HomeScreen from "@/screens/home/home";
@@ -79,6 +79,3 @@ const Home = () => {
 
 export default Home;
 
-const styles = StyleSheet.create({
-  container: {},
-});

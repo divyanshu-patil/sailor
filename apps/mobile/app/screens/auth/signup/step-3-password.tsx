@@ -1,4 +1,4 @@
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, Text as RNText, TextInput, View } from "react-native";
 import { useSignupForm } from "./form-context";
 import { MIN_PASSWORD_LENGTH } from "./types/types";
 import { Host, Text, VStack } from "@expo/ui/swift-ui";
@@ -9,6 +9,9 @@ export default function StepPassword() {
   const { passwordState, setPasswordState, isPasswordValid, errorMessage } =
     useSignupForm();
 
+  // Only once they've started typing — telling someone their empty password
+  // is too short is noise, which is why the requirement is also stated
+  // statically above.
   const showHint = passwordState.length > 0 && !isPasswordValid;
 
   return (
@@ -71,6 +74,25 @@ export default function StepPassword() {
         style={styles.input}
       />
 
+      {/* Both of these were computed and then never rendered: a short password
+          gave no feedback, and a signup failure from the form context was
+          invisible. */}
+      {showHint ? (
+        <RNText style={styles.hint}>
+          At least {MIN_PASSWORD_LENGTH} characters.
+        </RNText>
+      ) : null}
+
+      {errorMessage ? (
+        <RNText
+          style={styles.error}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {errorMessage}
+        </RNText>
+      ) : null}
+
       {/* Clerk CAPTCHA */}
       <View nativeID="clerk-captcha" />
     </View>
@@ -94,6 +116,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     color: "#666",
+  },
+  hint: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#8A857C",
+    fontFamily: fonts.alanSans.medium,
+  },
+  error: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#d32f2f",
+    fontFamily: fonts.alanSans.medium,
   },
   input: {
     height: 52,

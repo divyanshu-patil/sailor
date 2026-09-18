@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { ENV } from "@/lib/config/env";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
@@ -11,6 +11,11 @@ import { useOnboardingStore } from "@/store/onboarding.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
 import * as Sentry from "@sentry/react-native";
+import * as Notifications from "expo-notifications";
+import { startReminderSync } from "@/lib/daily-reminder";
+import { startHapticsSync } from "@/lib/haptics";
+import { primeWidgetAssets } from "@/lib/widget-assets";
+import { reloadWidgets, resyncWidgets, startStreakWidgetSync } from "@/lib/widget-sync";
 
 if (__DEV__ && !ENV.SENTRY_DSN) {
   // Silent-by-default is how a whole afternoon gets lost: with no DSN the SDK
@@ -58,6 +63,32 @@ function PurchasesSetup() {
   return null;
 }
 
+/**
+ * Opens daily practice when the reminder is tapped.
+ *
+ * Expo Router resolves `sailor://daily-practice` on its own for a URL the OS
+ * hands to the app, but a notification response isn't one of those — the URL is
+ * in the payload, and something has to read it. Handled here rather than in the
+ * screen because the app is usually cold when this fires.
+ */
+function ReminderRouting() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const url = response.notification.request.content.data?.url;
+        if (typeof url === "string" && url.endsWith("daily-practice")) {
+          router.push("/(authenticated)/daily-practice");
+        }
+      },
+    );
+    return () => subscription.remove();
+  }, [router]);
+
+  return null;
+}
+
 function InitialLayout() {
   const isHydrated = useOnboardingStore((s) => s._hasHydrated);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -66,6 +97,35 @@ function InitialLayout() {
   useEffect(() => {
     syncPreferencesOnce();
     syncAppearanceOptionsOnce();
+  }, []);
+
+  // Both watch the preference store for the rest of the app's life, so the
+  // reminder the OS has scheduled and the colour the widget is drawn in stay in
+  // step with Settings without either screen having to remember to push them.
+  useEffect(() => {
+    // Importing the sync module has already constructed both widgets, writing
+    // their layouts into the App Group. This picks up any widget that was added
+    // to the home screen before that ever happened.
+    reloadWidgets();
+
+    // The mascots have to reach the shared container before any push names
+    // them, or the first tile of a fresh install draws without a character.
+    // Fire-and-forget: a tile is still correct without one, and blocking the
+    // first frame on five file copies would be the worse trade.
+    void primeWidgetAssets().then(resyncWidgets);
+
+    const stopReminderSync = startReminderSync();
+    const stopWidgetSync = startStreakWidgetSync();
+    // Drives Pulsar's global switch from the "Emotion Haptics" preference. That
+    // toggle has existed in Settings with nothing reading it — this makes it
+    // work, for the existing call sites in the script wizard as well as the new
+    // ones here.
+    const stopHapticsSync = startHapticsSync();
+    return () => {
+      stopReminderSync();
+      stopWidgetSync();
+      stopHapticsSync();
+    };
   }, []);
 
   if (!isHydrated || !isLoaded) {
@@ -106,6 +166,7 @@ function RootLayout() {
         <KeyboardProvider>
           <ApiAuthSetup />
           <PurchasesSetup />
+          <ReminderRouting />
           <InitialLayout />
         </KeyboardProvider>
       </ClerkLoaded>

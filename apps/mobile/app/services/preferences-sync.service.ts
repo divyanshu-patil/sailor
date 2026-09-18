@@ -1,4 +1,4 @@
-import { usePreferenceStore, defaultPreferences } from "@/store/preference-store";
+import { usePreferenceStore } from "@/store/preference-store";
 import { preferencesService } from "@/services/preferences.service";
 import { debugService } from "@/services/debug.service";
 
@@ -13,6 +13,7 @@ export async function syncPreferences(): Promise<void> {
       ...serverPreferences,
       appearance: store.preferences.appearance,
       emotionHapticsEnabled: store.preferences.emotionHapticsEnabled,
+      streakWidgetColor: store.preferences.streakWidgetColor,
     });
 
     debugService.log("preferences-sync", "Synced preferences from server", serverPreferences);

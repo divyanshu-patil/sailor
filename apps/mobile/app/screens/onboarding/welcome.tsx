@@ -1,14 +1,7 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import React from "react";
 import { useRouter } from "expo-router";
 
-const { width } = Dimensions.get("window");
 
 const WelcomeScreen = () => {
   const router = useRouter();

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TextInput, View, Text as RNText } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 import { useSignupForm } from "./form-context";
 import { Host, Text, VStack } from "@expo/ui/swift-ui";
 import { font, foregroundStyle, frame } from "@expo/ui/swift-ui/modifiers";
@@ -34,7 +34,7 @@ export default function StepEmail() {
                 }),
               ]}
             >
-              What's your email?
+              What&apos;s your email?
             </Text>
           </VStack>
           <VStack
@@ -55,7 +55,7 @@ export default function StepEmail() {
                 }),
               ]}
             >
-              We'll send a verification code to this email.
+              We&apos;ll send a verification code to this email.
             </Text>
           </VStack>
         </VStack>

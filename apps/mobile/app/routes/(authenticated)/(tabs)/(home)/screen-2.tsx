@@ -2,8 +2,7 @@ import { Text, ScrollView } from "react-native";
 import React, { useEffect } from "react";
 import { router, Stack, useNavigation } from "expo-router";
 import { Button, Host } from "@expo/ui/swift-ui";
-import { buttonStyle, glassEffect } from "@expo/ui/swift-ui/modifiers";
-
+import { buttonStyle } from "@expo/ui/swift-ui/modifiers";
 const Screen2 = () => {
   const navigation = useNavigation();
 

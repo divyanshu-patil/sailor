@@ -20,8 +20,6 @@ export interface UseApiStateReturn<T> {
   isLoading: boolean;
   /** Whether a refresh request is in progress */
   isRefreshing: boolean;
-  /** Whether a mutation request is in progress (create/update/delete) */
-  isMutating: boolean;
   /** Error message if request failed */
   error: string | null;
   /** Execute a fetch operation */
@@ -61,7 +59,10 @@ export function useApiState<T>(
   const [data, setData] = useState<T | undefined>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isMutating, setIsMutating] = useState(false);
+  // No isMutating here: useApiState has no mutate operation — `execute` is a
+  // read. It used to declare and return one that nothing ever set, so every
+  // consumer read a permanently-false flag. Mutations use useApiMutation below,
+  // which tracks its own.
   const [error, setError] = useState<string | null>(null);
   const [lastPromise, setLastPromise] = useState<(() => Promise<T>) | null>(
     null,
@@ -143,7 +144,6 @@ export function useApiState<T>(
     data,
     isLoading,
     isRefreshing,
-    isMutating,
     error,
     execute: executeAndStore,
     refresh,
@@ -156,9 +156,13 @@ export function useApiState<T>(
  * Hook specifically for mutation operations (create/update/delete)
  */
 export function useApiMutation<T>(
-  options: UseApiStateOptions<T> & UseApiStateMutateOptions = {},
+  // Only the options a mutation actually honours. It previously accepted the
+  // whole of UseApiStateOptions and dropped the read-only half on the floor —
+  // `initialData`, `retryCount` and `retryDelay` type-checked at the call site
+  // and then did nothing at all.
+  options: UseApiStateMutateOptions = {},
 ) {
-  const { onSuccess, onError, invalidateOnSuccess, ...apiOptions } = options;
+  const { onSuccess, onError } = options;
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

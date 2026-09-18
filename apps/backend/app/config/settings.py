@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     CLERK_WEBHOOK_SIGNING_SECRET: str
 
+    # Shared secret for the daily-practice admin regeneration route. Empty by
+    # default, and an empty value DISABLES the route rather than leaving it open
+    # — a deployment that forgot to set it must not end up with an unguarded
+    # endpoint that rebuilds content on demand.
+    DAILY_PRACTICE_ADMIN_SECRET: str = ""
+
     REDIS_URL: str
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str

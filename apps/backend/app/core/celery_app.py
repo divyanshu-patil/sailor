@@ -8,7 +8,12 @@ celery_app = Celery(
     "sailor",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.card_tasks", "app.tasks.deck_tasks", "app.tasks.script_tasks"],
+    include=[
+        "app.tasks.card_tasks",
+        "app.tasks.deck_tasks",
+        "app.tasks.script_tasks",
+        "app.tasks.daily_tasks",
+    ],
 )
 
 # One queue per kind of work, because they have completely different shapes and
@@ -57,6 +62,8 @@ celery_app.conf.update(
         "app.tasks.card_tasks.*": {"queue": QUEUE_CARDS},
         "app.tasks.script_tasks.sweep_stale_generations": {"queue": QUEUE_MAINTENANCE},
         "app.tasks.script_tasks.sweep_orphan_attachments": {"queue": QUEUE_MAINTENANCE},
+        # Nobody is waiting on it: the buffer is days ahead of the user.
+        "app.tasks.daily_tasks.refill_daily_content": {"queue": QUEUE_MAINTENANCE},
     },
     worker_concurrency=settings.CELERY_WORKER_CONCURRENCY,
     # Bounds the memory a long-lived worker can leak through an SDK or parser.
@@ -93,6 +100,13 @@ celery_app.conf.update(
         "sweep-orphan-attachments": {
             "task": "app.tasks.script_tasks.sweep_orphan_attachments",
             "schedule": crontab(minute="17"),
+        },
+        # Hourly, not nightly. The task only generates days that are missing, so
+        # a full buffer costs one query — and an hourly beat means a day that
+        # failed its model call retries within the hour instead of tomorrow.
+        "refill-daily-practice-content": {
+            "task": "app.tasks.daily_tasks.refill_daily_content",
+            "schedule": crontab(minute="9"),
         },
     },
 )

@@ -17,8 +17,6 @@ import {
   buttonStyle,
   frame,
   labelStyle,
-  tint,
-  zIndex,
 } from "@expo/ui/swift-ui/modifiers";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -30,11 +28,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { fonts } from "@/constants/fonts";
-import {
-  CREAM_MASCOT_STATES,
-  MASCOTS,
-  MascotKey,
-} from "@/constants/mascots";
+import { CREAM_MASCOT_STATES, MASCOTS, MascotKey } from "@/constants/mascots";
 import Svg, { Path } from "react-native-svg";
 import AnimatedOrganicGround from "@/components/ui/animated-organic-ground";
 import AnimatedMascot from "@/components/ui/animated-mascot";
@@ -196,7 +190,10 @@ function TwoSideCurvedArrow({
 
 function YellowSquiggle({ style }: { style?: any }) {
   return (
-    <Animated.View pointerEvents="none" style={[{ position: "absolute" }, style]}>
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: "absolute" }, style]}
+    >
       <Svg width={80} height={90} viewBox="0 0 80 90" fill="none">
         <Path
           d="M 70 8 C 58 8, 42 12, 38 28 C 34 44, 50 54, 58 46 C 66 38, 60 26, 50 24 C 38 22, 22 32, 18 48"
@@ -468,7 +465,12 @@ export default function Base() {
   }, [screenMode, goBack]);
 
   const baseButtonsStyle = useAnimatedStyle(() => {
-    const p = interpolate(progress.value, [0, 0.32], [0, 1], Extrapolation.CLAMP);
+    const p = interpolate(
+      progress.value,
+      [0, 0.32],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
     return {
       opacity: 1 - p,
       transform: [
@@ -479,7 +481,12 @@ export default function Base() {
   });
 
   const createPanelStyle = useAnimatedStyle(() => {
-    const p = interpolate(progress.value, [0.55, 0.95], [0, 1], Extrapolation.CLAMP);
+    const p = interpolate(
+      progress.value,
+      [0.55, 0.95],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
     return {
       opacity: p,
       transform: [{ translateY: interpolate(p, [0, 1], [44, 0]) }],
@@ -487,7 +494,12 @@ export default function Base() {
   });
 
   const footerStyle = useAnimatedStyle(() => {
-    const p = interpolate(progress.value, [0, 0.3], [0, 1], Extrapolation.CLAMP);
+    const p = interpolate(
+      progress.value,
+      [0, 0.3],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
     return {
       opacity: 1 - p,
       transform: [
@@ -498,7 +510,12 @@ export default function Base() {
   });
 
   const squiggleStyle = useAnimatedStyle(() => {
-    const p = interpolate(progress.value, [0.45, 0.9], [0, 1], Extrapolation.CLAMP);
+    const p = interpolate(
+      progress.value,
+      [0.45, 0.9],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
     return {
       opacity: p,
       transform: [
@@ -510,7 +527,12 @@ export default function Base() {
   });
 
   const backButtonStyle = useAnimatedStyle(() => {
-    const p = interpolate(progress.value, [0.45, 0.8], [0, 1], Extrapolation.CLAMP);
+    const p = interpolate(
+      progress.value,
+      [0.45, 0.8],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
     return {
       opacity: p,
       transform: [{ translateX: interpolate(p, [0, 1], [-14, 0]) }],
@@ -618,11 +640,7 @@ export default function Base() {
           ]}
         />
 
-        <MascotWorld
-          scale={scale}
-          progress={progress}
-          isNamaste={isBase}
-        />
+        <MascotWorld scale={scale} progress={progress} isNamaste={isBase} />
 
         <Animated.View
           pointerEvents={isBase ? "auto" : "none"}
@@ -651,7 +669,9 @@ export default function Base() {
           pointerEvents="none"
           style={[styles.footerRow, footerStyle]}
         >
-          <Text style={styles.bottomRightNote}>{"Small steps\nbig progress."}</Text>
+          <Text style={styles.bottomRightNote}>
+            {"Small steps\nbig progress."}
+          </Text>
           <TwoSideCurvedArrow
             flip
             style={{
@@ -667,7 +687,11 @@ export default function Base() {
 
       <Animated.View
         pointerEvents={isBase ? "none" : "auto"}
-        style={[styles.backButtonWrap, { top: insets.top + 4 }, backButtonStyle]}
+        style={[
+          styles.backButtonWrap,
+          { top: insets.top + 4 },
+          backButtonStyle,
+        ]}
       >
         <Host matchContents>
           <Button

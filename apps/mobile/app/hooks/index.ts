@@ -47,3 +47,5 @@ export type { UsePreferencesOptions, UsePreferencesReturn } from "./use-preferen
 
 export { useAccount } from "./use-account";
 export type { UseAccountOptions, UseAccountReturn } from "./use-account";
+export { useDailyPractice } from "./use-daily-practice";
+export type { UseDailyPracticeReturn } from "./use-daily-practice";

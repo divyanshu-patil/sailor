@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { createMMKV } from "react-native-mmkv";
-import { AppearanceOption, UserPreferences, ScriptMood } from "@/types/settings/preferences";
-
+import { AppearanceOption, UserPreferences } from "@/types/settings/preferences";
 const mmkv = createMMKV({ id: "preference-storage" });
 
 const mmkvStorage: StateStorage = {
@@ -33,6 +32,7 @@ export const defaultPreferences: UserPreferences = {
   practiceRemindersEnabled: true,
   practiceReminderTime: "18:00",
   defaultMood: "confident",
+  streakWidgetColor: "#F4D35E",
 };
 
 interface PreferenceStore {

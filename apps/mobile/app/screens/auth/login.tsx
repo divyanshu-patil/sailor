@@ -1,45 +1,12 @@
 import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
 import { useSignIn } from "@clerk/expo";
-import { type Href, Link, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Link, useRouter } from "expo-router";
+import React, { useState } from "react";
+import { StyleSheet, Text as RNText, View } from "react-native";
 import { Image } from "expo-image";
 
-import {
-  Host,
-  HStack,
-  Section,
-  SecureField,
-  Text,
-  TextField,
-  useNativeState,
-  VStack,
-  Image as IconImage,
-  Button,
-  Divider,
-  Rectangle,
-} from "@expo/ui/swift-ui";
-import {
-  autocorrectionDisabled,
-  border,
-  buttonBorderShape,
-  buttonStyle,
-  controlSize,
-  cornerRadius,
-  disabled,
-  font,
-  foregroundStyle,
-  frame,
-  keyboardType,
-  multilineTextAlignment,
-  onSubmit,
-  padding,
-  submitLabel,
-  textContentType,
-  textInputAutocapitalization,
-  tint,
-} from "@expo/ui/swift-ui/modifiers";
-import { ThemedView } from "@/components/themed-view";
+import { Host, HStack, Text, VStack, Button, Rectangle } from "@expo/ui/swift-ui";
+import { buttonBorderShape, buttonStyle, controlSize, font, foregroundStyle, frame, multilineTextAlignment, tint } from "@expo/ui/swift-ui/modifiers";
 import FloatingLabelInput from "@/components/ui/auth/FloatingLabelInput";
 import { useColors } from "@/constants/theme";
 import { AppleSignInButton } from "@/components/ui/auth/AppleSignInButton";
@@ -53,7 +20,6 @@ export default function Page() {
   const [password, setPassword] = React.useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isSubmitting = fetchStatus === "fetching";
-  const [canSubmit, setCanSubmit] = useState<boolean>(false);
 
   const handleSubmit = async () => {
     setErrorMessage(null);
@@ -169,6 +135,19 @@ export default function Page() {
           focusedBorderColor={colors.colors.rust}
           focusedLabelColor={colors.colors.rust}
         />
+
+        {/* handleSubmit has always populated errorMessage from the Clerk
+            failure, but nothing rendered it — a wrong password simply did
+            nothing visible. */}
+        {errorMessage ? (
+          <RNText
+            style={styles.error}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            {errorMessage}
+          </RNText>
+        ) : null}
       </View>
 
       <Host matchContents={{ vertical: true }} style={styles.wrapper}>
@@ -289,8 +268,8 @@ const styles = StyleSheet.create({
   },
   error: {
     color: "#d32f2f",
-    fontSize: 12,
-    marginTop: -8,
+    fontSize: 13,
+    marginTop: 12,
   },
   debug: {
     fontSize: 10,

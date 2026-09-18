@@ -1,8 +1,9 @@
 import enum
-from datetime import datetime
+import secrets
+from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import DateTime, Enum as SAEnum, Integer, String, func, text
+from sqlalchemy import Date, DateTime, Enum as SAEnum, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.enums.user_enums import ExperienceLevel, Profession
 
@@ -42,6 +43,29 @@ class User(Base):
         unique=True,
         index=True,
         nullable=False,
+    )
+
+    # A 32-character cryptographically random hex identifier, assigned on insert.
+    #
+    # `id` stays the integer primary key — every foreign key in the schema points
+    # at it, and changing that is a different job entirely. This exists because
+    # the integer is *guessable*: it is 1, 2, 3, 4 in creation order, so anything
+    # derived from it is predictable across users and leaks how many accounts
+    # exist. Daily practice derives each user's content variation from it (see
+    # daily_controller.select_variation), which is exactly the kind of use that
+    # wants an unguessable value.
+    #
+    # Defaulted on the column rather than at the two call sites that build a User
+    # (auth/dependencies.py and controllers/webhook_controller.py), so a row
+    # cannot be inserted without one and the next call site that gets added
+    # doesn't have to remember. `secrets`, not `random` — the latter is a
+    # deterministic Mersenne Twister and is not safe for identifiers.
+    public_id: Mapped[str] = mapped_column(
+        String(32),
+        unique=True,
+        index=True,
+        nullable=False,
+        default=lambda: secrets.token_hex(16),
     )
 
     email: Mapped[str] = mapped_column(
@@ -116,6 +140,21 @@ class User(Base):
     entitlement_checked_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True,
     )
+
+    # --- daily practice streak -------------------------------------------------
+    # Three columns on `users` rather than a table of their own: there is exactly
+    # one row per user, it is never queried without the user, and a separate
+    # table would only add a join and a row that has to be created before the
+    # first write. `last_practiced_on` is a *local* date supplied by the client
+    # (see daily_controller) — a streak is about the user's calendar days, and
+    # storing it as UTC would break the boundary for anyone west of London.
+    streak_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+    longest_streak: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+    last_practiced_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

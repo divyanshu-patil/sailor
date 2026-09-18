@@ -2,20 +2,7 @@
 import { ActivityIndicator, StyleSheet } from "react-native";
 import Icon from "@react-native-vector-icons/fontawesome6";
 import { colord } from "colord";
-import {
-  createAnimatedComponent,
-  interpolate,
-  SharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withTiming,
-  useSharedValue,
-  Easing,
-  FadeOutRight,
-  LinearTransition,
-  FadeInRight,
-} from "react-native-reanimated";
+import { createAnimatedComponent, interpolate, SharedValue, useAnimatedStyle, withSpring, withSequence, withTiming, useSharedValue, Easing, FadeOutRight } from "react-native-reanimated";
 import { useCallback, useEffect } from "react";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 
