@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="420" viewBox="0 0 520 420">
+  <ellipse cx="275" cy="396" rx="190" ry="12" fill="#1B1B23" opacity="0.06"/>
+
+  <!-- feet -->
+  <rect x="150" y="332" width="34" height="62" rx="14" fill="#1B1B23"/>
+  <rect x="222" y="336" width="34" height="58" rx="14" fill="#1B1B23"/>
+
+  <!-- body -->
+  <path d="M 214 58 C 318 54 382 130 380 222 C 378 312 312 360 214 360
+           C 118 360 60 300 62 214 C 64 124 116 62 214 58 Z"
+        fill="#F7F4EF" stroke="#E7E0D6" stroke-width="5"/>
+  <path d="M 110 150 C 130 104 170 84 206 80" fill="none" stroke="#FFFFFF"
+        stroke-width="14" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- eyes, glancing at the box -->
+  <ellipse cx="226" cy="196" rx="21" ry="33" fill="#1B1B23" transform="rotate(-8 226 196)"/>
+  <ellipse cx="292" cy="192" rx="21" ry="33" fill="#1B1B23" transform="rotate(-8 292 192)"/>
+  <ellipse cx="233" cy="181" rx="6" ry="8" fill="#FFFFFF"/>
+  <ellipse cx="299" cy="177" rx="6" ry="8" fill="#FFFFFF"/>
+
+  <!-- raised arm -->
+  <path d="M 52 236 C 34 226 30 200 46 188 C 62 176 84 190 86 212
+           C 88 232 70 246 52 236 Z" fill="#1B1B23"/>
+
+  <!-- strips -->
+  <g transform="translate(348 34) rotate(30)">
+    <rect x="0" y="0" width="16" height="50" rx="8" fill="#F4D35E"/>
+    <rect x="30" y="16" width="16" height="36" rx="8" fill="#F4D35E"/>
+  </g>
+
+  <!-- box -->
+  <polygon points="262,248 350,212 332,176 244,212" fill="#CDC4FB"/>
+  <polygon points="350,212 450,238 474,200 374,176" fill="#CDC4FB"/>
+  <polygon points="262,248 350,212 450,238 362,276" fill="#8574E3"/>
+  <polygon points="262,248 362,276 362,392 262,356" fill="#B9ADF7"/>
+  <polygon points="362,276 450,238 450,352 362,392" fill="#A091F0"/>
+  <polygon points="362,276 450,238 488,262 400,302" fill="#CDC4FB"/>
+  <polygon points="262,248 362,276 336,300 238,270" fill="#CDC4FB" opacity="0.95"/>
+
+  <!-- hand over the rim -->
+  <path d="M 286 250 C 276 230 288 208 310 208 C 332 208 344 228 336 248
+           C 330 264 294 266 286 250 Z" fill="#1B1B23"/>
+
+  <!-- doodle star -->
+  <path d="M 46 316 L 55 338 L 78 340 L 60 354 L 66 377 L 46 364 L 26 377
+           L 32 354 L 14 340 L 37 338 Z" fill="none" stroke="#A99CF4"
+        stroke-width="5" stroke-linejoin="round"/>
+</svg>

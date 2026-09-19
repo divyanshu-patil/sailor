@@ -1,9 +1,14 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router, Stack } from "expo-router";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { Host, ContentUnavailableView } from "@expo/ui/swift-ui";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -19,6 +24,8 @@ import { SCREEN_PADDING } from "@/screens/presentation/decks/components/constant
 import ShimmerBar from "@/components/ui/shared/shimmer-bar";
 import { PublicDeckCard } from "./components/public-deck-card";
 import { CategoryChips } from "./components/category-chips";
+import { EmptyState, FloatingBackdrop } from "./components/empty-state";
+import { dailyTheme } from "@/screens/daily-practice/theme";
 
 const SHIMMER_BAR_HEIGHT = 4;
 
@@ -88,10 +95,17 @@ const DiscoverScreen = () => {
     [category, isQuerying],
   );
 
-  const hasFilters = !!category || debouncedQuery.trim().length > 0;
+  const hasQuery = debouncedQuery.trim().length > 0;
+  const showingState = !isLoading && decks.length === 0;
+  const theme = dailyTheme(useColorScheme() === "dark");
 
   return (
-    <View style={styles.screen}>
+    <View
+      style={[
+        styles.screen,
+        showingState ? { backgroundColor: theme.bg } : null,
+      ]}
+    >
       <Stack.Title>Discover</Stack.Title>
 
       {/*
@@ -180,6 +194,8 @@ const DiscoverScreen = () => {
         Keeping the FlashList as the screen's first native view is also what
         lets the large title collapse against it (see the toolbar note below).
       */}
+      {showingState ? <FloatingBackdrop /> : null}
+
       <FlashList
         data={decks}
         keyExtractor={(item) => item.id}
@@ -203,19 +219,40 @@ const DiscoverScreen = () => {
             <View style={styles.placeholder}>
               <ActivityIndicator />
             </View>
+          ) : error ? (
+            <EmptyState
+              kind="error"
+              title="Unable to load decks"
+              description="We're having trouble fetching the decks right now. Please try again in a moment."
+              primary={{
+                label: "Try Again",
+                icon: "rotate-cw",
+                onPress: () => refresh(false),
+              }}
+              secondary={{ label: "Go Back", onPress: router.back }}
+            />
           ) : (
-            <Host style={styles.placeholder}>
-              <ContentUnavailableView
-                title={hasFilters ? "No decks match" : "Nothing published yet"}
-                systemImage={hasFilters ? "magnifyingglass" : "sparkles"}
-                description={
-                  error ??
-                  (hasFilters
-                    ? "Try a different search or category."
-                    : "Published decks from everyone show up here.")
-                }
-              />
-            </Host>
+            <EmptyState
+              kind="empty"
+              title={hasQuery ? "No decks match" : "No decks yet"}
+              description={
+                hasQuery
+                  ? "Try a different search, or check back later for new content from the community."
+                  : "Be the first to share a deck or check back later for new content from the community."
+              }
+              // Steps to the next category, so repeated taps tour them all.
+              primary={{
+                label: "Explore Categories",
+                onPress: () => {
+                  const at = DECK_CATEGORIES.findIndex(
+                    (c) => c.value === category,
+                  );
+                  setCategory(
+                    DECK_CATEGORIES[(at + 1) % DECK_CATEGORIES.length].value,
+                  );
+                },
+              }}
+            />
           )
         }
         ListFooterComponent={
