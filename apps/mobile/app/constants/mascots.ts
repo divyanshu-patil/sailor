@@ -13,3 +13,7 @@ export type MascotKey = keyof typeof MASCOTS;
 // animation) this one exposes `namaste`/`hello` states toggled by the boolean
 // input `isNamaste`; the runtime owns the transition and looping.
 export const CREAM_MASCOT_STATES = require("@/assets/animations/mascots/auth/blob-cream-temp.lottie");
+
+// The login screen's hero mascot. It carries a state machine (`blooby`), but
+// the login screen plays its `idle` segment as a plain looping animation.
+export const LOGIN_MASCOT = require("@/assets/animations/mascots/auth/login-screen-cream.lottie");

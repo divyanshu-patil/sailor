@@ -1,5 +1,10 @@
-import { Stack, useIsFocused, useRouter } from "expo-router";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Stack,
+  useIsFocused,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BackHandler,
   Pressable,
@@ -18,10 +23,6 @@ import {
   frame,
   labelStyle,
   tint,
-<<<<<<< HEAD
-=======
-  tint,
->>>>>>> 4f71008 (fix: performance improvement and shift to stack.toolbar)
 } from "@expo/ui/swift-ui/modifiers";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -476,9 +477,34 @@ export default function Base() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const isFocused = useIsFocused();
+  const params = useLocalSearchParams<{
+    createAccount?: string;
+    from?: string;
+  }>();
+  // Set when the login screen sent us here via its "Sign up" link. The back
+  // button then pops to login instead of reversing the morph.
+  const cameFromLogin = params.from === "login";
 
   const { screenMode, settled, progress, startTransition, goBack } =
     useCreateAccountTransition();
+
+  // Entering from login lands on this screen already morphed into the
+  // create-account state; run the forward transition once on mount.
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    if (params.createAccount !== "1") return;
+    autoStartedRef.current = true;
+    startTransition();
+  }, [params.createAccount, startTransition]);
+
+  const handleBack = useCallback(() => {
+    if (cameFromLogin) {
+      router.back();
+      return;
+    }
+    goBack();
+  }, [cameFromLogin, goBack, router]);
 
   const scale = useMemo(
     () => Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT),
@@ -498,12 +524,12 @@ export default function Base() {
     const subscription = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        goBack();
+        handleBack();
         return true;
       },
     );
     return () => subscription.remove();
-  }, [screenMode, goBack]);
+  }, [screenMode, handleBack]);
 
   const baseButtonsStyle = useAnimatedStyle(() => {
     const p = interpolate(
@@ -670,7 +696,7 @@ export default function Base() {
               <Button
                 label="Back"
                 systemImage="chevron.left"
-                onPress={goBack}
+                onPress={handleBack}
                 modifiers={[
                   frame({ width: 38, height: 38 }),
                   labelStyle("iconOnly"),
