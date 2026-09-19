@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import Animated, {
   Extrapolation,
@@ -31,7 +32,7 @@ export interface MorphHeadlineProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function MorphHeadline({
+export const MorphHeadline = memo(function MorphHeadline({
   progress,
   baseLine1,
   baseLine2,
@@ -93,7 +94,7 @@ export function MorphHeadline({
       </Animated.View>
     </View>
   );
-}
+});
 
 export interface MorphDescriptionProps {
   progress: SharedValue<number>;
@@ -103,7 +104,7 @@ export interface MorphDescriptionProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function MorphDescription({
+export const MorphDescription = memo(function MorphDescription({
   progress,
   baseText,
   createOffsetY = 0,
@@ -155,7 +156,7 @@ export function MorphDescription({
       </Animated.View>
     </View>
   );
-}
+});
 
 export interface MorphNoteProps {
   progress: SharedValue<number>;
@@ -174,7 +175,7 @@ export interface MorphNoteProps {
  * screen morphs. Positions are in device points (already multiplied by the
  * screen scale by the caller).
  */
-export function MorphNote({
+export const MorphNote = memo(function MorphNote({
   progress,
   baseText,
   targetText,
@@ -242,7 +243,7 @@ export function MorphNote({
       </Animated.Text>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {

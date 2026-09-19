@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { AppleSignInButton } from "@/components/ui/auth/AppleSignInButton";
@@ -10,7 +11,7 @@ const INK = "#1C1A18";
 const PILL_HEIGHT = 44;
 const PILL_RADIUS = 22;
 
-export function CreateAccountPanel() {
+export const CreateAccountPanel = memo(function CreateAccountPanel() {
   return (
     <View style={styles.panel}>
       {/* Google */}
@@ -64,7 +65,7 @@ export function CreateAccountPanel() {
       </Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   panel: {

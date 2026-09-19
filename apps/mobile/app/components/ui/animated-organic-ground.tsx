@@ -1,5 +1,5 @@
 import { Canvas, Path, usePathValue } from "@shopify/react-native-skia";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import Animated, {
   Extrapolation,
@@ -43,7 +43,7 @@ export interface AnimatedOrganicGroundProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export default function AnimatedOrganicGround({
+export default memo(function AnimatedOrganicGround({
   width,
   height,
   x,
@@ -107,4 +107,4 @@ export default function AnimatedOrganicGround({
       </Canvas>
     </Animated.View>
   );
-}
+});

@@ -1,12 +1,13 @@
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Stack, useIsFocused, useRouter } from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   BackHandler,
-  Platform,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
   View,
+  ViewStyle,
   useWindowDimensions,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -14,9 +15,13 @@ import { Button, Host } from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
   buttonBorderShape,
-  buttonStyle,
   frame,
   labelStyle,
+  tint,
+<<<<<<< HEAD
+=======
+  tint,
+>>>>>>> 4f71008 (fix: performance improvement and shift to stack.toolbar)
 } from "@expo/ui/swift-ui/modifiers";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -145,7 +150,7 @@ const ARROW_RIGHT = {
   targetRotation: 180,
 } as const;
 
-function TwoSideCurvedArrow({
+const TwoSideCurvedArrow = memo(function TwoSideCurvedArrow({
   flip = false,
   style,
 }: {
@@ -186,9 +191,13 @@ function TwoSideCurvedArrow({
       </Svg>
     </View>
   );
-}
+});
 
-function YellowSquiggle({ style }: { style?: any }) {
+const YellowSquiggle = memo(function YellowSquiggle({
+  style,
+}: {
+  style?: any;
+}) {
   return (
     <Animated.View
       pointerEvents="none"
@@ -205,21 +214,60 @@ function YellowSquiggle({ style }: { style?: any }) {
       </Svg>
     </Animated.View>
   );
-}
+});
 
 /**
  * The mascots + ground, split into independent animated pieces that all read
  * the same transition `progress`.
  */
-function MascotWorld({
+const MascotWorld = memo(function MascotWorld({
   scale,
   progress,
   isNamaste,
+  focused,
 }: {
   scale: number;
   progress: SharedValue<number>;
   isNamaste: boolean;
+  focused: boolean;
 }) {
+  // Absolute layout is recomputed only when the screen scale changes, so the
+  // memoized `AnimatedMascot`s below keep stable `position` prop identities.
+  const blobPositions = useMemo(() => {
+    return (Object.keys(BLOB_LAYOUT) as BlobKey[]).map((key) => {
+      const layout = BLOB_LAYOUT[key];
+      const size = layout.size * scale;
+      return {
+        key,
+        source: MASCOTS[key],
+        size,
+        zIndex: layout.zIndex,
+        targetScale: MASCOT_MOTION[key].scale,
+        targetDx: MASCOT_MOTION[key].dx * scale,
+        targetDy: MASCOT_MOTION[key].dy * scale,
+        inputRange: MASCOT_MOTION[key].range,
+        position: {
+          width: size,
+          height: size,
+          top: layout.top * scale,
+          ...(layout.left !== undefined
+            ? { left: layout.left * scale }
+            : { right: layout.right! * scale }),
+        },
+      };
+    });
+  }, [scale]);
+
+  const creamPosition = useMemo(
+    () => ({
+      width: CREAM_SIZE * scale,
+      height: CREAM_SIZE * scale,
+      left: ((DESIGN_WIDTH - CREAM_SIZE + 30) / 2) * scale,
+      top: 100 * scale,
+    }),
+    [scale],
+  );
+
   return (
     <View
       pointerEvents="none"
@@ -228,33 +276,21 @@ function MascotWorld({
         { width: DESIGN_WIDTH * scale, height: CLUSTER_HEIGHT * scale },
       ]}
     >
-      {(Object.keys(BLOB_LAYOUT) as BlobKey[]).map((key) => {
-        const layout = BLOB_LAYOUT[key];
-        const motion = MASCOT_MOTION[key];
-        const size = layout.size * scale;
-
-        return (
-          <AnimatedMascot
-            key={key}
-            source={MASCOTS[key]}
-            size={size}
-            zIndex={layout.zIndex}
-            progress={progress}
-            targetScale={motion.scale}
-            targetDx={motion.dx * scale}
-            targetDy={motion.dy * scale}
-            inputRange={motion.range}
-            position={{
-              width: size,
-              height: size,
-              top: layout.top * scale,
-              ...(layout.left !== undefined
-                ? { left: layout.left * scale }
-                : { right: layout.right! * scale }),
-            }}
-          />
-        );
-      })}
+      {blobPositions.map((blob) => (
+        <AnimatedMascot
+          key={blob.key}
+          source={blob.source}
+          size={blob.size}
+          zIndex={blob.zIndex}
+          progress={progress}
+          targetScale={blob.targetScale}
+          targetDx={blob.targetDx}
+          targetDy={blob.targetDy}
+          inputRange={blob.inputRange}
+          position={blob.position}
+          paused={!focused}
+        />
+      ))}
 
       <AnimatedOrganicGround
         key={`ground-${scale}`}
@@ -281,76 +317,66 @@ function MascotWorld({
         targetDx={CREAM_MOTION.dx * scale}
         targetDy={CREAM_MOTION.dy * scale}
         inputRange={CREAM_RANGE}
-        position={{
-          width: CREAM_SIZE * scale,
-          height: CREAM_SIZE * scale,
-          left: ((DESIGN_WIDTH - CREAM_SIZE + 30) / 2) * scale,
-          top: 100 * scale,
-        }}
+        position={creamPosition}
         stateMachineId="mascot"
         stateMachineInput="isNamaste"
         stateMachineValue={isNamaste}
+        paused={!focused}
       />
     </View>
   );
-}
+});
 
-/** Procedural ShapeSoup blobs that fade in and then drift on their own. */
-function BlobLayer({
+const BLOBS = [
+  {
+    seed: "onboarding-mint",
+    x: 40,
+    y: -70,
+    size: 260,
+    color: "#D3EBDD",
+    opacity: 0.55,
+    rotation: 10,
+  },
+  {
+    seed: "onboarding-cream",
+    x: 250,
+    y: 20,
+    size: 240,
+    color: "#F6E7D2",
+    opacity: 0.6,
+    rotation: -8,
+  },
+  {
+    seed: "onboarding-pink",
+    x: -120,
+    y: 200,
+    size: 400,
+    color: "#f6d3e09b",
+    opacity: 0.8,
+    rotation: 90,
+  },
+  {
+    seed: "onboarding-yellow",
+    x: 290,
+    y: 240,
+    size: 320,
+    color: "#F7E7A6",
+    opacity: 0.8,
+    rotation: 6,
+  },
+] as const;
+
+/** Procedural ShapeSoup blobs that fade in with the screen transition. */
+const BlobLayer = memo(function BlobLayer({
   scale,
   progress,
-  motion,
 }: {
   scale: number;
   progress: SharedValue<number>;
-  motion: boolean;
 }) {
-  const blobs = [
-    {
-      seed: "onboarding-mint",
-      x: 40,
-      y: -70,
-      size: 260,
-      color: "#D3EBDD",
-      opacity: 0.55,
-      rotation: 10,
-      delay: 2600,
-    },
-    {
-      seed: "onboarding-cream",
-      x: 250,
-      y: 20,
-      size: 240,
-      color: "#F6E7D2",
-      opacity: 0.6,
-      rotation: -8,
-      delay: 3400,
-    },
-    {
-      seed: "onboarding-pink",
-      x: -120,
-      y: 200,
-      size: 400,
-      color: "#f6d3e09b",
-      opacity: 0.8,
-      rotation: 90,
-      delay: 0,
-    },
-    {
-      seed: "onboarding-yellow",
-      x: 290,
-      y: 240,
-      size: 320,
-      color: "#F7E7A6",
-      opacity: 0.8,
-      rotation: 6,
-      delay: 900,
-    },
-  ];
-
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {blobs.map((blob) => (
+      {BLOBS.map((blob) => (
         <OrganicBlob
           key={blob.seed}
           seed={blob.seed}
@@ -361,17 +387,14 @@ function BlobLayer({
           y={blob.y * scale}
           opacity={blob.opacity}
           initialRotation={blob.rotation}
-          motion={motion}
-          motionDelay={blob.delay}
-          motionRange={14 * scale}
           revealProgress={progress}
         />
       ))}
     </View>
   );
-}
+});
 
-function CTAButton({
+const CTAButton = memo(function CTAButton({
   label,
   variant,
   onPress,
@@ -398,18 +421,64 @@ function CTAButton({
       {primary && <Text style={styles.ctaArrow}>→</Text>}
     </Pressable>
   );
-}
+});
+
+/**
+ * Owns the rotating onboarding headline state so its 4.2s `setInterval` only
+ * re-renders this block — never the mascots, ground or blobs.
+ */
+const RotatingHeadline = memo(function RotatingHeadline({
+  progress,
+  createOffsetY,
+  style,
+}: {
+  progress: SharedValue<number>;
+  createOffsetY: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const [index, setIndex] = useState(0);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    let swap: ReturnType<typeof setTimeout>;
+
+    const interval = setInterval(() => {
+      opacity.value = withTiming(0, { duration: 140 });
+      swap = setTimeout(() => {
+        setIndex((previous) => (previous + 1) % HEADLINES.length);
+        opacity.value = withTiming(1, { duration: 220 });
+      }, 150);
+    }, 4200);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(swap);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const current = HEADLINES[index];
+
+  return (
+    <MorphHeadline
+      progress={progress}
+      baseLine1={current.line1}
+      baseLine2={current.line2}
+      rotationOpacity={opacity}
+      createOffsetY={createOffsetY}
+      style={style}
+    />
+  );
+});
 
 export default function Base() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isFocused = useIsFocused();
 
-  const { screenMode, progress, startTransition, goBack } =
+  const { screenMode, settled, progress, startTransition, goBack } =
     useCreateAccountTransition();
-
-  const [headlineIndex, setHeadlineIndex] = useState(0);
-  const headlineOpacity = useSharedValue(1);
 
   const scale = useMemo(
     () => Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT),
@@ -422,34 +491,6 @@ export default function Base() {
   const safeTop = Math.max(insets.top, 0);
   const topLift = Math.min(safeTop, 32);
   const isBase = screenMode === "base";
-  // SwiftUI's `glass` button style ships with iOS 26 / Xcode 26. Older iOS
-  // builds fall back to a native bordered button so the control stays visible.
-  const supportsLiquidGlass =
-    Platform.OS === "ios" &&
-    Number.parseInt(String(Platform.Version), 10) >= 26;
-
-  // Rotate the onboarding headline only while we're still in the base world.
-  // The fades are plain `withTiming` calls made from inside timers, so there is
-  // no per-frame work on the JS thread and no second state loop.
-  useEffect(() => {
-    if (screenMode !== "base") return;
-
-    let swap: ReturnType<typeof setTimeout>;
-
-    const interval = setInterval(() => {
-      headlineOpacity.value = withTiming(0, { duration: 140 });
-      swap = setTimeout(() => {
-        setHeadlineIndex((previous) => (previous + 1) % HEADLINES.length);
-        headlineOpacity.value = withTiming(1, { duration: 220 });
-      }, 150);
-    }, 4200);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(swap);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenMode]);
 
   // Android hardware back reverses the morph instead of leaving the route.
   useEffect(() => {
@@ -544,10 +585,105 @@ export default function Base() {
     [router],
   );
 
-  const current = HEADLINES[headlineIndex];
-
+  // Layout objects are derived from `scale` only; memoizing them keeps the
+  // memoized morph/mascot children from re-rendering on unrelated updates.
+  const noteLeft = useMemo(
+    () => ({
+      from: { left: 25, top: 85 },
+      to: { left: 300 * scale, top: 118 * scale },
+    }),
+    [scale],
+  );
+  const noteRight = useMemo(
+    () => ({
+      from: { left: DESIGN_WIDTH * scale - NOTE_WIDTH, top: 330 },
+      to: { left: 28, top: 130 },
+    }),
+    [scale],
+  );
+  const arrowTop = useMemo(
+    () => ({
+      from: {
+        left: ARROW_TOP.from.left * scale,
+        top: ARROW_TOP.from.top * scale,
+      },
+      to: { left: ARROW_TOP.to.left * scale, top: ARROW_TOP.to.top * scale },
+    }),
+    [scale],
+  );
+  const arrowRight = useMemo(
+    () => ({
+      from: {
+        left: ARROW_RIGHT.from.left * scale,
+        top: ARROW_RIGHT.from.top * scale,
+      },
+      to: {
+        left: ARROW_RIGHT.to.left * scale,
+        top: ARROW_RIGHT.to.top * scale,
+      },
+    }),
+    [scale],
+  );
+  const squigglePlacement = useMemo(
+    () => ({
+      left: 255 * scale - 60,
+      top: 100 * scale + 120,
+      zIndex: 1,
+    }),
+    [scale],
+  );
+  const squiggleStyleArray = useMemo(
+    () => [styles.squiggle, squigglePlacement, squiggleStyle],
+    [squigglePlacement, squiggleStyle],
+  );
+  const footerArrowStyle = useMemo(
+    () => ({
+      right: -5,
+      bottom: -10,
+      left: undefined,
+      top: undefined,
+      transform: [{ rotate: "-180deg" }],
+    }),
+    [],
+  );
+  const createPanelPlacement = useMemo(
+    () => ({ bottom: Math.max(insets.bottom, 16) - 30 }),
+    [insets.bottom],
+  );
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ headerTransparent: true, title: "" }} />
+
+      {/* `asChild` is the only Stack.Toolbar mode that keeps a custom, animated
+          view: the native header item API is static and can't read Reanimated
+          shared values, while `asChild` drops the element straight into the
+          header's left slot. `headerTransparent` keeps this full-bleed screen
+          from being inset by the header that left placement forces visible.
+          Mounted only once the forward morph has settled, so the button
+          appears after the animation; unmounting after the reverse morph also
+          hides the forced header again, since useCompositionOption
+          unregisters on unmount. */}
+      {settled && (
+        <Stack.Toolbar placement="left" asChild>
+          <Animated.View style={backButtonStyle}>
+            <Host matchContents>
+              <Button
+                label="Back"
+                systemImage="chevron.left"
+                onPress={goBack}
+                modifiers={[
+                  frame({ width: 38, height: 38 }),
+                  labelStyle("iconOnly"),
+                  buttonBorderShape("circle"),
+                  tint(INK),
+                  accessibilityLabel("Back"),
+                ]}
+              />
+            </Host>
+          </Animated.View>
+        </Stack.Toolbar>
+      )}
+
       <StatusBar style="dark" />
 
       <View
@@ -561,18 +697,14 @@ export default function Base() {
           },
         ]}
       >
-        <BlobLayer
-          scale={scale}
-          progress={progress}
-          motion={screenMode === "create-account"}
-        />
+        <BlobLayer scale={scale} progress={progress} />
 
         <MorphNote
           progress={progress}
           baseText={"Ideas today,\nbetter\ntomorrow."}
           targetText={"Ideas today,\nbetter\ntomorrow."}
-          from={{ left: 25, top: 85 }}
-          to={{ left: 300 * scale, top: 118 * scale }}
+          from={noteLeft.from}
+          to={noteLeft.to}
           baseRotation={-8}
           targetRotation={7}
           width={NOTE_WIDTH}
@@ -581,8 +713,8 @@ export default function Base() {
           progress={progress}
           baseText={"Same you,\nBrighter\nideas."}
           targetText={"Same you,\nbrighter\nideas."}
-          from={{ left: DESIGN_WIDTH * scale - NOTE_WIDTH, top: 330 }}
-          to={{ left: 28, top: 130 }}
+          from={noteRight.from}
+          to={noteRight.to}
           baseRotation={7}
           targetRotation={-8}
           width={NOTE_WIDTH}
@@ -590,37 +722,22 @@ export default function Base() {
 
         <MorphArrow
           progress={progress}
-          from={{
-            left: ARROW_TOP.from.left * scale,
-            top: ARROW_TOP.from.top * scale,
-          }}
-          to={{
-            left: ARROW_TOP.to.left * scale,
-            top: ARROW_TOP.to.top * scale,
-          }}
+          from={arrowTop.from}
+          to={arrowTop.to}
           baseRotation={ARROW_TOP.baseRotation}
           targetRotation={ARROW_TOP.targetRotation}
         />
         <MorphArrow
           progress={progress}
-          from={{
-            left: ARROW_RIGHT.from.left * scale,
-            top: ARROW_RIGHT.from.top * scale,
-          }}
-          to={{
-            left: ARROW_RIGHT.to.left * scale,
-            top: ARROW_RIGHT.to.top * scale,
-          }}
+          from={arrowRight.from}
+          to={arrowRight.to}
           baseRotation={ARROW_RIGHT.baseRotation}
           targetRotation={ARROW_RIGHT.targetRotation}
           flip
         />
 
-        <MorphHeadline
+        <RotatingHeadline
           progress={progress}
-          baseLine1={current.line1}
-          baseLine2={current.line2}
-          rotationOpacity={headlineOpacity}
           createOffsetY={CA_TEXT_DROP * scale}
           style={styles.headlineBlock}
         />
@@ -632,15 +749,14 @@ export default function Base() {
           style={styles.descriptionBlock}
         />
 
-        <YellowSquiggle
-          style={[
-            styles.squiggle,
-            { left: 255 * scale - 60, top: 100 * scale + 120, zIndex: 1 },
-            squiggleStyle,
-          ]}
-        />
+        <YellowSquiggle style={squiggleStyleArray} />
 
-        <MascotWorld scale={scale} progress={progress} isNamaste={isBase} />
+        <MascotWorld
+          scale={scale}
+          progress={progress}
+          isNamaste={isBase}
+          focused={isFocused}
+        />
 
         <Animated.View
           pointerEvents={isBase ? "auto" : "none"}
@@ -658,7 +774,7 @@ export default function Base() {
           pointerEvents={isBase ? "none" : "auto"}
           style={[
             styles.createPanelWrap,
-            { bottom: Math.max(insets.bottom, 16) - 30 },
+            createPanelPlacement,
             createPanelStyle,
           ]}
         >
@@ -669,45 +785,11 @@ export default function Base() {
           pointerEvents="none"
           style={[styles.footerRow, footerStyle]}
         >
-          <Text style={styles.bottomRightNote}>
-            {"Small steps\nbig progress."}
-          </Text>
-          <TwoSideCurvedArrow
-            flip
-            style={{
-              right: -5,
-              bottom: -10,
-              left: undefined,
-              top: undefined,
-              transform: [{ rotate: "-180deg" }],
-            }}
-          />
+          <Text style={styles.bottomRightNote}>{"Small steps\nbig progress."}</Text>
+          <TwoSideCurvedArrow flip style={footerArrowStyle} />
         </Animated.View>
       </View>
 
-      <Animated.View
-        pointerEvents={isBase ? "none" : "auto"}
-        style={[
-          styles.backButtonWrap,
-          { top: insets.top + 4 },
-          backButtonStyle,
-        ]}
-      >
-        <Host matchContents>
-          <Button
-            label="Back"
-            systemImage="chevron.left"
-            onPress={goBack}
-            modifiers={[
-              frame({ width: 38, height: 38 }),
-              labelStyle("iconOnly"),
-              buttonBorderShape("circle"),
-              buttonStyle(supportsLiquidGlass ? "glass" : "bordered"),
-              accessibilityLabel("Back"),
-            ]}
-          />
-        </Host>
-      </Animated.View>
     </View>
   );
 }
@@ -808,10 +890,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 18,
     letterSpacing: 0.2,
-  },
-  backButtonWrap: {
-    position: "absolute",
-    left: 15,
-    zIndex: 20,
   },
 });

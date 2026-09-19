@@ -1,6 +1,7 @@
 import { DotLottie, type Dotlottie } from "@lottiefiles/dotlottie-react-native";
-import { useEffect, useRef } from "react";
-import { StyleProp, ViewStyle } from "react-native";
+import LottieView from "lottie-react-native";
+import { memo, useEffect, useMemo, useRef } from "react";
+import { Image, StyleProp, ViewStyle } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -9,16 +10,21 @@ import Animated, {
 } from "react-native-reanimated";
 
 /**
- * A DotLottie mascot wrapped in a Reanimated view.
+ * A Lottie mascot wrapped in a Reanimated view.
  *
- * Responsibilities are deliberately split:
- *  - Lottie owns everything *inside* the mascot. If `stateMachineId` is given
- *    the file's own state machine drives playback and looping; we only set the
- *    boolean input. This component never seeks frames, never restarts the
- *    animation and never creates a playback loop.
- *  - Reanimated owns everything *outside*: scale and translation, driven by the
- *    shared `progress` value with a per-mascot input range so movement is
- *    staggered.
+ * Two renderers, picked by whether the file needs its own state machine:
+ *  - `stateMachineId` set -> the dotLottie runtime, which owns the machine.
+ *  - otherwise -> lottie-react-native (lottie-ios), a plain looping animation.
+ *
+ * The split matters on iOS: every dotLottie instance owns a private `MTKView`
+ * plus a `CIContext`/command queue and renders a `CGImage` on the main thread
+ * every frame. This screen shows seven mascots, so keeping the six decorative
+ * ones on lottie-ios (Core Animation, GPU-composited, no per-frame main-thread
+ * work) is what keeps the screen at 60fps.
+ *
+ * In both cases Reanimated owns everything *outside* the mascot — scale and
+ * translation driven by the shared `progress` value, with a per-mascot input
+ * range so movement is staggered.
  */
 export interface AnimatedMascotProps {
   source: number;
@@ -37,9 +43,11 @@ export interface AnimatedMascotProps {
   stateMachineId?: string;
   stateMachineInput?: string;
   stateMachineValue?: boolean;
+  /** Stops playback while the screen is off-screen. */
+  paused?: boolean;
 }
 
-export default function AnimatedMascot({
+export default memo(function AnimatedMascot({
   source,
   size,
   position,
@@ -52,19 +60,57 @@ export default function AnimatedMascot({
   stateMachineId,
   stateMachineInput,
   stateMachineValue = true,
+  paused = false,
 }: AnimatedMascotProps) {
-  const ref = useRef<Dotlottie>(null);
+  const dotLottieRef = useRef<Dotlottie>(null);
+  const lottieRef = useRef<LottieView>(null);
   const usesStateMachine = Boolean(stateMachineId && stateMachineInput);
+  const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
+
+  // Resolve the bundled `.lottie` asset to a file URI for lottie-ios.
+  const lottieSource = useMemo(
+    () =>
+      usesStateMachine
+        ? undefined
+        : { uri: Image.resolveAssetSource(source).uri },
+    [usesStateMachine, source],
+  );
 
   // Only set the input after the machine has loaded; the imperative handle is
   // null until then. `onLoad` below performs the initial set.
   useEffect(() => {
     if (!usesStateMachine) return;
-    ref.current?.stateMachineSetBooleanInput(
+    dotLottieRef.current?.stateMachineSetBooleanInput(
       stateMachineInput as string,
       stateMachineValue,
     );
   }, [usesStateMachine, stateMachineInput, stateMachineValue]);
+
+  // Stop playback while the screen is off-screen. Skips the initial mount so it
+  // never races autoplay / state-machine load.
+  const didMount = useRef(false);
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+    if (usesStateMachine) {
+      if (paused) {
+        dotLottieRef.current?.stateMachineStop();
+      } else {
+        // Restarting the machine drops back to its initial state, so re-apply
+        // the input that selects the current pose.
+        dotLottieRef.current?.stateMachineStart();
+        dotLottieRef.current?.stateMachineSetBooleanInput(
+          stateMachineInput as string,
+          stateMachineValue,
+        );
+      }
+    } else {
+      if (paused) lottieRef.current?.pause();
+      else lottieRef.current?.resume();
+    }
+  }, [paused, usesStateMachine, stateMachineInput, stateMachineValue]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const p = interpolate(
@@ -87,27 +133,33 @@ export default function AnimatedMascot({
       pointerEvents="none"
       style={[{ position: "absolute", zIndex }, position, animatedStyle]}
     >
-      <DotLottie
-        ref={ref}
-        source={source}
-        useFrameInterpolation
-        {...(usesStateMachine
-          ? { stateMachineId }
-          : { autoplay: true, loop: true })}
-        style={{ width: size, height: size }}
-        // Load/start the machine here rather than relying on the prop setter:
-        // the prop can land before the native view has built its animation, in
-        // which case the load is a silent no-op and is never retried.
-        onLoad={() => {
-          if (!usesStateMachine) return;
-          ref.current?.stateMachineLoad(stateMachineId as string);
-          ref.current?.stateMachineStart();
-          ref.current?.stateMachineSetBooleanInput(
-            stateMachineInput as string,
-            stateMachineValue,
-          );
-        }}
-      />
+      {usesStateMachine ? (
+        <DotLottie
+          ref={dotLottieRef}
+          source={source}
+          stateMachineId={stateMachineId}
+          style={lottieStyle}
+          // Load/start the machine here rather than relying on the prop setter:
+          // the prop can land before the native view has built its animation, in
+          // which case the load is a silent no-op and is never retried.
+          onLoad={() => {
+            dotLottieRef.current?.stateMachineLoad(stateMachineId as string);
+            dotLottieRef.current?.stateMachineStart();
+            dotLottieRef.current?.stateMachineSetBooleanInput(
+              stateMachineInput as string,
+              stateMachineValue,
+            );
+          }}
+        />
+      ) : (
+        <LottieView
+          ref={lottieRef}
+          source={lottieSource}
+          autoPlay
+          loop
+          style={lottieStyle}
+        />
+      )}
     </Animated.View>
   );
-}
+});
