@@ -13,9 +13,16 @@ import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
 import * as Sentry from "@sentry/react-native";
 import * as Notifications from "expo-notifications";
 import { startReminderSync } from "@/lib/daily-reminder";
+import { startStreakAlertSync } from "@/lib/streak-alarm";
 import { startHapticsSync } from "@/lib/haptics";
 import { primeWidgetAssets } from "@/lib/widget-assets";
-import { reloadWidgets, resyncWidgets, startStreakWidgetSync } from "@/lib/widget-sync";
+import * as Font from "expo-font";
+import { preloadMascots } from "@/screens/daily-practice/components/Mascot";
+import {
+  reloadWidgets,
+  resyncWidgets,
+  startStreakWidgetSync,
+} from "@/lib/widget-sync";
 
 if (__DEV__ && !ENV.SENTRY_DSN) {
   // Silent-by-default is how a whole afternoon gets lost: with no DSN the SDK
@@ -34,7 +41,10 @@ Sentry.init({
   enableLogs: true,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+  integrations: [
+    Sentry.mobileReplayIntegration(),
+    Sentry.feedbackIntegration(),
+  ],
 });
 
 function ApiAuthSetup() {
@@ -114,7 +124,19 @@ function InitialLayout() {
     // first frame on five file copies would be the worse trade.
     void primeWidgetAssets().then(resyncWidgets);
 
+    // Mascots are the first thing an empty or failed screen shows; loaded
+    // now so they don't pop in a beat after the words around them.
+    preloadMascots().catch(() => {});
+    // Kalam is also embedded via app.json, but only after a prebuild; loading
+    // it here makes the handwritten notes work in any build.
+    Font.loadAsync({
+      "Kalam-Light": require("@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf"),
+      "Kalam-Regular": require("@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf"),
+      "Kalam-Bold": require("@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"),
+    }).catch(() => {});
+
     const stopReminderSync = startReminderSync();
+    const stopStreakAlerts = startStreakAlertSync();
     const stopWidgetSync = startStreakWidgetSync();
     // Drives Pulsar's global switch from the "Emotion Haptics" preference. That
     // toggle has existed in Settings with nothing reading it — this makes it
@@ -123,6 +145,7 @@ function InitialLayout() {
     const stopHapticsSync = startHapticsSync();
     return () => {
       stopReminderSync();
+      stopStreakAlerts();
       stopWidgetSync();
       stopHapticsSync();
     };

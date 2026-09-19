@@ -33,9 +33,17 @@ export interface UseDailyPracticeReturn {
  * bump below is always overwritten by whatever it returns.
  */
 export function useDailyPractice(): UseDailyPracticeReturn {
-  const { unit, streak, pendingCompleteDate, setContent, setStreak, setPendingComplete } =
-    useDailyStore();
-  const widgetColor = usePreferenceStore((s) => s.preferences.streakWidgetColor);
+  const {
+    unit,
+    streak,
+    pendingCompleteDate,
+    setContent,
+    setStreak,
+    setPendingComplete,
+  } = useDailyStore();
+  const widgetColor = usePreferenceStore(
+    (s) => s.preferences.streakWidgetColor,
+  );
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -88,7 +96,8 @@ export function useDailyPractice(): UseDailyPracticeReturn {
       ]);
 
       if (contentResult.status === "fulfilled") {
-        const { today: unitForToday, tomorrow: unitForTomorrow } = contentResult.value;
+        const { today: unitForToday, tomorrow: unitForTomorrow } =
+          contentResult.value;
         // Tomorrow may legitimately be null when the server's buffer is short.
         // Cached and pushed as-is — the widget sync treats it as optional.
         setContent(unitForToday, unitForTomorrow);
@@ -146,7 +155,12 @@ export function useDailyPractice(): UseDailyPracticeReturn {
     // Optimistic, so the tap lands instantly. Overwritten by the server's
     // answer below, which is the one that counts.
     if (streak) {
-      setStreak({ ...streak, currentStreak: streak.currentStreak + 1, completedToday: true });
+      setStreak({
+        ...streak,
+        currentStreak: streak.currentStreak + 1,
+        completedToday: true,
+        lastCompletedDate: date,
+      });
     }
 
     try {
@@ -165,7 +179,11 @@ export function useDailyPractice(): UseDailyPracticeReturn {
     unit,
     isStale,
     streak: streak
-      ? { ...streak, completedToday: streak.completedToday || pendingCompleteDate === today }
+      ? {
+          ...streak,
+          completedToday:
+            streak.completedToday || pendingCompleteDate === today,
+        }
       : null,
     isLoading,
     isCompleting,

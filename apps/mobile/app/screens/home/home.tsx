@@ -3,7 +3,17 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { useAppUserStore } from "@/store/app-user.store";
 // import useAuthenticated from "@/hooks/use-authenticated";
-import { Host, Form, Section, Text, Button, Toggle, HStack, Spacer, SwipeActions } from "@expo/ui/swift-ui";
+import {
+  Host,
+  Form,
+  Section,
+  Text,
+  Button,
+  Toggle,
+  HStack,
+  Spacer,
+  SwipeActions,
+} from "@expo/ui/swift-ui";
 import {
   Animation,
   animation,
@@ -16,6 +26,7 @@ import { useAuth, useClerk, useUser } from "@clerk/expo";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { usePreferences } from "@/hooks";
 import { useDailyStore } from "@/store/daily-store";
+import { useStreakCountdown } from "@/screens/daily-practice/components/StreakAtRisk";
 
 const messages = ["Hello", "Namaste", "Bonjour", "Hola", "Ciao"];
 
@@ -35,6 +46,9 @@ const HomeScreen = () => {
   // Read straight from the cache, not through useDailyPractice: home should
   // never fire the daily fetch, it just reflects whatever the screen last saw.
   const streak = useDailyStore((s) => s.streak);
+  // Minute ticks: the footer shows hours and minutes, not seconds.
+  const { target: streakTarget, remaining: streakLeft } =
+    useStreakCountdown(60_000);
 
   const [notifications, setNotifications] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -99,11 +113,17 @@ const HomeScreen = () => {
           title="Today"
           footer={
             <Text modifiers={[foregroundStyle("#8E8E93")]}>
-              {streak && streak.currentStreak > 0
-                ? `${streak.currentStreak} day streak. ${
-                    streak.completedToday ? "Done for today." : "Not done yet today."
-                  }`
-                : "A short snippet to read aloud, new every day."}
+              {streakTarget?.atRisk
+                ? `🔥 Your ${streakTarget.count}-day streak ends in ${Math.floor(
+                    streakLeft / 3_600_000,
+                  )}h ${Math.floor((streakLeft % 3_600_000) / 60_000)}m. Practise today!`
+                : streak && streak.currentStreak > 0
+                  ? `${streak.currentStreak} day streak. ${
+                      streak.completedToday
+                        ? "Done for today."
+                        : "Not done yet today."
+                    }`
+                  : "A short snippet to read aloud, new every day."}
             </Text>
           }
         >
