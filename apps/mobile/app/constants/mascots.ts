@@ -17,3 +17,7 @@ export const CREAM_MASCOT_STATES = require("@/assets/animations/mascots/auth/blo
 // The login screen's hero mascot. It carries a state machine (`blooby`), but
 // the login screen plays its `idle` segment as a plain looping animation.
 export const LOGIN_MASCOT = require("@/assets/animations/mascots/auth/login-screen-cream.lottie");
+
+// The forgot-password hero mascot. Same cream `namaste`/`hello` machine as
+// CREAM_MASCOT_STATES, but without the patterned backdrop baked into it.
+export const BLOB_CREAM_MASCOT = require("@/assets/animations/mascots/auth/blob-cream.lottie");
