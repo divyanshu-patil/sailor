@@ -10,7 +10,7 @@ import { Mascot } from "@/screens/daily-practice/components/Mascot";
 import { PressableCard } from "@/screens/daily-practice/components/PressableCard";
 import { dailyFonts, dailyTheme, radius } from "@/screens/daily-practice/theme";
 
-type Kind = "empty" | "error";
+type Kind = "empty" | "error" | "search" | "noResults";
 
 interface Action {
   label: string;
@@ -20,7 +20,7 @@ interface Action {
 interface EmptyStateProps {
   kind: Kind;
   title: string;
-  description: string;
+  description: React.ReactNode;
   primary?: Action & { icon?: "rotate-cw" };
   secondary?: Action;
 }
@@ -35,6 +35,16 @@ const ART: Record<Kind, { note: string; cloud: string; cloudDark: string }> = {
     note: "Oops!\nSomething\nwent wrong.",
     cloud: "#E4E9FB",
     cloudDark: "#232A3D",
+  },
+  search: {
+    note: "What are we\nlooking for\ntoday?",
+    cloud: "#E6E1FB",
+    cloudDark: "#26223A",
+  },
+  noResults: {
+    note: "Hmm… not\nin here\neither!",
+    cloud: "#FFE4D2",
+    cloudDark: "#3A2719",
   },
 };
 
@@ -164,7 +174,15 @@ export function EmptyState({
  * its scroll view — acceptable because it only exists while a state is
  * showing, when there is nothing to scroll.
  */
-export function FloatingBackdrop() {
+/** Top-right, bottom-left, bottom-right. */
+type Corners = [string, string, string];
+const DISCOVER_CORNERS: Corners = ["#E3DDFB", "#FBE6BE", "#F9D3E4"];
+
+export function FloatingBackdrop({
+  colors = DISCOVER_CORNERS,
+}: {
+  colors?: Corners;
+}) {
   const isDark = useColorScheme() === "dark";
   const alpha = isDark ? 0.14 : 0.75;
 
@@ -180,7 +198,7 @@ export function FloatingBackdrop() {
         seed="bg-top"
         width={230}
         height={200}
-        color="#E3DDFB"
+        color={colors[0]}
         opacity={alpha * 0.8}
         drift={14}
         style={{ top: -70, right: -90 }}
@@ -189,7 +207,7 @@ export function FloatingBackdrop() {
         seed="bg-left"
         width={300}
         height={360}
-        color="#FBE6BE"
+        color={colors[1]}
         opacity={alpha}
         drift={16}
         period={11000}
@@ -199,7 +217,7 @@ export function FloatingBackdrop() {
         seed="bg-right"
         width={300}
         height={320}
-        color="#F9D3E4"
+        color={colors[2]}
         opacity={alpha}
         drift={16}
         period={10000}

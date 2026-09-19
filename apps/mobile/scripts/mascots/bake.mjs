@@ -27,6 +27,8 @@ import {
   mascotCelebrate,
   mascotEmpty,
   mascotError,
+  mascotNoResults,
+  mascotSearch,
   mascotReading,
   widgetFlame,
   widgetMascots,
@@ -60,6 +62,8 @@ const ART = [
   { name: "mascot-celebrate", svg: mascotCelebrate(), w: 180, h: 180 },
   { name: "mascot-empty",     svg: mascotEmpty(),     w: 260, h: 210 },
   { name: "mascot-error",     svg: mascotError(),     w: 260, h: 210 },
+  { name: "mascot-search",    svg: mascotSearch(),    w: 260, h: 210 },
+  { name: "mascot-no-results", svg: mascotNoResults(), w: 260, h: 210 },
   { name: "confetti",         svg: confetti(),        w: 320, h: 220 },
 ];
 

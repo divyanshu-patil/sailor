@@ -30,6 +30,8 @@ const MASCOT_SOURCES = {
   celebrate: require("../../../../assets/mascots/mascot-celebrate.png"),
   empty: require("../../../../assets/mascots/mascot-empty.png"),
   error: require("../../../../assets/mascots/mascot-error.png"),
+  search: require("../../../../assets/mascots/mascot-search.png"),
+  noResults: require("../../../../assets/mascots/mascot-no-results.png"),
 };
 
 export type MascotPose = keyof typeof MASCOT_SOURCES;
