@@ -30,6 +30,7 @@ import {
   deleteCachedAudio,
   getCachedAudioUri,
 } from "@/utils/audio-cache";
+import { fonts } from "@/constants/fonts";
 
 interface RecordButtonProps {
   onPress?: () => void;
@@ -569,7 +570,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: "white",
     fontSize: 17,
-    fontFamily: "KronaOne",
+    fontFamily: fonts.krona,
     alignSelf: "center",
   },
   actions: {

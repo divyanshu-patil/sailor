@@ -15,6 +15,7 @@ import { deckCardColors } from "@/utils/deck-colors";
 import { DeckItem } from "@/services/deck.service";
 import { COLUMN_GAP } from "./constants";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import { fonts } from "@/constants/fonts";
 
 const JELLY_SPRING = {
   damping: 8,
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 6,
-    fontFamily: "KronaOne",
+    fontFamily: fonts.krona,
   },
   cardDescription: {
     fontSize: 13,
