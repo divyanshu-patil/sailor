@@ -45,6 +45,7 @@ export const dailyFonts = {
    *  another UI string. */
   serifItalic: fonts.newsreader.italic,
   serifMediumItalic: fonts.newsreader.mediumItalic,
+  handwritten: fonts.kalam.regular,
 };
 
 /** Reading pace used for the "~N min" estimate. 130 wpm is a deliberate,

@@ -256,10 +256,11 @@ function TodaysPractice(
           ) : (
             <Text
               modifiers={[
-                font({ size: 22, weight: "bold", design: "rounded" }),
+                font({ size: 25, weight: "bold", design: "rounded" }),
                 foregroundStyle(ink),
                 lineLimit(2),
                 minimumScaleFactor(0.85),
+                padding({ top: isSmall ? 0 : 2 }),
               ]}
             >
               {"Today's Practice"}
@@ -269,7 +270,7 @@ function TodaysPractice(
           {dateLabel && !isSmall ? (
             <Text
               modifiers={[
-                font({ size: 12, weight: "medium" }),
+                font({ size: 12, weight: "medium", family: "Kalam-Regular" }),
                 foregroundStyle(inkSoft),
               ]}
             >
@@ -284,9 +285,13 @@ function TodaysPractice(
           <HStack spacing={0}>
             <Text
               modifiers={[
-                font({ size: 12.5, weight: "bold", design: "rounded" }),
+                font({
+                  size: 12.5,
+                  weight: "bold",
+                  design: "rounded",
+                }),
                 foregroundStyle(isDark ? "#076E5E" : "#c98c47"),
-                padding({ horizontal: 11, vertical: 4 }),
+                padding({ horizontal: 8, vertical: 2 }),
                 background(
                   // Alpha first: @expo/ui reads 8-digit hex as #AARRGGBB.
                   isDark ? "#2EFADB" : "#fadbb9",
@@ -307,7 +312,7 @@ function TodaysPractice(
             font({
               size: isSmall ? 14 : 18,
               weight: "semibold",
-              family: "Amarna", // from fonts constant
+              family: "Amarna-Regular",
             }),
             foregroundStyle(hasContent ? ink : inkSoft),
             lineLimit(isSmall ? 5 : 3),

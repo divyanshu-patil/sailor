@@ -26,6 +26,13 @@ export const fonts = {
     boldItalic: "Amarna-BoldItalic",
   },
 
+  /** Handwritten asides — the little notes next to the mascots. */
+  kalam: {
+    light: "Kalam-Light",
+    regular: "Kalam-Regular",
+    bold: "Kalam-Bold",
+  },
+
   newsreader: {
     extraLight: "Newsreader-ExtraLight",
     extraLightItalic: "Newsreader-ExtraLightItalic",

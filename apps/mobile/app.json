@@ -67,7 +67,10 @@
             "../../node_modules/@expo-google-fonts/newsreader/500Medium_Italic/Newsreader_500Medium_Italic.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/600SemiBold_Italic/Newsreader_600SemiBold_Italic.ttf",
             "../../node_modules/@expo-google-fonts/newsreader/700Bold_Italic/Newsreader_700Bold_Italic.ttf",
-            "../../node_modules/@expo-google-fonts/newsreader/800ExtraBold_Italic/Newsreader_800ExtraBold_Italic.ttf"
+            "../../node_modules/@expo-google-fonts/newsreader/800ExtraBold_Italic/Newsreader_800ExtraBold_Italic.ttf",
+            "../../node_modules/@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf",
+            "../../node_modules/@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"
           ]
         }
       ],
@@ -114,6 +117,18 @@
       ],
       "expo-notifications",
       [
+        "./plugins/with-widget-fonts",
+        {
+          "fonts": [
+            "../../node_modules/@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/amarna/400Regular/Amarna_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/newsreader/400Regular/Newsreader_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/alan-sans/400Regular/AlanSans_400Regular.ttf",
+            "../../node_modules/@expo-google-fonts/krona-one/400Regular/KronaOne_400Regular.ttf"
+          ]
+        }
+      ],
+      [
         "expo-widgets",
         {
           "groupIdentifier": "group.com.sailor.presentation",
@@ -123,10 +138,7 @@
               "displayName": "Today's Practice",
               "description": "Your daily presentation-practice snippet",
               "ios": {
-                "supportedFamilies": [
-                  "systemSmall",
-                  "systemMedium"
-                ],
+                "supportedFamilies": ["systemSmall", "systemMedium"],
                 "contentMarginsDisabled": true
               }
             },
@@ -135,9 +147,7 @@
               "displayName": "Practice Streak",
               "description": "Your daily practice streak",
               "ios": {
-                "supportedFamilies": [
-                  "systemSmall"
-                ],
+                "supportedFamilies": ["systemSmall"],
                 "contentMarginsDisabled": true
               }
             }
