@@ -8,6 +8,8 @@ import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
 import { useOnboardingStore } from "@/store/onboarding.store";
+import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
+import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
 import * as Sentry from "@sentry/react-native";
@@ -102,7 +104,24 @@ function ReminderRouting() {
 function InitialLayout() {
   const isHydrated = useOnboardingStore((s) => s._hasHydrated);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
-  const { isSignedIn, isLoaded } = useAuth();
+  const isOnboardingCompletionHydrated = useOnboardingCompletionStore(
+    (s) => s._hasHydrated,
+  );
+  const onboardingCompletedForUserId = useOnboardingCompletionStore(
+    (s) => s.completedForUserId,
+  );
+  const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
+  const profileSetupCompletedForUserId = useProfileSetupStore(
+    (s) => s.completedForUserId,
+  );
+  const { isSignedIn, isLoaded, userId } = useAuth();
+
+  // Completion is per Clerk user, so a different account on the same device
+  // still runs onboarding and profile setup once.
+  const hasCompletedOnboarding =
+    !!userId && onboardingCompletedForUserId === userId;
+  const hasCompletedProfileSetup =
+    !!userId && profileSetupCompletedForUserId === userId;
 
   useEffect(() => {
     syncPreferencesOnce();
@@ -151,7 +170,12 @@ function InitialLayout() {
     };
   }, []);
 
-  if (!isHydrated || !isLoaded) {
+  if (
+    !isHydrated ||
+    !isOnboardingCompletionHydrated ||
+    !isProfileSetupHydrated ||
+    !isLoaded
+  ) {
     return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null
   }
 
@@ -172,7 +196,36 @@ function InitialLayout() {
         <Stack.Screen name="(unauthenticated)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={hasSeenOnboarding && isSignedIn}>
+      {/*
+        Verified (a Clerk session, for email signup, only exists after the code
+        is confirmed) but hasn't finished onboarding. Separate from the pre-auth
+        (onboarding) group, which is the earlier welcome/features flow.
+      */}
+      <Stack.Protected
+        guard={hasSeenOnboarding && isSignedIn && !hasCompletedOnboarding}
+      >
+        <Stack.Screen name="(onboarding-setup)" />
+      </Stack.Protected>
+
+      <Stack.Protected
+        guard={
+          hasSeenOnboarding &&
+          isSignedIn &&
+          hasCompletedOnboarding &&
+          !hasCompletedProfileSetup
+        }
+      >
+        <Stack.Screen name="(profile-setup)" />
+      </Stack.Protected>
+
+      <Stack.Protected
+        guard={
+          hasSeenOnboarding &&
+          isSignedIn &&
+          hasCompletedOnboarding &&
+          hasCompletedProfileSetup
+        }
+      >
         <Stack.Screen name="(authenticated)" />
       </Stack.Protected>
     </Stack>

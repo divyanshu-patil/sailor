@@ -10,8 +10,6 @@ export const EXPERIENCE_LEVELS: { tag: ExperienceLevel; label: string }[] = [
 
 export { PROFESSION_LABELS, PROFESSIONS };
 
-export const DESTRUCTIVE_RED = "#FF3B30"; // iOS system red
-
 const ROW_LABEL_BASE_MODIFIERS = [
   foregroundStyle({
     type: "hierarchical" as const,

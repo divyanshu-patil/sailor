@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import { useFonts } from "expo-font";
 import { KronaOne_400Regular } from "@expo-google-fonts/krona-one/400Regular";
@@ -47,6 +47,8 @@ import {
   Newsreader_800ExtraBold_Italic,
 } from "@expo-google-fonts/newsreader";
 import { useOnboardingStore } from "@/store/onboarding.store";
+import { useProfileSetupStore } from "@/store/profile-setup.store";
+import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useAppUserStore } from "@/store/app-user.store";
 
 export default function Index() {
@@ -54,9 +56,24 @@ export default function Index() {
   // const isAuthenticated = useAppUserStore((s) => s.isAuthenticated);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const isHydrated = useAppUserStore((s) => s._hasHydrated);
+  const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
+  const profileSetupCompletedForUserId = useProfileSetupStore(
+    (s) => s.completedForUserId,
+  );
+  const isOnboardingCompletionHydrated = useOnboardingCompletionStore(
+    (s) => s._hasHydrated,
+  );
+  const onboardingCompletedForUserId = useOnboardingCompletionStore(
+    (s) => s.completedForUserId,
+  );
   // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, userId } = useAuth();
   const hasNavigated = useRef(false);
+
+  const hasCompletedOnboarding =
+    !!userId && onboardingCompletedForUserId === userId;
+  const hasCompletedProfileSetup =
+    !!userId && profileSetupCompletedForUserId === userId;
 
   const [fontsLoaded] = useFonts({
     KronaOne: KronaOne_400Regular,
@@ -106,7 +123,15 @@ export default function Index() {
   });
 
   useEffect(() => {
-    if (!fontsLoaded || !isHydrated || !isLoaded) return;
+    if (
+      !fontsLoaded ||
+      !isHydrated ||
+      !isProfileSetupHydrated ||
+      !isOnboardingCompletionHydrated ||
+      !isLoaded
+    ) {
+      return;
+    }
     if (hasNavigated.current) return;
 
     hasNavigated.current = true;
@@ -114,20 +139,32 @@ export default function Index() {
     if (!hasSeenOnboarding) {
       router.replace("/(onboarding)/welcome");
     } else if (isSignedIn) {
-      router.replace("/(authenticated)");
+      // Verified. Onboarding runs first, then the optional profile wizard.
+      if (!hasCompletedOnboarding) {
+        router.replace("/(onboarding-setup)" as Href);
+      } else if (!hasCompletedProfileSetup) {
+        router.replace("/(profile-setup)" as Href);
+      } else {
+        router.replace("/(authenticated)");
+      }
     } else {
       router.replace("/(unauthenticated)");
     }
   }, [
     isHydrated,
+    isProfileSetupHydrated,
+    isOnboardingCompletionHydrated,
     isSignedIn,
     isLoaded,
+    userId,
     hasSeenOnboarding,
+    hasCompletedOnboarding,
+    hasCompletedProfileSetup,
     fontsLoaded,
     router,
   ]);
 
-  if (!isHydrated) {
+  if (!isHydrated || !isProfileSetupHydrated || !isOnboardingCompletionHydrated) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
