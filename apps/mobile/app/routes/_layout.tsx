@@ -129,10 +129,23 @@ function InitialLayout() {
     preloadMascots().catch(() => {});
     // Kalam is also embedded via app.json, but only after a prebuild; loading
     // it here makes the handwritten notes work in any build.
+    //
+    // Alan Sans is here for a different reason: app.json embeds 400Regular and
+    // nothing else, so every `fonts.alanSans.bold` / `.semiBold` / `.black` in
+    // the app — daily practice, home — was silently falling back to San
+    // Francisco. The names are the files' PostScript names, which is what
+    // `fonts.ts` already spells and what iOS resolves a family by.
     Font.loadAsync({
       "Kalam-Light": require("@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf"),
       "Kalam-Regular": require("@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf"),
       "Kalam-Bold": require("@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"),
+      "AlanSans-Light": require("@expo-google-fonts/alan-sans/300Light/AlanSans_300Light.ttf"),
+      "AlanSans-Regular": require("@expo-google-fonts/alan-sans/400Regular/AlanSans_400Regular.ttf"),
+      "AlanSans-Medium": require("@expo-google-fonts/alan-sans/500Medium/AlanSans_500Medium.ttf"),
+      "AlanSans-SemiBold": require("@expo-google-fonts/alan-sans/600SemiBold/AlanSans_600SemiBold.ttf"),
+      "AlanSans-Bold": require("@expo-google-fonts/alan-sans/700Bold/AlanSans_700Bold.ttf"),
+      "AlanSans-ExtraBold": require("@expo-google-fonts/alan-sans/800ExtraBold/AlanSans_800ExtraBold.ttf"),
+      "AlanSans-Black": require("@expo-google-fonts/alan-sans/900Black/AlanSans_900Black.ttf"),
     }).catch(() => {});
 
     const stopReminderSync = startReminderSync();
