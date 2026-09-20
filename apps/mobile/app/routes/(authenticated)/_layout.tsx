@@ -16,17 +16,45 @@ export default function AuthenticatedLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
+          // A named default, so a screen added here without options shows
+          // something readable instead of its folder name.
+          title: "Sailor",
         }}
       >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(script)" />
+        {/* Every screen carries an explicit `title`. With headers hidden here
+            it is not drawn, but it is still what a child stack's back chevron
+            and any system UI read — and the fallback is the raw segment, which
+            is how "(tabs)" ended up on screen. */}
+        <Stack.Screen name="(tabs)" options={{ title: "Sailor" }} />
+        <Stack.Screen name="(script)" options={{ title: "Scripts" }} />
         {/* Sibling of (tabs), not a child: pushing Discover covers the tab bar,
             which is what keeps its floating bottom search toolbar from landing
             on top of the tabs. */}
-        <Stack.Screen name="discover" />
+        <Stack.Screen name="discover" options={{ title: "Discover" }} />
         {/* Also a sibling of (tabs): daily practice is entered from the home
             screen, a widget and a notification, and left again. See its layout. */}
-        <Stack.Screen name="daily-practice" />
+        <Stack.Screen
+          name="daily-practice"
+          options={{ title: "Daily Practice" }}
+        />
+        {/* Its own screen rather than a modal: the reveal animation runs edge
+            to edge and a sheet's inset corners would crop it. The header is
+            transparent so the expanding circle passes under the chevron. */}
+        <Stack.Screen
+          name="streak-restore"
+          options={{
+            title: "Restore Streak",
+            // Transparent, not hidden: the back chevron stays the system's, so
+            // the swipe-back gesture still works, and the screen's background
+            // — including the disc as it grows — runs underneath it.
+            headerShown: true,
+            headerTransparent: true,
+            headerTitle: "",
+            headerShadowVisible: false,
+            headerBackButtonDisplayMode: "minimal",
+            headerTintColor: "#141414",
+          }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );

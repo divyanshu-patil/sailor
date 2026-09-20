@@ -156,6 +156,21 @@ class User(Base):
     )
     last_practiced_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
+    # --- streak restore --------------------------------------------------------
+    # What `streak_count` held at the moment it lapsed. `get_streak` zeroes the
+    # live count on read, so without this the number a restore is meant to bring
+    # back is gone by the time anyone asks for it — `longest_streak` is not a
+    # substitute, it is a personal best from any time in the past.
+    # Zero means "nothing to restore", which is also the state after a restore
+    # has been spent.
+    lapsed_streak: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+    #: The client-local date a restore was last used, for the one-per-month cap.
+    #: A date rather than a counter: the cap is per calendar month, so the month
+    #: it fell in is the whole of the state, and it needs no monthly reset job.
+    last_restore_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

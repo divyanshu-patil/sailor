@@ -3,7 +3,12 @@ import { Section, Picker, Text } from "@expo/ui/swift-ui";
 import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 
 import { useAppUserStore } from "@/store/app-user.store";
-import { ExperienceLevel, Profession, PROFESSIONS, PROFESSION_LABELS } from "@/types/user";
+import {
+  ExperienceLevel,
+  Profession,
+  PROFESSIONS,
+  PROFESSION_LABELS,
+} from "@/types/user";
 import { EXPERIENCE_LEVELS } from "@/screens/profile/edit-profile/components/constants";
 
 /**

@@ -4,7 +4,13 @@ import { defaultHeaderConfig } from "../header-constant";
 
 const Layout = () => {
   return (
-    <Stack screenOptions={{ ...defaultHeaderConfig, headerTitle: "Home" }}>
+    <Stack
+      screenOptions={{
+        ...defaultHeaderConfig,
+        title: "Home",
+        headerTitle: "Home",
+      }}
+    >
       {/* No header: the orange hero is the header, and it runs edge to edge
           behind the status bar. The screen pads itself past the safe area. */}
       <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -20,7 +26,8 @@ const Layout = () => {
         name="screen-2"
         options={{
           // headerLargeTitleEnabled: false,
-          headerTitle: "Screen-2",
+          title: "Practice Lab",
+          headerTitle: "Practice Lab",
           headerBackButtonDisplayMode: "minimal",
           // headerTransparent: true,
         }}

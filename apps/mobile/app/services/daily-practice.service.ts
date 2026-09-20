@@ -48,6 +48,21 @@ export const dailyPracticeService = {
     }
   },
 
+  /** Bring a lapsed streak back. 409 when this month's restore is spent, 400
+   *  when there is nothing to restore — both are shown, not swallowed. */
+  restoreStreak: async (date = localDate()): Promise<StreakState> => {
+    try {
+      const response = await apiClient.post<StreakState>(
+        "/api/v1/daily-practice/restore",
+        { localDate: date },
+      );
+      return response.data;
+    } catch (e: any) {
+      console.log("daily restore error", e.response?.data, e.response?.status);
+      throw e;
+    }
+  },
+
   getStreak: async (date = localDate()): Promise<StreakState> => {
     try {
       const response = await apiClient.get<StreakState>(

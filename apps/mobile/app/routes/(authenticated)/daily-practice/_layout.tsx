@@ -29,18 +29,19 @@ const DailyPracticeLayout = () => {
     >
       {/* The screen draws its own "Daily Practice" heading, so the header is
           just the chrome that carries the back chevron. */}
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ title: "Daily Practice" }} />
       {/* Back returns to the intro; the line counter lives in the toolbar. */}
-      <Stack.Screen name="practice" />
+      <Stack.Screen name="practice" options={{ title: "Practice" }} />
       {/* Reached with `replace`, so the stack is [index, complete]: back returns
           to the intro, and the toolbar cross dismisses the whole flow. */}
-      <Stack.Screen name="complete" />
+      <Stack.Screen name="complete" options={{ title: "Complete" }} />
       {/* A real iOS modal — a card that slides up over the stack with the
           system's own dismiss gesture — rather than a sheet component rendered
           inside the screen. `presentation: "modal"` is what makes it one. */}
       <Stack.Screen
         name="framework"
         options={{
+          title: "Framework",
           presentation: "modal",
           headerShown: false,
           contentStyle: { backgroundColor: "transparent" },

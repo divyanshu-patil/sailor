@@ -19,6 +19,7 @@ import { Mascot } from "./components/Mascot";
 import { PressableCard } from "./components/PressableCard";
 import { StatTile } from "./components/StatTile";
 import { dailyFonts, dailyTheme, HEADER_INSET, radius, shadow } from "./theme";
+import { fonts } from "@/constants/fonts";
 
 function formatDuration(totalSeconds: number): string {
   const safe =
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   quoteMarkClose: { alignSelf: "flex-end", marginBottom: -22 },
   quoteText: {
     flex: 1,
-    fontFamily: dailyFonts.serifItalic,
+    fontFamily: fonts.kalam.regular,
     fontSize: 18,
     lineHeight: 27,
     textAlign: "center",

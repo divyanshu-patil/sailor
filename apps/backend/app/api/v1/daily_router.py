@@ -4,12 +4,18 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
-from app.controllers.daily_controller import get_streak, get_today, mark_complete
+from app.controllers.daily_controller import (
+    get_streak,
+    get_today,
+    mark_complete,
+    restore_streak,
+)
 from app.db.database import get_db
 from app.models.user_model import User
 from app.schemas.daily_schema import (
     DailyTodayResponse,
     MarkCompleteRequest,
+    RestoreStreakRequest,
     StreakResponse,
 )
 
@@ -44,3 +50,14 @@ def read_streak(
     db: Session = Depends(get_db),
 ) -> StreakResponse:
     return get_streak(db, current_user, local_date)
+
+
+@router.post("/restore", response_model=StreakResponse)
+def restore(
+    payload: RestoreStreakRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StreakResponse:
+    """Bring a lapsed streak back. 409 when this month's restore is spent,
+    400 when there is nothing to restore."""
+    return restore_streak(db, current_user, payload.localDate)

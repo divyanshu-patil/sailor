@@ -68,6 +68,14 @@ export interface StreakState {
   longestStreak: number;
   lastCompletedDate: string | null;
   completedToday: boolean;
+  /** The streak a restore would bring back; 0 when there is nothing to restore.
+   *  Defaulted on the client because a cached streak written before the restore
+   *  feature shipped has none of these three. */
+  restorableStreak?: number;
+  canRestore?: boolean;
+  /** Distinguishes "already used this month" from "nothing to restore" — the
+   *  two are different screens. */
+  restoreUsedThisMonth?: boolean;
 }
 
 /**

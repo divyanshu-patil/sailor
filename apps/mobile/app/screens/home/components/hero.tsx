@@ -1,5 +1,5 @@
 import { memo, useEffect } from "react";
-import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -11,7 +11,7 @@ import Animated, {
 import Icon from "@react-native-vector-icons/lucide";
 import Svg, { Ellipse, Path } from "react-native-svg";
 
-import { useFloatingValue } from "@/screens/presentation/generation/components/background/hooks/use-floating-value";
+import { HandwrittenNote } from "@/components/ui/handwritten-note";
 
 import {
   cloudDrift,
@@ -21,6 +21,7 @@ import {
   streakDisplay,
 } from "../theme";
 import { StreakIcon, type StreakStatus } from "./streak-icons";
+import PressableScale from "@/components/ui/animated/PressableScale";
 
 /**
  * The orange hero.
@@ -49,90 +50,6 @@ const CLOUD_BACK =
 const CLOUD_FRONT =
   "M0 180 L0 120 C6 84 46 74 64 104 C72 52 124 40 146 86 C162 30 224 26 240 84 " +
   "C254 40 302 50 312 100 C326 66 368 74 376 112 C384 94 396 100 400 124 L400 180 Z";
-
-/** A doodled arrow, same weight and grey as the auth screen's asides so the two
- *  screens' handwriting matches. */
-const DoodleArrow = memo(function DoodleArrow({
-  size,
-  flip,
-}: {
-  size: number;
-  flip?: boolean;
-}) {
-  return (
-    <Svg
-      width={size * (80 / 115)}
-      height={size}
-      viewBox="0 0 80 115"
-      fill="none"
-      style={flip ? { transform: [{ scaleX: -1 }] } : undefined}
-    >
-      <Path
-        d="M 8 20 C 26 16, 44 24, 54 40 C 64 56, 64 74, 60 94 M 60 94 L 48 83 M 60 94 L 73 84"
-        stroke={homeColors.note}
-        strokeWidth={4.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-});
-
-/**
- * A handwritten aside that drifts.
- *
- * `useFloatingValue` is the generation screen's drifter, reused: it retimes
- * itself on every settle, so two notes started together never lock into the
- * same rhythm the way two `withRepeat` loops of equal duration would.
- */
-const FloatingNote = memo(function FloatingNote({
-  lines,
-  arrowSize,
-  flip,
-  style,
-  fontSize = 17,
-}: {
-  lines: string[];
-  arrowSize: number;
-  flip?: boolean;
-  fontSize?: number;
-  /** Position, plus an optional `transform` — see the note below for why that
-   *  needs handling rather than just landing in the style array. Typed without
-   *  the string form of `transform`, which cannot be merged. */
-  style: Omit<ViewStyle, "transform"> & {
-    transform?: Exclude<ViewStyle["transform"], string | undefined>;
-  };
-}) {
-  const drift = useFloatingValue(0, -5, 5, 2600, 4200, 1);
-
-  // A `transform` in `style` would be silently dropped: the animated style is
-  // last in the array below, and RN replaces the whole transform list rather
-  // than merging it — so the drift's translateY wins and any rotate the caller
-  // wrote never renders. Lifting it out and re-adding it inside the worklet is
-  // what makes `transform: [{ rotate: "130deg" }]` at the call site work.
-  const { transform: staticTransform, ...position } = style;
-  const floating = useAnimatedStyle(() => ({
-    transform: [{ translateY: drift.value }, ...(staticTransform ?? [])],
-  }));
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.note, position as ViewStyle, floating]}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      <Text
-        style={[styles.noteText, flip && styles.noteTextRight, { fontSize }]}
-      >
-        {lines.join("\n")}
-      </Text>
-      <View style={flip ? styles.arrowRight : styles.arrowLeft}>
-        <DoodleArrow size={arrowSize} flip={flip} />
-      </View>
-    </Animated.View>
-  );
-});
 
 /**
  * The placeholder mascot: a grey blob with blank limbs.
@@ -284,16 +201,17 @@ const RestoreStreakButton = memo(function RestoreStreakButton({
   style: object;
 }) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Restore your streak"
       hitSlop={10}
       style={[styles.restore, style]}
+      transformStyle={[{ rotate: "-5deg" }]}
     >
       <Icon name="rotate-ccw" size={18} color={styles.restoreLabel.color} />
       <Text style={styles.restoreLabel}>Restore streak</Text>
-    </Pressable>
+    </PressableScale>
   );
 });
 
@@ -512,16 +430,18 @@ export const HomeHero = memo(function HomeHero({
       {/* After the clouds so the handwriting stays on top of them: the back
           cloud sits high enough now that it would otherwise clip the right
           note's arrow. */}
-      <FloatingNote
+      <HandwrittenNote
         fontSize={17}
         lines={["Ready", "to speak?"]}
         arrowSize={66}
+        color={homeColors.note}
         style={{ left: 24, top: topInset + body * 0.29 }}
       />
-      <FloatingNote
+      <HandwrittenNote
         fontSize={12}
         lines={["Same you.", "Brighter you."]}
         arrowSize={66}
+        color={homeColors.note}
         flip
         style={{
           right: 20,
@@ -582,17 +502,6 @@ const styles = StyleSheet.create({
     color: homeColors.heroText,
     marginTop: -6,
   },
-
-  note: { position: "absolute" },
-  noteText: {
-    fontFamily: homeFonts.note,
-
-    lineHeight: 23,
-    color: homeColors.note,
-  },
-  noteTextRight: { textAlign: "right" },
-  arrowLeft: { marginTop: 2, marginLeft: 14 },
-  arrowRight: { marginTop: 2, alignItems: "flex-end", marginRight: 34 },
 
   restore: {
     position: "absolute",

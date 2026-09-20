@@ -175,18 +175,18 @@ function InitialLayout() {
         animation: "slide_from_right",
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ title: "Sailor" }} />
 
       <Stack.Protected guard={!hasSeenOnboarding}>
-        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(onboarding)" options={{ title: "Welcome" }} />
       </Stack.Protected>
 
       <Stack.Protected guard={hasSeenOnboarding && !isSignedIn}>
-        <Stack.Screen name="(unauthenticated)" />
+        <Stack.Screen name="(unauthenticated)" options={{ title: "Sign In" }} />
       </Stack.Protected>
 
       <Stack.Protected guard={hasSeenOnboarding && isSignedIn}>
-        <Stack.Screen name="(authenticated)" />
+        <Stack.Screen name="(authenticated)" options={{ title: "Sailor" }} />
       </Stack.Protected>
     </Stack>
   );

@@ -12,11 +12,18 @@ import json
 import re
 import secrets
 import unittest
+
+from fastapi import HTTPException
 from unittest.mock import patch
 from datetime import date, timedelta
 
 from app.models.user_model import User
-from app.controllers.daily_controller import get_streak, mark_complete, select_variation
+from app.controllers.daily_controller import (
+    get_streak,
+    mark_complete,
+    restore_streak,
+    select_variation,
+)
 from app.services.daily.frameworks import FRAMEWORKS, FRAMEWORKS_BY_ID
 from app.tasks.daily_tasks import (
     FRAMEWORK_COOLDOWN_DAYS,
@@ -35,11 +42,13 @@ class _FakeDB:
 
 
 class _FakeUser:
-    def __init__(self, streak=0, longest=0, last=None):
+    def __init__(self, streak=0, longest=0, last=None, lapsed=0, last_restore=None):
         self.id = 1
         self.streak_count = streak
         self.longest_streak = longest
         self.last_practiced_on = last
+        self.lapsed_streak = lapsed
+        self.last_restore_on = last_restore
 
 
 TODAY = date(2026, 9, 17)
@@ -282,3 +291,57 @@ class BodyLength(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class RestoreStreak(unittest.TestCase):
+    """The cap and the arithmetic. Both are one-line conditions that are wrong
+    in opposite directions if the date maths slips."""
+
+    def _lapsed_user(self, streak=12, **kw):
+        """A user whose streak broke: last practised two days ago, so the first
+        `get_streak` inside restore is what banks `lapsed_streak`."""
+        return _FakeUser(streak=streak, longest=streak,
+                         last=TODAY - timedelta(days=2), **kw)
+
+    def test_restores_the_streak_that_lapsed(self):
+        user = self._lapsed_user()
+        result = restore_streak(DB, user, TODAY)
+        self.assertEqual(result.currentStreak, 12)
+        # Yesterday: restored, but today still has to be practised.
+        self.assertEqual(user.last_practiced_on, TODAY - timedelta(days=1))
+        self.assertFalse(result.completedToday)
+        # Spent.
+        self.assertEqual(result.restorableStreak, 0)
+        self.assertFalse(result.canRestore)
+        self.assertTrue(result.restoreUsedThisMonth)
+
+    def test_restored_streak_then_extends_today(self):
+        user = self._lapsed_user()
+        restore_streak(DB, user, TODAY)
+        self.assertEqual(mark_complete(DB, user, TODAY).currentStreak, 13)
+
+    def test_second_restore_in_same_month_is_refused(self):
+        user = self._lapsed_user()
+        restore_streak(DB, user, TODAY)
+        user.lapsed_streak = 5  # lapsed again inside the same month
+        with self.assertRaises(HTTPException) as caught:
+            restore_streak(DB, user, TODAY + timedelta(days=3))
+        self.assertEqual(caught.exception.status_code, 409)
+
+    def test_next_calendar_month_allows_another(self):
+        # 30th, then the 1st: 14 days apart, but a different month, so the cap
+        # must not treat it as "within a month".
+        user = self._lapsed_user(last_restore=date(2026, 9, 30))
+        result = restore_streak(DB, user, date(2026, 10, 1))
+        self.assertEqual(result.currentStreak, 12)
+
+    def test_nothing_to_restore_is_refused(self):
+        user = _FakeUser(streak=6, longest=6, last=TODAY)  # alive, never lapsed
+        with self.assertRaises(HTTPException) as caught:
+            restore_streak(DB, user, TODAY)
+        self.assertEqual(caught.exception.status_code, 400)
+
+    def test_reading_the_streak_twice_does_not_erase_what_is_restorable(self):
+        user = self._lapsed_user()
+        get_streak(DB, user, TODAY)   # banks 12, zeroes the live count
+        get_streak(DB, user, TODAY)   # must not bank 0 over it
+        self.assertEqual(restore_streak(DB, user, TODAY).currentStreak, 12)

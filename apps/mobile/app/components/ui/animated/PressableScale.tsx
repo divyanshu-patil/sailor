@@ -1,4 +1,4 @@
-import { GestureResponderEvent, PressableProps } from "react-native";
+import { GestureResponderEvent, PressableProps, ViewStyle } from "react-native";
 import React from "react";
 import { AnimatedPressable } from "./AnimatedComponents";
 import {
@@ -14,6 +14,9 @@ interface PressableScaleProps extends PressableProps {
   opacity?: {
     pressedOpacity: number;
   };
+  /** A static transform to keep while the press scale animates — a tilt, say.
+   *  Typed without the string form, which cannot be merged into a list. */
+  transformStyle?: Exclude<ViewStyle["transform"], string | undefined>;
 }
 const PressableScale = React.memo(
   ({
@@ -24,10 +27,16 @@ const PressableScale = React.memo(
     style,
     onPressIn,
     onPressOut,
+    transformStyle,
     ...props
   }: PressableScaleProps) => {
     const pressed = useSharedValue(0);
 
+    // `transformStyle` has to be merged into THIS list rather than passed as
+    // its own style. It was being spread as `{ transformStyle }` — not a React
+    // Native style property at all, so it was silently dropped — and putting it
+    // in the array as `{ transform }` instead would have replaced the scale
+    // below, because RN swaps the whole transform list rather than merging it.
     const animatedStyle = useAnimatedStyle(() => ({
       transform: [
         {
@@ -35,6 +44,7 @@ const PressableScale = React.memo(
             duration,
           }),
         },
+        ...(transformStyle ?? []),
       ],
       opacity: opacity
         ? withTiming(pressed.value ? opacity.pressedOpacity : 1)

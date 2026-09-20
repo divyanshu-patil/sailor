@@ -15,6 +15,10 @@ from app.schemas.daily_schema import (
     StreakResponse,
 )
 
+#: Restores allowed per calendar month. One: the point of a streak is that
+#: missing a day costs something, and an uncapped undo removes the cost.
+RESTORES_PER_MONTH = 1
+
 
 def select_variation(user_key: str, day: date, count: int) -> int:
     """Which of the day's variations this user gets.
@@ -94,12 +98,30 @@ def get_today(db: Session, user_key: str, local_date: date) -> DailyTodayRespons
     )
 
 
+def _restore_used_this_month(user: User, local_date: date) -> bool:
+    """Whether this user's monthly restore is already spent.
+
+    Compares (year, month) rather than "within the last 30 days": the cap the
+    screen promises is "once per month", so a restore on the 31st must not block
+    one on the 1st.
+    """
+    last = user.last_restore_on
+    return last is not None and (last.year, last.month) == (
+        local_date.year,
+        local_date.month,
+    )
+
+
 def _streak_response(user: User, local_date: date) -> StreakResponse:
+    used = _restore_used_this_month(user, local_date)
     return StreakResponse(
         currentStreak=user.streak_count,
         longestStreak=user.longest_streak,
         lastCompletedDate=user.last_practiced_on,
         completedToday=user.last_practiced_on == local_date,
+        restorableStreak=user.lapsed_streak,
+        canRestore=user.lapsed_streak > 0 and not used,
+        restoreUsedThisMonth=used,
     )
 
 
@@ -116,10 +138,47 @@ def get_streak(db: Session, user: User, local_date: date) -> StreakResponse:
         last is None or last < local_date - timedelta(days=1)
     )
     if lapsed:
+        # Remembered before it is thrown away — this read is the only moment the
+        # number still exists, and a restore later has nothing else to go on.
+        # Kept at the highest lapse rather than overwritten: reading the streak
+        # twice after a lapse must not reduce what a restore would give back to
+        # the zero the first read just wrote.
+        user.lapsed_streak = max(user.lapsed_streak, user.streak_count)
         user.streak_count = 0
         db.commit()
         db.refresh(user)
 
+    return _streak_response(user, local_date)
+
+
+def restore_streak(db: Session, user: User, local_date: date) -> StreakResponse:
+    """Put a lapsed streak back, once per calendar month.
+
+    `get_streak` is called first so a streak that lapsed but has not been read
+    since is restorable too — otherwise whether the button worked would depend
+    on whether the home screen happened to have fetched yet.
+    """
+    get_streak(db, user, local_date)
+
+    if _restore_used_this_month(user, local_date):
+        raise HTTPException(
+            status_code=409,
+            detail="You've already used your restore this month.",
+        )
+    if user.lapsed_streak <= 0:
+        raise HTTPException(status_code=400, detail="There is no streak to restore.")
+
+    user.streak_count = user.lapsed_streak
+    user.lapsed_streak = 0
+    user.last_restore_on = local_date
+    # Yesterday, not today: the restore gives back what was lost, it does not
+    # also practise for them. Today's session still has to happen, and
+    # `mark_complete` reads this as "practised yesterday" and adds one.
+    user.last_practiced_on = local_date - timedelta(days=1)
+    user.longest_streak = max(user.longest_streak, user.streak_count)
+
+    db.commit()
+    db.refresh(user)
     return _streak_response(user, local_date)
 
 

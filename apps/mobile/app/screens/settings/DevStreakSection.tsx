@@ -34,12 +34,30 @@ const STATES: { label: string; streak: StreakState }[] = [
     },
   },
   {
-    label: "Broken — nothing to lose",
+    label: "Broken — restore available",
     streak: {
       currentStreak: 0,
       longestStreak: 12,
       lastCompletedDate: null,
       completedToday: false,
+      restorableStreak: 12,
+      canRestore: true,
+      restoreUsedThisMonth: false,
+    },
+  },
+  {
+    // The restore screen reads `restoreUsedThisMonth` on mount and opens
+    // straight into its capped state, so this is how that screen is reached
+    // without burning a real restore on the server.
+    label: "Broken — restore already used",
+    streak: {
+      currentStreak: 0,
+      longestStreak: 12,
+      lastCompletedDate: null,
+      completedToday: false,
+      restorableStreak: 12,
+      canRestore: false,
+      restoreUsedThisMonth: true,
     },
   },
 ];

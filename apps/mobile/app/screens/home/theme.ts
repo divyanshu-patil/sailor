@@ -40,6 +40,13 @@ export const homeColors = {
   mascotInk: "#191418",
 
   spark: "#E59F4E",
+
+  /** The tab bar. A pale wash of the hero rather than the hero itself — the bar
+   *  is chrome sitting under a screen that is already orange, and matching it
+   *  exactly made the two read as one unbroken block with the tabs floating in
+   *  it. `tabTint` is what the selected tab is drawn in. */
+  tabBar: "#FFF1D6",
+  tabTint: "#C2701B",
 } as const;
 
 /**

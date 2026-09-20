@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { dailyPracticeService } from "@/services/daily-practice.service";
 import { useDailyStore } from "@/store/daily-store";
-import { usePreferenceStore } from "@/store/preference-store";
 import { DailyContentUnit, localDate, StreakState } from "@/types/daily";
-import { syncPracticeWidget, syncStreakWidget } from "@/lib/widget-sync";
+import { syncPracticeWidget } from "@/lib/widget-sync";
 
 export interface UseDailyPracticeReturn {
   /** The cached unit if it is for today, otherwise null — a stale unit is shown
@@ -41,9 +40,6 @@ export function useDailyPractice(): UseDailyPracticeReturn {
     setStreak,
     setPendingComplete,
   } = useDailyStore();
-  const widgetColor = usePreferenceStore(
-    (s) => s.preferences.streakWidgetColor,
-  );
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -56,13 +52,10 @@ export function useDailyPractice(): UseDailyPracticeReturn {
   const today = localDate();
   const isStale = unit !== null && unit.date !== today;
 
-  const applyStreak = useCallback(
-    (next: StreakState) => {
-      setStreak(next);
-      syncStreakWidget(next, widgetColor);
-    },
-    [setStreak, widgetColor],
-  );
+  // Just the store write. The widget push used to live here too, which is why
+  // every other writer of the streak left the widget stale — it is now a
+  // subscription in lib/widget-sync that covers all of them.
+  const applyStreak = setStreak;
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
