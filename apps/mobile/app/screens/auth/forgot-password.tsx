@@ -18,7 +18,7 @@ import {
 import FontAwesome6 from "@react-native-vector-icons/fontawesome6";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
+import Animated, {
   useSharedValue,
   withTiming,
   type SharedValue,
@@ -34,6 +34,7 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "@/screens/auth/signup/types/types";
 import { MorphArrow } from "@/screens/auth/components/morph-arrow";
+import { useTransitionSettled } from "@/screens/auth/use-transition-settled";
 
 const BACKGROUND = "#FBF3EA";
 const INK = "#1C1A18";
@@ -453,6 +454,7 @@ export default function ForgotPasswordScreen() {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
   const isFocused = useIsFocused();
+  const settled = useTransitionSettled();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 
@@ -744,7 +746,7 @@ export default function ForgotPasswordScreen() {
           pointerEvents="none"
           style={[styles.hero, { height: HERO_HEIGHT * scale }]}
         >
-          <MascotScene scale={scale} focused={isFocused} />
+          {settled && <MascotScene scale={scale} focused={isFocused} />}
 
           {/* <DoodleNote
             text={"No worries!\nIt happens."}

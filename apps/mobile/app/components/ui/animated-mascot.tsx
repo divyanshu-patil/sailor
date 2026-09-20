@@ -45,6 +45,8 @@ export interface AnimatedMascotProps {
   stateMachineValue?: boolean;
   /** Stops playback while the screen is off-screen. */
   paused?: boolean;
+  /** TEMP profiling hook. */
+  onLoaded?: () => void;
 }
 
 export default memo(function AnimatedMascot({
@@ -61,6 +63,7 @@ export default memo(function AnimatedMascot({
   stateMachineInput,
   stateMachineValue = true,
   paused = false,
+  onLoaded,
 }: AnimatedMascotProps) {
   const dotLottieRef = useRef<Dotlottie>(null);
   const lottieRef = useRef<LottieView>(null);
@@ -68,6 +71,9 @@ export default memo(function AnimatedMascot({
   const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
 
   // Resolve the bundled `.lottie` asset to a file URI for lottie-ios.
+  // Deliberately `Image.resolveAssetSource`, not the expo-asset `localUri`:
+  // LottieView routes any uri containing `.lottie` to `sourceDotLottieURI`,
+  // and the `file://` path expo-asset caches to renders blank there.
   const lottieSource = useMemo(
     () =>
       usesStateMachine
@@ -155,6 +161,7 @@ export default memo(function AnimatedMascot({
         <LottieView
           ref={lottieRef}
           source={lottieSource}
+          onAnimationLoaded={onLoaded}
           autoPlay
           loop
           style={lottieStyle}

@@ -35,6 +35,7 @@ import OrganicBlob from "@/components/ui/organic-blob";
 import { fonts } from "@/constants/fonts";
 import { BLOB_CREAM_MASCOT, MASCOTS } from "@/constants/mascots";
 import { MorphArrow } from "@/screens/auth/components/morph-arrow";
+import { useTransitionSettled } from "@/screens/auth/use-transition-settled";
 
 const BACKGROUND = "#FBF3EA";
 const INK = "#1C1A18";
@@ -466,6 +467,7 @@ export default function Verify() {
   } = useSignUp();
   const router = useRouter();
   const isFocused = useIsFocused();
+  const settled = useTransitionSettled();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 
@@ -657,7 +659,7 @@ export default function Verify() {
           pointerEvents="none"
           style={[styles.hero, { height: HERO_HEIGHT * scale }]}
         >
-          <MascotScene scale={scale} focused={isFocused} />
+          {settled && <MascotScene scale={scale} focused={isFocused} />}
 
           {/* <DoodleNote
             text={"Almost\nthere!"}

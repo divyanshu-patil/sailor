@@ -25,6 +25,8 @@ import OrganicBlob from "@/components/ui/organic-blob";
 import { fonts } from "@/constants/fonts";
 import { LOGIN_MASCOT, MASCOTS } from "@/constants/mascots";
 import { MorphArrow } from "@/screens/auth/components/morph-arrow";
+import { useTransitionSettled } from "@/screens/auth/use-transition-settled";
+import { mark } from "@/lib/frame-probe"; // TEMP profiling
 
 const BACKGROUND = "#FBF3EA";
 const INK = "#1C1A18";
@@ -209,6 +211,7 @@ const MascotScene = memo(function MascotScene({
       {/* Rendered through lottie-ios (no state machine) so the idle animation
           loops continuously like its surrounding blobs. */}
       <AnimatedMascot
+        onLoaded={() => mark("hero:lottie loaded")} /* TEMP profiling */
         source={LOGIN_MASCOT}
         size={cream.size}
         zIndex={CREAM_MASCOT.zIndex}
@@ -314,6 +317,10 @@ export default function Page() {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
   const isFocused = useIsFocused();
+  const settled = useTransitionSettled();
+  mark("login:render"); // TEMP profiling
+  useEffect(() => { mark("login:mounted"); }, []);
+  useEffect(() => { if (settled) mark("login:settled->mascots mount"); }, [settled]);
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 
@@ -430,7 +437,7 @@ export default function Page() {
           ]}
         >
           <View style={[styles.hero, { height: MASCOT_AREA_HEIGHT * scale }]}>
-            <MascotScene scale={scale} focused={isFocused} />
+            {settled && <MascotScene scale={scale} focused={isFocused} />}
 
             <DoodleNote
               text={"Good\nto see you\nagain!"}

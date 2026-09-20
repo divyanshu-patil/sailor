@@ -39,6 +39,7 @@ import {
   MorphNote,
 } from "@/screens/auth/components/morph-text";
 import { useCreateAccountTransition } from "@/screens/auth/use-create-account-transition";
+import { mark, startFrameProbe } from "@/lib/frame-probe"; // TEMP profiling
 
 const DESIGN_WIDTH = 416;
 const DESIGN_HEIGHT = 895;
@@ -585,10 +586,11 @@ export default function Base() {
     };
   });
 
-  const handleLogin = useCallback(
-    () => router.push("/(unauthenticated)/login"),
-    [router],
-  );
+  const handleLogin = useCallback(() => {
+    startFrameProbe("base->login"); // TEMP profiling
+    mark("router.push");
+    router.push("/(unauthenticated)/login");
+  }, [router]);
 
   // Layout objects are derived from `scale` only; memoizing them keeps the
   // memoized morph/mascot children from re-rendering on unrelated updates.
