@@ -16,14 +16,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Button, Host } from "@expo/ui/swift-ui";
-import {
-  accessibilityLabel,
-  buttonBorderShape,
-  frame,
-  labelStyle,
-  tint,
-} from "@expo/ui/swift-ui/modifiers";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Extrapolation,
@@ -593,19 +585,6 @@ export default function Base() {
     };
   });
 
-  const backButtonStyle = useAnimatedStyle(() => {
-    const p = interpolate(
-      progress.value,
-      [0.45, 0.8],
-      [0, 1],
-      Extrapolation.CLAMP,
-    );
-    return {
-      opacity: p,
-      transform: [{ translateX: interpolate(p, [0, 1], [-14, 0]) }],
-    };
-  });
-
   const handleLogin = useCallback(
     () => router.push("/(unauthenticated)/login"),
     [router],
@@ -680,33 +659,12 @@ export default function Base() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerTransparent: true, title: "" }} />
 
-      {/* `asChild` is the only Stack.Toolbar mode that keeps a custom, animated
-          view: the native header item API is static and can't read Reanimated
-          shared values, while `asChild` drops the element straight into the
-          header's left slot. `headerTransparent` keeps this full-bleed screen
-          from being inset by the header that left placement forces visible.
-          Mounted only once the forward morph has settled, so the button
-          appears after the animation; unmounting after the reverse morph also
-          hides the forced header again, since useCompositionOption
-          unregisters on unmount. */}
+      {/* The same toolbar back button used across the auth screens. Mounted
+          only once the forward morph has settled, so it appears after the
+          animation; unmounting on the reverse morph hides it again. */}
       {settled && (
-        <Stack.Toolbar placement="left" asChild>
-          <Animated.View style={backButtonStyle}>
-            <Host matchContents>
-              <Button
-                label="Back"
-                systemImage="chevron.left"
-                onPress={handleBack}
-                modifiers={[
-                  frame({ width: 38, height: 38 }),
-                  labelStyle("iconOnly"),
-                  buttonBorderShape("circle"),
-                  tint(INK),
-                  accessibilityLabel("Back"),
-                ]}
-              />
-            </Host>
-          </Animated.View>
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.Button icon="chevron.backward" onPress={handleBack} />
         </Stack.Toolbar>
       )}
 
@@ -811,11 +769,12 @@ export default function Base() {
           pointerEvents="none"
           style={[styles.footerRow, footerStyle]}
         >
-          <Text style={styles.bottomRightNote}>{"Small steps\nbig progress."}</Text>
+          <Text style={styles.bottomRightNote}>
+            {"Small steps\nbig progress."}
+          </Text>
           <TwoSideCurvedArrow flip style={footerArrowStyle} />
         </Animated.View>
       </View>
-
     </View>
   );
 }

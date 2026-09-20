@@ -1,6 +1,6 @@
 // TODO: add more cloud puffs and surrounding mascots and floating words and arrows placement.
 import { isClerkAPIResponseError, useSignIn } from "@clerk/expo";
-import { useIsFocused, useRouter } from "expo-router";
+import { Stack, useIsFocused, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -94,29 +94,23 @@ function mascotLayout(placement: MascotPlacement, scale: number) {
   };
 }
 
-// Soft, asymmetric cloud the heading sits on: overlapping rounded puffs along
-// the top edge, no hard corners, spanning past both screen edges. It fills all
-// the way to the bottom of the screen, so the lower half reads as one cream
-// ground rather than a floating band.
 const GROUND_SHAPE = {
   width: 480,
   height: 1400,
   left: -32,
-  top: 200,
+  top: 180,
 } as const;
 
-// Authored in the GROUND_SHAPE viewBox. Cubic segments leave a soft notch
-// between each puff, the way a hand-drawn cloud reads. Only the top edge is
-// shaped; the path then runs straight down past the screen bottom.
 const CLOUD_PATH = [
-  "M -24 1400",
-  "L -24 172",
-  "C -24 132, 26 108, 66 122",
-  "C 88 60, 166 44, 204 92",
-  "C 228 42, 306 34, 340 82",
-  "C 366 52, 432 60, 458 106",
-  "C 484 92, 504 104, 504 146",
-  "L 504 1400",
+  "M -24 130",
+  "A 40 40 0 0 1 56 130",
+  "A 30 30 0 0 1 116 130",
+  "A 50 50 0 0 1 216 130",
+  "A 35 35 0 0 1 286 130",
+  "A 45 45 0 0 1 376 130",
+  "A 33 33 0 0 1 442 130",
+  "A 31 31 0 0 1 504 130",
+  "A 264 620 0 0 1 -24 130",
   "Z",
 ].join(" ");
 
@@ -160,10 +154,6 @@ interface AuthFieldProps {
   onSubmitEditing?: () => void;
 }
 
-/**
- * A rounded auth field: leading icon, placeholder, subtle border, optional
- * password visibility toggle. Presentational only — the caller owns the value.
- */
 const AuthField = memo(function AuthField({
   icon,
   value,
@@ -724,6 +714,14 @@ export default function ForgotPasswordScreen() {
     <View style={styles.root}>
       <StatusBar style="dark" />
 
+      <Stack.Screen options={{ headerTransparent: true, title: "" }} />
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon="chevron.backward"
+          onPress={() => router.back()}
+        />
+      </Stack.Toolbar>
+
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <BackgroundBlobs width={width} height={height} reveal={reveal} />
       </View>
@@ -733,7 +731,7 @@ export default function ForgotPasswordScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + 6,
+            paddingTop: heroTop,
             paddingBottom: Math.max(insets.bottom, 14) + 6,
           },
         ]}
@@ -742,24 +740,6 @@ export default function ForgotPasswordScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
-        <Pressable
-          onPress={goBack}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <FontAwesome6
-            name="arrow-left"
-            iconStyle="solid"
-            size={18}
-            color={INK}
-          />
-        </Pressable>
-
         <View
           pointerEvents="none"
           style={[styles.hero, { height: HERO_HEIGHT * scale }]}
@@ -879,15 +859,6 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
   },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#F4ECE0",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: GUTTER,
-  },
   pressed: {
     opacity: 0.85,
   },
@@ -923,7 +894,7 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingHorizontal: GUTTER,
-    marginTop: 12,
+    marginVertical: 30,
   },
   heading: {
     fontFamily: fonts.alanSans.black,

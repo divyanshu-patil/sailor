@@ -1,5 +1,5 @@
 import { useSignIn } from "@clerk/expo";
-import { useIsFocused, useRouter } from "expo-router";
+import { Stack, useIsFocused, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { memo, useEffect, useMemo, useState } from "react";
 import {
@@ -85,8 +85,8 @@ function mascotLayout(placement: MascotPlacement, scale: number) {
     position: {
       width: size,
       height: size,
-      left: (placement.cx * scale) - size / 2,
-      top: (placement.cy * scale) - size / 2,
+      left: placement.cx * scale - size / 2,
+      top: placement.cy * scale - size / 2,
     },
   };
 }
@@ -119,12 +119,7 @@ const LoginField = memo(function LoginField({
 
   return (
     <View style={[styles.field, focused && styles.fieldFocused]}>
-      <FontAwesome6
-        name={icon}
-        iconStyle="solid"
-        size={16}
-        color={MUTED}
-      />
+      <FontAwesome6 name={icon} iconStyle="solid" size={16} color={MUTED} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -340,14 +335,13 @@ export default function Page() {
   // are identical, so the arrow simply holds its position.
   const arrowProgress = useSharedValue(0);
   const arrowLeftFrom = useMemo(
-    () => ({ left: 102 * scale, top:  scale - 10 }),
+    () => ({ left: 102 * scale, top: scale - 10 }),
     [scale],
   );
   const arrowRightFrom = useMemo(
     () => ({ left: width - 170 * scale, top: 20 * scale }),
     [width, scale],
   );
-
 
   const handleSubmit = async () => {
     setErrorMessage(null);
@@ -410,6 +404,15 @@ export default function Page() {
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
+
+      <Stack.Screen options={{ headerTransparent: true, title: "" }} />
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon="chevron.backward"
+          onPress={() => router.back()}
+        />
+      </Stack.Toolbar>
+
       <BackgroundBlobs width={width} height={height} />
 
       <KeyboardAvoidingView
@@ -417,27 +420,25 @@ export default function Page() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View
-          style={[styles.flex,styles.content,{
+          style={[
+            styles.flex,
+            styles.content,
+            {
               paddingTop: insets.top + 4,
               paddingBottom: Math.max(insets.bottom, 14) + 6,
-          },]}
+            },
+          ]}
         >
           <View style={[styles.hero, { height: MASCOT_AREA_HEIGHT * scale }]}>
             <MascotScene scale={scale} focused={isFocused} />
 
             <DoodleNote
               text={"Good\nto see you\nagain!"}
-              style={[
-                styles.noteLeft,
-                { left: 20 * scale, top: scale },
-              ]}
+              style={[styles.noteLeft, { left: 20 * scale, top: scale }]}
             />
             <DoodleNote
               text={"Let's\ncreate\nsomething\ngreat!"}
-              style={[
-                styles.noteRight,
-                { right: 12 * scale, top: 10 * scale },
-              ]}
+              style={[styles.noteRight, { right: 12 * scale, top: 10 * scale }]}
             />
 
             <MorphArrow
@@ -527,7 +528,9 @@ export default function Page() {
             <AppleSignInButton />
 
             <View style={styles.signupRow}>
-              <Text style={styles.signupText}>Don&apos;t have an account? </Text>
+              <Text style={styles.signupText}>
+                Don&apos;t have an account?{" "}
+              </Text>
               <Pressable
                 hitSlop={8}
                 onPress={() =>
@@ -544,13 +547,11 @@ export default function Page() {
               </Pressable>
             </View>
           </View>
-
         </View>
       </KeyboardAvoidingView>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   root: {
@@ -734,5 +735,4 @@ const styles = StyleSheet.create({
     width: 86,
     transform: [{ rotate: "9deg" }],
   },
-
 });
