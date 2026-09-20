@@ -524,8 +524,10 @@ export default function Page() {
 
             <GoogleSignInButton
               logoSource={require("@/assets/icons/google.png")}
+              cornerRadius={22}
+              height={44}
             />
-            <AppleSignInButton />
+            <AppleSignInButton cornerRadius={22} height={44} />
 
             <View style={styles.signupRow}>
               <Text style={styles.signupText}>
@@ -658,8 +660,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   signIn: {
-    height: 46,
-    borderRadius: 23,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: INK,
     alignItems: "center",
     justifyContent: "center",
@@ -720,8 +722,7 @@ const styles = StyleSheet.create({
   },
   doodleNote: {
     position: "absolute",
-    fontFamily: fonts.alanSans.medium,
-    fontStyle: "italic",
+    fontFamily: fonts.kalam.regular,
     fontSize: 12,
     lineHeight: 15,
     letterSpacing: 0.2,

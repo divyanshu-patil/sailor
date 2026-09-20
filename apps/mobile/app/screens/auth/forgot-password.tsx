@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   },
   doodleNote: {
     position: "absolute",
-    fontFamily: fonts.amarna.mediumItalic,
+    fontFamily: fonts.kalam.regular,
     fontSize: 14,
     lineHeight: 17,
     letterSpacing: 0.2,
@@ -954,8 +954,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   submit: {
-    height: 56,
-    borderRadius: 28,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: INK,
     alignItems: "center",
     justifyContent: "center",
@@ -1001,7 +1001,6 @@ const styles = StyleSheet.create({
   },
   loginWrap: {
     alignSelf: "center",
-    marginTop: 20,
     marginBottom: 4,
     zIndex: 5,
   },

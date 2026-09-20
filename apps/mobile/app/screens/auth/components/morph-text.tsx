@@ -307,8 +307,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     color: NOTE,
-    fontFamily: fonts.alanSans.medium,
-    fontStyle: "italic",
+    fontFamily: fonts.kalam.regular,
     fontSize: 15,
     lineHeight: 18,
     letterSpacing: 0.2,
