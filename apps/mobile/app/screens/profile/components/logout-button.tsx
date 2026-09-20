@@ -1,45 +1,49 @@
-import React from "react";
+import { memo } from "react";
 import { StyleSheet, Text } from "react-native";
-import { Ionicons } from "@react-native-vector-icons/ionicons";
+import Ionicons from "@react-native-vector-icons/ionicons";
+
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { PROFILE_PASTELS, profileFonts } from "../theme";
 
 interface LogoutButtonProps {
   onPress: () => void;
 }
 
 /**
- * The logout row, including its own squish/fade press animation.
- * Takes a single onPress so the confirmation + sign-out logic
- * (useLogout) stays completely decoupled from the animation.
+ * The logout action, visually separated from the settings card and tinted with
+ * the danger pastel. Takes a single onPress so the confirmation + sign-out
+ * logic (useLogout) stays decoupled from the button.
  */
-const LogoutButton = ({ onPress }: LogoutButtonProps) => {
+const LogoutButton = memo(function LogoutButton({ onPress }: LogoutButtonProps) {
   return (
     <PressableScale
-      style={[styles.logoutContainer]}
       onPress={onPress}
-      opacity={{
-        pressedOpacity: 0.5,
-      }}
+      style={styles.button}
+      accessibilityRole="button"
+      accessibilityLabel="Log out"
     >
-      <Ionicons name="exit-outline" size={28} color="#E44141" />
-      <Text style={styles.logoutText}>Logout</Text>
+      <Ionicons name="log-out-outline" size={20} color="#D6455D" />
+      <Text style={styles.label}>Log out</Text>
     </PressableScale>
   );
-};
+});
 
 export default LogoutButton;
 
 const styles = StyleSheet.create({
-  logoutContainer: {
-    marginTop: 8,
-    paddingHorizontal: 20,
+  button: {
     flexDirection: "row",
-    justifyContent: "flex-start",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "center",
+    gap: 8,
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: PROFILE_PASTELS.pinkSoft,
   },
-  logoutText: {
-    fontSize: 17,
-    color: "#E44141",
+  label: {
+    fontFamily: profileFonts.semibold,
+    fontSize: 16,
+    color: "#D6455D",
+    letterSpacing: -0.2,
   },
 });

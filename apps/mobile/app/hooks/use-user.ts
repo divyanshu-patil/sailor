@@ -3,7 +3,7 @@ import {
   userService,
   UserProfile,
   UserService,
-} from "@/services/user.debug.service";
+} from "@/services/user.service";
 import { useApiState, UseApiStateReturn } from "./use-api-state";
 
 export interface UseUserOptions {

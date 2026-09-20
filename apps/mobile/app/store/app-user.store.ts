@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createMMKVStorage } from "./mmkv.storage";
-import { userService } from "@/services/user.debug.service";
+import { userService } from "@/services/user.service";
 import { ExperienceLevel, Profession } from "@/types/user";
 
 const appUserStorage = createMMKVStorage("app-user-storage");
@@ -117,6 +117,12 @@ export const useAppUserStore = create<AppUserStore>()(
     }),
     {
       name: "app-user-store",
+      // v1: the app used to be wired to the in-memory debug user service, whose
+      // fixture ("Div Patil" / debug@example.com) was persisted here and then
+      // displayed as if it were the signed-in user. Dropping the v0 cache lets
+      // the real profile refetch replace it.
+      version: 1,
+      migrate: () => ({ appUser: null }),
       storage: createJSONStorage(() => appUserStorage),
       partialize: (state) => ({
         appUser: state.appUser,
