@@ -13,6 +13,7 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { DeckItem } from "@/services/deck.service";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import Spacer from "@/components/ui/shared/spacer";
+import { fonts } from "@/constants/fonts";
 
 const JELLY_SPRING = {
   damping: 8,
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 30,
     fontWeight: "700",
-    fontFamily: "KronaOne",
+    fontFamily: fonts.krona,
   },
   cardDescription: {
     fontSize: 13,

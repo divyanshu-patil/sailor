@@ -24,7 +24,9 @@ export interface UsePublicDecksReturn {
   isLoadingMore: boolean;
   hasMore: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  /** `false` re-fetches without spinning the RefreshControl — the shimmer
+   *  under the chips shows instead, as it does for any other re-query. */
+  refresh: (fromPull?: boolean) => Promise<void>;
   loadMore: () => void;
 }
 
@@ -144,11 +146,14 @@ export function usePublicDecks(
     void load("more");
   }, [load]);
 
-  const refresh = useCallback(async () => {
-    cursor.current = null;
-    hasMore.current = true;
-    await load("reset", true);
-  }, [load]);
+  const refresh = useCallback(
+    async (fromPull = true) => {
+      cursor.current = null;
+      hasMore.current = true;
+      await load("reset", fromPull);
+    },
+    [load],
+  );
 
   return {
     decks,

@@ -3,6 +3,7 @@ import EntypoIcons from "@react-native-vector-icons/entypo";
 import { colord } from "colord";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { fonts } from "@/constants/fonts";
 
 interface CtaButtonProps {
   onPress?: () => void;
@@ -36,6 +37,6 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontSize: 36,
-    fontFamily: "KronaOne",
+    fontFamily: fonts.krona,
   },
 });

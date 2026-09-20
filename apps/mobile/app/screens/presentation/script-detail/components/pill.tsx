@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useEffect } from "react";
+import { fonts } from "@/constants/fonts";
 
 interface PillProps {
   variant: "duration" | "date";
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 30,
-    fontFamily: "KronaOne",
+    fontFamily: fonts.krona,
   },
   dateText: {
     transform: [{ translateY: -10 }, { translateX: -5 }],

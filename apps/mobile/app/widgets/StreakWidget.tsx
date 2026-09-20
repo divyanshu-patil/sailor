@@ -6,7 +6,6 @@ import {
   font,
   foregroundStyle,
   frame,
-  italic,
   lineLimit,
   minimumScaleFactor,
   offset,
@@ -172,10 +171,10 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
         >
           <Text
             modifiers={[
-              // Serif italic is as close to a hand as the system fonts get
-              // without embedding one in the extension.
-              font({ size: 12, weight: "medium", design: "serif" }),
-              italic(),
+              // Kalam is embedded in the extension by
+              // plugins/with-widget-fonts — the app's own fonts aren't visible
+              // to a widget.
+              font({ family: "Kalam-Regular", size: 13 }),
               foregroundStyle(inkSoft),
               frame({ width: 68, alignment: "trailing" }),
               lineLimit(3),

@@ -28,7 +28,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function ensurePermission(): Promise<boolean> {
+export async function ensureNotificationPermission(): Promise<boolean> {
   const existing = await Notifications.getPermissionsAsync();
   if (existing.granted) return true;
   // Don't re-prompt once the user has said no — iOS won't show the sheet again
@@ -61,7 +61,7 @@ export async function syncDailyReminder(
   }
 
   if (!enabled) return false;
-  if (!(await ensurePermission())) return false;
+  if (!(await ensureNotificationPermission())) return false;
 
   const [hour, minute] = time.split(":").map(Number);
 
@@ -99,7 +99,10 @@ export function startReminderSync(): () => void {
   };
 
   let previous = read();
-  void syncDailyReminder(previous.practiceRemindersEnabled, previous.practiceReminderTime);
+  void syncDailyReminder(
+    previous.practiceRemindersEnabled,
+    previous.practiceReminderTime,
+  );
 
   return usePreferenceStore.subscribe(() => {
     const next = read();
@@ -110,6 +113,9 @@ export function startReminderSync(): () => void {
       return;
     }
     previous = next;
-    void syncDailyReminder(next.practiceRemindersEnabled, next.practiceReminderTime);
+    void syncDailyReminder(
+      next.practiceRemindersEnabled,
+      next.practiceReminderTime,
+    );
   });
 }

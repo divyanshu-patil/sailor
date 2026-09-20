@@ -19,6 +19,7 @@ import { useDailyPractice } from "@/hooks/use-daily-practice";
 import { exitToHome } from "./exit";
 import { Mascot } from "./components/Mascot";
 import { MetaRow } from "./components/MetaRow";
+import { StreakAtRisk } from "./components/StreakAtRisk";
 import { PressableCard } from "./components/PressableCard";
 import {
   dailyFonts,
@@ -114,6 +115,9 @@ const DailyPracticeIntro = () => {
             A short snippet to read aloud, new every day.
           </Text>
         </Animated.View>
+
+        {/* Only on the last day a streak can be saved. */}
+        <StreakAtRisk />
 
         {/* Today's topic */}
         <Animated.View

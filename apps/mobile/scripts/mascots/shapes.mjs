@@ -401,3 +401,190 @@ export const widgetFlame = () => `<svg xmlns="http://www.w3.org/2000/svg" width=
         fill="#FFC93C"/>
   </g>
 </svg>`;
+
+/* ------------------------------------------------------------ empty states */
+
+/**
+ * Discover's empty and error characters. [REPLACE-LATER] like the rest.
+ *
+ * Character and props only — the pastel cloud behind each one is a shapesoup
+ * blob drawn live by the screen, so it can breathe instead of being baked in.
+ */
+const STATE_INK = "#1B1B23";
+
+export function mascotEmpty() {
+  const box = {
+    left: "#B9ADF7",
+    right: "#A091F0",
+    inside: "#8574E3",
+    flap: "#CDC4FB",
+  };
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="420" viewBox="0 0 520 420">
+  <ellipse cx="275" cy="396" rx="190" ry="12" fill="#1B1B23" opacity="0.06"/>
+
+  <!-- feet -->
+  <rect x="150" y="332" width="34" height="62" rx="14" fill="${STATE_INK}"/>
+  <rect x="222" y="336" width="34" height="58" rx="14" fill="${STATE_INK}"/>
+
+  <!-- body -->
+  <path d="M 214 58 C 318 54 382 130 380 222 C 378 312 312 360 214 360
+           C 118 360 60 300 62 214 C 64 124 116 62 214 58 Z"
+        fill="#F7F4EF" stroke="#E7E0D6" stroke-width="5"/>
+  <path d="M 110 150 C 130 104 170 84 206 80" fill="none" stroke="#FFFFFF"
+        stroke-width="14" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- eyes, glancing at the box -->
+  <ellipse cx="226" cy="196" rx="21" ry="33" fill="${STATE_INK}" transform="rotate(-8 226 196)"/>
+  <ellipse cx="292" cy="192" rx="21" ry="33" fill="${STATE_INK}" transform="rotate(-8 292 192)"/>
+  <ellipse cx="233" cy="181" rx="6" ry="8" fill="#FFFFFF"/>
+  <ellipse cx="299" cy="177" rx="6" ry="8" fill="#FFFFFF"/>
+
+  <!-- raised arm -->
+  <path d="M 52 236 C 34 226 30 200 46 188 C 62 176 84 190 86 212
+           C 88 232 70 246 52 236 Z" fill="${STATE_INK}"/>
+
+  <!-- strips -->
+  <g transform="translate(348 34) rotate(30)">
+    <rect x="0" y="0" width="16" height="50" rx="8" fill="${PALETTE.mustard}"/>
+    <rect x="30" y="16" width="16" height="36" rx="8" fill="${PALETTE.mustard}"/>
+  </g>
+
+  <!-- box -->
+  <polygon points="262,248 350,212 332,176 244,212" fill="${box.flap}"/>
+  <polygon points="350,212 450,238 474,200 374,176" fill="${box.flap}"/>
+  <polygon points="262,248 350,212 450,238 362,276" fill="${box.inside}"/>
+  <polygon points="262,248 362,276 362,392 262,356" fill="${box.left}"/>
+  <polygon points="362,276 450,238 450,352 362,392" fill="${box.right}"/>
+  <polygon points="362,276 450,238 488,262 400,302" fill="${box.flap}"/>
+  <polygon points="262,248 362,276 336,300 238,270" fill="${box.flap}" opacity="0.95"/>
+
+  <!-- hand over the rim -->
+  <path d="M 286 250 C 276 230 288 208 310 208 C 332 208 344 228 336 248
+           C 330 264 294 266 286 250 Z" fill="${STATE_INK}"/>
+
+  <!-- doodle star -->
+  <path d="M 46 316 L 55 338 L 78 340 L 60 354 L 66 377 L 46 364 L 26 377
+           L 32 354 L 14 340 L 37 338 Z" fill="none" stroke="#A99CF4"
+        stroke-width="5" stroke-linejoin="round"/>
+</svg>`;
+}
+
+/** A spiral that narrows as it falls — the "dizzy" squiggle over the head. */
+function dizzyPath(cx, top) {
+  const steps = 90;
+  const turns = 3.2;
+  let d = "";
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const angle = t * Math.PI * 2 * turns;
+    const r = 44 * (1 - t * 0.8);
+    const x = cx + Math.cos(angle) * r;
+    const y = top + t * 96 + Math.sin(angle) * r * 0.32;
+    d += `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)} `;
+  }
+  return d.trim();
+}
+
+export function mascotError() {
+  const blue = "#7EADF6";
+  const paw = "#A8C9FB";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="420" viewBox="0 0 520 420">
+  <ellipse cx="260" cy="394" rx="200" ry="13" fill="#1B1B23" opacity="0.06"/>
+
+  <!-- body: a dome slumped flat on the floor -->
+  <path d="M 116 380 C 100 232 164 140 262 140 C 360 140 424 232 408 380
+           C 330 392 194 392 116 380 Z" fill="${blue}"/>
+  <path d="M 170 214 C 190 184 220 168 254 164" fill="none" stroke="#A9CAFB"
+        stroke-width="14" stroke-linecap="round"/>
+
+  <!-- closed, sorry eyes and a small frown -->
+  <path d="M 196 266 Q 219 290 242 266" fill="none" stroke="${STATE_INK}"
+        stroke-width="10" stroke-linecap="round"/>
+  <path d="M 282 266 Q 305 290 328 266" fill="none" stroke="${STATE_INK}"
+        stroke-width="10" stroke-linecap="round"/>
+  <path d="M 248 312 Q 262 300 276 312" fill="none" stroke="${STATE_INK}"
+        stroke-width="7" stroke-linecap="round"/>
+
+  <!-- paws -->
+  <ellipse cx="136" cy="366" rx="44" ry="28" fill="${paw}"/>
+  <ellipse cx="390" cy="366" rx="44" ry="28" fill="${paw}"/>
+
+  <!-- dizzy spiral -->
+  <path d="${dizzyPath(262, 22)}" fill="none" stroke="#3E4A6E" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- exclamation -->
+  <g transform="rotate(18 440 110)">
+    <rect x="428" y="56" width="22" height="74" rx="11" fill="#F27BA7"/>
+    <circle cx="439" cy="152" r="12" fill="#F27BA7"/>
+  </g>
+</svg>`;
+}
+
+/* ---------------------------------------------------------- search states */
+
+/**
+ * The Search tab's character: a clean mint bean — a body and two solid eyes,
+ * nothing else. No limbs, brows, pupils or cheeks; the props around it carry
+ * the story. A different creature from Discover's on purpose.
+ * [REPLACE-LATER] like the rest.
+ */
+const MINT = { body: "#8ED8B4", shade: "#74C9A0" };
+const LENS = { rim: "#7C6BD9", glass: "#DCEEFF" };
+
+const bean = () => `
+  <path d="M 222 60 C 316 58 358 146 356 240 C 354 334 306 380 222 380
+           C 138 380 88 334 88 240 C 88 146 128 62 222 60 Z" fill="${MINT.body}"/>
+  <path d="M 326 146 C 352 194 356 272 330 324 C 310 362 272 376 238 378
+           C 304 350 336 266 326 146 Z" fill="${MINT.shade}" opacity="0.6"/>
+  <path d="M 124 180 C 132 132 162 96 204 86" fill="none" stroke="#FFFFFF"
+        stroke-width="13" stroke-linecap="round" opacity="0.55"/>`;
+
+const sparkle = (x, y, r, fill) =>
+  `<path d="M ${x} ${y - r} Q ${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y}
+           Q ${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r}
+           Q ${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y}
+           Q ${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r} Z" fill="${fill}"/>`;
+
+export function mascotSearch() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="420" viewBox="0 0 520 420">
+  <ellipse cx="236" cy="396" rx="160" ry="11" fill="#1B1B23" opacity="0.06"/>
+  ${bean()}
+  <!-- eyes, glancing toward the glass -->
+  <ellipse cx="206" cy="212" rx="20" ry="32" fill="${STATE_INK}"/>
+  <ellipse cx="272" cy="212" rx="20" ry="32" fill="${STATE_INK}"/>
+  <!-- magnifying glass, floating beside it -->
+  <g transform="rotate(-18 420 196)">
+    <line x1="420" y1="262" x2="420" y2="322" stroke="${LENS.rim}" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="420" cy="196" r="62" fill="${LENS.glass}" opacity="0.85" stroke="${LENS.rim}" stroke-width="16"/>
+    <path d="M 386 176 Q 394 150 420 144" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  ${sparkle(482, 70, 18, PALETTE.mustard)}
+  ${sparkle(56, 110, 12, "#A99CF4")}
+  <circle cx="486" cy="330" r="7" fill="#F9B4CB"/>
+</svg>`;
+}
+
+export function mascotNoResults() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="420" viewBox="0 0 520 420">
+  <ellipse cx="256" cy="396" rx="186" ry="11" fill="#1B1B23" opacity="0.06"/>
+  ${bean()}
+  <!-- eyes squeezed flat: nothing found -->
+  <rect x="172" y="220" width="46" height="16" rx="8" fill="${STATE_INK}"/>
+  <rect x="244" y="220" width="46" height="16" rx="8" fill="${STATE_INK}"/>
+  <!-- sweat drop -->
+  <path d="M 338 104 C 352 124 356 138 346 146 C 336 154 324 144 328 132 C 330 124 334 114 338 104 Z"
+        fill="#9ED0F7"/>
+  <!-- question mark doodle -->
+  <path d="M 108 50 C 108 22 154 20 154 48 C 154 68 130 70 130 90" fill="none"
+        stroke="#A99CF4" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="130" cy="114" r="7" fill="#A99CF4"/>
+  <!-- the glass, dropped on its side, empty -->
+  <g transform="rotate(38 440 340)">
+    <line x1="440" y1="384" x2="440" y2="416" stroke="${LENS.rim}" stroke-width="15" stroke-linecap="round"/>
+    <circle cx="440" cy="340" r="42" fill="${LENS.glass}" opacity="0.85" stroke="${LENS.rim}" stroke-width="13"/>
+  </g>
+  <circle cx="484" cy="196" r="6" fill="#F9B4CB"/>
+  ${sparkle(56, 318, 11, PALETTE.mustard)}
+</svg>`;
+}

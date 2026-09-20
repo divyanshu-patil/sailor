@@ -8,6 +8,7 @@ import Animated, {
   LinearTransition,
 } from "react-native-reanimated";
 import WaveForm from "./WaveForm";
+import { fonts } from "@/constants/fonts";
 
 export const CLIP_HEIGHT = 32; // must match waveItem MAX_HEIGHT
 
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: "white",
     fontSize: 17,
-    fontFamily: "KronaOne",
+    fontFamily: fonts.krona,
     textAlign: "center",
   },
 });

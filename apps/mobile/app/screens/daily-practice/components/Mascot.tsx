@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
-import { Image, ImageStyle, StyleProp } from "react-native";
+import { ImageStyle, StyleProp } from "react-native";
+import { Asset } from "expo-asset";
+import { Image } from "expo-image";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -23,12 +25,30 @@ import Animated, {
  * dependencies, so nothing needs installing.
  */
 
-const SOURCES = {
+const MASCOT_SOURCES = {
   reading: require("../../../../assets/mascots/mascot-reading.png"),
   celebrate: require("../../../../assets/mascots/mascot-celebrate.png"),
+  empty: require("../../../../assets/mascots/mascot-empty.png"),
+  error: require("../../../../assets/mascots/mascot-error.png"),
+  search: require("../../../../assets/mascots/mascot-search.png"),
+  noResults: require("../../../../assets/mascots/mascot-no-results.png"),
 };
 
-export type MascotPose = keyof typeof SOURCES;
+export type MascotPose = keyof typeof MASCOT_SOURCES;
+
+/**
+ * Warm expo-image's memory cache with every pose, at launch.
+ *
+ * Through expo-image rather than `Asset.loadAsync`: in a dev build the image is
+ * a Metro URL, and only a prefetch into the same cache the <Image> reads from
+ * stops it being fetched again the first time an empty state appears.
+ */
+export function preloadMascots(): Promise<boolean> {
+  return Image.prefetch(
+    Object.values(MASCOT_SOURCES).map((source) => Asset.fromModule(source).uri),
+    "memory-disk",
+  );
+}
 
 interface MascotProps {
   pose: MascotPose;
@@ -38,7 +58,12 @@ interface MascotProps {
   animated?: boolean;
 }
 
-export function Mascot({ pose, size = 116, style, animated = true }: MascotProps) {
+export function Mascot({
+  pose,
+  size = 116,
+  style,
+  animated = true,
+}: MascotProps) {
   const bob = useSharedValue(0);
 
   useEffect(() => {
@@ -56,15 +81,19 @@ export function Mascot({ pose, size = 116, style, animated = true }: MascotProps
   }, [animated, bob]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: bob.value * -6 }, { rotate: `${bob.value * 1.5 - 0.75}deg` }],
+    transform: [
+      { translateY: bob.value * -6 },
+      { rotate: `${bob.value * 1.5 - 0.75}deg` },
+    ],
   }));
 
   return (
     <Animated.View style={animated ? animatedStyle : undefined}>
       <Image
-        source={SOURCES[pose]}
+        source={MASCOT_SOURCES[pose]}
         style={[{ width: size, height: size }, style]}
-        resizeMode="contain"
+        contentFit="contain"
+        cachePolicy="memory-disk"
         // Decorative. Announcing "blue blob" adds nothing for a screen reader.
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"

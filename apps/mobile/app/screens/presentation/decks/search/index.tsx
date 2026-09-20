@@ -6,7 +6,7 @@ import {
   ForwardRefExoticComponent,
   RefAttributes,
 } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useColorScheme, View } from "react-native";
 import {
   FlashList,
   type FlashListProps,
@@ -32,6 +32,8 @@ import {
 } from "@/db/decks.repo";
 import StartSearchingState from "./start-searching.state";
 import NoResultsFoundState from "./no-results.state";
+import { FloatingBackdrop } from "@/screens/discover/components/empty-state";
+import { dailyTheme } from "@/screens/daily-practice/theme";
 
 const AnimatedFlashList = Animated.createAnimatedComponent(
   FlashList,
@@ -123,8 +125,23 @@ const SearchScreen = () => {
     [],
   );
 
+  const showingState = !hasQuery || (visibleResults.length === 0 && !isLoading);
+  const theme = dailyTheme(useColorScheme() === "dark");
+
   return (
-    <View style={styles.screen}>
+    <View
+      style={[
+        styles.screen,
+        showingState ? { backgroundColor: theme.bg } : null,
+      ]}
+    >
+      {/* First, so it paints under everything — edge to edge, behind the
+          transparent header and the status bar. Mint to tell it apart from
+          Discover's corners. */}
+      {showingState ? (
+        <FloatingBackdrop colors={["#D6F0E3", "#FFE7C7", "#E3DDFB"]} />
+      ) : null}
+
       <Stack.Title>Search</Stack.Title>
 
       {/*

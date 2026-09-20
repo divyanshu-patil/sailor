@@ -32,6 +32,7 @@ import { DeckItem } from "@/services/deck.service";
 import { useCards, useDeck } from "@/hooks";
 import { usePublicDeck } from "@/hooks/use-public-deck";
 import { publicDeckService } from "@/services/public-deck.service";
+import { fonts } from "@/constants/fonts";
 
 type ScriptDetailParams = {
   id: string;
@@ -184,7 +185,8 @@ export default function ScriptDetailScreen() {
    * delaying the first card for.
    */
   const handlePractice = () => {
-    if (isOtherPersonsDeck) void publicDeckService.recordPractice(currentScript.id);
+    if (isOtherPersonsDeck)
+      void publicDeckService.recordPractice(currentScript.id);
     router.navigate({
       pathname: "/(authenticated)/(script)/script-practice",
       params: {
@@ -466,7 +468,9 @@ export default function ScriptDetailScreen() {
               color={currentScript.color}
               icon={isOtherPersonsDeck ? "account" : "earth"}
               label={
-                isOtherPersonsDeck ? (creatorName ?? "Anonymous") : "In Discover"
+                isOtherPersonsDeck
+                  ? (creatorName ?? "Anonymous")
+                  : "In Discover"
               }
             />
             <StatChip
@@ -612,8 +616,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  statLabel: { fontFamily: "KronaOne", fontSize: 15 },
-  heroTitle: { fontSize: 34, marginBottom: 10, fontFamily: "KronaOne" },
+  statLabel: { fontFamily: fonts.krona, fontSize: 15 },
+  heroTitle: { fontSize: 34, marginBottom: 10, fontFamily: fonts.krona },
   ctaPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -624,7 +628,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 100,
   },
-  ctaText: { fontSize: 36, fontFamily: "KronaOne" },
+  ctaText: { fontSize: 36, fontFamily: fonts.krona },
   scriptInfoContainer: {
     marginTop: 35,
     paddingHorizontal: 14,
@@ -638,7 +642,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  cardsText: { fontFamily: "KronaOne", fontSize: 20 },
+  cardsText: { fontFamily: fonts.krona, fontSize: 20 },
   pillContainer: { gap: 8, justifyContent: "space-between" },
   scriptContainer: {
     marginTop: 44,
@@ -646,7 +650,7 @@ const styles = StyleSheet.create({
     position: "relative",
     gap: 14,
   },
-  scriptHeaderText: { fontFamily: "KronaOne", fontSize: 34 },
+  scriptHeaderText: { fontFamily: fonts.krona, fontSize: 34 },
   scriptTextContainer: {
     paddingHorizontal: 44,
     paddingVertical: 34,

@@ -31,6 +31,9 @@ importers:
       '@expo-google-fonts/amarna':
         specifier: ^0.4.1
         version: 0.4.1
+      '@expo-google-fonts/kalam':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@expo-google-fonts/krona-one':
         specifier: ^0.4.1
         version: 0.4.1
@@ -749,6 +752,9 @@ packages:
 
   '@expo-google-fonts/amarna@0.4.1':
     resolution: {integrity: sha512-4iC59ZvOHnuWJRftBt9sFiNACFlE63tl3gt7uWkp1TAz3lomMz08Say7Yu0yZRToOmuyXM82QHg+GnzPG3x/pg==}
+
+  '@expo-google-fonts/kalam@0.4.1':
+    resolution: {integrity: sha512-A5LZoojqb9OCzOI/2WDRofaIQGGzC5zzmKxqxCFIx1jSYOO8g7q+5fZdd+QfJ6pY6VLzO4j5xoJq0ptcHFpQSg==}
 
   '@expo-google-fonts/krona-one@0.4.1':
     resolution: {integrity: sha512-aYbmrjYQTcmLWsFQY0HTvugUdV2kYj4VykIBwatpfZbTKJ7AsJR0Gq8HkudtwcEOVQ5V03ZGXlGI9NYTsqeAbw==}
@@ -6437,6 +6443,8 @@ snapshots:
   '@expo-google-fonts/alan-sans@0.4.2': {}
 
   '@expo-google-fonts/amarna@0.4.1': {}
+
+  '@expo-google-fonts/kalam@0.4.1': {}
 
   '@expo-google-fonts/krona-one@0.4.1': {}
 
