@@ -746,7 +746,7 @@ export default function ForgotPasswordScreen() {
         >
           <MascotScene scale={scale} focused={isFocused} />
 
-          <DoodleNote
+          {/* <DoodleNote
             text={"No worries!\nIt happens."}
             style={[styles.noteRight, { right: 14 * scale, top: 2 * scale }]}
           />
@@ -767,7 +767,7 @@ export default function ForgotPasswordScreen() {
             to={arrowRight}
             baseRotation={-6}
             flip
-          />
+          /> */}
 
           <BottomShapes width={width} bottom={bottomFromHero} reveal={reveal} />
         </View>
