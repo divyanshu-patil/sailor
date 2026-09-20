@@ -24,12 +24,18 @@ export function useCreateAccountTransition(
   backDuration = 900,
 ) {
   const [screenMode, setScreenMode] = useState<ScreenMode>("base");
+  // Flips true only once the forward morph has fully settled — the native
+  // header button mounts then, so it appears after the animation rather than
+  // fading in partway through it. The reverse morph leaves it mounted (and
+  // fades it out via `progress`) until the backward animation also finishes.
+  const [settled, setSettled] = useState(false);
   const progress = useSharedValue(0);
   const lockedRef = useRef(false);
 
   const release = useCallback((mode: ScreenMode) => {
     lockedRef.current = false;
     setScreenMode(mode);
+    setSettled(mode === "create-account");
   }, []);
 
   const animateTo = useCallback(
@@ -65,5 +71,5 @@ export function useCreateAccountTransition(
     animateTo(0, backDuration, "base");
   }, [animateTo, backDuration]);
 
-  return { screenMode, progress, startTransition, goBack };
+  return { screenMode, settled, progress, startTransition, goBack };
 }

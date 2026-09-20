@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -26,7 +27,7 @@ export interface MorphArrowProps {
  * (already multiplied by the screen scale by the caller), so both ends of the
  * animation are independently tunable exactly like `MorphNote`.
  */
-export function MorphArrow({
+export const MorphArrow = memo(function MorphArrow({
   progress,
   from,
   to,
@@ -85,4 +86,4 @@ export function MorphArrow({
       </Svg>
     </Animated.View>
   );
-}
+});
