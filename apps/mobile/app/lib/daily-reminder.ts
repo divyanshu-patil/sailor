@@ -3,6 +3,11 @@ import { Platform } from "react-native";
 
 import { usePreferenceStore } from "@/store/preference-store";
 
+import {
+  DAILY_REMINDER_TITLE,
+  pickDailyReminderBody,
+} from "./notification-copy";
+
 /**
  * The daily practice reminder.
  *
@@ -68,8 +73,11 @@ export async function syncDailyReminder(
   await Notifications.scheduleNotificationAsync({
     identifier: IDENTIFIER,
     content: {
-      title: "Today's practice",
-      body: "Two sentences, ten seconds. Keep the streak going.",
+      title: DAILY_REMINDER_TITLE,
+      // Picked here rather than written here — see notification-copy. This runs
+      // on every launch, so the wording differs between reschedules instead of
+      // being the same sentence every evening forever.
+      body: pickDailyReminderBody(),
       // Read by the notification tap handler in routes/_layout to deep-link.
       data: { url: "sailors://daily-practice" },
     },

@@ -7,6 +7,7 @@ import { usePreferenceStore } from "@/store/preference-store";
 import { localDate, StreakState } from "@/types/daily";
 
 import { ensureNotificationPermission } from "./daily-reminder";
+import { STREAK_ALERTS } from "./notification-copy";
 
 /**
  * The "your streak is about to die" mechanism.
@@ -56,43 +57,6 @@ export function streakDeadline(
   };
 }
 
-const HOUR = 60 * 60 * 1000;
-
-/** Escalating, relative to the deadline. The last one is the morning after —
- *  it only survives if the user never came back to reschedule it. */
-const ALERTS: {
-  offset: number;
-  title: (n: number) => string;
-  body: (n: number) => string;
-}[] = [
-  {
-    offset: -4 * HOUR,
-    title: (n) => `🔥 Your ${n}-day streak is on the line`,
-    body: () => "4 hours left today. One snippet keeps it alive.",
-  },
-  {
-    offset: -2 * HOUR,
-    title: () => "⏳ 2 hours left to save your streak",
-    body: (n) => `${n} days of practice end at midnight unless you show up.`,
-  },
-  {
-    offset: -1 * HOUR,
-    title: () => "🚨 1 hour until your streak resets",
-    body: (n) =>
-      `Your ${n}-day streak hits zero at midnight. It takes a minute.`,
-  },
-  {
-    offset: -15 * 60 * 1000,
-    title: () => "🚨 15 minutes left!",
-    body: (n) => `Last call — your ${n}-day streak is about to be gone.`,
-  },
-  {
-    offset: 9 * HOUR,
-    title: (n) => `💔 Your ${n}-day streak ended`,
-    body: () => "Start a new one today. Day one is the easiest to win back.",
-  },
-];
-
 const ID = (i: number) => `streak-alert-${i}`;
 
 export async function syncStreakAlerts(
@@ -102,7 +66,7 @@ export async function syncStreakAlerts(
   if (Platform.OS === "web") return;
 
   await Promise.all(
-    ALERTS.map((_, i) =>
+    STREAK_ALERTS.map((_, i) =>
       Notifications.cancelScheduledNotificationAsync(ID(i)).catch(() => {}),
     ),
   );
@@ -112,7 +76,7 @@ export async function syncStreakAlerts(
 
   const now = Date.now();
   await Promise.all(
-    ALERTS.map(async (alert, i) => {
+    STREAK_ALERTS.map(async (alert, i) => {
       const at = target.deadline.getTime() + alert.offset;
       if (at <= now) return;
       await Notifications.scheduleNotificationAsync({
