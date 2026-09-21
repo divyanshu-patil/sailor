@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import Icon from "@react-native-vector-icons/lucide";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { weight } from "@/lib/haptics";
 import { HandwrittenNote } from "@/components/ui/handwritten-note";
 import { useSubscription } from "@/hooks/use-subscription";
 import { formatRenewal } from "@/utils/format-renewal";
@@ -139,6 +140,10 @@ export default function CancelSubscriptionScreen() {
             accessibilityState={{ busy }}
             disabled={busy}
             onPress={onCancel}
+            // The heaviest press in the app outside a card climax. Cancelling
+            // is the one thing on this screen that cannot be undone by tapping
+            // again, and it should not feel interchangeable with "Keep".
+            haptic={weight.heavy}
             style={styles.cta}
           >
             {busy ? (

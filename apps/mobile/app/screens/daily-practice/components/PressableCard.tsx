@@ -11,8 +11,8 @@ import { DAILY_SPRING } from "../theme";
 interface PressableCardProps extends Omit<PressableProps, "style"> {
   style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
-  /** Fired on press-in, so the haptic lands with the finger rather than after
-   *  the action resolves. */
+  /** Fired on the press itself, so a touch that slides off the card never
+   *  claims to have been a tap. */
   onHaptic?: () => void;
   scaleTo?: number;
 }
@@ -28,6 +28,7 @@ export function PressableCard({
   style,
   children,
   onHaptic,
+  onPress,
   onPressIn,
   onPressOut,
   scaleTo = 0.97,
@@ -44,9 +45,12 @@ export function PressableCard({
     <Animated.View style={animatedStyle}>
       <Pressable
         {...rest}
+        onPress={(e) => {
+          onHaptic?.();
+          onPress?.(e);
+        }}
         onPressIn={(e) => {
           pressed.value = withSpring(1, DAILY_SPRING);
-          onHaptic?.();
           onPressIn?.(e);
         }}
         onPressOut={(e) => {

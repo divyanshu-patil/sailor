@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import RevenueCatUI from "react-native-purchases-ui";
 import type { CustomerInfo } from "react-native-purchases";
 
+import { haptics } from "@/lib/haptics";
 import { isPurchasesConfigured } from "@/lib/purchases";
 import { useSubscriptionStore } from "@/store/subscription.store";
 
@@ -38,6 +39,9 @@ export const PaywallScreen = ({
   }, [onDismiss]);
 
   const grant = (customerInfo: CustomerInfo) => {
+    // Money changed hands, or a subscriber got their access back. One of the
+    // few things in the app that earns the big one.
+    haptics.successBig();
     applyCustomerInfo(customerInfo);
     onEntitled?.();
   };
@@ -52,7 +56,10 @@ export const PaywallScreen = ({
         // must be able to get back in without paying twice.
         onRestoreCompleted={({ customerInfo }) => grant(customerInfo)}
         onPurchaseError={({ error }) => {
-          // The paywall shows its own error UI; this is only for the log.
+          // The paywall shows its own error UI; this is only for the log —
+          // and for the one thing a native paywall cannot do from here, which
+          // is tell the hand that the purchase did not go through.
+          haptics.error();
           console.warn("[RevenueCat] paywall purchase failed", error);
         }}
         onDismiss={onDismiss}

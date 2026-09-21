@@ -5,6 +5,8 @@ import { SharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { SpringConfig } from "react-native-reanimated/lib/typescript/animation/spring";
 import { scheduleOnRN } from "react-native-worklets";
 
+import { haptics, playCardHaptic } from "@/lib/haptics";
+
 const SETTLE_SPRING: SpringConfig = { damping: 70, mass: 1 };
 export const RIGHT_SWIPE_THRESHOLD = 200;
 export const LEFT_SWIPE_THRESHOLD = 250;
@@ -17,6 +19,12 @@ type SwipeDirection = "left" | "right" | null;
 
 interface UseSwipeGestureParams {
   cardsLength: number;
+  /**
+   * Impact tier (0..4) per card, in deck order — the same tier that chose the
+   * card's colour, so what you feel and what you see cannot drift apart.
+   * See `utils/colorAssignment`.
+   */
+  tiers: number[];
   currentIndexSV: SharedValue<number>;
   translateX: SharedValue<number>;
   dragX: SharedValue<number>;
@@ -27,6 +35,10 @@ interface UseSwipeGestureParams {
   prevCardOpacity: SharedValue<number>;
   isAnimating: SharedValue<boolean>;
   isRetreating: SharedValue<boolean>;
+  /** Latches whether the live drag is past its commit distance, so the
+   *  threshold tick fires on the crossing rather than on every frame beyond
+   *  it. Owned by the screen, like every other shared value here. */
+  crossed: SharedValue<boolean>;
   onAdvance: () => void;
   onRetreat: () => void;
 }
@@ -35,6 +47,27 @@ interface UseSwipeGestureParams {
  * Handles right-swipe drag tracking: updates translateX/Y directly and
  * hides the "previous card" preview since it's not relevant on this side.
  */
+/**
+ * Fires the lightest tick in the vocabulary the moment a drag crosses (or
+ * uncrosses) the distance that will commit on release.
+ *
+ * `crossed` latches, so this is once per crossing rather than once per frame —
+ * an onUpdate runs at display rate, and a haptic per frame is a buzz, not a
+ * cue. The point is to answer "is this far enough yet?" without the user
+ * having to let go and find out.
+ */
+const tickOnThresholdCross = (
+  distance: number,
+  threshold: number,
+  crossed: SharedValue<boolean>,
+) => {
+  "worklet";
+  const isPast = distance > threshold;
+  if (isPast === crossed.value) return;
+  crossed.value = isPast;
+  if (isPast) haptics.threshold();
+};
+
 const handleRightSwipeUpdate = (
   e: { translationX: number; translationY: number },
   params: Pick<
@@ -110,14 +143,20 @@ const handleRightSwipeEnd = (
     | "cardsLength"
     | "isAnimating"
     | "onAdvance"
+    | "tiers"
   >,
 ) => {
   "worklet";
+  const pastDistance = params.translateX.value > RIGHT_SWIPE_THRESHOLD;
   const didExceedThreshold =
-    params.translateX.value > RIGHT_SWIPE_THRESHOLD &&
-    params.currentIndexSV.value < params.cardsLength;
+    pastDistance && params.currentIndexSV.value < params.cardsLength;
 
   params.dragX.value = 0;
+
+  // Dragged far enough to commit, but there is no card left to go to. The
+  // gesture springs back, and a dull stop says why — silence here reads as a
+  // dropped swipe rather than the end of the deck.
+  if (pastDistance && !didExceedThreshold) haptics.boundary();
 
   if (didExceedThreshold) {
     params.isAnimating.value = true;
@@ -138,6 +177,16 @@ const handleRightSwipeEnd = (
           params.translateX.value = 0;
           params.translateY.value = 0;
           params.isAnimating.value = false;
+          // The arriving card's weight, not the departing one's: this is the
+          // line the user is about to say, and the whole point of grading it
+          // is to warn the hand before the eye has finished reading.
+          const arriving = params.currentIndexSV.value;
+          if (arriving >= params.tiers.length) {
+            // Off the end of the deck — the run is finished.
+            haptics.successBig();
+          } else {
+            playCardHaptic(params.tiers[arriving] ?? 0);
+          }
           scheduleOnRN(params.onAdvance);
         }
       },
@@ -168,14 +217,17 @@ const handleLeftSwipeEnd = (
     | "isAnimating"
     | "isRetreating"
     | "onRetreat"
+    | "tiers"
   >,
 ) => {
   "worklet";
-  const didExceedThreshold =
-    Math.abs(translationX) > LEFT_SWIPE_THRESHOLD &&
-    params.currentIndexSV.value > 0;
+  const pastDistance = Math.abs(translationX) > LEFT_SWIPE_THRESHOLD;
+  const didExceedThreshold = pastDistance && params.currentIndexSV.value > 0;
 
   params.dragX.value = 0;
+
+  // Already on the first card: the same dull stop as running off the end.
+  if (pastDistance && !didExceedThreshold) haptics.boundary();
 
   if (didExceedThreshold) {
     params.isAnimating.value = true;
@@ -196,6 +248,8 @@ const handleLeftSwipeEnd = (
         params.translateY.value = 0;
         params.isAnimating.value = false;
         params.isRetreating.value = false;
+        // Same rule as advancing: the card now in hand is the one you feel.
+        playCardHaptic(params.tiers[params.currentIndexSV.value] ?? 0);
         scheduleOnRN(params.onRetreat);
       }
     });
@@ -216,6 +270,7 @@ const handleLeftSwipeEnd = (
  */
 export const useSwipeGesture = ({
   cardsLength,
+  tiers,
   currentIndexSV,
   translateX,
   dragX,
@@ -226,17 +281,20 @@ export const useSwipeGesture = ({
   prevCardOpacity,
   isAnimating,
   isRetreating,
+  crossed,
   onAdvance,
   onRetreat,
 }: UseSwipeGestureParams) => {
   return Gesture.Pan()
-    .onStart((e) => {
+    .onStart(() => {
+      crossed.value = false;
       scheduleOnRN(KeyboardController.dismiss);
     })
     .onUpdate((e) => {
       if (isAnimating.value) return;
       if (e.translationX >= 0) {
         swipeDirection.value = "right";
+        tickOnThresholdCross(e.translationX, RIGHT_SWIPE_THRESHOLD, crossed);
         handleRightSwipeUpdate(e, {
           translateX,
           translateY,
@@ -247,6 +305,11 @@ export const useSwipeGesture = ({
         });
       } else {
         swipeDirection.value = "left";
+        tickOnThresholdCross(
+          Math.abs(e.translationX),
+          LEFT_SWIPE_THRESHOLD,
+          crossed,
+        );
         handleLeftSwipeUpdate(e, {
           translateX,
           translateY,
@@ -268,7 +331,7 @@ export const useSwipeGesture = ({
           currentIndexSV,
           cardsLength,
           dragX,
-
+          tiers,
           isAnimating,
           onAdvance,
         });
@@ -283,10 +346,12 @@ export const useSwipeGesture = ({
           currentIndexSV,
           isAnimating,
           isRetreating,
+          tiers,
           onRetreat,
         });
       }
 
       swipeDirection.value = null;
+      crossed.value = false;
     });
 };

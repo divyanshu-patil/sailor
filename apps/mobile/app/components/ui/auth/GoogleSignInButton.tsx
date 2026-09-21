@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 
+import { haptics } from "@/lib/haptics";
+
 /**
  * Sign in with Google — Expo + Clerk
  * -----------------------------------------------------------------------
@@ -82,6 +84,7 @@ export function GoogleSignInButton({
       const { createdSessionId, setActive } =
         await startGoogleAuthenticationFlow();
       if (createdSessionId && setActive) {
+        haptics.successBig();
         await setActive({ session: createdSessionId });
         if (onSignInComplete) {
           onSignInComplete();
@@ -91,6 +94,7 @@ export function GoogleSignInButton({
       }
     } catch (err: any) {
       if (err.code === "SIGN_IN_CANCELLED" || err.code === "-5") return;
+      haptics.error();
       Alert.alert(
         "Error",
         err.message || "An error occurred during Google sign-in",

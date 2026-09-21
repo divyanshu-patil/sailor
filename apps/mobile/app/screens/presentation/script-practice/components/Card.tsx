@@ -16,6 +16,7 @@ import { ScriptLine } from "../../script-text/ScriptLine";
 import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
 import Lucide from "@react-native-vector-icons/lucide";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import { haptics } from "@/lib/haptics";
 import { fonts } from "@/constants/fonts";
 import { colord } from "colord";
 import React, { useEffect, useRef, useState } from "react";
@@ -164,6 +165,9 @@ const Card = React.memo(
      */
     const flipRotation = useSharedValue(0);
 
+    /** Whether the long press actually activated — see `onFinalize` below. */
+    const didFlip = useSharedValue(false);
+
     /**
      * Keyboard animation shared value.
      */
@@ -184,6 +188,7 @@ const Card = React.memo(
      * ----------------------------------------------------
      */
     const startEditing = () => {
+      haptics.editStart();
       setDraftText(localText);
       setIsEditing(true);
 
@@ -202,6 +207,10 @@ const Card = React.memo(
       setIsEditing(false);
 
       if (draftText.trim().length > 0 && draftText !== localText) {
+        // Only when something actually changed. Blurring out of an untouched
+        // field is a dismissal, and acknowledging a save that did not happen
+        // is worse than staying quiet.
+        haptics.editCommit();
         setLocalText(draftText);
         onChangeText?.(draftText);
       }
@@ -476,9 +485,19 @@ const Card = React.memo(
       .minDuration(FLIP_MIN_DURATION_MS)
       .maxDistance(FLIP_MAX_DISTANCE)
       .onStart(() => {
+        didFlip.value = true;
+        // An opening rather than a hit — the card is unfolding, not landing.
+        haptics.reveal();
         flipRotation.value = withSpring(FLIP_ROTATION, FLIP_SPRING_CONFIG);
       })
       .onFinalize(() => {
+        // onFinalize runs whether or not the long press ever activated, so a
+        // plain tap or a swipe that started on the card lands here too. Without
+        // this latch every one of those would play the closing cue for a card
+        // that never opened.
+        if (!didFlip.value) return;
+        didFlip.value = false;
+        haptics.conceal();
         flipRotation.value = withSpring(0, FLIP_SPRING_CONFIG);
       });
 

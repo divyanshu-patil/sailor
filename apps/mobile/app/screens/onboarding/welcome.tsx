@@ -2,6 +2,8 @@ import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import React from "react";
 import { useRouter } from "expo-router";
 
+import { weight } from "@/lib/haptics";
+
 
 const WelcomeScreen = () => {
   const router = useRouter();
@@ -27,12 +29,20 @@ const WelcomeScreen = () => {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={handleGetStarted}
+          onPress={() => {
+            weight.press();
+            handleGetStarted();
+          }}
         >
           <Text style={styles.primaryButtonText}>Get Started</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.linkButton} onPress={handleSkip}>
+        <TouchableOpacity style={styles.linkButton}
+          onPress={() => {
+            weight.tap();
+            handleSkip();
+          }}
+        >
           <Text style={styles.linkText}>Skip for now</Text>
         </TouchableOpacity>
       </View>

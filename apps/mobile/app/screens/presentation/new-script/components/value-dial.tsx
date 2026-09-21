@@ -4,7 +4,7 @@
 import { memo, useCallback, useMemo } from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { Presets } from "react-native-pulsar";
+import { haptics, weight } from "@/lib/haptics";
 import Animated, {
   type SharedValue,
   useAnimatedReaction,
@@ -132,9 +132,9 @@ function ValueDial({
               group !== undefined &&
               Math.floor(detent / group) !== Math.floor(stepped.value / group)
             ) {
-              Presets.System.impactLight();
+              haptics.select();
             } else {
-              Presets.System.selection();
+              weight.tick();
             }
             stepped.value = detent;
           }
@@ -155,7 +155,7 @@ function ValueDial({
 
   const choose = useCallback(
     (next: number) => {
-      Presets.System.impactLight();
+      weight.press();
       raw.value = withSpring(next, { damping: 70 });
       onChange(next);
     },

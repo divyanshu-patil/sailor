@@ -4,7 +4,7 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import { LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { Presets } from "react-native-pulsar";
+import { haptics, weight } from "@/lib/haptics";
 import Animated, {
   Easing,
   FadeInRight,
@@ -528,7 +528,7 @@ export default function StepDelivery({ onFocusChange }: StepDeliveryProps) {
             time.chromeInDelay,
             withTiming(1, { duration: time.chromeIn, easing: EASE_IN }),
           );
-          Presets.System.impactSoft();
+          weight.press();
           scheduleOnRN(open, dial);
         })
         .onUpdate((e) => {
@@ -579,7 +579,9 @@ export default function StepDelivery({ onFocusChange }: StepDeliveryProps) {
             snapped.value = withSpring(detent, SNAP);
             // Pulsar's presets are worklets, so the tick lands on the UI thread
             // with the crossing rather than a hop through JS a frame later.
-            Presets.System.selection();
+            // The lightest rung there is: a fast spin crosses many detents a
+            // second, and anything heavier turns into a continuous buzz.
+            weight.tick();
           }
         })
         .onFinalize(() => {
@@ -590,7 +592,7 @@ export default function StepDelivery({ onFocusChange }: StepDeliveryProps) {
           const settled = Math.round(raws[dial].value + spin.value * 4);
           if (settled !== stepped.value) {
             stepped.value = settled;
-            Presets.System.selection();
+            haptics.select();
           }
           snapped.value = withSpring(settled, SNAP);
           raws[dial].value = withSpring(settled, {

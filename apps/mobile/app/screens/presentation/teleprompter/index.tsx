@@ -33,6 +33,8 @@ import { toPromptLines } from "./lines";
 import PromptLineView from "./prompt-line";
 import StartButton from "./start-button";
 
+import { haptics, playSpeedHaptic, weight } from "@/lib/haptics";
+
 /** Page colour when the route arrives without a deck colour. */
 const FALLBACK_TINT = "#EFE7DA";
 
@@ -223,12 +225,22 @@ const TeleprompterScreen = () => {
     running.value = next;
     // A pause and a resume both start a new run from the current position.
     anchorTime.value = -1;
+    // Starting and stopping the crawl are opposite acts, so they get opposite
+    // cues rather than one shared click — mid-delivery, with eyes on the text,
+    // the difference is the only way to know which one landed.
+    if (next) {
+      haptics.start();
+    } else {
+      haptics.recordStop();
+    }
     setStarted(true);
     setIsRunning(next);
   }, [anchorTime, running]);
 
   const pickSpeed = useCallback(
     (value: number) => {
+      // The chosen pace, felt rather than read — see playSpeedHaptic.
+      playSpeedHaptic(value);
       speed.value = value;
       // The new rate applies from here, not from the start of the run —
       // without re-anchoring, changing speed would recompute the whole
@@ -265,6 +277,9 @@ const TeleprompterScreen = () => {
           }
           boosting.value = true;
           anchorTime.value = -1;
+          // The text is about to speed up under a finger the user is holding
+          // at the edge. Light, because the hold itself is the commitment.
+          weight.tap();
           scheduleOnRN(setIsBoosting, true);
         })
         .onFinalize(() => {
@@ -272,6 +287,7 @@ const TeleprompterScreen = () => {
           if (!boosting.value) return;
           boosting.value = false;
           anchorTime.value = -1;
+          weight.tick();
           scheduleOnRN(setIsBoosting, false);
         }),
     [anchorTime, boosting, holding, viewportWidth],

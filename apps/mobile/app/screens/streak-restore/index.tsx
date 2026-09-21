@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Presets } from "react-native-pulsar";
+import { haptics, weight } from "@/lib/haptics";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -248,10 +248,19 @@ export default function StreakRestoreScreen() {
     };
   }, [setStreak, streak?.simulated]);
 
-  const settle = useCallback(() => setPhase("won"), []);
+  const settle = useCallback(() => {
+    // The streak is back. The one piece of delight this screen promises, so it
+    // gets the loudest thing in the vocabulary.
+    haptics.celebrate();
+    setPhase("won");
+  }, []);
 
   const unwind = useCallback(
     (message: string) => {
+      // The restore failed and the reveal is about to roll back. The error
+      // pattern rather than a thud: this is a thing that went wrong, not a
+      // door the user walked into.
+      haptics.error();
       committed.current = false;
       setBusy(false);
       setError(message);
@@ -274,7 +283,7 @@ export default function StreakRestoreScreen() {
       duration: M.pressIn,
       easing: M.easing.press,
     });
-    Presets.System.impactSoft();
+    weight.tap();
   }, [press]);
 
   const onPressOut = useCallback(() => {
@@ -294,7 +303,9 @@ export default function StreakRestoreScreen() {
     setError(null);
     setBusy(true);
     setPhase("revealing");
-    Presets.System.selection();
+    // Committing a once-a-month restore. A single sharp hit: this is the tap
+    // that spends it, and it should feel like a decision, not a browse.
+    weight.firm();
 
     // The reveal starts on the release, not on the response. It is the answer
     // to the tap, and holding it until the network replies would put a dead

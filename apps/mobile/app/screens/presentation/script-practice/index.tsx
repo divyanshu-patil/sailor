@@ -28,7 +28,7 @@ import {
   font,
   foregroundStyle,
 } from "@expo/ui/swift-ui/modifiers";
-import { assignColorsByQuantile } from "./utils/colorAssignment";
+import { assignImpactColors } from "./utils/colorAssignment";
 import { useSwipeGesture } from "./hooks/useSwipeGesture";
 import { useBackgroundColorStyle } from "./hooks/useBackgroundColorStyle";
 import { useIntroAnimation } from "./hooks/useIntroAnimation";
@@ -69,10 +69,10 @@ const ScriptPracticeScreen = () => {
       // Error is handled by the hook.
     },
   });
-  const cards = useMemo(
-    () => assignColorsByQuantile(rawCards ?? []),
-    [rawCards],
-  );
+  const cards = useMemo(() => assignImpactColors(rawCards ?? []), [rawCards]);
+  /** Impact tier per card, for the swipe handler's haptics. Same array the
+   *  colours came from, so the two can't disagree. */
+  const tiers = useMemo(() => cards.map((card) => card.tier), [cards]);
   const [recordingDuration, setRecordingDuration] = useState<string | null>(
     null,
   );
@@ -97,6 +97,7 @@ const ScriptPracticeScreen = () => {
   const prevCardOpacity = useSharedValue(0);
   const isAnimating = useSharedValue(false);
   const isRetreating = useSharedValue(false);
+  const swipeCrossed = useSharedValue(false);
   /**
    * Keyboard visibility is used only to enable
    * the dismiss gesture.
@@ -119,6 +120,7 @@ const ScriptPracticeScreen = () => {
    */
   const panGesture = useSwipeGesture({
     cardsLength: cards.length,
+    tiers,
     currentIndexSV,
     translateX,
     translateY,
@@ -129,6 +131,7 @@ const ScriptPracticeScreen = () => {
     prevCardOpacity,
     isAnimating,
     isRetreating,
+    crossed: swipeCrossed,
     onAdvance: advanceIndex,
     onRetreat: retreatIndex,
   });

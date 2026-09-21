@@ -3,6 +3,7 @@ import { StyleSheet, Text } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { weight } from "@/lib/haptics";
 import { PROFILE_PASTELS, profileFonts } from "../theme";
 
 interface LogoutButtonProps {
@@ -20,6 +21,9 @@ const LogoutButton = memo(function LogoutButton({
   return (
     <PressableScale
       onPress={onPress}
+      // Heavier than the default tap: this opens the sign-out confirmation,
+      // and a destructive door should not feel like a list row.
+      haptic={weight.firm}
       style={styles.button}
       accessibilityRole="button"
       accessibilityLabel="Log out"

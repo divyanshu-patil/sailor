@@ -19,10 +19,9 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { Presets } from "react-native-pulsar";
 
 import { useDailyStore } from "@/store/daily-store";
-import { haptics } from "@/lib/haptics";
+import { haptics, weight } from "@/lib/haptics";
 
 import { PressableCard } from "./components/PressableCard";
 import { pageTarget, rubberBand } from "./reel";
@@ -145,7 +144,7 @@ const DailyPracticeSession = () => {
     const nearest = Math.round(offset.value);
     if (nearest !== lastTicked.value && nearest >= 0 && nearest < total) {
       lastTicked.value = nearest;
-      Presets.System.selection();
+      weight.tick();
       scheduleOnRN(setIndex, nearest);
     }
   }, [total]);

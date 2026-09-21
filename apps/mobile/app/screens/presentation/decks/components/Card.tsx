@@ -15,6 +15,7 @@ import { deckCardColors } from "@/utils/deck-colors";
 import { DeckItem } from "@/services/deck.service";
 import { COLUMN_GAP } from "./constants";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import { weight } from "@/lib/haptics";
 import { fonts } from "@/constants/fonts";
 
 const JELLY_SPRING = {
@@ -87,6 +88,10 @@ export const Card = React.memo(
             isFavourite: JSON.stringify(item.isFavourite),
           },
         }}
+        // On the Link rather than the Pressable inside it: `asChild` renders a
+        // Slot that hands its own onPress down, so one set there would be
+        // dropped. Link composes — ours runs, then it navigates.
+        onPress={weight.tap}
         asChild
       >
         <Link.AppleZoom>

@@ -16,6 +16,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+
+import { weight } from "@/lib/haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Extrapolation,
@@ -402,7 +404,10 @@ const CTAButton = memo(function CTAButton({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={() => {
+        weight.press();
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.cta,
         primary ? styles.primaryCta : styles.secondaryCta,

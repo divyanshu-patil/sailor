@@ -37,6 +37,8 @@ import { matchFont } from "@shopify/react-native-skia";
 import { TextMorph } from "@/screens/presentation/generation/components/text-morph";
 import { fonts } from "@/constants/fonts";
 
+import { haptics, weight } from "@/lib/haptics";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const STEP_COUNT = 3;
 const RUST = "#C57C7C";
@@ -171,12 +173,15 @@ const Footer = React.memo(
     onBack,
     onNext,
     disabled,
+    isFinal,
   }: {
     label: string;
     bottomInset: number;
     onBack: () => void;
     onNext: () => void;
     disabled?: boolean;
+    /** The last step, where "Continue" has become "Generate". */
+    isFinal?: boolean;
   }) => {
     // The label's box hugs its text so the button can centre it. `TextMorph`
     // lays characters out from the left of whatever width it is given, so a
@@ -207,7 +212,10 @@ const Footer = React.memo(
       >
         <Animated.View entering={FadeInDown.duration(260)}>
           <Pressable
-            onPress={onBack}
+            onPress={() => {
+              haptics.stepBack();
+              onBack();
+            }}
             style={({ pressed }) => [
               styles.backButton,
               pressed && { opacity: 0.6 },
@@ -222,7 +230,18 @@ const Footer = React.memo(
         >
           <Pressable
             disabled={disabled}
-            onPress={onNext}
+            // "Generate" is not another Continue — it spends a generation and
+            // leaves the form behind, so it lands as a commit rather than a
+            // step. Pressable does not fire onPress while disabled, so a
+            // blocked step stays silent without a check of its own.
+            onPress={() => {
+              if (isFinal) {
+                weight.firm();
+              } else {
+                haptics.stepForward();
+              }
+              onNext();
+            }}
             style={({ pressed }) => [
               styles.continueButton,
               disabled && styles.continueButtonDisabled,
@@ -407,6 +426,7 @@ function FlowContent() {
       {built(1) && currentStep > 0 && !dialFocused && (
         <Footer
           label={currentStep < STEP_COUNT - 1 ? "Continue" : "Generate"}
+          isFinal={currentStep === STEP_COUNT - 1}
           bottomInset={insets.bottom}
           onBack={goBack}
           onNext={goNext}
