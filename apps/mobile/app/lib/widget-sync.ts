@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 
+import { streakDeadline } from "@/lib/streak-alarm";
 import { useDailyStore } from "@/store/daily-store";
 import { usePreferenceStore } from "@/store/preference-store";
 import { StreakWidget } from "@/widgets/StreakWidget";
@@ -27,6 +28,11 @@ const ART = {
   mascotSmall: "mascot-purple",
   mascotMedium: "mascot-cream",
   mascotStreak: "mascot-green",
+  /** One face per streak state. Placeholders, same as every other mascot here —
+   *  swapping the PNGs in assets/widgets/ changes the widget and nothing else. */
+  mascotAlive: "mascot-green",
+  mascotAtRisk: "mascot-cream",
+  mascotBroken: "mascot-purple",
   plateSmall: "bg-cool-small",
   plateMedium: "bg-cool-medium",
   plateStreak: "bg-streak-cool",
@@ -240,9 +246,75 @@ export function syncPracticeWidget(
   }
 }
 
+/**
+ * What the widget says and shows for each streak state.
+ *
+ * The asides are per state rather than drawn from STREAK_NOTES: a broken streak
+ * needs to say the one useful thing ("you can restore it"), and a generic
+ * encouragement over a broken heart reads as the app not having noticed.
+ */
+const STATE_PRESENTATION = {
+  alive: {
+    icon: "flame",
+    mascot: ART.mascotAlive,
+    notes: STREAK_NOTES,
+    link: "sailor://daily-practice",
+  },
+  atRisk: {
+    icon: "hourglass",
+    mascot: ART.mascotAtRisk,
+    notes: [
+      "Keep going,\nalmost there!",
+      "Today is\nthe day!",
+      "Don't lose\nit now!",
+      "One practice\nkeeps it.",
+    ],
+    link: "sailor://daily-practice",
+  },
+  broken: {
+    icon: "broken-heart",
+    mascot: ART.mascotBroken,
+    notes: [
+      "It's okay,\nrestore it!",
+      "Still fixable.\nTap to fix.",
+      "One tap\nbrings it back.",
+    ],
+    // The one state where the tile is a shortcut to something other than
+    // practice: while a restore is still possible, that is the thing to do.
+    link: "sailor://streak-restore",
+  },
+  expired: {
+    icon: "broken-heart",
+    mascot: ART.mascotBroken,
+    notes: [
+      "Fresh start.\nBegin again!",
+      "New streak,\nstarts today.",
+      "Day one is\na good day.",
+    ],
+    link: "sailor://daily-practice",
+  },
+} as const;
+
+/**
+ * Which state a streak is in, from the widget's point of view.
+ *
+ * `expired` is its own case rather than folded into `broken`: once the restore
+ * window has closed the tile must stop offering a restore, and the copy has to
+ * change from "you can bring it back" to "start again" — otherwise it sends
+ * people to a screen that will only refuse them.
+ */
+function widgetStatus(
+  streak: StreakState,
+  atRisk: boolean,
+): keyof typeof STATE_PRESENTATION {
+  if (streak.currentStreak > 0) return atRisk ? "atRisk" : "alive";
+  return streak.canRestore ? "broken" : "expired";
+}
+
 export function syncStreakWidget(
   streak: StreakState | null | undefined,
   backgroundColor: string,
+  atRisk = false,
 ): void {
   if (Platform.OS !== "ios") return;
   // No streak yet means the app has nothing to say — leaving the widget on its
@@ -253,23 +325,27 @@ export function syncStreakWidget(
   // — the one thing types/daily warns against, because it hands the wrong day
   // to everyone east of GMT in the morning.
   const date = localDate();
+  const status = widgetStatus(streak, atRisk);
+  const presentation = STATE_PRESENTATION[status];
 
   try {
     StreakWidget.updateSnapshot({
       streakCount: streak.currentStreak,
       // The number sits above it, so one label reads correctly for any count.
       label: "day streak",
+      status,
+      deepLink: presentation.link,
       // Salted with the count and whether today is done, so the line changes
       // when the streak does rather than only when the date does.
       note: noteFor(
-        STREAK_NOTES,
+        presentation.notes,
         date,
         streak.currentStreak * 2 + (streak.completedToday ? 1 : 0),
       ),
       accentColor: backgroundColor,
-      flameUri: widgetArtUri("flame") ?? "",
+      iconUri: widgetArtUri(presentation.icon) ?? "",
       plateUri: widgetArtUri(ART.plateStreak) ?? "",
-      mascotUri: widgetArtUri(ART.mascotStreak) ?? "",
+      mascotUri: widgetArtUri(presentation.mascot) ?? "",
     });
   } catch (e) {
     console.log("streak widget update failed", e);
@@ -297,8 +373,13 @@ export function startStreakWidgetSync(): () => void {
   let streak = useDailyStore.getState().streak;
 
   const push = () => {
-    const next = useDailyStore.getState().streak;
-    if (next) syncStreakWidget(next, colorOf());
+    const { streak: next, pendingCompleteDate } = useDailyStore.getState();
+    if (!next) return;
+    // Derived here rather than inside syncStreakWidget so the tile and the
+    // countdown banner cannot disagree about the same streak — streakDeadline
+    // is the one place that knows when a streak dies.
+    const atRisk = streakDeadline(next, pendingCompleteDate)?.atRisk ?? false;
+    syncStreakWidget(next, colorOf(), atRisk);
   };
 
   const unsubColor = usePreferenceStore.subscribe(() => {
@@ -308,7 +389,9 @@ export function startStreakWidgetSync(): () => void {
   });
 
   // Reference equality is enough: the store only ever replaces the streak
-  // object, never mutates it in place.
+  // object, never mutates it in place. This is what makes the dev section's
+  // buttons move the widget too — they write the same store every other path
+  // writes, and nothing here cares where the value came from.
   const unsubStreak = useDailyStore.subscribe(() => {
     const next = useDailyStore.getState().streak;
     if (next === streak) return;

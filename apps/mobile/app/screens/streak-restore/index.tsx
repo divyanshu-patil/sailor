@@ -28,7 +28,7 @@ import { HandwrittenNote } from "@/components/ui/handwritten-note";
 import { FlameIcon } from "@/screens/home/components/streak-icons";
 import { dailyPracticeService } from "@/services/daily-practice.service";
 import { useDailyStore } from "@/store/daily-store";
-import { localDate } from "@/types/daily";
+import { localDate, type StreakState } from "@/types/daily";
 import {
   BlockedScene,
   BottomBlobs,
@@ -81,6 +81,31 @@ type Phase = "ask" | "revealing" | "won" | "blocked";
 /** Why a restore is refused. Two different sentences and two different
  *  pictures — the cap is about how often, the window about how long. */
 type BlockedReason = "used" | "expired";
+
+/**
+ * What the server would have returned, computed locally for a fake streak.
+ *
+ * Mirrors `restore_streak` in the backend controller: the lapsed streak comes
+ * back, the allowance is spent, and yesterday becomes the last practice day so
+ * today still has to be done. Kept next to the caller rather than in the dev
+ * section, because what it has to stay in step with is the real response shape.
+ */
+function restoredFromSimulation(streak: StreakState): StreakState {
+  const restored = streak.restorableStreak || streak.longestStreak || 1;
+  const yesterday = localDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  return {
+    ...streak,
+    currentStreak: restored,
+    longestStreak: Math.max(streak.longestStreak, restored),
+    lastCompletedDate: yesterday,
+    completedToday: false,
+    restorableStreak: 0,
+    canRestore: false,
+    restoreUsedThisMonth: true,
+    restoreExpired: false,
+    simulated: true,
+  };
+}
 
 const blockedReasonFor = (
   streak: {
@@ -297,7 +322,18 @@ export default function StreakRestoreScreen() {
     );
 
     try {
-      const next = await dailyPracticeService.restoreStreak(localDate());
+      // A simulated streak never reaches the server. The whole point of the dev
+      // section is to walk the flow without a lapsed streak on a real account,
+      // and a request here would answer about the real one — refusing the
+      // restore, or worse, spending the real month's allowance to test a
+      // pretend one. The animation, the timings and every pixel are the same
+      // path; only the source of the number differs.
+      const simulated = useDailyStore.getState().streak?.simulated
+        ? restoredFromSimulation(useDailyStore.getState().streak!)
+        : null;
+
+      const next =
+        simulated ?? (await dailyPracticeService.restoreStreak(localDate()));
       // The store write is all that is needed — the widget subscription in
       // lib/widget-sync pushes the new number without this screen knowing a
       // widget exists.

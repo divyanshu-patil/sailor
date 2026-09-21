@@ -43,6 +43,22 @@ const STATES: { label: string; streak: StreakState }[] = [
       restorableStreak: 12,
       canRestore: true,
       restoreUsedThisMonth: false,
+      restoreExpired: false,
+    },
+  },
+  {
+    // The window has closed: the widget stops offering a restore and sends a
+    // tap to practice instead, and the restore screen opens on its own dead end.
+    label: "Broken — window closed (24h+)",
+    streak: {
+      currentStreak: 0,
+      longestStreak: 12,
+      lastCompletedDate: null,
+      completedToday: false,
+      restorableStreak: 12,
+      canRestore: false,
+      restoreUsedThisMonth: false,
+      restoreExpired: true,
     },
   },
   {
@@ -58,6 +74,7 @@ const STATES: { label: string; streak: StreakState }[] = [
       restorableStreak: 12,
       canRestore: false,
       restoreUsedThisMonth: true,
+      restoreExpired: false,
     },
   },
 ];

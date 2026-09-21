@@ -415,7 +415,21 @@ export const HomeHero = memo(function HomeHero({
       >
         <View style={styles.streakRow}>
           <StreakIcon status={status} size={streakDisplay.iconSize} />
-          <Text style={styles.streakCount}>{streakCount}</Text>
+          <Text
+            style={[
+              styles.streakCount,
+              {
+                fontSize:
+                  streakCount > 999
+                    ? streakDisplay.countSize - 30
+                    : streakCount > 99
+                      ? streakDisplay.countSize - 20
+                      : streakDisplay.countSize,
+              },
+            ]}
+          >
+            {streakCount}
+          </Text>
         </View>
         <Text style={styles.streakLabel}>
           {status === "atRisk"

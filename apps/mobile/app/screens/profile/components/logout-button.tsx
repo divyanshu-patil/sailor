@@ -14,7 +14,9 @@ interface LogoutButtonProps {
  * the danger pastel. Takes a single onPress so the confirmation + sign-out
  * logic (useLogout) stays decoupled from the button.
  */
-const LogoutButton = memo(function LogoutButton({ onPress }: LogoutButtonProps) {
+const LogoutButton = memo(function LogoutButton({
+  onPress,
+}: LogoutButtonProps) {
   return (
     <PressableScale
       onPress={onPress}
@@ -22,7 +24,7 @@ const LogoutButton = memo(function LogoutButton({ onPress }: LogoutButtonProps) 
       accessibilityRole="button"
       accessibilityLabel="Log out"
     >
-      <Ionicons name="log-out-outline" size={20} color="#D6455D" />
+      <Ionicons name="log-out-outline" size={26} color={styles.label.color} />
       <Text style={styles.label}>Log out</Text>
     </PressableScale>
   );
@@ -38,12 +40,12 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 56,
     borderRadius: 999,
-    backgroundColor: PROFILE_PASTELS.pinkSoft,
+    backgroundColor: PROFILE_PASTELS.logout,
   },
   label: {
     fontFamily: profileFonts.semibold,
     fontSize: 16,
-    color: "#D6455D",
+    color: "#FFDEE3",
     letterSpacing: -0.2,
   },
 });

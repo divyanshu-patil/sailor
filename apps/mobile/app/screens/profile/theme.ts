@@ -18,6 +18,7 @@ export const PROFILE = {
 /** Soft pastels for the decorative shapes and the settings icon badges. */
 export const PROFILE_PASTELS = {
   pink: "#F6C9D8",
+  logout: "#ef3850",
   pinkSoft: "#FBDDE3",
   planCard: "#FBEBCB",
   planBorder: "#F1DFB0",

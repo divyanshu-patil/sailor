@@ -77,9 +77,11 @@ export const useDailyStore = create<DailyStore>()(
       // tap at lunchtime still shaping the app that evening.
       partialize: (state) => ({
         ...state,
-        streak: state.streak?.simulated
-          ? { ...state.streak, simulated: undefined }
-          : state.streak,
+        // Dropped, not unflagged. Stripping only the label persisted the
+        // fabricated numbers with nothing left to mark them as fiction, and the
+        // app then treated a dev tap as a real streak on every later launch —
+        // which is the exact failure the flag exists to prevent.
+        streak: state.streak?.simulated ? null : state.streak,
       }),
       migrate: (persisted, version) => {
         if (version < 2) {

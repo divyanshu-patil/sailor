@@ -1,5 +1,6 @@
 import { HStack, Image, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import {
+  aspectRatio,
   background,
   clipped,
   containerBackground,
@@ -7,6 +8,8 @@ import {
   foregroundStyle,
   frame,
   lineLimit,
+  lineSpacing,
+  multilineTextAlignment,
   minimumScaleFactor,
   offset,
   opacity,
@@ -25,8 +28,17 @@ export interface StreakProps {
    *  rather than the tile: the tile is a baked plate now, and a picker that
    *  visibly did nothing would be worse than no picker. */
   accentColor?: string;
+  /**
+   * Which state the streak is in. Chooses the icon beside the count and the
+   * face at the bottom; the app resolves both to `file://` paths because a
+   * widget cannot read the app's bundle.
+   */
+  status?: "alive" | "atRisk" | "broken" | "expired";
+  /** Where a tap goes. The app decides — a broken streak that can still be
+   *  restored opens the restore screen, everything else opens practice. */
+  deepLink?: string;
   /** `file://` paths inside the App Group — see lib/widget-assets.ts. */
-  flameUri?: string;
+  iconUri?: string;
   plateUri?: string;
   mascotUri?: string;
 }
@@ -98,9 +110,47 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
   const plateUri =
     typeof rawPlate === "string" && rawPlate.length > 0 ? rawPlate : "";
 
-  const rawFlame = props.flameUri;
-  const flameUri =
-    typeof rawFlame === "string" && rawFlame.length > 0 ? rawFlame : "";
+  const rawIcon = props.iconUri;
+  const iconUri = typeof rawIcon === "string" && rawIcon.length > 0 ? rawIcon : "";
+
+  const rawStatus = props.status;
+  const status =
+    rawStatus === "atRisk" ||
+    rawStatus === "broken" ||
+    rawStatus === "expired"
+      ? rawStatus
+      : "alive";
+
+  const rawLink = props.deepLink;
+  const link =
+    typeof rawLink === "string" && rawLink.length > 0
+      ? rawLink
+      : "sailor://daily-practice";
+
+  // The fallback symbol matches whichever state the art failed to arrive for,
+  // so a missing PNG degrades to the right idea rather than always to a flame.
+  const fallbackSymbol =
+    status === "broken" || status === "expired"
+      ? "heart.slash.fill"
+      : status === "atRisk"
+        ? "hourglass"
+        : "flame.fill";
+  const fallbackTint =
+    status === "broken" || status === "expired"
+      ? "#E06070"
+      : status === "atRisk"
+        ? "#C8A44C"
+        : "#FF7A3D";
+
+  // Big numbers need more room than the label under them has. Stepping the size
+  // down by digit count keeps "12" large and "1204" on one line, without
+  // relying on minimumScaleFactor to shrink it after the fact.
+  const digits = count.length;
+  // Tuned against the tile, not the mock: a small widget is 158pt wide and the
+  // aside needs the right third of it, so the count block gets the left ~55%.
+  // Stepping by digit count keeps "12" large and "1204" on one line without
+  // leaving it to minimumScaleFactor to rescue after the fact.
+  const countSize = digits > 3 ? 28 : digits > 2 ? 34 : 40;
 
   const rawMascot = props.mascotUri;
   const mascotUri =
@@ -118,7 +168,7 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
         background(base),
         containerBackground(base, "widget"),
         clipped(),
-        widgetURL("sailor://daily-practice"),
+        widgetURL(link),
       ]}
     >
       {plateUri ? (
@@ -174,12 +224,22 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
               // Kalam is embedded in the extension by
               // plugins/with-widget-fonts — the app's own fonts aren't visible
               // to a widget.
-              font({ family: "Kalam-Regular", size: 13 }),
+              font({ family: "Kalam-Regular", size: 12 }),
               foregroundStyle(inkSoft),
+              // Negative leading: Kalam's default line box is generous and the
+              // aside read as three separate remarks rather than one. This is
+              // what closes the gap in the reference.
+              lineSpacing(-3),
+              multilineTextAlignment("trailing"),
+              // 76, not 92: the aside and the label under the count share one
+              // 158pt row, and at 92 the note's left edge sat under the end of
+              // "day streak".
               frame({ width: 68, alignment: "trailing" }),
-              lineLimit(3),
-              minimumScaleFactor(0.8),
-              offset({ x: -11, y: 15 }),
+              // Two lines, so the aside never reaches down to the label on its
+              // left. The copy in widget-sync is written to fit in two.
+              lineLimit(2),
+              minimumScaleFactor(0.7),
+              offset({ x: -7, y: 11 }),
             ]}
           >
             {note}
@@ -200,7 +260,9 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
           systemName="heart.fill"
           size={18}
           color={dim(heart, "CC")}
-          modifiers={[offset({ x: -16, y: -4 })]}
+          // Below the two-line aside, not across it. The note ends around 62pt
+          // down a 158pt tile; the vertical centre puts this clear of it.
+          modifiers={[offset({ x: -14, y: -4 })]}
         />
       </VStack>
 
@@ -216,23 +278,30 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
           padding({ all: 15 }),
         ]}
       >
-        <HStack spacing={5}>
+        <HStack
+          spacing={4}
+          modifiers={[frame({ maxWidth: 86, alignment: "leading" })]}
+        >
           {/* A PNG, not SF Symbols' `flame.fill`: the symbol is one flat tint,
               and the lighter core inside the warmer outer is most of what makes
               this read as fire — and because the star it replaced said nothing
               about a streak. */}
-          {flameUri ? (
+          {iconUri ? (
             <Image
-              uiImage={flameUri}
-              modifiers={[resizable(), frame({ width: 36, height: 36 })]}
+              uiImage={iconUri}
+              modifiers={[
+                resizable(),
+                aspectRatio({ contentMode: "fit" }),
+                frame({ width: 32, height: 32 }),
+              ]}
             />
           ) : (
-            <Image systemName="flame.fill" size={28} color="#FF7A3D" />
+            <Image systemName={fallbackSymbol} size={28} color={fallbackTint} />
           )}
           <Text
             modifiers={[
               // Rounded numerals, tight against the label under them.
-              font({ size: 46, weight: "bold", design: "rounded" }),
+              font({ size: countSize, weight: "bold", design: "rounded" }),
               foregroundStyle(ink),
               lineLimit(1),
               minimumScaleFactor(0.6),
@@ -246,13 +315,16 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
         <Text
           modifiers={[
             font({
-              size: 17,
+              size: 16,
               weight: "bold",
               design: "rounded",
             }),
             foregroundStyle(ink),
+            // Bounded so it cannot grow under the aside on its right. The
+            // scale factor then does the rest on the widest labels.
+            frame({ maxWidth: 88, alignment: "leading" }),
             lineLimit(1),
-            minimumScaleFactor(0.8),
+            minimumScaleFactor(0.7),
           ]}
         >
           {label}
