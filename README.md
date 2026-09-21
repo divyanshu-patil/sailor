@@ -92,8 +92,9 @@ situation, and one tip that makes it stick.
 
 Keep the chain going and you get a **streak**: on the home screen, on an iOS
 **home-screen widget**, and in a reminder at the time you choose. Miss a day and life
-happens, so there is one **streak restore** a month — and the app warns you before the
-streak expires, on time, even if it is closed.
+happens, so there is one **streak restore** a month — offered on the day the streak
+breaks and not after, because a streak you can undo at any time was never a streak. The
+app warns you before it expires, on time, even if it is closed.
 
 ### 3. Teleprompter
 
@@ -126,6 +127,7 @@ what other people are working on, take the structure that works, and make it you
 | 🧩 **Native, not a web page** | Built with SwiftUI components, real native navigation, and system materials — it behaves the way an iPhone app is supposed to. |
 | 🔔 **Reminders that know the deadline** | The streak alarm is scheduled against the exact minute your streak dies, rescheduled whenever you practise or open the app, and cancelled the moment you are safe. |
 | 🎨 **A mascot with feelings** | The character reacts to what you are doing — celebrating, waiting, sulking when a streak breaks. |
+| 📳 **Haptics you can feel the shape of** | Every detent, commit and celebration has its own texture, fired on the UI thread so it lands with the frame rather than a beat behind it. One switch in Settings turns the lot off. |
 
 <br />
 
@@ -138,7 +140,7 @@ Version 1 is a complete loop, not a demo. Everything below is built and running.
 | AI script generation, with attachments, duration, audience and mood | ✅ Shipped |
 | Practice card decks generated per script | ✅ Shipped |
 | Daily framework practice, streaks, restore, reminders | ✅ Shipped |
-| iOS home-screen widget | ✅ Shipped |
+| iOS home-screen widget — per-state art, copy and tap target | ✅ Shipped |
 | Teleprompter with speed control and hold gestures | ✅ Shipped |
 | Discover — publish, browse, save, practise public decks | ✅ Shipped |
 | Audio recording and playback per deck | ✅ Shipped |
@@ -194,7 +196,7 @@ A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)
 <table>
   <tr>
     <td width="20%"><b>iPhone app</b></td>
-    <td><img src="https://cdn.simpleicons.org/expo/000020" width="20" align="middle" />&nbsp;Expo SDK 57&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/react/61DAFB" width="20" align="middle" />&nbsp;React Native 0.86&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/typescript/3178C6" width="20" align="middle" />&nbsp;TypeScript&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/expo/000020" width="20" align="middle" />&nbsp;Expo Router&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/software-mansion.png?size=64" width="20" align="middle" />&nbsp;Reanimated&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/shopify/7AB55C" width="20" align="middle" />&nbsp;Skia</td>
+    <td><img src="https://cdn.simpleicons.org/expo/000020" width="20" align="middle" />&nbsp;Expo SDK 57&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/react/61DAFB" width="20" align="middle" />&nbsp;React Native 0.86&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/typescript/3178C6" width="20" align="middle" />&nbsp;TypeScript&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/expo/000020" width="20" align="middle" />&nbsp;Expo Router&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/software-mansion.png?size=64" width="20" align="middle" />&nbsp;Reanimated&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/software-mansion.png?size=64" width="20" align="middle" />&nbsp;Pulsar haptics&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/shopify/7AB55C" width="20" align="middle" />&nbsp;Skia</td>
   </tr>
   <tr>
     <td><b>Native layer</b></td>
@@ -239,9 +241,11 @@ A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)
 
 **Three things worth knowing about the shape of it**
 
-- **Offline-first.** Every screen reads from an on-device SQLite cache and renders on the
-  first frame; the network refreshes it afterwards. Backstage wifi is a myth, so the app
-  never assumes there is any.
+- **Offline-first, including the launch.** Scripts, decks and cards live in an on-device
+  SQLite database; preferences, streaks and session state in MMKV. Every screen renders
+  from them on the first frame and the network refreshes it afterwards — and the app
+  starts from disk when it cannot reach its auth provider at all, rather than waiting on
+  a round trip it may never get. Backstage wifi is a myth, so the app never assumes any.
 - **Generation never blocks a request.** Scripts and cards are Celery jobs on their own
   queues, and the daily practice content is generated days ahead of being needed.
 - **One monorepo.** The iPhone app in `apps/mobile`, the FastAPI service in
