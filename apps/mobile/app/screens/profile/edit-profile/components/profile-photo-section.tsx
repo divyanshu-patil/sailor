@@ -9,11 +9,13 @@ import {
   VStack,
 } from "@expo/ui/swift-ui";
 import {
+  aspectRatio,
   buttonStyle,
   clipShape,
   controlSize,
   frame,
   labelStyle,
+  resizable,
   listRowBackground,
   padding,
 } from "@expo/ui/swift-ui/modifiers";
@@ -22,6 +24,11 @@ import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useProfilePhoto } from "@/hooks/use-profile-photo";
 
 const AVATAR_SIZE = 108;
+
+/** `file://` in front of a bare path, left alone if it already has a scheme. */
+function toFileUrl(path: string): string {
+  return path.startsWith("file://") ? path : `file://${path}`;
+}
 
 /**
  * Turns a remote avatar URL into a local file path.
@@ -60,7 +67,15 @@ function useLocalAvatarPath(remoteUrl: string | null): string | null {
           await ExpoImage.prefetch(remoteUrl, { cachePolicy: "disk" });
           cached = await ExpoImage.getCachePathAsync(remoteUrl);
         }
-        if (!cancelled) setResolved({ url: remoteUrl, path: cached });
+        // `getCachePathAsync` hands back a bare filesystem path; SwiftUI's
+        // `uiImage` wants a URL. Without the scheme it silently draws nothing,
+        // which is the invisible avatar.
+        if (!cancelled) {
+          setResolved({
+            url: remoteUrl,
+            path: cached ? toFileUrl(cached) : null,
+          });
+        }
       } catch {
         if (!cancelled) setResolved({ url: remoteUrl, path: null });
       }
@@ -72,7 +87,7 @@ function useLocalAvatarPath(remoteUrl: string | null): string | null {
   }, [remoteUrl, isLocalFile]);
 
   if (!remoteUrl) return null;
-  if (isLocalFile) return remoteUrl;
+  if (isLocalFile) return toFileUrl(remoteUrl);
   return resolved?.url === remoteUrl ? resolved.path : null;
 }
 
@@ -121,7 +136,13 @@ const ProfilePhotoSection = () => {
         {hasPhoto ? (
           <Image
             uiImage={localPath}
+            // Order is SwiftUI's own: resizable and aspectRatio first, so the
+            // photo scales to fill the frame, THEN the frame, then the crop.
+            // Without the first two it draws at its native pixel size and the
+            // circle shows whatever happens to be in the middle of it.
             modifiers={[
+              resizable(),
+              aspectRatio({ contentMode: "fill" }),
               frame({ width: AVATAR_SIZE, height: AVATAR_SIZE }),
               clipShape("circle"),
             ]}

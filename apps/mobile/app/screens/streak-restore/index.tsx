@@ -5,7 +5,6 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   LayoutChangeEvent,
-  Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -37,6 +36,7 @@ import {
   RestoredScene,
 } from "./scenes";
 import { restoreColors, restoreFonts, restoreMotion as M } from "./theme";
+import PressableScale from "@/components/ui/animated/PressableScale";
 
 /**
  * Restore a broken streak.
@@ -169,6 +169,10 @@ export default function StreakRestoreScreen() {
   // the opposite of what the server would. Re-reading on mount means the dead
   // end is only ever shown when the server agrees with it.
   useEffect(() => {
+    // A simulated streak is the whole point of the dev section; re-reading the
+    // server here would undo the button the person just pressed.
+    if (streak?.simulated) return;
+
     let cancelled = false;
     dailyPracticeService
       .getStreak(localDate())
@@ -192,14 +196,23 @@ export default function StreakRestoreScreen() {
     return () => {
       cancelled = true;
     };
-  }, [setStreak]);
+  }, [setStreak, streak?.simulated]);
 
-  const onButtonLayout = useCallback((_e: LayoutChangeEvent) => {
-    buttonRef.current?.measureInWindow((x, y, width, height) => {
-      if (!width || !height) return;
-      setButton({ cx: x + width / 2, cy: y + height / 2, h: height });
-    });
-  }, []);
+  // `reveal` is the freeze: layout fires again as the ask fades under the
+  // growing disc, and re-measuring then moved the disc's anchor and recomputed
+  // its scale — which read as the disc snapping back to nothing and growing a
+  // second time. Once the reveal has started, the rect it grew from is not
+  // allowed to change.
+  const onButtonLayout = useCallback(
+    (_e: LayoutChangeEvent) => {
+      if (reveal.value !== 0) return;
+      buttonRef.current?.measureInWindow((x, y, width, height) => {
+        if (!width || !height || reveal.value !== 0) return;
+        setButton({ cx: x + width / 2, cy: y + height / 2, h: height });
+      });
+    },
+    [reveal],
+  );
 
   /** Distance from the button's centre to the furthest corner — how far the
    *  disc has to grow before no part of the screen is left uncovered. */
@@ -427,7 +440,7 @@ export default function StreakRestoreScreen() {
                   press={press}
                 />
               ))}
-              <Pressable
+              <PressableScale
                 accessibilityRole="button"
                 accessibilityLabel="Restore your streak"
                 disabled={phase !== "ask"}
@@ -452,13 +465,13 @@ export default function StreakRestoreScreen() {
                 >
                   Restore Streak
                 </Text>
-              </Pressable>
+              </PressableScale>
             </View>
 
             {error ? (
               <Text style={styles.error}>{error}</Text>
             ) : (
-              <Pressable
+              <PressableScale
                 accessibilityRole="button"
                 onPress={() => router.back()}
                 hitSlop={12}
@@ -466,7 +479,7 @@ export default function StreakRestoreScreen() {
                 <Text style={[styles.later, { color: restoreColors.ask.body }]}>
                   Maybe Later
                 </Text>
-              </Pressable>
+              </PressableScale>
             )}
           </View>
 
@@ -560,7 +573,7 @@ export default function StreakRestoreScreen() {
           </View>
 
           <View style={[styles.footer, { paddingBottom: insets.bottom + 26 }]}>
-            <Pressable
+            <PressableScale
               accessibilityRole="button"
               onPress={() => router.back()}
               style={[
@@ -582,7 +595,7 @@ export default function StreakRestoreScreen() {
                 size={22}
                 color={restoreColors.won.buttonInk}
               />
-            </Pressable>
+            </PressableScale>
           </View>
         </Animated.View>
       )}
@@ -675,9 +688,13 @@ function BlockedState({
             Restore Streak
           </Text>
         </View>
-        <Pressable accessibilityRole="button" onPress={onDismiss} hitSlop={12}>
+        <PressableScale
+          accessibilityRole="button"
+          onPress={onDismiss}
+          hitSlop={12}
+        >
           <Text style={[styles.later, { color: c.body }]}>Got it</Text>
-        </Pressable>
+        </PressableScale>
       </View>
     </View>
   );

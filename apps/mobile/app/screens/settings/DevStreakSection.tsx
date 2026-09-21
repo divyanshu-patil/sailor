@@ -75,7 +75,9 @@ export function DevStreakSection({
     // A queued offline completion counts as "practised today" inside
     // streakDeadline, so it has to go or "at risk" never reads as at risk.
     setPendingComplete(null);
-    setStreak(streak);
+    // Tagged so the restore screen does not immediately replace it with the
+    // server's real answer — see `simulated` on StreakState.
+    setStreak({ ...streak, simulated: true });
     onMessage(`Streak set to: ${label}. Go to Home to see it.`);
   };
 
@@ -107,6 +109,7 @@ export function DevStreakSection({
           try {
             setPendingComplete(null);
             const real = await dailyPracticeService.getStreak();
+            // Untagged: this IS the real one, so screens may refresh it again.
             setStreak(real);
             // Reports the numbers, not just "done": the server's answer is
             // often the same as what is already on screen, and a bare success

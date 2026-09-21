@@ -1,16 +1,6 @@
 import { useEffect, useRef } from "react";
-import { View, ActivityIndicator } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { useFonts } from "expo-font";
-import { KronaOne_400Regular } from "@expo-google-fonts/krona-one/400Regular";
-import {
-  AlanSans_400Regular,
-  AlanSans_500Medium,
-  AlanSans_600SemiBold,
-  AlanSans_700Bold,
-  AlanSans_800ExtraBold,
-  AlanSans_900Black,
-} from "@expo-google-fonts/alan-sans";
 import { Amarna_400Regular, Amarna_700Bold } from "@expo-google-fonts/amarna";
 
 import {
@@ -55,16 +45,11 @@ export default function Index() {
   // Amarna and Newsreader families were being parsed here — about thirty-five
   // faces — and nothing referenced most of them. `useFonts` no longer gates
   // navigation either (see the effect below), so this is background work now.
+  // Amarna and Newsreader only — the script and daily-practice families.
+  // Deliberately NOT blocking: nothing on the first screen sets type in them,
+  // and they are several taps away. The home screen's own faces are loaded
+  // before the splash comes down instead (useAppBootstrap).
   useFonts({
-    KronaOne: KronaOne_400Regular,
-
-    "AlanSans-Regular": AlanSans_400Regular,
-    "AlanSans-Medium": AlanSans_500Medium,
-    "AlanSans-SemiBold": AlanSans_600SemiBold,
-    "AlanSans-Bold": AlanSans_700Bold,
-    "AlanSans-ExtraBold": AlanSans_800ExtraBold,
-    "AlanSans-Black": AlanSans_900Black,
-
     Amarna: Amarna_400Regular,
     "Amarna-Bold": Amarna_700Bold,
 
@@ -120,17 +105,7 @@ export default function Index() {
     router,
   ]);
 
-  if (
-    !isHydrated ||
-    !isProfileSetupHydrated ||
-    !isOnboardingCompletionHydrated
-  ) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
+  // Always null: the root layout holds the splash screen up until everything
+  // is ready, so anything drawn here is a flash of something else on top of it.
   return null;
 }

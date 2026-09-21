@@ -113,9 +113,23 @@ const STREAK_NOTES = [
   "That's enough for today.",
 ];
 
-function noteFor(pool: readonly string[], date: string): string {
+/**
+ * Picks a line from a pool.
+ *
+ * `salt` is what makes the streak note move when the streak does: keyed on the
+ * date alone it only ever changed at midnight, so completing a day — the moment
+ * the tile is most likely to be looked at — redrew the same sentence. Passing
+ * the count and the status rotates it on every change as well as daily.
+ */
+function noteFor(
+  pool: readonly string[],
+  date: string,
+  salt: number = 0,
+): string {
   const day = Number(date.slice(8, 10));
-  return pool[(Number.isFinite(day) ? day : 0) % pool.length];
+  const base = Number.isFinite(day) ? day : 0;
+  // Positive modulo: a negative salt would index off the front of the array.
+  return pool[(((base + salt) % pool.length) + pool.length) % pool.length];
 }
 
 /**
@@ -245,7 +259,13 @@ export function syncStreakWidget(
       streakCount: streak.currentStreak,
       // The number sits above it, so one label reads correctly for any count.
       label: "day streak",
-      note: noteFor(STREAK_NOTES, date),
+      // Salted with the count and whether today is done, so the line changes
+      // when the streak does rather than only when the date does.
+      note: noteFor(
+        STREAK_NOTES,
+        date,
+        streak.currentStreak * 2 + (streak.completedToday ? 1 : 0),
+      ),
       accentColor: backgroundColor,
       flameUri: widgetArtUri("flame") ?? "",
       plateUri: widgetArtUri(ART.plateStreak) ?? "",

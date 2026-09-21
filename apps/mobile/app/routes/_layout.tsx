@@ -3,10 +3,12 @@ import { Stack, useRouter } from "expo-router";
 import { ENV } from "@/lib/config/env";
 import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
-import { View } from "react-native";
 import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
+import * as SplashScreen from "expo-splash-screen";
+
+import { useAppBootstrap } from "@/hooks/use-app-bootstrap";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
@@ -20,7 +22,6 @@ import { startStreakAlertSync } from "@/lib/streak-alarm";
 import { startHapticsSync } from "@/lib/haptics";
 import { primeWidgetAssets } from "@/lib/widget-assets";
 import * as Font from "expo-font";
-import { preloadMascots } from "@/screens/daily-practice/components/Mascot";
 import {
   reloadWidgets,
   resyncWidgets,
@@ -102,6 +103,10 @@ function ReminderRouting() {
   return null;
 }
 
+// Held from module load, before the first render, so there is no window where
+// iOS has already taken the splash down and the app has nothing to show.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 function InitialLayout() {
   const isHydrated = useOnboardingStore((s) => s._hasHydrated);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -116,6 +121,16 @@ function InitialLayout() {
     (s) => s.completedForUserId,
   );
   const { ready: authReady, isSignedIn, userId } = useAuthGate();
+  const assetsReady = useAppBootstrap();
+
+  // Everything the first frame needs: the persisted stores, a decision about
+  // who is signed in, and the home screen's own fonts and images.
+  const canRender =
+    isHydrated &&
+    isOnboardingCompletionHydrated &&
+    isProfileSetupHydrated &&
+    authReady &&
+    assetsReady;
 
   // Completion is per Clerk user, so a different account on the same device
   // still runs onboarding and profile setup once.
@@ -128,6 +143,12 @@ function InitialLayout() {
     syncPreferencesOnce();
     syncAppearanceOptionsOnce();
   }, []);
+
+  // The splash stays up until there is something real behind it. `hideAsync`
+  // is safe to call more than once, so no guard is needed beyond the flag.
+  useEffect(() => {
+    if (canRender) SplashScreen.hideAsync().catch(() => {});
+  }, [canRender]);
 
   // Both watch the preference store for the rest of the app's life, so the
   // reminder the OS has scheduled and the colour the widget is drawn in stay in
@@ -144,9 +165,6 @@ function InitialLayout() {
     // first frame on five file copies would be the worse trade.
     void primeWidgetAssets().then(resyncWidgets);
 
-    // Mascots are the first thing an empty or failed screen shows; loaded
-    // now so they don't pop in a beat after the words around them.
-    preloadMascots().catch(() => {});
     // Kalam only. The AlanSans faces used to be repeated here as well as in
     // routes/index.tsx, so every launch parsed them twice; index.tsx owns them
     // now. Kalam is embedded via app.json but only after a prebuild, so loading
@@ -174,13 +192,10 @@ function InitialLayout() {
 
   // `authReady` rather than Clerk's `isLoaded`: offline, that never flips, and
   // this early return was the blank white screen on launch. See useAuthGate.
-  if (
-    !isHydrated ||
-    !isOnboardingCompletionHydrated ||
-    !isProfileSetupHydrated ||
-    !authReady
-  ) {
-    return <View style={{ flex: 1, backgroundColor: "#fff" }} />;
+  if (!canRender) {
+    // `null`, not a white view: the splash screen is still up, and drawing a
+    // blank page over it is what produced the white flash between the two.
+    return null;
   }
 
   return (

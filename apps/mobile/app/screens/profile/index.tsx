@@ -237,13 +237,12 @@ const ProfileScreen = () => {
   }
 
   const displayName =
+    appUser?.nickname ||
     appUser?.fullName ||
     identity.displayName ||
-    appUser?.nickname ||
     profile?.full_name ||
     "Your profile";
-  const displayEmail =
-    identity.email || appUser?.email || profile?.email || "";
+  const displayEmail = identity.email || appUser?.email || profile?.email || "";
   const avatarUrl = identity.imageUrl;
 
   const planName = isPro ? "Pro Plan" : "Basic Plan";

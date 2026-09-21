@@ -76,6 +76,15 @@ export interface StreakState {
   /** Distinguishes "already used this month" from "nothing to restore" — the
    *  two are different screens. */
   restoreUsedThisMonth?: boolean;
+  /**
+   * Written only by the dev streak simulator in Settings.
+   *
+   * Screens that re-read the streak from the server on mount skip that read
+   * while this is set, so a simulated state stays put long enough to look at.
+   * Without it the restore screen corrected itself to the server's answer the
+   * instant it opened, which made the simulator buttons look broken.
+   */
+  simulated?: boolean;
 }
 
 /**
