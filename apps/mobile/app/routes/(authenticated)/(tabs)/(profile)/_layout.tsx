@@ -30,6 +30,16 @@ const Layout = () => {
           headerTitle: "Settings",
         }}
       />
+      {/* Its own screen rather than a sheet: it is a decision with a picture
+          and two answers, and a modal over the profile would put the card it
+          is about behind a dimmed backdrop. */}
+      <Stack.Screen
+        name="cancel-subscription"
+        options={{
+          headerShown: false,
+          title: "Cancel Subscription",
+        }}
+      />
       <Stack.Screen
         name="terms-of-service"
         options={{

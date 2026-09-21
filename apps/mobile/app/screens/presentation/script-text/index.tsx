@@ -1,6 +1,6 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import React from "react";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { fonts } from "@/constants/fonts";
@@ -31,8 +31,24 @@ const ScriptTextScreen = () => {
   return (
     <>
       <Stack.Toolbar placement="right">
+        {/* Reading and performing are the two things anyone does with a
+            script, so the prompter sits next to copy rather than behind a
+            menu. Same params as this screen was opened with — the prompter
+            reads the deck itself, so nothing large travels in the route. */}
+        <Stack.Toolbar.Button
+          icon={"text.line.first.and.arrowtriangle.forward"}
+          accessibilityLabel="Teleprompter"
+          disabled={!scriptText}
+          onPress={() =>
+            router.navigate({
+              pathname: "/(authenticated)/(script)/teleprompter",
+              params: { script: deckId, color },
+            })
+          }
+        />
         <Stack.Toolbar.Button
           icon={"rectangle.portrait.on.rectangle.portrait"}
+          accessibilityLabel="Copy script"
           disabled={!scriptText}
           onPress={() => scriptText && Clipboard.setString(scriptText)}
         />

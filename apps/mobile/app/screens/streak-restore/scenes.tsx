@@ -30,14 +30,14 @@ import Svg, {
  * drawn on cream in the ask state and greyed in the blocked one.
  */
 
-const INK = "#3A2418";
-const CREAM = "#F2E4D4";
+export const INK = "#3A2418";
+export const CREAM = "#F2E4D4";
 const HEART = "#E8646B";
 const HEART_DARK = "#C74F58";
 
 /** The character every scene is built around: a round body, stub limbs, and a
  *  face that is two marks. Deliberately simple — the Lottie has a real one. */
-const Blob = memo(function Blob({
+export const Blob = memo(function Blob({
   cx,
   cy,
   r,
@@ -119,7 +119,7 @@ const Blob = memo(function Blob({
 });
 
 /** The cracked heart the two cream scenes are holding. */
-const BrokenHeart = memo(function BrokenHeart({
+export const BrokenHeart = memo(function BrokenHeart({
   x,
   y,
   w,
@@ -175,7 +175,7 @@ const BrokenHeart = memo(function BrokenHeart({
 });
 
 /** A stub arm or leg. */
-const Limb = memo(function Limb(props: {
+export const Limb = memo(function Limb(props: {
   x: number;
   y: number;
   rx: number;

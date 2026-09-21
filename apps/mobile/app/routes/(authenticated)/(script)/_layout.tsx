@@ -48,6 +48,18 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      {/* The header stays: the speed menu lives in it, and Stack.Toolbar with
+          a left/right placement turns the header on anyway. */}
+      <Stack.Screen
+        name="teleprompter"
+        options={{
+          headerShown: true,
+          title: "Teleprompter",
+          headerTitle: "Teleprompter",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+        }}
+      />
       <Stack.Screen
         name="script-practice"
         options={{

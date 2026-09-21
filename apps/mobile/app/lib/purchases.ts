@@ -68,6 +68,53 @@ export const isPurchasesConfigured = () => configured;
 export const hasProEntitlement = (info: CustomerInfo | null): boolean =>
   !!info && info.entitlements.active[PRO_ENTITLEMENT] !== undefined;
 
+/**
+ * The subscription behind the Pro entitlement, flattened.
+ *
+ * `name` is the store's own display name for the product, which is the only
+ * string that changes when someone switches monthly to yearly — the entitlement
+ * identifier is "pro" on both, so a card rendered from the entitlement alone
+ * looks identical before and after a plan change. Falls back to the product id
+ * tidied up, because the store omits `displayName` on some Play products.
+ */
+export interface ActivePlan {
+  productIdentifier: string;
+  name: string;
+  expirationDate: string | null;
+  willRenew: boolean;
+  /** Set once the store knows the user has turned renewal off. */
+  unsubscribeDetectedAt: string | null;
+  isTrial: boolean;
+}
+
+/** "sailor_pro_yearly" -> "Sailor Pro Yearly". Last resort only. */
+const titleiseProductId = (id: string) =>
+  id
+    .split(/[.:_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+export function activePlan(info: CustomerInfo | null): ActivePlan | null {
+  const entitlement = info?.entitlements.active[PRO_ENTITLEMENT];
+  if (!info || !entitlement) return null;
+
+  const subscription =
+    info.subscriptionsByProductIdentifier?.[entitlement.productIdentifier] ??
+    null;
+
+  return {
+    productIdentifier: entitlement.productIdentifier,
+    name:
+      subscription?.displayName?.trim() ||
+      titleiseProductId(entitlement.productIdentifier),
+    expirationDate: entitlement.expirationDate,
+    willRenew: entitlement.willRenew,
+    unsubscribeDetectedAt: entitlement.unsubscribeDetectedAt,
+    isTrial: entitlement.periodType === "TRIAL",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Identity
 // ---------------------------------------------------------------------------
@@ -109,9 +156,22 @@ export async function logoutPurchases(): Promise<CustomerInfo | null> {
 // Reading state
 // ---------------------------------------------------------------------------
 
-export async function fetchCustomerInfo(): Promise<CustomerInfo | null> {
+/**
+ * Current customer info.
+ *
+ * `force` throws away the SDK's own cache first. That cache is why a plan
+ * change didn't show up: RevenueCat serves the last payload for five minutes,
+ * and switching plan, cancelling, or resubscribing all happen well inside that
+ * window — so the card kept drawing the plan the user had just left. Every
+ * read that follows a management action, and every app foreground, asks for
+ * the real thing.
+ */
+export async function fetchCustomerInfo(
+  force = false,
+): Promise<CustomerInfo | null> {
   if (!configured) return null;
   try {
+    if (force) await Purchases.invalidateCustomerInfoCache();
     return await Purchases.getCustomerInfo();
   } catch (e) {
     // Offline or auth failure. The caller treats null as "no access" — failing

@@ -44,7 +44,7 @@ const ProfileScreen = () => {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { confirmLogout } = useLogout();
-  const { isPro, isReady, expirationDate, willRenew, openManageMenu } =
+  const { isPro, isReady, isRefreshing, plan, openManageMenu } =
     useSubscription();
   const appUser = useAppUserStore((s) => s.appUser);
   const setAppUser = useAppUserStore((s) => s.setAppUser);
@@ -247,16 +247,20 @@ const ProfileScreen = () => {
   const displayEmail = identity.email || appUser?.email || profile?.email || "";
   const avatarUrl = identity.imageUrl;
 
-  const planName = isPro ? "Pro Plan" : "Basic Plan";
+  // The store's own name for the product, so switching monthly to yearly
+  // changes the card the moment the new customer info lands. The generic
+  // "Pro Plan" is only the fallback for a store that gives no display name.
+  const planName = plan ? plan.name : isPro ? "Pro Plan" : "Basic Plan";
   const planDescription = isPro
     ? "Keep creating, you're on a roll!"
     : "Upgrade to unlock the full Sailors experience.";
-  const statusLabel = !isReady
-    ? "Checking…"
+  const planLoading = !isReady || isRefreshing;
+  const statusLabel = plan
+    ? plan.expirationDate
+      ? `${plan.willRenew ? "Renews" : "Ends"} ${formatDate(plan.expirationDate)}`
+      : "Active"
     : isPro
-      ? expirationDate
-        ? `${willRenew ? "Renews" : "Ends"} ${formatDate(expirationDate)}`
-        : "Active"
+      ? "Active"
       : "Free plan";
 
   return (
@@ -324,6 +328,7 @@ const ProfileScreen = () => {
               planName={planName}
               description={planDescription}
               statusLabel={statusLabel}
+              loading={planLoading}
               onManagePress={openManageMenu}
             />
           </Animated.View>

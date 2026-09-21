@@ -1,4 +1,4 @@
-type Segment = { text: string; bold: boolean; italic: boolean };
+export type Segment = { text: string; bold: boolean; italic: boolean };
 
 export function parseInlineMarkdown(line: string): Segment[] {
   const segments: Segment[] = [];

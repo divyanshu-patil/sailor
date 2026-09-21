@@ -34,6 +34,10 @@ interface SubscriptionStore {
   /** False until the first customer info lands — the gate shouldn't flash
    *  "upgrade" at a subscriber while the SDK is still starting up. */
   isReady: boolean;
+  /** A read is in flight. Drives the card's spinner and the skeleton in its
+   *  status pill, so a forced re-read after a plan change is visible rather
+   *  than the old plan sitting there looking current. */
+  isRefreshing: boolean;
 
   offering: PurchasesOffering | null;
   isLoadingOffering: boolean;
@@ -45,7 +49,9 @@ interface SubscriptionStore {
 
   /** The single write path for entitlement state. */
   applyCustomerInfo: (info: CustomerInfo | null) => void;
-  refresh: () => Promise<void>;
+  /** `force` bypasses the SDK's five-minute customer-info cache. Pass it after
+   *  anything that could have changed the subscription, and on app foreground. */
+  refresh: (force?: boolean) => Promise<void>;
   loadOffering: () => Promise<void>;
   purchase: (pkg: PurchasesPackage) => Promise<PurchaseOutcome>;
   restore: () => Promise<boolean>;
@@ -56,6 +62,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   customerInfo: null,
   isPro: false,
   isReady: false,
+  isRefreshing: false,
   offering: null,
   isLoadingOffering: false,
   isPurchasing: false,
@@ -64,9 +71,20 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   applyCustomerInfo: (info) =>
     set({ customerInfo: info, isPro: hasProEntitlement(info), isReady: true }),
 
-  refresh: async () => {
-    const info = await fetchCustomerInfo();
-    get().applyCustomerInfo(info);
+  refresh: async (force = false) => {
+    set({ isRefreshing: true });
+    try {
+      const info = await fetchCustomerInfo(force);
+      // A failed read keeps the last known entitlement rather than writing
+      // null over it: offline is not lapsed, and dropping a subscriber to the
+      // free state because a foreground refresh timed out is worse than a
+      // slightly stale card. With nothing known yet, null is still applied —
+      // the gate has to fail closed, and `isReady` has to stop saying
+      // "Checking…" even when the first read never lands.
+      if (info || !get().customerInfo) get().applyCustomerInfo(info);
+    } finally {
+      set({ isRefreshing: false });
+    }
   },
 
   loadOffering: async () => {

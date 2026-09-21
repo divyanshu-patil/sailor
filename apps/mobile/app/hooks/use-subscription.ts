@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef } from "react";
-import { Alert, Platform } from "react-native";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Alert, AppState, Platform } from "react-native";
+import { router } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import Purchases, { type CustomerInfo } from "react-native-purchases";
 
 import {
   PRO_ENTITLEMENT,
+  activePlan,
   configurePurchases,
   loginPurchases,
   logoutPurchases,
@@ -39,11 +41,28 @@ export function useRevenueCatBootstrap() {
     Purchases.addCustomerInfoUpdateListener(listener);
 
     // Seed the first value: the listener only fires on *changes*, so without
-    // this a subscriber sees the free state until their next renewal.
-    void useSubscriptionStore.getState().refresh();
+    // this a subscriber sees the free state until their next renewal. Forced,
+    // like every read below — the SDK's disk cache can be days old on a cold
+    // start, and a subscription cancelled on another device would otherwise
+    // still look live.
+    void useSubscriptionStore.getState().refresh(true);
+
+    /**
+     * Re-read on every foreground, cache bypassed.
+     *
+     * This is the one that matters after a plan change: cancelling, switching
+     * or resubscribing all happen in the store's own sheet, which takes the app
+     * to the background. Coming back is the exact moment the app's idea of the
+     * subscription is out of date, and RevenueCat's webhook-driven listener
+     * can lag the store by seconds.
+     */
+    const appState = AppState.addEventListener("change", (status) => {
+      if (status === "active") void useSubscriptionStore.getState().refresh(true);
+    });
 
     return () => {
       Purchases.removeCustomerInfoUpdateListener(listener);
+      appState.remove();
     };
   }, [applyCustomerInfo]);
 
@@ -80,20 +99,25 @@ export function useRevenueCatBootstrap() {
 export function useSubscription() {
   const isPro = useSubscriptionStore((s) => s.isPro);
   const isReady = useSubscriptionStore((s) => s.isReady);
+  const isRefreshing = useSubscriptionStore((s) => s.isRefreshing);
   const customerInfo = useSubscriptionStore((s) => s.customerInfo);
   const restore = useSubscriptionStore((s) => s.restore);
   const refresh = useSubscriptionStore((s) => s.refresh);
 
+  // The product actually being paid for, not just "they have Pro". This is what
+  // changes when someone switches plan, so it is what the card renders.
+  const plan = useMemo(() => activePlan(customerInfo), [customerInfo]);
+
   const requirePro = useCallback(async () => {
     if (isPro) return true;
     const outcome = await presentPaywallIfNeeded();
-    await refresh();
+    await refresh(true);
     return outcome === "purchased" || outcome === "restored";
   }, [isPro, refresh]);
 
   const openPaywall = useCallback(async () => {
     const outcome = await presentPaywall();
-    await refresh();
+    await refresh(true);
     return outcome;
   }, [refresh]);
 
@@ -116,7 +140,7 @@ export function useSubscription() {
         "Subscription management opens in the App Store. Sign in to the store account that bought the subscription and try again.",
       );
     }
-    await refresh();
+    await refresh(true);
   }, [refresh]);
 
   /** Apple's refund sheet. iOS 15+; Android has no in-app equivalent. */
@@ -135,7 +159,7 @@ export function useSubscription() {
           : "Refunds for Play Store purchases are requested from Google Play.",
       );
     }
-    await refresh();
+    await refresh(true);
   }, [refresh]);
 
   /**
@@ -164,7 +188,17 @@ export function useSubscription() {
     const buttons: Parameters<typeof Alert.alert>[2] = [
       { text: "Subscription details", onPress: () => void openCustomerCenter() },
       { text: "Change plan", onPress: () => void openPaywall() },
-      { text: "Cancel subscription", onPress: () => void manageSubscription() },
+      {
+        // Our own screen, not the store sheet: cancelling is the one action
+        // worth asking about first, and the store gives no chance to change
+        // your mind before its list of plans appears. The screen is what
+        // opens the store sheet, once the user has said yes to it.
+        text: "Cancel subscription",
+        onPress: () =>
+          router.navigate(
+            "/(authenticated)/(tabs)/(profile)/cancel-subscription",
+          ),
+      },
     ];
     // iOS only: Google has no in-app refund flow, and an option that leads
     // nowhere is worse than no option.
@@ -174,12 +208,16 @@ export function useSubscription() {
     buttons.push({ text: "Close", style: "cancel" });
 
     Alert.alert("Manage subscription", undefined, buttons);
-  }, [isPro, openCustomerCenter, openPaywall, manageSubscription, askForRefund]);
+  }, [isPro, openCustomerCenter, openPaywall, askForRefund]);
 
   return {
     isPro,
     isReady,
+    /** A customer-info read is in flight. */
+    isRefreshing,
     customerInfo,
+    /** The active subscription's product, or null when there isn't one. */
+    plan,
     /** When the current period ends, for a "renews on" line. */
     expirationDate:
       customerInfo?.entitlements.active[PRO_ENTITLEMENT]?.expirationDate ?? null,
