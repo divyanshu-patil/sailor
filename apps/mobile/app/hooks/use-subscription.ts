@@ -147,9 +147,17 @@ export function useSubscription() {
    * sheet rather than a custom menu — this list is four items and platform
    * chrome already renders it correctly on both.
    */
-  const openManageMenu = useCallback(() => {
+  const openManageMenu = useCallback(async () => {
     if (!isPro) {
-      void openPaywall();
+      const outcome = await openPaywall();
+      // No SDK key, no native module, or no dashboard paywall attached — say so
+      // instead of a tap that appears to do nothing.
+      if (outcome === "unavailable") {
+        Alert.alert(
+          "Not available",
+          "In-app purchases aren't available right now. Please try again later.",
+        );
+      }
       return;
     }
 

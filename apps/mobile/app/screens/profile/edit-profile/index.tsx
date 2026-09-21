@@ -1,45 +1,33 @@
 import React, { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import { Stack } from "expo-router";
-import {
-  Host,
-  Form,
-  Section,
-  HStack,
-  TextField,
-  Picker,
-  Text,
-  Spacer,
-} from "@expo/ui/swift-ui";
+import { Host, Form, Section, HStack, TextField, Text } from "@expo/ui/swift-ui";
 import {
   textInputAutocapitalization,
   textContentType,
   keyboardType,
   submitLabel,
-  pickerStyle,
-  tag,
   scrollDismissesKeyboard,
   foregroundStyle,
 } from "@expo/ui/swift-ui/modifiers";
-import {
-  EXPERIENCE_LEVELS,
-  PROFESSIONS,
-  PROFESSION_LABELS,
-  rowLabelModifiers,
-} from "./components/constants";
-import { DeleteAccountSection } from "./components/delete-account-section";
+import { rowLabelModifiers } from "./components/constants";
+import ProfilePhotoSection from "./components/profile-photo-section";
 import { useEditProfileForm } from "./hooks/use-edit-profile-form";
 import { useUser } from "@/hooks/use-user";
+import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
 
 function toAppUserProfile(
   profile: any,
-  existingEmail?: string,
+  fallback: { fullName?: string; email?: string | null },
 ): AppUserProfile {
   return {
     id: profile.id,
     clerkUserId: profile.clerk_user_id,
-    email: profile.email || existingEmail || "",
-    fullName: profile.full_name,
+    email: profile.email || fallback.email || "",
+    // The backend row starts with no name; fall back to the name from Clerk so
+    // Edit Profile shows the same identity the Profile screen does.
+    fullName: profile.full_name || fallback.fullName || "",
     nickname: profile.nickname,
     experienceLevel: profile.experience_level,
     profession: profile.profession,
@@ -51,15 +39,13 @@ function toAppUserProfile(
 function FieldRow({
   label,
   children,
-  withPicker,
 }: {
   label: string;
   children: React.ReactNode;
-  withPicker?: boolean;
 }) {
   return (
     <HStack>
-      <Text modifiers={rowLabelModifiers(withPicker)}>{label}</Text>
+      <Text modifiers={rowLabelModifiers()}>{label}</Text>
       {children}
     </HStack>
   );
@@ -69,16 +55,21 @@ export default function EditProfileScreen() {
   const appUser = useAppUserStore((s) => s.appUser);
   const setAppUser = useAppUserStore((s) => s.setAppUser);
 
-  // Use useUser hook for profile data with debug service
   const { data: profile, isLoading } = useUser();
+  const identity = useProfileIdentity();
 
-  // Sync profile data to store when fetched
+  // Sync profile data to store when fetched, seeding the identity fields from
+  // Clerk when the backend row doesn't carry them yet.
   useEffect(() => {
     if (profile) {
-      const existingEmail = appUser?.email;
-      setAppUser(toAppUserProfile(profile, existingEmail));
+      setAppUser(
+        toAppUserProfile(profile, {
+          fullName: identity.displayName,
+          email: identity.email || appUser?.email,
+        }),
+      );
     }
-  }, [profile, appUser?.email, setAppUser]);
+  }, [profile, identity.displayName, identity.email, appUser?.email, setAppUser]);
 
   if (isLoading && !appUser) return null; // loading
   if (!appUser) return null; // error or no data
@@ -99,15 +90,8 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
     nicknameState,
     handleNameChange,
     handleNicknameChange,
-    profession,
-    handleProfessionChange,
-    experienceLevel,
-    setExperienceLevel,
     hasChanges,
     handleSave,
-    showDeleteConfirm,
-    setShowDeleteConfirm,
-    handleDeleteAccount,
     appearanceColor,
   } = useEditProfileForm(appUser);
 
@@ -131,106 +115,77 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
         />
       </Stack.Toolbar>
 
-      <Host style={{ flex: 1 }}>
-        <Form modifiers={[scrollDismissesKeyboard("interactively")]}>
-          {/* Basic info */}
-          <Section title="Basic Info">
-            <FieldRow label="Name">
-              <TextField
-                text={nameState}
-                onTextChange={handleNameChange}
-                placeholder="Your name"
-                modifiers={[
-                  textInputAutocapitalization("words"),
-                  textContentType("name"),
-                  submitLabel("next"),
-                ]}
-              />
-            </FieldRow>
-            <FieldRow label="Nickname">
-              <TextField
-                text={nicknameState}
-                onTextChange={handleNicknameChange}
-                placeholder="nickname"
-                maxLength={10}
-                modifiers={[
-                  textInputAutocapitalization("never"),
-                  textContentType("nickname"),
-                  keyboardType("ascii-capable"),
-                  submitLabel("next"),
-                ]}
-              />
-            </FieldRow>
-          </Section>
+      <View style={styles.screen}>
+        <ProfilePhotoSection />
 
-          {/* Contact */}
-          <Section
-            title="Contact"
-            footer={
-              externalLinked.isExternalLinked ? (
-                <Text
+        <Host style={styles.formHost}>
+          <Form modifiers={[scrollDismissesKeyboard("interactively")]}>
+            {/* Basic info */}
+            <Section title="Basic Info">
+              <FieldRow label="Name">
+                <TextField
+                  text={nameState}
+                  onTextChange={handleNameChange}
+                  placeholder="Your name"
                   modifiers={[
-                    foregroundStyle({
-                      type: "hierarchical",
-                      style: "secondary",
-                    }),
+                    textInputAutocapitalization("words"),
+                    textContentType("name"),
+                    submitLabel("next"),
                   ]}
-                >
-                  Your email is managed by your linked {externalLinked.provider}{" "}
-                  account.
-                </Text>
-              ) : undefined
-            }
-          >
-            <FieldRow label="Email">
-              <Text>{email}</Text>
-            </FieldRow>
-          </Section>
+                />
+              </FieldRow>
+              <FieldRow label="Nickname">
+                <TextField
+                  text={nicknameState}
+                  onTextChange={handleNicknameChange}
+                  placeholder="nickname"
+                  maxLength={10}
+                  modifiers={[
+                    textInputAutocapitalization("never"),
+                    textContentType("nickname"),
+                    keyboardType("ascii-capable"),
+                    submitLabel("next"),
+                  ]}
+                />
+              </FieldRow>
+            </Section>
 
-          {/* Speaking profile */}
-          <Section title="Speaking Profile">
-            {/* <FieldRow label="Profession"> */}
-            {/* <Spacer /> */}
-            <Picker
-              label={"Profession"}
-              selection={profession}
-              onSelectionChange={(value) =>
-                handleProfessionChange(value as string)
-              }
-              modifiers={[pickerStyle("menu"), ...rowLabelModifiers(true)]}
-            >
-              {PROFESSIONS.map((p) => (
-                <Text key={p} modifiers={[tag(p)]}>
-                  {PROFESSION_LABELS[p]}
-                </Text>
-              ))}
-            </Picker>
-            {/* </FieldRow> */}
-            <FieldRow label="Experience Level" withPicker>
-              <Spacer />
-              <Picker
-                selection={experienceLevel}
-                onSelectionChange={(value) =>
-                  setExperienceLevel(value as typeof experienceLevel)
-                }
-                modifiers={[pickerStyle("menu")]}
-              >
-                {EXPERIENCE_LEVELS.map((level) => (
-                  <Text key={level.tag} modifiers={[tag(level.tag)]}>
-                    {level.label}
+            {/* Contact */}
+            <Section
+              title="Contact"
+              footer={
+                externalLinked.isExternalLinked ? (
+                  <Text
+                    modifiers={[
+                      foregroundStyle({
+                        type: "hierarchical",
+                        style: "secondary",
+                      }),
+                    ]}
+                  >
+                    Your email is managed by your linked{" "}
+                    {externalLinked.provider} account.
                   </Text>
-                ))}
-              </Picker>
-            </FieldRow>
-          </Section>
-
-          <DeleteAccountSection
-            isPresented={showDeleteConfirm}
-            onIsPresentedChange={setShowDeleteConfirm}
-            onConfirmDelete={handleDeleteAccount}
-          />
-        </Form>
-      </Host>
+                ) : undefined
+              }
+            >
+              <FieldRow label="Email">
+                <Text>{email}</Text>
+              </FieldRow>
+            </Section>
+          </Form>
+        </Host>
+      </View>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F2F2F7",
+  },
+  formHost: {
+    flex: 1,
+  },
+});

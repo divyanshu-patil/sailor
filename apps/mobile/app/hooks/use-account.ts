@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import { userService } from "@/services/user.debug.service";
-// Swap to "@/services/user.debug.service" -> userDebugService while testing.
+import { userService } from "@/services/user.service";
+// (The in-memory stub lives at "@/services/user.debug.service" while testing.)
 import { useApiMutation } from "./use-api-state";
 
 export interface UseAccountOptions {
