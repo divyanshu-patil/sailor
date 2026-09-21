@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
 import { ENV } from "@/lib/config/env";
-import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
+import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { View } from "react-native";
 import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
+import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
@@ -66,9 +67,9 @@ function ApiAuthSetup() {
 /**
  * RevenueCat, configured once and kept in step with the Clerk session.
  *
- * Inside ClerkLoaded like ApiAuthSetup, and for the same reason: it reads the
- * signed-in user id, and acting on a half-loaded session would attach purchases
- * to the wrong app user.
+ * Guards on the signed-in user id itself rather than on a wrapper that withheld
+ * the whole tree: acting on a half-loaded session would attach purchases to the
+ * wrong app user, and the hook below waits for a real id before it does.
  */
 function PurchasesSetup() {
   useRevenueCatBootstrap();
@@ -114,7 +115,7 @@ function InitialLayout() {
   const profileSetupCompletedForUserId = useProfileSetupStore(
     (s) => s.completedForUserId,
   );
-  const { isSignedIn, isLoaded, userId } = useAuth();
+  const { ready: authReady, isSignedIn, userId } = useAuthGate();
 
   // Completion is per Clerk user, so a different account on the same device
   // still runs onboarding and profile setup once.
@@ -146,25 +147,13 @@ function InitialLayout() {
     // Mascots are the first thing an empty or failed screen shows; loaded
     // now so they don't pop in a beat after the words around them.
     preloadMascots().catch(() => {});
-    // Kalam is also embedded via app.json, but only after a prebuild; loading
-    // it here makes the handwritten notes work in any build.
-    //
-    // Alan Sans is here for a different reason: app.json embeds 400Regular and
-    // nothing else, so every `fonts.alanSans.bold` / `.semiBold` / `.black` in
-    // the app — daily practice, home — was silently falling back to San
-    // Francisco. The names are the files' PostScript names, which is what
-    // `fonts.ts` already spells and what iOS resolves a family by.
+    // Kalam only. The AlanSans faces used to be repeated here as well as in
+    // routes/index.tsx, so every launch parsed them twice; index.tsx owns them
+    // now. Kalam is embedded via app.json but only after a prebuild, so loading
+    // it here is what makes the handwritten notes work in any build.
     Font.loadAsync({
       "Kalam-Light": require("@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf"),
       "Kalam-Regular": require("@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf"),
-      "Kalam-Bold": require("@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"),
-      "AlanSans-Light": require("@expo-google-fonts/alan-sans/300Light/AlanSans_300Light.ttf"),
-      "AlanSans-Regular": require("@expo-google-fonts/alan-sans/400Regular/AlanSans_400Regular.ttf"),
-      "AlanSans-Medium": require("@expo-google-fonts/alan-sans/500Medium/AlanSans_500Medium.ttf"),
-      "AlanSans-SemiBold": require("@expo-google-fonts/alan-sans/600SemiBold/AlanSans_600SemiBold.ttf"),
-      "AlanSans-Bold": require("@expo-google-fonts/alan-sans/700Bold/AlanSans_700Bold.ttf"),
-      "AlanSans-ExtraBold": require("@expo-google-fonts/alan-sans/800ExtraBold/AlanSans_800ExtraBold.ttf"),
-      "AlanSans-Black": require("@expo-google-fonts/alan-sans/900Black/AlanSans_900Black.ttf"),
     }).catch(() => {});
 
     const stopReminderSync = startReminderSync();
@@ -183,13 +172,15 @@ function InitialLayout() {
     };
   }, []);
 
+  // `authReady` rather than Clerk's `isLoaded`: offline, that never flips, and
+  // this early return was the blank white screen on launch. See useAuthGate.
   if (
     !isHydrated ||
     !isOnboardingCompletionHydrated ||
     !isProfileSetupHydrated ||
-    !isLoaded
+    !authReady
   ) {
-    return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null
+    return <View style={{ flex: 1, backgroundColor: "#fff" }} />;
   }
 
   return (
@@ -250,14 +241,24 @@ function RootLayout() {
       publishableKey={ENV.CLERK_PUBLISHABLE_KEY}
       tokenCache={tokenCache}
     >
-      <ClerkLoaded>
-        <KeyboardProvider>
-          <ApiAuthSetup />
-          <PurchasesSetup />
-          <ReminderRouting />
-          <InitialLayout />
-        </KeyboardProvider>
-      </ClerkLoaded>
+      {/*
+        No ClerkLoaded here on purpose. It renders NOTHING until Clerk has
+        resolved its session against Clerk's servers, so with no connection the
+        whole app tree — including InitialLayout — never mounted at all, and the
+        launch was a blank white screen with no way out of it.
+
+        Nothing below actually needed the wrapper. ApiAuthSetup and
+        PurchasesSetup are effect-only and already guard on `isSignedIn`, so
+        they no-op until the session appears and then run on their own when it
+        does. Deciding when there is enough to render is InitialLayout's job,
+        and it now does it from disk when Clerk cannot answer (useAuthGate).
+      */}
+      <KeyboardProvider>
+        <ApiAuthSetup />
+        <PurchasesSetup />
+        <ReminderRouting />
+        <InitialLayout />
+      </KeyboardProvider>
     </ClerkProvider>
   );
 }
