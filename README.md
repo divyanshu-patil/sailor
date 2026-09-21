@@ -191,54 +191,90 @@ paywall are configured without shipping an app update.
 
 A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
-<div align="center">
+<table>
+  <tr>
+    <td width="22%"><b>iPhone app</b></td>
+    <td><img src="https://cdn.simpleicons.org/expo/000020" width="14" align="top" />&nbsp;Expo SDK 57&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/react/61DAFB" width="14" align="top" />&nbsp;React Native 0.86&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/typescript/3178C6" width="14" align="top" />&nbsp;TypeScript&nbsp;&nbsp;&nbsp;Expo Router&nbsp;&nbsp;&nbsp;Reanimated&nbsp;&nbsp;&nbsp;Skia</td>
+  </tr>
+  <tr>
+    <td><b>Native layer</b></td>
+    <td><img src="https://cdn.simpleicons.org/swift/F05138" width="14" align="top" />&nbsp;SwiftUI via <code>@expo/ui</code>&nbsp;&nbsp;&nbsp;WidgetKit&nbsp;&nbsp;&nbsp;system materials</td>
+  </tr>
+  <tr>
+    <td><b>API</b></td>
+    <td><img src="https://cdn.simpleicons.org/fastapi/009688" width="14" align="top" />&nbsp;FastAPI&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/python/3776AB" width="14" align="top" />&nbsp;Python 3.14&nbsp;&nbsp;&nbsp;SQLAlchemy&nbsp;&nbsp;&nbsp;Alembic</td>
+  </tr>
+  <tr>
+    <td><b>Background work</b></td>
+    <td><img src="https://cdn.simpleicons.org/celery/37814A" width="14" align="top" />&nbsp;Celery&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/redis/FF4438" width="14" align="top" />&nbsp;Redis</td>
+  </tr>
+  <tr>
+    <td><b>Data</b></td>
+    <td><img src="https://cdn.simpleicons.org/postgresql/4169E1" width="14" align="top" />&nbsp;Postgres&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/supabase/3FCF8E" width="14" align="top" />&nbsp;Supabase&nbsp;&nbsp;&nbsp;SQLite on device</td>
+  </tr>
+  <tr>
+    <td><b>Object storage</b></td>
+    <td><img src="https://cdn.simpleicons.org/minio/C72E49" width="14" align="top" />&nbsp;MinIO&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
+  </tr>
+  <tr>
+    <td><b>Identity &amp; billing</b></td>
+    <td><img src="https://cdn.simpleicons.org/clerk/6C47FF" width="14" align="top" />&nbsp;Clerk&nbsp;&nbsp;&nbsp;<img src="https://github.com/RevenueCat.png?size=32" width="14" align="top" />&nbsp;RevenueCat</td>
+  </tr>
+  <tr>
+    <td><b>Models</b></td>
+    <td>OpenRouter first, then&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/anthropic/D97757" width="14" align="top" />&nbsp;Anthropic&nbsp;&nbsp;&nbsp;OpenAI&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/googlegemini/8E75B2" width="14" align="top" />&nbsp;Gemini&nbsp;&nbsp;&nbsp;Groq&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/ollama/000000" width="14" align="top" />&nbsp;Ollama</td>
+  </tr>
+  <tr>
+    <td><b>Monitoring</b></td>
+    <td><img src="https://cdn.simpleicons.org/sentry/362D59" width="14" align="top" />&nbsp;Sentry</td>
+  </tr>
+</table>
 
-<img src="https://cdn.simpleicons.org/expo/000020" width="18" /> **Expo SDK 57** ·
-<img src="https://cdn.simpleicons.org/react/61DAFB" width="18" /> **React Native 0.86** ·
-<img src="https://cdn.simpleicons.org/typescript/3178C6" width="18" /> **TypeScript** ·
-<img src="https://cdn.simpleicons.org/swift/F05138" width="18" /> **SwiftUI** ·
-<img src="https://cdn.simpleicons.org/fastapi/009688" width="18" /> **FastAPI** ·
-<img src="https://cdn.simpleicons.org/python/3776AB" width="18" /> **Python 3.14** ·
-<img src="https://cdn.simpleicons.org/postgresql/4169E1" width="18" /> **Postgres** ·
-<img src="https://cdn.simpleicons.org/redis/FF4438" width="18" /> **Redis + Celery** ·
-<img src="https://cdn.simpleicons.org/clerk/6C47FF" width="18" /> **Clerk** ·
-<img src="https://cdn.simpleicons.org/supabase/3FCF8E" width="18" /> **Supabase**
+**Three things worth knowing about the shape of it**
 
-</div>
-
-A Turborepo monorepo: a native iPhone app in `apps/mobile`, a FastAPI service in
-`apps/backend`. Script and card generation runs as background jobs so the app never waits
-on a model call, and reads are served from an on-device SQLite cache first.
+- **Offline-first.** Every screen reads from an on-device SQLite cache and renders on the
+  first frame; the network refreshes it afterwards. Backstage wifi is a myth, so the app
+  never assumes there is any.
+- **Generation never blocks a request.** Scripts and cards are Celery jobs on their own
+  queues, and the daily practice content is generated days ahead of being needed.
+- **One monorepo.** The iPhone app in `apps/mobile`, the FastAPI service in
+  `apps/backend`, wired together with Turborepo.
 
 <br />
 
 ## Sponsors & partners
 
 Sailors was built for the **[RevenueCat Shipaton 2026](https://revenuecat-shipaton-2026.devpost.com/)**.
-These are the sponsor tools actually in the product — each one is in the codebase, not just
-in the credits.
+These are the sponsor tools we actually used. Five of them are in the codebase; the sixth
+is in every screen you can see.
 
 <table>
 <tr>
-<td align="center" width="20%">
-  <a href="https://www.revenuecat.com/"><img src="https://github.com/RevenueCat.png?size=120" width="64" alt="RevenueCat" /><br /><b>RevenueCat</b></a><br />
-  <sub>Subscriptions, paywall and the customer centre</sub>
+<td align="center" width="33%">
+  <a href="https://www.revenuecat.com/"><img src="https://github.com/RevenueCat.png?size=160" width="72" alt="RevenueCat" /><br /><b>RevenueCat</b></a><br />
+  <sub>Subscriptions, the paywall and the customer centre</sub>
 </td>
-<td align="center" width="20%">
-  <a href="https://expo.dev"><img src="https://github.com/expo.png?size=120" width="64" alt="Expo" /><br /><b>Expo</b></a><br />
+<td align="center" width="33%">
+  <a href="https://expo.dev"><img src="https://github.com/expo.png?size=160" width="72" alt="Expo" /><br /><b>Expo</b></a><br />
   <sub>The app runtime, router, native modules and widgets</sub>
 </td>
-<td align="center" width="20%">
-  <a href="https://openrouter.ai/"><img src="https://github.com/OpenRouterTeam.png?size=120" width="64" alt="OpenRouter" /><br /><b>OpenRouter</b></a><br />
-  <sub>Free-tier model routing in front of the paid provider</sub>
+<td align="center" width="33%">
+  <a href="https://openrouter.ai/"><img src="https://github.com/OpenRouterTeam.png?size=160" width="72" alt="OpenRouter" /><br /><b>OpenRouter</b></a><br />
+  <sub>Model routing in front of the paid provider</sub>
 </td>
-<td align="center" width="20%">
-  <a href="https://sentry.io/welcome/"><img src="https://github.com/getsentry.png?size=120" width="64" alt="Sentry" /><br /><b>Sentry</b></a><br />
+</tr>
+<tr>
+<td align="center">
+  <a href="https://sentry.io/welcome/"><img src="https://github.com/getsentry.png?size=160" width="72" alt="Sentry" /><br /><b>Sentry</b></a><br />
   <sub>Crash and error monitoring in production</sub>
 </td>
-<td align="center" width="20%">
-  <a href="https://swmansion.com/"><img src="https://github.com/software-mansion.png?size=120" width="64" alt="Software Mansion" /><br /><b>Software Mansion</b></a><br />
+<td align="center">
+  <a href="https://swmansion.com/"><img src="https://github.com/software-mansion.png?size=160" width="72" alt="Software Mansion" /><br /><b>Software Mansion</b></a><br />
   <sub>Reanimated, Gesture Handler, Screens and Pulsar haptics</sub>
+</td>
+<td align="center">
+  <a href="https://mobbin.com/"><img src="https://github.com/mobbin.png?size=160" width="72" alt="Mobbin" /><br /><b>Mobbin</b></a><br />
+  <sub>UI reference — the patterns we studied before designing each screen</sub>
 </td>
 </tr>
 </table>
