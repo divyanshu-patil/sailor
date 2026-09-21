@@ -8,6 +8,7 @@ one reading as free blocks the thing they just bought.
 
 import unittest
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 from app.config.settings import settings
 from app.models.user_model import SubscriptionTier
@@ -66,14 +67,39 @@ class TierFromEntitlements(unittest.TestCase):
                 )
 
 
+def _generosity(tier: SubscriptionTier) -> float:
+    """A tier's allowance as a comparable number. -1 means unlimited, which is
+    more than any finite cap, so it has to sort above one rather than below
+    every positive number."""
+    limit = limit_for(tier)
+    return float("inf") if limit < 0 else limit
+
+
 class Limits(unittest.TestCase):
-    def test_paid_tiers_get_more_than_free(self):
-        self.assertLess(
-            limit_for(SubscriptionTier.SKETOS), limit_for(SubscriptionTier.METRIOS)
+    def test_a_paid_tier_is_never_stingier_than_free(self):
+        # Not strictly greater: generation is unlimited on every tier as
+        # configured today, so free and paid are level here. What must never
+        # happen is paying for less.
+        self.assertGreaterEqual(
+            _generosity(SubscriptionTier.METRIOS), _generosity(SubscriptionTier.SKETOS)
         )
         self.assertEqual(
             limit_for(SubscriptionTier.GLYKOS), limit_for(SubscriptionTier.METRIOS)
         )
+
+    def test_a_configured_cap_still_favours_the_paid_tier(self):
+        """The ordering has to survive a cap being switched back on, which is a
+        change to two env vars and nothing else."""
+        with patch.object(settings, "FREE_MONTHLY_GENERATIONS", 3), patch.object(
+            settings, "PRO_MONTHLY_GENERATIONS", 100
+        ):
+            self.assertLess(
+                limit_for(SubscriptionTier.SKETOS), limit_for(SubscriptionTier.METRIOS)
+            )
+
+    def test_unlimited_is_the_default(self):
+        with patch.object(settings, "FREE_MONTHLY_GENERATIONS", -1):
+            self.assertEqual(_generosity(SubscriptionTier.SKETOS), float("inf"))
 
 
 if __name__ == "__main__":

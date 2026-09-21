@@ -48,8 +48,15 @@ REVENUECAT_SUBSCRIBER_URL = "https://api.revenuecat.com/v1/subscribers/{app_user
 
 
 def limit_for(tier: SubscriptionTier) -> int:
-    """Generations per period. Free is the only tier that is actually scarce;
-    the paid ceiling exists to bound a runaway script, not to sell more."""
+    """Generations per period, or -1 for unlimited — which is what both tiers
+    are configured to today.
+
+    Generation is deliberately not the thing Sailors meters: a person deciding
+    whether to rewrite their talk one more time should be thinking about the
+    talk, not about credits. The machinery below stays in place because the
+    counter is still worth having (it is how we see what a user actually costs)
+    and because a ceiling may be needed later for abuse rather than for
+    pricing — at which point it is one env var, not a code change."""
     if tier == SubscriptionTier.SKETOS:
         return settings.FREE_MONTHLY_GENERATIONS
     return settings.PRO_MONTHLY_GENERATIONS
@@ -179,7 +186,9 @@ _CONSUME_SQL = text(
                WHEN usage_period_started_at < :cutoff THEN now()
                ELSE usage_period_started_at END
      WHERE id = :user_id
-       AND (usage_period_started_at < :cutoff OR monthly_generations_used < :limit)
+       AND (usage_period_started_at < :cutoff
+            OR :limit < 0
+            OR monthly_generations_used < :limit)
  RETURNING monthly_generations_used
     """
 )

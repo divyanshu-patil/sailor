@@ -104,8 +104,12 @@ class Settings(BaseSettings):
     # Generations per rolling 30 days. Tuned from the dashboard side of the
     # business, not the code, which is why they're env vars rather than
     # constants — pricing changes shouldn't need a deploy.
-    FREE_MONTHLY_GENERATIONS: int = 3
-    PRO_MONTHLY_GENERATIONS: int = 100
+    # -1 means unlimited: the counter still moves, so usage stays visible, but
+    # no request is ever refused for having spent it. Generation is not what we
+    # charge for — set either of these to a positive number and the cap comes
+    # straight back on, with no code change.
+    FREE_MONTHLY_GENERATIONS: int = -1
+    PRO_MONTHLY_GENERATIONS: int = -1
 
     # ---- OpenRouter (free tier) ------------------------------------------
     # A switch rather than another AI_PROVIDER value, because OpenRouter is not
