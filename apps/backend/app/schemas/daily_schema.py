@@ -63,6 +63,13 @@ class StreakResponse(BaseModel):
     # inferring it from a date it would have to month-compare itself.
     canRestore: bool = False
     restoreUsedThisMonth: bool = False
+    #: The last local date a restore would be accepted, or null when nothing has
+    #: lapsed. Sent so the app can say "until today" rather than making the
+    #: client re-derive a deadline the server already computed.
+    restoreExpiresOn: Optional[date] = None
+    #: True when there IS a lapsed streak but its window has closed. Distinct
+    #: from restoreUsedThisMonth — different reason, different screen.
+    restoreExpired: bool = False
 
 
 class RestoreStreakRequest(BaseModel):

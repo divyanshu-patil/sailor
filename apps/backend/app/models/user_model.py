@@ -179,6 +179,11 @@ class User(Base):
     lapsed_streak: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0"),
     )
+    #: The date the streak actually BROKE — derived, not the date the app first
+    #: noticed. A lapse is only detected on read, so "when we found out" would
+    #: hand someone back from a week away a fresh window on a week-old break,
+    #: which is the thing the window exists to prevent.
+    lapsed_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     #: The client-local date a restore was last used, for the one-per-month cap.
     #: A date rather than a counter: the cap is per calendar month, so the month
     #: it fell in is the whole of the state, and it needs no monthly reset job.

@@ -78,6 +78,24 @@ const RESTORES_PER_MONTH = 1;
 
 type Phase = "ask" | "revealing" | "won" | "blocked";
 
+/** Why a restore is refused. Two different sentences and two different
+ *  pictures — the cap is about how often, the window about how long. */
+type BlockedReason = "used" | "expired";
+
+const blockedReasonFor = (
+  streak: {
+    restoreUsedThisMonth?: boolean;
+    restoreExpired?: boolean;
+  } | null,
+): BlockedReason | null => {
+  if (!streak) return null;
+  // The cap wins when both are true: "you already used it" is the more
+  // actionable of the two, because it tells them when they get another.
+  if (streak.restoreUsedThisMonth) return "used";
+  if (streak.restoreExpired) return "expired";
+  return null;
+};
+
 /**
  * The short strokes flanking the button.
  *
@@ -147,8 +165,11 @@ export default function StreakRestoreScreen() {
   const streak = useDailyStore((s) => s.streak);
   const setStreak = useDailyStore((s) => s.setStreak);
 
+  const [blockedReason, setBlockedReason] = useState<BlockedReason | null>(() =>
+    blockedReasonFor(streak ?? null),
+  );
   const [phase, setPhase] = useState<Phase>(
-    streak?.restoreUsedThisMonth ? "blocked" : "ask",
+    blockedReasonFor(streak ?? null) ? "blocked" : "ask",
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -181,11 +202,13 @@ export default function StreakRestoreScreen() {
       .then((fresh) => {
         if (cancelled) return;
         setStreak(fresh);
+        const reason = blockedReasonFor(fresh);
+        setBlockedReason(reason);
         // Only while nothing is in flight — a reply that lands mid-animation
         // must not yank the screen out from under it.
         setPhase((current) =>
           current === "ask" || current === "blocked"
-            ? fresh.restoreUsedThisMonth
+            ? reason
               ? "blocked"
               : "ask"
             : current,
@@ -282,7 +305,7 @@ export default function StreakRestoreScreen() {
       setBusy(false);
     } catch (e: any) {
       const status = e?.response?.status;
-      if (status === 409) {
+      if (status === 409 || status === 410) {
         // "Already used this month" — but by whom, and when? If our own store
         // already shows a live streak restored this month, the restore that
         // spent it is the one we just made: a duplicate request (a double tap,
@@ -295,9 +318,10 @@ export default function StreakRestoreScreen() {
           return;
         }
 
-        // Genuinely spent elsewhere — another device, or a month that rolled
-        // over under us. Not an error; it is the other state.
+        // Genuinely refused: spent on another device, or the window closed
+        // while this screen sat open. Not an error; it is the other state.
         committed.current = false;
+        setBlockedReason(status === 410 ? "expired" : "used");
         setBusy(false);
         reveal.value = withTiming(0, {
           duration: M.revealOut,
@@ -352,6 +376,7 @@ export default function StreakRestoreScreen() {
   if (phase === "blocked") {
     return (
       <BlockedState
+        reason={blockedReason ?? "used"}
         onDismiss={() => router.back()}
         topInset={insets.top}
         width={W}
@@ -573,24 +598,48 @@ export default function StreakRestoreScreen() {
  * keeping it separate means the reveal's shared values are not created on a
  * screen that can never run it.
  */
+const BLOCKED_COPY: Record<
+  BlockedReason,
+  { title: string; body: string; note: string[]; aside: string[] }
+> = {
+  used: {
+    title: "You\u2019ve already used your restore this month",
+    body: "You can only restore your streak once per month. Keep showing up and let\u2019s make the next one count!",
+    note: ["Only 1", "restore", "per month"],
+    aside: ["You've already", "used it this", "month."],
+  },
+  expired: {
+    // Deliberately not apologetic. The window is the rule that makes a streak
+    // worth something; the useful thing to say is when it closed and what to
+    // do now, not how sorry we are.
+    title: "This streak can\u2019t be brought back now",
+    body: "A streak can only be restored on the day it breaks. Today is a fresh start \u2014 the next one begins with your next practice.",
+    note: ["Same day", "only"],
+    aside: ["The window", "closed."],
+  },
+};
+
 function BlockedState({
+  reason,
   onDismiss,
   topInset,
   width,
   height,
 }: {
+  reason: BlockedReason;
   onDismiss: () => void;
   topInset: number;
   width: number;
   height: number;
 }) {
+  const copy = BLOCKED_COPY[reason];
   const insets = useSafeAreaInsets();
   const c = restoreColors.blocked;
 
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>
       <HandwrittenNote
-        lines={["Only 1", "restore", "per month"]}
+        lines={copy.note}
         arrowSize={50}
         color={c.note}
         flip
@@ -598,7 +647,7 @@ function BlockedState({
         style={{ right: 16, top: topInset + 2 }}
       />
       <HandwrittenNote
-        lines={["You've already", "used it this", "month."]}
+        lines={copy.aside}
         arrowSize={44}
         color={c.note}
         fontSize={14.5}
@@ -613,21 +662,25 @@ function BlockedState({
           own pieces absolutely, which is why it came apart when that layout
           changed — one structure for both states now. */}
       <View style={[styles.stage, { paddingTop: topInset + 46 }]}>
+        {/* The calendar only makes sense for the cap. A closed window is about
+            time running out, which is what the hourglass in the muted scene
+            already says. */}
         <View pointerEvents="none">
-          <BlockedScene
-            width={width}
-            used={RESTORES_PER_MONTH}
-            allowed={RESTORES_PER_MONTH}
-          />
+          {reason === "used" ? (
+            <BlockedScene
+              width={width}
+              used={RESTORES_PER_MONTH}
+              allowed={RESTORES_PER_MONTH}
+            />
+          ) : (
+            <BrokenStreakScene width={width} muted />
+          )}
         </View>
         <View style={styles.copy}>
           <Text style={[styles.titleTight, { color: c.ink }]}>
-            You&rsquo;ve already used your restore this month
+            {copy.title}
           </Text>
-          <Text style={[styles.blurb, { color: c.body }]}>
-            You can only restore your streak once per month. Keep showing up and
-            let&rsquo;s make the next one count!
-          </Text>
+          <Text style={[styles.blurb, { color: c.body }]}>{copy.body}</Text>
         </View>
       </View>
 

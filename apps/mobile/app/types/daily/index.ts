@@ -76,6 +76,12 @@ export interface StreakState {
   /** Distinguishes "already used this month" from "nothing to restore" — the
    *  two are different screens. */
   restoreUsedThisMonth?: boolean;
+  /** The last local date (YYYY-MM-DD) a restore would be accepted, or null when
+   *  nothing has lapsed. */
+  restoreExpiresOn?: string | null;
+  /** There IS a lapsed streak, but its window has closed. A third dead end,
+   *  separate from "used this month" and from "nothing to restore". */
+  restoreExpired?: boolean;
   /**
    * Written only by the dev streak simulator in Settings.
    *
