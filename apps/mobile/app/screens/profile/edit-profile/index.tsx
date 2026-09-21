@@ -1,7 +1,15 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { Stack } from "expo-router";
-import { Host, Form, Section, HStack, TextField, Text } from "@expo/ui/swift-ui";
+import {
+  ContentUnavailableView,
+  Form,
+  HStack,
+  Host,
+  Section,
+  Text,
+  TextField,
+} from "@expo/ui/swift-ui";
 import {
   textInputAutocapitalization,
   textContentType,
@@ -16,6 +24,32 @@ import { useEditProfileForm } from "./hooks/use-edit-profile-form";
 import { useUser } from "@/hooks/use-user";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
+
+/**
+ * A profile built from Clerk alone, for when the backend row cannot be read.
+ *
+ * Enough to render and edit the form; `id` is the Clerk id so the `key` below
+ * is still stable. Returns null before Clerk has its user, which is the only
+ * state where there is genuinely nothing to show.
+ */
+function identityOnlyProfile(identity: {
+  displayName: string;
+  email: string | null;
+  isLoaded: boolean;
+}): AppUserProfile | null {
+  if (!identity.isLoaded) return null;
+  return {
+    id: "identity-only",
+    clerkUserId: "",
+    email: identity.email ?? "",
+    fullName: identity.displayName,
+    nickname: "",
+    experienceLevel: "beginner",
+    profession: null,
+    avatarUrl: null,
+    role: "user",
+  };
+}
 
 function toAppUserProfile(
   profile: any,
@@ -69,15 +103,45 @@ export default function EditProfileScreen() {
         }),
       );
     }
-  }, [profile, identity.displayName, identity.email, appUser?.email, setAppUser]);
+  }, [
+    profile,
+    identity.displayName,
+    identity.email,
+    appUser?.email,
+    setAppUser,
+  ]);
 
-  if (isLoading && !appUser) return null; // loading
-  if (!appUser) return null; // error or no data
+  // Never a bare `null`: this screen rendered nothing at all whenever the
+  // profile fetch failed and the store was empty — offline, or with the API
+  // down — which is the blank Edit Profile.
+  //
+  // The persisted store is the first fallback and Clerk's identity the second,
+  // so the form opens with the name and email the rest of the app is already
+  // showing. A save still goes through `updateAppUserProfile`, which is
+  // local-first and syncs when it can.
+  const fallbackUser: AppUserProfile | null =
+    appUser ?? identityOnlyProfile(identity);
 
-  // Keyed by appUser.id so EditProfileForm always mounts fresh with the
-  // real profile values already in hand — see useEditProfileForm.ts for why
-  // that matters for the native-state-backed text fields.
-  return <EditProfileForm key={appUser.id} appUser={appUser} />;
+  if (!fallbackUser) {
+    return (
+      <Host style={styles.formHost}>
+        <ContentUnavailableView
+          title={isLoading ? "Loading your profile" : "Profile unavailable"}
+          systemImage={isLoading ? "person.crop.circle" : "wifi.slash"}
+          description={
+            isLoading
+              ? "One moment."
+              : "We couldn't load your profile. Check your connection and try again."
+          }
+        />
+      </Host>
+    );
+  }
+
+  // Keyed by the profile id so EditProfileForm always mounts fresh with the
+  // real values already in hand — see useEditProfileForm.ts for why that
+  // matters for the native-state-backed text fields.
+  return <EditProfileForm key={fallbackUser.id} appUser={fallbackUser} />;
 }
 
 function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
@@ -115,77 +179,72 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
         />
       </Stack.Toolbar>
 
-      <View style={styles.screen}>
-        <ProfilePhotoSection />
+      {/* One SwiftUI host for the whole screen. The photo used to be a React
+          Native row above this, which is what made it sit still while the form
+          scrolled under it. */}
+      <Host style={styles.formHost}>
+        <Form modifiers={[scrollDismissesKeyboard("interactively")]}>
+          <ProfilePhotoSection />
 
-        <Host style={styles.formHost}>
-          <Form modifiers={[scrollDismissesKeyboard("interactively")]}>
-            {/* Basic info */}
-            <Section title="Basic Info">
-              <FieldRow label="Name">
-                <TextField
-                  text={nameState}
-                  onTextChange={handleNameChange}
-                  placeholder="Your name"
-                  modifiers={[
-                    textInputAutocapitalization("words"),
-                    textContentType("name"),
-                    submitLabel("next"),
-                  ]}
-                />
-              </FieldRow>
-              <FieldRow label="Nickname">
-                <TextField
-                  text={nicknameState}
-                  onTextChange={handleNicknameChange}
-                  placeholder="nickname"
-                  maxLength={10}
-                  modifiers={[
-                    textInputAutocapitalization("never"),
-                    textContentType("nickname"),
-                    keyboardType("ascii-capable"),
-                    submitLabel("next"),
-                  ]}
-                />
-              </FieldRow>
-            </Section>
+          {/* Basic info */}
+          <Section title="Basic Info">
+            <FieldRow label="Name">
+              <TextField
+                text={nameState}
+                onTextChange={handleNameChange}
+                placeholder="Your name"
+                modifiers={[
+                  textInputAutocapitalization("words"),
+                  textContentType("name"),
+                  submitLabel("next"),
+                ]}
+              />
+            </FieldRow>
+            <FieldRow label="Nickname">
+              <TextField
+                text={nicknameState}
+                onTextChange={handleNicknameChange}
+                placeholder="nickname"
+                maxLength={10}
+                modifiers={[
+                  textInputAutocapitalization("never"),
+                  textContentType("nickname"),
+                  keyboardType("ascii-capable"),
+                  submitLabel("next"),
+                ]}
+              />
+            </FieldRow>
+          </Section>
 
-            {/* Contact */}
-            <Section
-              title="Contact"
-              footer={
-                externalLinked.isExternalLinked ? (
-                  <Text
-                    modifiers={[
-                      foregroundStyle({
-                        type: "hierarchical",
-                        style: "secondary",
-                      }),
-                    ]}
-                  >
-                    Your email is managed by your linked{" "}
-                    {externalLinked.provider} account.
-                  </Text>
-                ) : undefined
-              }
-            >
-              <FieldRow label="Email">
-                <Text>{email}</Text>
-              </FieldRow>
-            </Section>
-          </Form>
-        </Host>
-      </View>
+          {/* Contact */}
+          <Section
+            title="Contact"
+            footer={
+              externalLinked.isExternalLinked ? (
+                <Text
+                  modifiers={[
+                    foregroundStyle({
+                      type: "hierarchical",
+                      style: "secondary",
+                    }),
+                  ]}
+                >
+                  Your email is managed by your linked {externalLinked.provider}{" "}
+                  account.
+                </Text>
+              ) : undefined
+            }
+          >
+            <FieldRow label="Email">
+              <Text>{email}</Text>
+            </FieldRow>
+          </Section>
+        </Form>
+      </Host>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#F2F2F7",
-  },
-  formHost: {
-    flex: 1,
-  },
+  formHost: { flex: 1 },
 });

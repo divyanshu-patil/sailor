@@ -1,28 +1,96 @@
-import React from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Image as ExpoImage } from "expo-image";
+import {
+  Button,
+  Image,
+  Menu,
+  ProgressView,
+  Section,
+  VStack,
+} from "@expo/ui/swift-ui";
+import {
+  buttonStyle,
+  clipShape,
+  controlSize,
+  frame,
+  labelStyle,
+  listRowBackground,
+  padding,
+} from "@expo/ui/swift-ui/modifiers";
 
-import GlassAvatar from "@/components/ui/glass-avatar";
-import PressableScale from "@/components/ui/animated/PressableScale";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useProfilePhoto } from "@/hooks/use-profile-photo";
-import {
-  PROFILE,
-  PROFILE_PASTELS,
-  profileFonts,
-} from "@/screens/profile/theme";
 
-const AVATAR_SIZE = 84;
+const AVATAR_SIZE = 108;
 
 /**
- * The avatar row for Edit Profile.
+ * Turns a remote avatar URL into a local file path.
  *
- * Native `Form` can't render the Blobatar's SVG, so this is a React Native row
- * sitting above the SwiftUI form rather than a `Section` inside it. It shares
- * the exact same ProfileAvatar + Clerk upload path as the profile wizard, so
- * adding, changing or removing a photo updates the Profile screen immediately.
+ * SwiftUI's `Image` takes `uiImage`, which is a file on disk — it cannot fetch
+ * a URL. `expo-image` has already cached the bytes for the profile screen, so
+ * this asks for that cache entry rather than downloading anything twice, and
+ * only prefetches when the entry is missing.
+ *
+ * Null while it resolves, and null forever if it fails, which the caller draws
+ * as the "no photo" state rather than as an error — an avatar that cannot be
+ * read is not something the person can act on.
+ */
+function useLocalAvatarPath(remoteUrl: string | null): string | null {
+  // A pick from the library is already a file, so it needs no resolving and no
+  // state — deriving it keeps the effect below for the one case that is async.
+  const isLocalFile =
+    !!remoteUrl &&
+    (remoteUrl.startsWith("file://") || remoteUrl.startsWith("/"));
+
+  // Stored with the URL it belongs to, so a changed avatar reads as "not
+  // resolved yet" rather than briefly showing the previous one.
+  const [resolved, setResolved] = useState<{
+    url: string;
+    path: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!remoteUrl || isLocalFile) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        let cached = await ExpoImage.getCachePathAsync(remoteUrl);
+        if (!cached) {
+          await ExpoImage.prefetch(remoteUrl, { cachePolicy: "disk" });
+          cached = await ExpoImage.getCachePathAsync(remoteUrl);
+        }
+        if (!cancelled) setResolved({ url: remoteUrl, path: cached });
+      } catch {
+        if (!cancelled) setResolved({ url: remoteUrl, path: null });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [remoteUrl, isLocalFile]);
+
+  if (!remoteUrl) return null;
+  if (isLocalFile) return remoteUrl;
+  return resolved?.url === remoteUrl ? resolved.path : null;
+}
+
+/**
+ * The avatar row for Edit Profile — a `Section` in the form, not a view above it.
+ *
+ * It used to be a React Native row sitting on top of the SwiftUI `Form`, which
+ * is why it had its own cream background and stayed nailed in place while the
+ * form scrolled underneath it. Inside the form it scrolls with everything else
+ * and inherits the grouped background, so the row background is cleared to
+ * nothing and the photo is simply centred on the page.
+ *
+ * The only control is the pencil. With no photo it opens the picker; with one,
+ * it is a menu, so replacing and removing are both reachable without putting a
+ * second word of chrome on the screen.
  */
 const ProfilePhotoSection = () => {
-  const { name, imageUrl, isLoaded } = useProfileIdentity();
+  const { imageUrl } = useProfileIdentity();
   const {
     pendingAsset,
     pickImage,
@@ -30,129 +98,86 @@ const ProfilePhotoSection = () => {
     removePhoto,
     isPicking,
     isUploading,
-    error,
   } = useProfilePhoto();
 
   const busy = isPicking || isUploading;
-  const hasImage = imageUrl != null;
-  const previewUrl = pendingAsset?.uri ?? imageUrl;
+  const localPath = useLocalAvatarPath(pendingAsset?.uri ?? imageUrl);
+  const hasPhoto = localPath !== null;
 
   const handleChange = async () => {
     const asset = await pickImage();
     if (asset) await uploadAsset(asset);
   };
 
-  const handleRemove = async () => {
-    await removePhoto();
-  };
-
   return (
-    <View style={styles.container}>
-      <View style={styles.avatar}>
-        <GlassAvatar
-          imageUrl={previewUrl}
-          name={name}
-          size={AVATAR_SIZE}
-          loading={!isLoaded}
-          tint={PROFILE_PASTELS.pink}
-        />
-      </View>
+    <Section modifiers={[listRowBackground("clear")]}>
+      <VStack
+        spacing={16}
+        modifiers={[
+          frame({ maxWidth: Infinity, alignment: "center" }),
+          padding({ vertical: 12 }),
+        ]}
+      >
+        {hasPhoto ? (
+          <Image
+            uiImage={localPath}
+            modifiers={[
+              frame({ width: AVATAR_SIZE, height: AVATAR_SIZE }),
+              clipShape("circle"),
+            ]}
+          />
+        ) : (
+          <Image
+            systemName="person.crop.circle.fill"
+            size={AVATAR_SIZE}
+            color="#C7C7CC"
+          />
+        )}
 
-      <View style={styles.info}>
-        <Text style={styles.caption}>
-          {hasImage ? "Your profile photo" : "Sailor's generated avatar"}
-        </Text>
-
-        <View style={styles.actions}>
-          <PressableScale
-            onPress={handleChange}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel={hasImage ? "Change photo" : "Add photo"}
-            style={styles.action}
+        {busy ? (
+          <ProgressView />
+        ) : hasPhoto ? (
+          // `labelStyle("iconOnly")` rather than an empty label: the pencil is
+          // all that shows, but the title is still there for VoiceOver to read.
+          <Menu
+            label="Edit photo"
+            systemImage="pencil"
+            modifiers={[
+              labelStyle("iconOnly"),
+              buttonStyle("glass"),
+              controlSize("large"),
+            ]}
           >
-            {busy && !hasImage ? (
-              <ActivityIndicator size="small" color={PROFILE.ink} />
-            ) : (
-              <Text style={styles.actionText}>
-                {hasImage ? "Change photo" : "Add photo"}
-              </Text>
-            )}
-          </PressableScale>
-
-          {hasImage ? (
-            <PressableScale
-              onPress={handleRemove}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel="Remove photo"
-              style={styles.action}
-            >
-              <Text style={[styles.actionText, styles.removeText]}>Remove</Text>
-            </PressableScale>
-          ) : null}
-        </View>
-
-        {error ? (
-          <Text style={styles.error} accessibilityLiveRegion="polite">
-            {error}
-          </Text>
-        ) : null}
-      </View>
-    </View>
+            <Button
+              systemImage="photo"
+              label="Choose photo"
+              onPress={handleChange}
+            />
+            <Button
+              systemImage="trash"
+              label="Remove photo"
+              role="destructive"
+              onPress={removePhoto}
+            />
+          </Menu>
+        ) : (
+          // `label` is required for `systemImage` to render at all — a Button
+          // with only a systemImage draws nothing — so it is supplied and then
+          // hidden the same way the menu's is.
+          <Button
+            label="Add photo"
+            systemImage="pencil"
+            onPress={handleChange}
+            modifiers={[
+              labelStyle("iconOnly"),
+              buttonStyle("glass"),
+              controlSize("large"),
+            ]}
+          />
+        )}
+      </VStack>
+    </Section>
   );
 };
 
 export default ProfilePhotoSection;
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    marginTop: 56,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    backgroundColor: PROFILE.background,
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    overflow: "hidden",
-  },
-  info: {
-    flex: 1,
-    gap: 8,
-  },
-  caption: {
-    fontFamily: profileFonts.medium,
-    fontSize: 14,
-    color: PROFILE.muted,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 18,
-  },
-  action: {
-    minHeight: 32,
-    justifyContent: "center",
-  },
-  actionText: {
-    fontFamily: profileFonts.semibold,
-    fontSize: 15,
-    color: PROFILE.ink,
-    letterSpacing: -0.2,
-  },
-  removeText: {
-    color: "#D6455D",
-  },
-  error: {
-    fontFamily: profileFonts.medium,
-    fontSize: 12,
-    lineHeight: 16,
-    color: "#C0392B",
-  },
-});

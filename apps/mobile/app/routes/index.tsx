@@ -1,11 +1,9 @@
 import { useEffect, useRef } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useRouter, type Href } from "expo-router";
-import { useAuth } from "@clerk/expo";
 import { useFonts } from "expo-font";
 import { KronaOne_400Regular } from "@expo-google-fonts/krona-one/400Regular";
 import {
-  AlanSans_300Light,
   AlanSans_400Regular,
   AlanSans_500Medium,
   AlanSans_600SemiBold,
@@ -13,39 +11,17 @@ import {
   AlanSans_800ExtraBold,
   AlanSans_900Black,
 } from "@expo-google-fonts/alan-sans";
-import {
-  Amarna_100Thin,
-  Amarna_100Thin_Italic,
-  Amarna_200ExtraLight,
-  Amarna_200ExtraLight_Italic,
-  Amarna_300Light,
-  Amarna_300Light_Italic,
-  Amarna_400Regular,
-  Amarna_400Regular_Italic,
-  Amarna_500Medium,
-  Amarna_500Medium_Italic,
-  Amarna_600SemiBold,
-  Amarna_600SemiBold_Italic,
-  Amarna_700Bold,
-  Amarna_700Bold_Italic,
-} from "@expo-google-fonts/amarna";
+import { Amarna_400Regular, Amarna_700Bold } from "@expo-google-fonts/amarna";
 
 import {
-  Newsreader_200ExtraLight,
-  Newsreader_300Light,
   Newsreader_400Regular,
   Newsreader_500Medium,
   Newsreader_600SemiBold,
-  Newsreader_700Bold,
-  Newsreader_800ExtraBold,
-  Newsreader_200ExtraLight_Italic,
-  Newsreader_300Light_Italic,
   Newsreader_400Regular_Italic,
   Newsreader_500Medium_Italic,
   Newsreader_600SemiBold_Italic,
-  Newsreader_700Bold_Italic,
-  Newsreader_800ExtraBold_Italic,
 } from "@expo-google-fonts/newsreader";
+import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
@@ -67,7 +43,7 @@ export default function Index() {
     (s) => s.completedForUserId,
   );
   // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const { isSignedIn, isLoaded, userId } = useAuth();
+  const { ready: authReady, isSignedIn, userId } = useAuthGate();
   const hasNavigated = useRef(false);
 
   const hasCompletedOnboarding =
@@ -75,9 +51,13 @@ export default function Index() {
   const hasCompletedProfileSetup =
     !!userId && profileSetupCompletedForUserId === userId;
 
-  const [fontsLoaded] = useFonts({
+  // Only the faces the app actually names in constants/fonts.ts. The full
+  // Amarna and Newsreader families were being parsed here — about thirty-five
+  // faces — and nothing referenced most of them. `useFonts` no longer gates
+  // navigation either (see the effect below), so this is background work now.
+  useFonts({
     KronaOne: KronaOne_400Regular,
-    "AlanSans-Light": AlanSans_300Light,
+
     "AlanSans-Regular": AlanSans_400Regular,
     "AlanSans-Medium": AlanSans_500Medium,
     "AlanSans-SemiBold": AlanSans_600SemiBold,
@@ -86,49 +66,26 @@ export default function Index() {
     "AlanSans-Black": AlanSans_900Black,
 
     Amarna: Amarna_400Regular,
-    "Amarna-Italic": Amarna_400Regular_Italic,
-    "Amarna-Thin": Amarna_100Thin,
-    "Amarna-ThinItalic": Amarna_100Thin_Italic,
-    "Amarna-ExtraLight": Amarna_200ExtraLight,
-    "Amarna-ExtraLightItalic": Amarna_200ExtraLight_Italic,
-    "Amarna-Light": Amarna_300Light,
-    "Amarna-LightItalic": Amarna_300Light_Italic,
-    "Amarna-Medium": Amarna_500Medium,
-    "Amarna-MediumItalic": Amarna_500Medium_Italic,
-    "Amarna-SemiBold": Amarna_600SemiBold,
-    "Amarna-SemiBoldItalic": Amarna_600SemiBold_Italic,
     "Amarna-Bold": Amarna_700Bold,
-    "Amarna-BoldItalic": Amarna_700Bold_Italic,
 
     Newsreader: Newsreader_400Regular,
     "Newsreader-Italic": Newsreader_400Regular_Italic,
-
-    "Newsreader-ExtraLight": Newsreader_200ExtraLight,
-    "Newsreader-ExtraLightItalic": Newsreader_200ExtraLight_Italic,
-
-    "Newsreader-Light": Newsreader_300Light,
-    "Newsreader-LightItalic": Newsreader_300Light_Italic,
-
     "Newsreader-Medium": Newsreader_500Medium,
     "Newsreader-MediumItalic": Newsreader_500Medium_Italic,
-
     "Newsreader-SemiBold": Newsreader_600SemiBold,
     "Newsreader-SemiBoldItalic": Newsreader_600SemiBold_Italic,
-
-    "Newsreader-Bold": Newsreader_700Bold,
-    "Newsreader-BoldItalic": Newsreader_700Bold_Italic,
-
-    "Newsreader-ExtraBold": Newsreader_800ExtraBold,
-    "Newsreader-ExtraBoldItalic": Newsreader_800ExtraBold_Italic,
   });
 
   useEffect(() => {
+    // Deliberately not waiting on fonts. Text renders in the system face for a
+    // frame and swaps when they land, which nobody notices — whereas holding
+    // the first navigation until every face has parsed is dead time on every
+    // single launch.
     if (
-      !fontsLoaded ||
       !isHydrated ||
       !isProfileSetupHydrated ||
       !isOnboardingCompletionHydrated ||
-      !isLoaded
+      !authReady
     ) {
       return;
     }
@@ -155,16 +112,19 @@ export default function Index() {
     isProfileSetupHydrated,
     isOnboardingCompletionHydrated,
     isSignedIn,
-    isLoaded,
+    authReady,
     userId,
     hasSeenOnboarding,
     hasCompletedOnboarding,
     hasCompletedProfileSetup,
-    fontsLoaded,
     router,
   ]);
 
-  if (!isHydrated || !isProfileSetupHydrated || !isOnboardingCompletionHydrated) {
+  if (
+    !isHydrated ||
+    !isProfileSetupHydrated ||
+    !isOnboardingCompletionHydrated
+  ) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
