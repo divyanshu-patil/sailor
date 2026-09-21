@@ -25,12 +25,10 @@ from app.db.database import SessionLocal
 from app.models.user_model import SubscriptionTier, User
 from app.services.quota import PERIOD, limit_for
 
-# The enum is named for the Greek coffee scale; nobody wants to type that.
-TIERS = {
-    "free": SubscriptionTier.SKETOS,
-    "pro": SubscriptionTier.METRIOS,
-    "team": SubscriptionTier.GLYKOS,
-}
+# The tier names are the entitlement's own, so this is a straight lookup now --
+# it survives because argparse `choices` wants a container of strings, and this
+# keeps the CLI vocabulary pinned to the enum rather than to a second list.
+TIERS = {tier.value: tier for tier in SubscriptionTier}
 
 
 def main() -> int:

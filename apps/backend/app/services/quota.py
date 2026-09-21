@@ -57,7 +57,7 @@ def limit_for(tier: SubscriptionTier) -> int:
     counter is still worth having (it is how we see what a user actually costs)
     and because a ceiling may be needed later for abuse rather than for
     pricing — at which point it is one env var, not a code change."""
-    if tier == SubscriptionTier.SKETOS:
+    if tier == SubscriptionTier.FREE:
         return settings.FREE_MONTHLY_GENERATIONS
     return settings.PRO_MONTHLY_GENERATIONS
 
@@ -81,12 +81,12 @@ def _tier_from_entitlements(entitlements: dict) -> SubscriptionTier:
     """
     entitlement = entitlements.get(settings.REVENUECAT_ENTITLEMENT_ID)
     if not entitlement:
-        return SubscriptionTier.SKETOS
+        return SubscriptionTier.FREE
 
     expires = entitlement.get("expires_date")
     # Null expiry is a lifetime grant — a non-consumable or a promo with no end.
     if expires is None:
-        return SubscriptionTier.METRIOS
+        return SubscriptionTier.PRO
 
     try:
         expires_at = datetime.fromisoformat(expires.replace("Z", "+00:00"))
@@ -95,12 +95,12 @@ def _tier_from_entitlements(entitlements: dict) -> SubscriptionTier:
         # the user drops to free rather than getting unbounded access from a
         # date format change.
         logger.warning(f"[quota] unparseable expires_date from RevenueCat: {expires!r}")
-        return SubscriptionTier.SKETOS
+        return SubscriptionTier.FREE
 
     return (
-        SubscriptionTier.METRIOS
+        SubscriptionTier.PRO
         if expires_at > datetime.now(timezone.utc)
-        else SubscriptionTier.SKETOS
+        else SubscriptionTier.FREE
     )
 
 
@@ -125,7 +125,7 @@ def _fetch_tier(clerk_user_id: str) -> SubscriptionTier | None:
     # 404 is an answer, not a failure: RevenueCat has never seen this user, so
     # they have never bought anything.
     if response.status_code == 404:
-        return SubscriptionTier.SKETOS
+        return SubscriptionTier.FREE
     if response.status_code != 200:
         logger.warning(f"[quota] RevenueCat returned {response.status_code}")
         return None
@@ -218,7 +218,7 @@ def consume_generation(user: User, db: Session) -> None:
 
     # Out of credits on the tier we had cached — the one moment a stale cache
     # actually costs somebody something. A user who upgraded ninety seconds ago
-    # is still SKETOS here, so ask RevenueCat before telling them no.
+    # is still FREE here, so ask RevenueCat before telling them no.
     upgraded = resolve_tier(user, db, force=True)
     if upgraded != tier and _try_consume(user, limit_for(upgraded), db):
         return
@@ -227,7 +227,7 @@ def consume_generation(user: User, db: Session) -> None:
     resets_at = user.usage_period_started_at + PERIOD
     message = (
         f"You've used all {limit} free generations. Upgrade to Pro to keep going."
-        if upgraded == SubscriptionTier.SKETOS
+        if upgraded == SubscriptionTier.FREE
         else f"You've hit this period's limit of {limit} generations."
     )
     raise HTTPException(
