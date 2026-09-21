@@ -1,7 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import { MIGRATIONS, TableName } from "./schema";
 
-const DATABASE_NAME = "sailor.db";
+const DATABASE_NAME = "sailors.db";
 
 /**
  * One connection for the whole app, opened lazily.

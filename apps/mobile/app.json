@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Sailor",
-    "slug": "sailor",
+    "name": "Sailors",
+    "slug": "sailors",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sailor",
+    "scheme": "sailors",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/sailor.icon",
-      "bundleIdentifier": "com.sailor.presentation",
+      "icon": "./assets/sailors.icon",
+      "bundleIdentifier": "com.sailors.presentation",
       "appleTeamId": "MY2RYL82UV",
       "deploymentTarget": "17.0"
     },
@@ -21,7 +21,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.sailor.presentation",
+      "package": "com.sailors.presentation",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
@@ -131,7 +131,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.sailor.presentation",
+          "groupIdentifier": "group.com.sailors.presentation",
           "widgets": [
             {
               "name": "TodaysPracticeWidget",

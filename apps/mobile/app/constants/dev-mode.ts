@@ -5,7 +5,7 @@ export const DEV_MODE = true;
 // Dev user data - used when DEV_MODE is true
 export const DEV_USER: User = {
   id: "dev-user-1",
-  email: "dev@sailor.com",
+  email: "dev@sailors.com",
   name: "Dev User",
   avatarUrl: undefined,
   createdAt: new Date().toISOString(),

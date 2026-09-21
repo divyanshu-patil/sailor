@@ -95,7 +95,7 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
     ? typeof rawLabel === "string" && rawLabel.length > 0
       ? rawLabel
       : "Day Streak"
-    : "Open Sailor";
+    : "Open Sailors";
 
   const rawNote = props.note;
   const note = typeof rawNote === "string" ? rawNote : "";
@@ -125,7 +125,7 @@ function Streak(props: StreakProps, environment: WidgetEnvironment) {
   const link =
     typeof rawLink === "string" && rawLink.length > 0
       ? rawLink
-      : "sailor://daily-practice";
+      : "sailors://daily-practice";
 
   // The fallback symbol matches whichever state the art failed to arrive for,
   // so a missing PNG degrades to the right idea rather than always to a flame.

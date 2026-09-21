@@ -5,7 +5,7 @@ from app.config.settings import settings
 import app.models
 
 celery_app = Celery(
-    "sailor",
+    "sailors",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[

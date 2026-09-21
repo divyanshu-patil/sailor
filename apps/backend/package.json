@@ -1,5 +1,5 @@
 {
-  "name": "@sailor/backend",
+  "name": "@sailors/backend",
   "version": "0.0.1",
   "scripts": {
     "dev": "docker compose up -d && uv run fastapi dev main.py --port 3000 --host 0.0.0.0",

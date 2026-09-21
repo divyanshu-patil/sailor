@@ -62,7 +62,7 @@ const OnboardingSetupScreen = () => {
       >
         <View style={styles.body}>
           <Text style={styles.eyebrow}>Step 1 of 2</Text>
-          <Text style={styles.heading}>Welcome to Sailor</Text>
+          <Text style={styles.heading}>Welcome to Sailors</Text>
           <Text style={styles.subtitle}>
             This is a temporary onboarding screen. Tap below to finish
             onboarding and continue to profile setup.

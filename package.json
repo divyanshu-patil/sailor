@@ -1,13 +1,13 @@
 {
-  "name": "sailor-monorepo",
+  "name": "sailors-monorepo",
   "private": true,
   "scripts": {
     "postinstall": "cd apps/backend && uv sync",
-    "dev": "turbo run dev --filter=sailor --filter=@sailor/backend",
-    "run:backend": "turbo run @sailor/backend#dev @sailor/backend#celery @sailor/backend#docker",
-    "run:celery": "turbo run celery --filter=@sailor/backend",
-    "dev:android": "turbo run sailor#android @sailor/backend#dev @sailor/backend#celery @sailor/backend#redis",
-    "dev:ios": "turbo run sailor#ios @sailor/backend#dev @sailor/backend#celery @sailor/backend#docker",
+    "dev": "turbo run dev --filter=sailors --filter=@sailors/backend",
+    "run:backend": "turbo run @sailors/backend#dev @sailors/backend#celery @sailors/backend#docker",
+    "run:celery": "turbo run celery --filter=@sailors/backend",
+    "dev:android": "turbo run sailors#android @sailors/backend#dev @sailors/backend#celery @sailors/backend#redis",
+    "dev:ios": "turbo run sailors#ios @sailors/backend#dev @sailors/backend#celery @sailors/backend#docker",
     "db:update": "cd ./apps/backend && uv run alembic upgrade head && cd ../..",
     "quota": "cd ./apps/backend && uv run python -m scripts.quota",
     "ios": "turbo run ios",
@@ -15,7 +15,7 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "practice:regenerate": "pnpm --filter=@sailor/backend practice:regenerate"
+    "practice:regenerate": "pnpm --filter=@sailors/backend practice:regenerate"
   },
   "devDependencies": {
     "prettier": "^3.1.1",

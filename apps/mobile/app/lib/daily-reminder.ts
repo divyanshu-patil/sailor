@@ -18,7 +18,7 @@ import { usePreferenceStore } from "@/store/preference-store";
 const IDENTIFIER = "daily-practice-reminder";
 
 /** Fires the reminder even while the app is foregrounded — otherwise a user who
- *  happens to have Sailor open at 18:00 silently loses that day's nudge. */
+ *  happens to have Sailors open at 18:00 silently loses that day's nudge. */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -71,7 +71,7 @@ export async function syncDailyReminder(
       title: "Today's practice",
       body: "Two sentences, ten seconds. Keep the streak going.",
       // Read by the notification tap handler in routes/_layout to deep-link.
-      data: { url: "sailor://daily-practice" },
+      data: { url: "sailors://daily-practice" },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,

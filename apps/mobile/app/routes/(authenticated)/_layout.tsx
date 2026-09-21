@@ -18,14 +18,14 @@ export default function AuthenticatedLayout() {
           headerShown: false,
           // A named default, so a screen added here without options shows
           // something readable instead of its folder name.
-          title: "Sailor",
+          title: "Sailors",
         }}
       >
         {/* Every screen carries an explicit `title`. With headers hidden here
             it is not drawn, but it is still what a child stack's back chevron
             and any system UI read — and the fallback is the raw segment, which
             is how "(tabs)" ended up on screen. */}
-        <Stack.Screen name="(tabs)" options={{ title: "Sailor" }} />
+        <Stack.Screen name="(tabs)" options={{ title: "Sailors" }} />
         <Stack.Screen name="(script)" options={{ title: "Scripts" }} />
         {/* Sibling of (tabs), not a child: pushing Discover covers the tab bar,
             which is what keeps its floating bottom search toolbar from landing

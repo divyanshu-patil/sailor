@@ -81,7 +81,7 @@ const ProfilePictureStep = ({
 
           <Text style={styles.heading}>Make it yours</Text>
           <Text style={styles.subtitle}>
-            Add a profile picture, or let Sailor create one for you.
+            Add a profile picture, or let Sailors create one for you.
           </Text>
         </View>
 

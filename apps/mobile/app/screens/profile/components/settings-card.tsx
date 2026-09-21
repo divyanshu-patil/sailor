@@ -47,7 +47,7 @@ const ITEMS: MenuItem[] = [
     icon: "document-text-outline",
     iconBgColor: PROFILE_PASTELS.mint,
     label: "Terms of Service",
-    caption: "How Sailor works",
+    caption: "How Sailors works",
     pathname: "/(authenticated)/(tabs)/(profile)/terms-of-service",
   },
   {

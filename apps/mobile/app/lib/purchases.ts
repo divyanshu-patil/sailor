@@ -95,7 +95,7 @@ export interface ActivePlan {
   isSandbox: boolean;
 }
 
-/** "sailor_pro_yearly" -> "Sailor Pro Yearly". Last resort only. */
+/** "sailor_pro_yearly" -> "Sailors Pro Yearly". Last resort only. */
 const titleiseProductId = (id: string) =>
   id
     .split(/[.:_-]+/)

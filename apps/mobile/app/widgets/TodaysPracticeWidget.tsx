@@ -117,7 +117,7 @@ function TodaysPractice(
   const hasContent = typeof rawLiner === "string" && rawLiner.length > 0;
   const oneLiner = hasContent
     ? `“${rawLiner}”`
-    : "Open Sailor to load today's practice.";
+    : "Open Sailors to load today's practice.";
 
   const rawTip = props.tip;
   const tip = typeof rawTip === "string" && rawTip.length > 0 ? rawTip : "";
@@ -156,7 +156,7 @@ function TodaysPractice(
         clipped(),
         // One tap target for the whole widget, which is what WidgetKit supports
         // for systemSmall/systemMedium anyway.
-        widgetURL("sailor://daily-practice"),
+        widgetURL("sailors://daily-practice"),
       ]}
     >
       {/* Edge to edge, corner to corner: organic shapes and a confetti curl,

@@ -1,4 +1,4 @@
-// Authentication types for the Sailor app
+// Authentication types for the Sailors app
 
 export interface User {
   id: string;

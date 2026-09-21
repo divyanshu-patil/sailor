@@ -25,7 +25,7 @@ interface StreakWidgetSectionProps {
  * The streak widget's background.
  *
  * The app's deck palette rather than a new set of colours: these are already the
- * shades the rest of Sailor is designed against, and a widget is the one surface
+ * shades the rest of Sailors is designed against, and a widget is the one surface
  * where a colour nobody vetted sits next to the user's wallpaper all day.
  */
 export function StreakWidgetSection({

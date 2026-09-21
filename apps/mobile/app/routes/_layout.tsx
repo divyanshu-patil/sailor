@@ -81,7 +81,7 @@ function PurchasesSetup() {
 /**
  * Opens daily practice when the reminder is tapped.
  *
- * Expo Router resolves `sailor://daily-practice` on its own for a URL the OS
+ * Expo Router resolves `sailors://daily-practice` on its own for a URL the OS
  * hands to the app, but a notification response isn't one of those — the URL is
  * in the payload, and something has to read it. Handled here rather than in the
  * screen because the app is usually cold when this fires.
@@ -211,7 +211,7 @@ function InitialLayout() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Sailor" }} />
+      <Stack.Screen name="index" options={{ title: "Sailors" }} />
 
       <Stack.Protected guard={!hasSeenOnboarding}>
         <Stack.Screen name="(onboarding)" options={{ title: "Welcome" }} />
@@ -251,7 +251,7 @@ function InitialLayout() {
           hasCompletedProfileSetup
         }
       >
-        <Stack.Screen name="(authenticated)" options={{ title: "Sailor" }} />
+        <Stack.Screen name="(authenticated)" options={{ title: "Sailors" }} />
       </Stack.Protected>
     </Stack>
   );

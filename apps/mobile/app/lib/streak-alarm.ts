@@ -121,7 +121,7 @@ export async function syncStreakAlerts(
           title: alert.title(target.count),
           body: alert.body(target.count),
           sound: true,
-          data: { url: "sailor://daily-practice" },
+          data: { url: "sailors://daily-practice" },
           interruptionLevel: "timeSensitive",
         },
         trigger: {

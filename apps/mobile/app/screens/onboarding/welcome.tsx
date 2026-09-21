@@ -20,7 +20,7 @@ const WelcomeScreen = () => {
         <View style={styles.logo}>
           <Text style={styles.logoText}>S</Text>
         </View>
-        <Text style={styles.title}>Sailor</Text>
+        <Text style={styles.title}>Sailors</Text>
         <Text style={styles.subtitle}>Your journey starts here</Text>
       </View>
 

@@ -21,7 +21,7 @@ export function useLogout() {
   };
 
   const confirmLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout of Sailor?", [
+    Alert.alert("Logout", "Are you sure you want to logout of Sailors?", [
       { text: "Cancel", style: "cancel" },
       { text: "Logout", style: "destructive", onPress: performLogout },
     ]);

@@ -258,7 +258,7 @@ const STATE_PRESENTATION = {
     icon: "flame",
     mascot: ART.mascotAlive,
     notes: STREAK_NOTES,
-    link: "sailor://daily-practice",
+    link: "sailors://daily-practice",
   },
   atRisk: {
     icon: "hourglass",
@@ -269,7 +269,7 @@ const STATE_PRESENTATION = {
       "Don't lose\nit now!",
       "One practice\nkeeps it.",
     ],
-    link: "sailor://daily-practice",
+    link: "sailors://daily-practice",
   },
   broken: {
     icon: "broken-heart",
@@ -281,7 +281,7 @@ const STATE_PRESENTATION = {
     ],
     // The one state where the tile is a shortcut to something other than
     // practice: while a restore is still possible, that is the thing to do.
-    link: "sailor://streak-restore",
+    link: "sailors://streak-restore",
   },
   expired: {
     icon: "broken-heart",
@@ -291,7 +291,7 @@ const STATE_PRESENTATION = {
       "New streak,\nstarts today.",
       "Day one is\na good day.",
     ],
-    link: "sailor://daily-practice",
+    link: "sailors://daily-practice",
   },
 } as const;
 
@@ -318,7 +318,7 @@ export function syncStreakWidget(
 ): void {
   if (Platform.OS !== "ios") return;
   // No streak yet means the app has nothing to say — leaving the widget on its
-  // "Open Sailor" placeholder is better than pushing a 0 that isn't true.
+  // "Open Sailors" placeholder is better than pushing a 0 that isn't true.
   if (typeof streak?.currentStreak !== "number") return;
 
   // The streak has no date of its own, and `toISOString()` would answer in UTC
