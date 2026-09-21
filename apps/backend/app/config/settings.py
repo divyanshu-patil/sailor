@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # ---- AI provider -----------------------------------------------------
     # Which service generates scripts and cards: "ollama", "anthropic",
-    # "openai", "gemini", or "openrouter". The prompts and the pipeline are
+    # "openai", "groq", "gemini", or "openrouter". The prompts and the pipeline are
     # provider-neutral; only the adapter under services/ai/providers/ differs.
     # Also the fallback when AI_USE_OPENROUTER is on — see below.
     AI_PROVIDER: str = "ollama"
@@ -142,8 +142,11 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
-    # Point at any OpenAI-compatible endpoint (Groq, Together, OpenRouter, a
-    # local server) without needing a separate adapter.
+    GROQ_API_KEY: str = ""
+    # Point at any OpenAI-compatible endpoint (Together, a local server, a
+    # gateway) without needing a separate adapter. Groq had been an example
+    # here and now has its own adapter, because "set a base URL and hope" is a
+    # worse answer than AI_PROVIDER=groq for a provider people actually pick.
     OPENAI_BASE_URL: str = ""
 
     # Superseded by AI_MODEL / AI_FALLBACK_MODEL. Kept so an existing .env keeps

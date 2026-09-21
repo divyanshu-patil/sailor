@@ -193,42 +193,49 @@ A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)
 
 <table>
   <tr>
-    <td width="22%"><b>iPhone app</b></td>
-    <td><img src="https://cdn.simpleicons.org/expo/000020" width="14" align="top" />&nbsp;Expo SDK 57&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/react/61DAFB" width="14" align="top" />&nbsp;React Native 0.86&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/typescript/3178C6" width="14" align="top" />&nbsp;TypeScript&nbsp;&nbsp;&nbsp;Expo Router&nbsp;&nbsp;&nbsp;Reanimated&nbsp;&nbsp;&nbsp;Skia</td>
+    <td width="20%"><b>iPhone app</b></td>
+    <td><img src="https://cdn.simpleicons.org/expo/000020" width="20" align="middle" />&nbsp;Expo SDK 57&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/react/61DAFB" width="20" align="middle" />&nbsp;React Native 0.86&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/typescript/3178C6" width="20" align="middle" />&nbsp;TypeScript&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/expo/000020" width="20" align="middle" />&nbsp;Expo Router&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/software-mansion.png?size=64" width="20" align="middle" />&nbsp;Reanimated&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/shopify/7AB55C" width="20" align="middle" />&nbsp;Skia</td>
   </tr>
   <tr>
     <td><b>Native layer</b></td>
-    <td><img src="https://cdn.simpleicons.org/swift/F05138" width="14" align="top" />&nbsp;SwiftUI via <code>@expo/ui</code>&nbsp;&nbsp;&nbsp;WidgetKit&nbsp;&nbsp;&nbsp;system materials</td>
+    <td><img src="https://cdn.simpleicons.org/swift/F05138" width="20" align="middle" />&nbsp;SwiftUI via <code>@expo/ui</code>&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/apple/000000" width="20" align="middle" />&nbsp;WidgetKit&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/apple/000000" width="20" align="middle" />&nbsp;system materials</td>
   </tr>
   <tr>
     <td><b>API</b></td>
-    <td><img src="https://cdn.simpleicons.org/fastapi/009688" width="14" align="top" />&nbsp;FastAPI&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/python/3776AB" width="14" align="top" />&nbsp;Python 3.14&nbsp;&nbsp;&nbsp;SQLAlchemy&nbsp;&nbsp;&nbsp;Alembic</td>
+    <td><img src="https://cdn.simpleicons.org/fastapi/009688" width="20" align="middle" />&nbsp;FastAPI&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/python/3776AB" width="20" align="middle" />&nbsp;Python 3.14&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/sqlalchemy/D71F00" width="20" align="middle" />&nbsp;SQLAlchemy&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/sqlalchemy/D71F00" width="20" align="middle" />&nbsp;Alembic</td>
   </tr>
   <tr>
     <td><b>Background work</b></td>
-    <td><img src="https://cdn.simpleicons.org/celery/37814A" width="14" align="top" />&nbsp;Celery&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/redis/FF4438" width="14" align="top" />&nbsp;Redis</td>
+    <td><img src="https://cdn.simpleicons.org/celery/37814A" width="20" align="middle" />&nbsp;Celery&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/redis/FF4438" width="20" align="middle" />&nbsp;Redis</td>
   </tr>
   <tr>
     <td><b>Data</b></td>
-    <td><img src="https://cdn.simpleicons.org/postgresql/4169E1" width="14" align="top" />&nbsp;Postgres&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/supabase/3FCF8E" width="14" align="top" />&nbsp;Supabase&nbsp;&nbsp;&nbsp;SQLite on device</td>
+    <td><img src="https://cdn.simpleicons.org/postgresql/4169E1" width="20" align="middle" />&nbsp;Postgres&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/supabase/3FCF8E" width="20" align="middle" />&nbsp;Supabase&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/sqlite/003B57" width="20" align="middle" />&nbsp;SQLite on device</td>
   </tr>
   <tr>
     <td><b>Object storage</b></td>
-    <td><img src="https://cdn.simpleicons.org/minio/C72E49" width="14" align="top" />&nbsp;MinIO&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
+    <td><img src="https://cdn.simpleicons.org/minio/C72E49" width="20" align="middle" />&nbsp;MinIO&nbsp;&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
   </tr>
   <tr>
     <td><b>Identity &amp; billing</b></td>
-    <td><img src="https://cdn.simpleicons.org/clerk/6C47FF" width="14" align="top" />&nbsp;Clerk&nbsp;&nbsp;&nbsp;<img src="https://github.com/RevenueCat.png?size=32" width="14" align="top" />&nbsp;RevenueCat</td>
+    <td><img src="https://cdn.simpleicons.org/clerk/6C47FF" width="20" align="middle" />&nbsp;Clerk&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/RevenueCat.png?size=64" width="20" align="middle" />&nbsp;RevenueCat</td>
   </tr>
   <tr>
     <td><b>Models</b></td>
-    <td>OpenRouter first, then&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/anthropic/D97757" width="14" align="top" />&nbsp;Anthropic&nbsp;&nbsp;&nbsp;OpenAI&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/googlegemini/8E75B2" width="14" align="top" />&nbsp;Gemini&nbsp;&nbsp;&nbsp;Groq&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/ollama/000000" width="14" align="top" />&nbsp;Ollama</td>
+    <td><img src="https://cdn.simpleicons.org/openrouter/6566F1" width="20" align="middle" />&nbsp;<b>OpenRouter</b> first, then&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/ollama/000000" width="20" align="middle" />&nbsp;Ollama&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/anthropic/D97757" width="20" align="middle" />&nbsp;Anthropic&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/openai.png?size=64" width="20" align="middle" />&nbsp;OpenAI&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://cdn.simpleicons.org/googlegemini/8E75B2" width="20" align="middle" />&nbsp;Gemini&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://github.com/groq.png?size=64" width="20" align="middle" />&nbsp;Groq</td>
   </tr>
   <tr>
     <td><b>Monitoring</b></td>
-    <td><img src="https://cdn.simpleicons.org/sentry/362D59" width="14" align="top" />&nbsp;Sentry</td>
+    <td><img src="https://cdn.simpleicons.org/sentry/362D59" width="20" align="middle" />&nbsp;Sentry</td>
   </tr>
 </table>
+
+> [!NOTE]
+> **Script generation is tested on [Ollama](https://ollama.com/)** — it is the default
+> provider (`AI_PROVIDER=ollama`), so the whole pipeline runs against a model on your own
+> machine: brief in, structured script and practice cards out, no API key and no bill. The
+> hosted providers are the same code path behind a different adapter — swap
+> `AI_PROVIDER` and the pipeline does not notice.
 
 **Three things worth knowing about the shape of it**
 

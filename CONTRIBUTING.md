@@ -166,9 +166,9 @@ Everything the app reads goes through `app/lib/config/env.ts`, which throws on a
 | `CLERK_WEBHOOK_SIGNING_SECRET` | ✅ | Clerk → webhooks, verified with Svix |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server-side only. Never put these in the app. |
 | `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_PORT`, `MINIO_PUBLIC_ENDPOINT`, `MINIO_PUBLIC_SECURE` | ✅ | Object storage for recordings and attachments |
-| `AI_PROVIDER` | ✅ | `openai`, `gemini` or `openrouter` |
+| `AI_PROVIDER` | ✅ | `ollama` (the default — runs locally, no key), `anthropic`, `openai`, `groq`, `gemini` or `openrouter` |
 | `OPENROUTER_API_KEY`, `AI_USE_OPENROUTER`, `OPENROUTER_MODEL`, `OPENROUTER_FALLBACK_MODEL` | — | On by default; free models are tried first and fall through to `AI_PROVIDER` |
-| `OPENAI_API_KEY` / `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OLLAMA_HOST` | — | Whichever provider you configured |
+| `OPENAI_API_KEY` / `GROQ_API_KEY` / `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OLLAMA_HOST` | — | Whichever provider you configured |
 | `REVENUECAT_API_KEY`, `REVENUECAT_ENTITLEMENT_ID` | — | Server-side entitlement checks |
 | `FREE_MONTHLY_GENERATIONS`, `PRO_MONTHLY_GENERATIONS` | — | Both default to `-1`, meaning unlimited — usage is counted, nothing is refused. A positive number puts a cap back on with no code change. |
 | `DAILY_PRACTICE_ADMIN_SECRET` | — | Guards the daily-content refill endpoint |
