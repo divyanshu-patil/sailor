@@ -3,6 +3,7 @@ import { Section, Toggle, DatePicker } from "@expo/ui/swift-ui";
 import { tint } from "@expo/ui/swift-ui/modifiers";
 import { UserPreferences } from "@/types/settings/preferences";
 import { usePreferenceStore } from "@/hooks";
+import { haptics } from "@/lib/haptics";
 import { colord } from "colord";
 
 function timeStringToDate(time: string): Date {
@@ -43,13 +44,27 @@ export function PracticeSection({
     <Section title="Practice">
       <Toggle
         isOn={emotionHapticsEnabled}
-        onIsOnChange={(value) => onUpdate("emotionHapticsEnabled", value)}
+        onIsOnChange={(value) => {
+          onUpdate("emotionHapticsEnabled", value);
+          // Only on the way on, and after the store write so Pulsar's global
+          // switch is already back open — this doubles as the preview of what
+          // was just turned on. Switching off stays silent, which is the only
+          // honest answer to "no haptics please".
+          if (value) haptics.toggleOn();
+        }}
         label="Emotion Haptics"
         modifiers={[tint(appearanceColor)]}
       />
       <Toggle
         isOn={practiceRemindersEnabled}
-        onIsOnChange={(value) => onUpdate("practiceRemindersEnabled", value)}
+        onIsOnChange={(value) => {
+          onUpdate("practiceRemindersEnabled", value);
+          if (value) {
+            haptics.toggleOn();
+          } else {
+            haptics.toggleOff();
+          }
+        }}
         label="Practice Reminders"
         modifiers={[tint(appearanceColor)]}
       />

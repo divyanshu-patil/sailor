@@ -31,6 +31,7 @@ import {
   getCachedAudioUri,
 } from "@/utils/audio-cache";
 import { fonts } from "@/constants/fonts";
+import { haptics } from "@/lib/haptics";
 
 interface RecordButtonProps {
   onPress?: () => void;
@@ -248,6 +249,7 @@ const RecordButton = React.memo(
 
     /** Start a take, having already cleared permissions and any prior audio. */
     const beginRecording = async () => {
+      haptics.recordStart();
       isRecordingBool.value = true;
       isRecording.value = withTiming(1, {
         duration: 350,
@@ -301,7 +303,13 @@ const RecordButton = React.memo(
               {
                 text: "Replace",
                 style: "destructive",
-                onPress: () => void discardExisting().then(beginRecording),
+                onPress: () => {
+                  // The old take is about to be thrown away. `beginRecording`
+                  // plays its own start cue a moment later, so the two read as
+                  // "gone, now going again" rather than one ambiguous buzz.
+                  haptics.destroy();
+                  void discardExisting().then(beginRecording);
+                },
               },
             ],
           );
@@ -336,6 +344,7 @@ const RecordButton = React.memo(
     };
 
     const handlePause = async () => {
+      haptics.recordPause();
       setPaused((prev) => {
         const next = !prev;
         if (next) {
@@ -358,6 +367,7 @@ const RecordButton = React.memo(
     };
 
     const handleRecStop = async () => {
+      haptics.recordStop();
       isPaused.value = false;
       isRecordingBool.value = false;
       isStopped.value = true;
@@ -397,7 +407,11 @@ const RecordButton = React.memo(
           console.log("cache recording failed", e);
         }
         setSaved(true);
+        // The take is kept. Bigger than a tap, smaller than the streak — this
+        // is the moment the recording stops being provisional.
+        haptics.successBig();
       } catch (e: any) {
+        haptics.error();
         Alert.alert(
           "Upload Failed",
           e?.response?.data?.detail ??
@@ -419,6 +433,9 @@ const RecordButton = React.memo(
             text: "Delete",
             style: "destructive",
             onPress: async () => {
+              // Fires on the confirm, not on opening the dialog: the tap that
+              // raised the alert has not destroyed anything yet.
+              haptics.destroy();
               // single re-render
               setRecordingUri(null);
               setFinished(false);

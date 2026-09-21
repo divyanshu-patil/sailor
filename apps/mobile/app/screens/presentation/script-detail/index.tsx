@@ -34,6 +34,8 @@ import { usePublicDeck } from "@/hooks/use-public-deck";
 import { publicDeckService } from "@/services/public-deck.service";
 import { fonts } from "@/constants/fonts";
 
+import { haptics } from "@/lib/haptics";
+
 type ScriptDetailParams = {
   id: string;
   title: string;
@@ -169,6 +171,7 @@ export default function ScriptDetailScreen() {
           text: "Remove",
           style: "destructive",
           onPress: () => {
+            haptics.destroy();
             void unpublish();
           },
         },
@@ -197,14 +200,38 @@ export default function ScriptDetailScreen() {
     });
   };
 
-  const handleDelete = async () => {
+  /**
+   * Delete the deck, behind a confirmation.
+   *
+   * This used to fire straight from the toolbar button, so one mis-tap next to
+   * the practice and prompter actions destroyed the script, its cards and its
+   * recording with nothing to undo it — and, unlike unpublishing above, nothing
+   * to restore it from either. The deck's own title is in the prompt so the
+   * answer is to *this* script rather than to a generic warning.
+   */
+  const handleDelete = () => {
     if (isDeleting) return;
-    // Only leave the screen if the delete actually went through. `!== undefined`
-    // was true for `false` as well, so a failed delete still popped the screen
-    // and the deck reappeared in the grid a moment later.
-    if (await deleteDeck()) {
-      router.back();
-    }
+    Alert.alert(
+      "Delete this script?",
+      `"${currentScript.title}" and its cards and recording will be deleted. This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            haptics.destroy();
+            // Only leave the screen if the delete actually went through.
+            // `!== undefined` was true for `false` as well, so a failed delete
+            // still popped the screen and the deck reappeared in the grid a
+            // moment later.
+            if (await deleteDeck()) {
+              router.back();
+            }
+          },
+        },
+      ],
+    );
   };
 
   useEffect(() => {

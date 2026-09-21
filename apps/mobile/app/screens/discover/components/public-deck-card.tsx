@@ -15,6 +15,7 @@ import { PublicDeck } from "@/services/public-deck.service";
 import { deckCardColors } from "@/utils/deck-colors";
 import { COLUMN_GAP } from "@/screens/presentation/decks/components/constants";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import { weight } from "@/lib/haptics";
 
 /**
  * Two springs, two jobs.
@@ -74,13 +75,15 @@ export const PublicDeckCard = memo(
             public: "1",
           },
         }}
+        // On the Link rather than the Pressable inside it: `asChild` renders a
+        // Slot that hands its own onPress down, so one set here would be
+        // dropped. Link composes — ours runs, then it navigates.
+        onPress={weight.tap}
         asChild
       >
         <Link.AppleZoom>
           <AnimatedPressable
             style={animatedStyle}
-            // Feedback on press-down, not on release: waiting for the tap to
-            // commit is what makes a card feel dead under the finger.
             onPressIn={() => {
               pressed.value = withSpring(1, PRESS_SPRING);
             }}

@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { Presets } from "react-native-pulsar";
+import { weight } from "@/lib/haptics";
 import Animated, {
   type SharedValue,
   interpolate,
@@ -207,7 +207,7 @@ export default function StepOutput({
     (id: number) => {
       setOpenId(id);
       onFocusChange(true);
-      Presets.System.impactSoft();
+      weight.press();
       open.value = withSpring(1, OPEN_SPRING);
     },
     [onFocusChange, open],

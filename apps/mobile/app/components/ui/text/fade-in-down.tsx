@@ -167,7 +167,15 @@ export default function FadeInDownText({
 const styles = StyleSheet.create({
   line: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    // No wrapping. Each character is its own view here, so words are held
+    // together by the `word` rows below but the gaps between them are real
+    // flex boundaries — with `wrap` on, a two-word label like "Try again"
+    // breaks across two lines as soon as the measured width is tight, which
+    // is what it did inside the generation overlay's CTA. The only consumer
+    // is a short button label, so a single line is always what is wanted;
+    // the pressable already clips (`overflow: "hidden"`) if one ever is too
+    // long, which is a better failure than a two-line pill.
+    flexWrap: "nowrap",
     alignItems: "flex-end",
   },
   word: {

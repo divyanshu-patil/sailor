@@ -12,6 +12,7 @@ import { Link } from "expo-router";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { DeckItem } from "@/services/deck.service";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import { weight } from "@/lib/haptics";
 import Spacer from "@/components/ui/shared/spacer";
 import { fonts } from "@/constants/fonts";
 
@@ -59,6 +60,10 @@ const Card = React.memo(({ item }: { item: DeckItem }) => {
             isFavourite: JSON.stringify(item.isFavourite),
           },
         }}
+        // On the Link rather than the Pressable inside it: `asChild` renders a
+        // Slot that hands its own onPress down, so one set there would be
+        // dropped. Link composes — ours runs, then it navigates.
+        onPress={weight.tap}
         asChild
       >
         <Link.AppleZoom>

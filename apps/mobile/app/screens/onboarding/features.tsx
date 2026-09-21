@@ -3,6 +3,8 @@ import React from "react";
 import { useRouter } from "expo-router";
 import { useOnboardingStore } from "@/store/onboarding.store";
 
+import { weight } from "@/lib/haptics";
+
 
 const features = [
   {
@@ -63,11 +65,21 @@ const FeaturesScreen = () => {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleContinue}>
+        <TouchableOpacity style={styles.primaryButton}
+          onPress={() => {
+            weight.press();
+            handleContinue();
+          }}
+        >
           <Text style={styles.primaryButtonText}>Continue</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.linkButton} onPress={handleSkip}>
+        <TouchableOpacity style={styles.linkButton}
+          onPress={() => {
+            weight.tap();
+            handleSkip();
+          }}
+        >
           <Text style={styles.linkText}>Skip</Text>
         </TouchableOpacity>
       </View>

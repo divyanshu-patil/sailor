@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Platform, StyleSheet, View } from "react-native";
 
+import { haptics } from "@/lib/haptics";
+
 /**
  * Sign in with Apple — Expo + Clerk
  * -----------------------------------------------------------------------
@@ -85,6 +87,7 @@ export function AppleSignInButton({
       const { createdSessionId, setActive } =
         await startAppleAuthenticationFlow();
       if (createdSessionId && setActive) {
+        haptics.successBig();
         await setActive({ session: createdSessionId });
         if (onSignInComplete) {
           onSignInComplete();
@@ -95,6 +98,7 @@ export function AppleSignInButton({
     } catch (err: any) {
       // User dismissed the Apple auth sheet — not a real error.
       if (err.code === "ERR_REQUEST_CANCELED") return;
+      haptics.error();
       Alert.alert(
         "Error",
         err.message || "An error occurred during Apple sign-in",

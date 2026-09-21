@@ -13,6 +13,7 @@ import { paletteColorAt } from "@/constants/deck-palette";
 import { fonts } from "@/constants/fonts";
 import { deckCardColors } from "@/utils/deck-colors";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
+import { haptics } from "@/lib/haptics";
 import {
   COLUMN_GAP,
   SCREEN_PADDING,
@@ -124,7 +125,10 @@ const Chip = ({
       onPressOut={() => {
         pressed.value = withSpring(0, PRESS_SPRING);
       }}
-      onPress={onPress}
+      onPress={() => {
+        haptics.select();
+        onPress();
+      }}
     >
       {isActive && color ? (
         // The selected chip is solid, not glass: it's the one element here that

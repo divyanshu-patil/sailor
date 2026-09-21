@@ -1,10 +1,11 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { colord } from "colord";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { fonts } from "@/constants/fonts";
 import { useDeck } from "@/hooks";
+import { haptics } from "@/lib/haptics";
 import ScriptText from "../generation/preview/components/script-text/script-text";
 
 type ScriptTextParams = {
@@ -22,6 +23,21 @@ const ScriptTextScreen = () => {
   // "No script found." The script comes off the deck row now — from SQLite on
   // the first frame, refreshed from the detail endpoint behind it.
   const { script, isLoading } = useDeck({ deckId });
+
+  // Copy has no visible result of its own — the clipboard is off-screen — so
+  // the button reports it by becoming a tick for a second. Long enough to be
+  // read, short enough that the control is back to normal before anyone
+  // reaches for it again.
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 1000);
+    // Cleared on unmount and on a re-copy, so leaving the screen mid-tick
+    // cannot set state on a gone component, and a second copy restarts the
+    // second rather than inheriting what was left of the first.
+    return () => clearTimeout(id);
+  }, [copied]);
 
   const screenColor = colord(color).lighten(0.18).toHex();
   // A `const` rather than a boolean flag so it narrows `string | null` for both
@@ -50,10 +66,17 @@ const ScriptTextScreen = () => {
           }
         />
         <Stack.Toolbar.Button
-          icon={"rectangle.portrait.on.rectangle.portrait"}
-          accessibilityLabel="Copy script"
+          icon={
+            copied ? "checkmark" : "rectangle.portrait.on.rectangle.portrait"
+          }
+          accessibilityLabel={copied ? "Script copied" : "Copy script"}
           disabled={!scriptText}
-          onPress={() => scriptText && Clipboard.setString(scriptText)}
+          onPress={() => {
+            if (!scriptText) return;
+            Clipboard.setString(scriptText);
+            haptics.success();
+            setCopied(true);
+          }}
         />
       </Stack.Toolbar>
       <ScrollView
