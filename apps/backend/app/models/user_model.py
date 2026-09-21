@@ -19,14 +19,28 @@ class UserRole(str, enum.Enum):
 
 
 class SubscriptionTier(str, enum.Enum):
+    """What a user is entitled to -- a cache of their RevenueCat entitlement.
+
+    There is exactly one entitlement, "pro" (settings.REVENUECAT_ENTITLEMENT_ID,
+    and PRO_ENTITLEMENT on the client), so this column has exactly two states
+    and says so in the same words the dashboard does.
+
+    The two plans behind that entitlement -- Wave (monthly) and Voyager
+    (yearly) -- are not tiers and are deliberately absent here. They grant
+    identical access, so a value per plan would be one set of quota rules
+    written twice. Plan names belong to the store product, which is where the
+    client reads them from, so renaming one in the dashboard needs no migration
+    and no release.
+
+    These were sketos/metrios/glykos until b4e17c9a2f83 -- the Greek coffee
+    sweetness scale, a conceit nothing else in the system shared and that every
+    reader had to translate. `glykos` ("team") went with the rename: it had no
+    SKU, no entitlement and no limit of its own, and nothing could ever assign
+    it. A third tier means a real product and a branch in
+    `_tier_from_entitlements`; a placeholder in the enum bought none of that.
     """
-    Named after the traditional Greek coffee sweetness scale, low to high --
-    sketos (plain/unsweetened) -> metrios (medium) -> glykos (sweet).
-    Maps to free -> pro -> team.
-    """
-    SKETOS = "sketos"
-    METRIOS = "metrios"
-    GLYKOS = "glykos"
+    FREE = "free"
+    PRO = "pro"
 
 
 class User(Base):
@@ -101,8 +115,8 @@ class User(Base):
             name="subscription_tier_enum",
             values_callable=lambda enum: [e.value for e in enum],
         ),
-        default=SubscriptionTier.SKETOS,
-        server_default=SubscriptionTier.SKETOS.value,
+        default=SubscriptionTier.FREE,
+        server_default=SubscriptionTier.FREE.value,
         nullable=False,
     )
 
