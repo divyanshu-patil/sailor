@@ -1,5 +1,5 @@
 import { memo, type ComponentProps, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Icon from "@react-native-vector-icons/lucide";
 import Animated, { useSharedValue } from "react-native-reanimated";
 import Svg, { Ellipse, Path } from "react-native-svg";
@@ -14,6 +14,7 @@ import {
   streakDisplay,
   wellFor,
 } from "../theme";
+import PressableScale from "@/components/ui/animated/PressableScale";
 
 /**
  * The decorative shapes that sit in a card's corners.
@@ -144,7 +145,7 @@ export const ActionCard = memo(function ActionCard({
   const well = wellFor(tint);
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${subtitle}`}
@@ -207,7 +208,7 @@ export const ActionCard = memo(function ActionCard({
       </View>
 
       {badge ? <View style={styles.badge}>{badge}</View> : null}
-    </Pressable>
+    </PressableScale>
   );
 });
 
