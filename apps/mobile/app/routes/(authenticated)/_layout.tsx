@@ -37,6 +37,23 @@ export default function AuthenticatedLayout() {
           name="daily-practice"
           options={{ title: "Daily Practice" }}
         />
+        {/* A sibling of (tabs), like discover and daily-practice: pushing it
+            covers the tab bar. Deciding whether to cancel is not a place to
+            be offered four other tabs, and the illustration needs the whole
+            screen. The header is the system's, transparent, so the back
+            chevron and the swipe-back gesture are the native ones. */}
+        <Stack.Screen
+          name="cancel-subscription"
+          options={{
+            title: "Cancel Subscription",
+            headerShown: true,
+            headerTransparent: true,
+            headerTitle: "",
+            headerShadowVisible: false,
+            headerBackButtonDisplayMode: "minimal",
+            headerTintColor: "#141414",
+          }}
+        />
         {/* Its own screen rather than a modal: the reveal animation runs edge
             to edge and a sheet's inset corners would crop it. The header is
             transparent so the expanding circle passes under the chevron. */}

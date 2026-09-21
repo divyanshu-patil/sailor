@@ -6,6 +6,8 @@ import { Canvas, Path, Skia } from "@shopify/react-native-skia";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 import ShimmerBar from "@/components/ui/shared/shimmer-bar";
+import ShimmerOverlay from "@/components/ui/shared/shimmer-overlay";
+import { fonts } from "@/constants/fonts";
 import { PROFILE, PROFILE_PASTELS, profileFonts } from "../theme";
 
 /** Fixed, so the skeleton and the real pill occupy the same box. */
@@ -13,8 +15,13 @@ const STATUS_PILL_HEIGHT = 32;
 
 interface SubscriptionCardProps {
   planName: string;
+  /** "Monthly", "Annual" — the billing period, when the store names one. The
+   *  plan names say nothing about how often they bill, so this does. */
+  periodLabel?: string | null;
   description: string;
   statusLabel: string;
+  /** Sweep a sheen across the plan name. On for a paid plan. */
+  shimmerName?: boolean;
   /**
    * A customer-info read is in flight, so what the store knows about the plan
    * is not final yet. The pill becomes a skeleton and the button a spinner
@@ -33,8 +40,10 @@ interface SubscriptionCardProps {
  */
 const SubscriptionCard = memo(function SubscriptionCard({
   planName,
+  periodLabel,
   description,
   statusLabel,
+  shimmerName = false,
   loading = false,
   onManagePress,
 }: SubscriptionCardProps) {
@@ -65,7 +74,26 @@ const SubscriptionCard = memo(function SubscriptionCard({
           size={22}
           color={PROFILE.ink}
         />
-        <Text style={styles.title}>{planName}</Text>
+        {/* A sheen across the name itself, masked to the glyphs. Only for a
+            paid plan — shimmering "Basic" would be selling the thing they
+            already declined. */}
+        {shimmerName ? (
+          <ShimmerOverlay baseColor={PROFILE.ink} highlightColor="#C9A227">
+            <Text style={styles.title} numberOfLines={1}>
+              {planName}
+            </Text>
+          </ShimmerOverlay>
+        ) : (
+          <Text style={styles.title} numberOfLines={1}>
+            {planName}
+          </Text>
+        )}
+
+        {periodLabel ? (
+          <View style={styles.periodChip}>
+            <Text style={styles.periodText}>{periodLabel}</Text>
+          </View>
+        ) : null}
       </View>
 
       <Text style={styles.description}>{description}</Text>
@@ -143,12 +171,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    // The squiggle lives in the top-right corner; the name stops before it
+    // rather than running under it.
+    paddingRight: 96,
   },
   title: {
-    fontFamily: profileFonts.display,
-    fontSize: 24,
+    // Krona: the plan's name is the one piece of branding on this card, and
+    // it is the face the deck titles already use.
+    fontFamily: fonts.krona,
+    fontSize: 19,
+    lineHeight: 26,
     color: PROFILE.ink,
     letterSpacing: -0.4,
+  },
+  periodChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.7)",
+  },
+  periodText: {
+    fontFamily: profileFonts.semibold,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
+    color: "#6F6A73",
   },
   description: {
     marginTop: 4,
@@ -166,8 +212,8 @@ const styles = StyleSheet.create({
   statusPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
+    gap: 5,
+    paddingHorizontal: 11,
     height: STATUS_PILL_HEIGHT,
 
     borderRadius: 999,
@@ -190,6 +236,7 @@ const styles = StyleSheet.create({
     fontFamily: profileFonts.medium,
     fontSize: 10,
     color: PROFILE.ink,
+    flexShrink: 1,
   },
   manageButton: {
     flexDirection: "row",
@@ -197,9 +244,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     // Holds its size while the spinner is in it. Without this the button
-    // collapsed to a disc on every foreground refresh and sprang back.
-    minWidth: 186,
-    paddingHorizontal: 36,
+    // collapsed to a disc on every foreground refresh and sprang back. Kept
+    // as tight as the label allows: the status beside it is the part that
+    // runs out of room, and "Renews today at 1:10 PM" is a long sentence.
+    minWidth: 150,
+    paddingHorizontal: 20,
     paddingVertical: 18,
     borderRadius: 999,
     backgroundColor: PROFILE.ink,

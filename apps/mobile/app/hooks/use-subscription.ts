@@ -46,6 +46,9 @@ export function useRevenueCatBootstrap() {
     // start, and a subscription cancelled on another device would otherwise
     // still look live.
     void useSubscriptionStore.getState().refresh(true);
+    // The offering carries the store products, which is where a plan's name
+    // and its billing period live — the customer info only says "pro".
+    void useSubscriptionStore.getState().loadOffering();
 
     /**
      * Re-read on every foreground, cache bypassed.
@@ -101,12 +104,16 @@ export function useSubscription() {
   const isReady = useSubscriptionStore((s) => s.isReady);
   const isRefreshing = useSubscriptionStore((s) => s.isRefreshing);
   const customerInfo = useSubscriptionStore((s) => s.customerInfo);
+  const offering = useSubscriptionStore((s) => s.offering);
   const restore = useSubscriptionStore((s) => s.restore);
   const refresh = useSubscriptionStore((s) => s.refresh);
 
   // The product actually being paid for, not just "they have Pro". This is what
   // changes when someone switches plan, so it is what the card renders.
-  const plan = useMemo(() => activePlan(customerInfo), [customerInfo]);
+  const plan = useMemo(
+    () => activePlan(customerInfo, offering),
+    [customerInfo, offering],
+  );
 
   const requirePro = useCallback(async () => {
     if (isPro) return true;
@@ -195,9 +202,7 @@ export function useSubscription() {
         // opens the store sheet, once the user has said yes to it.
         text: "Cancel subscription",
         onPress: () =>
-          router.navigate(
-            "/(authenticated)/(tabs)/(profile)/cancel-subscription",
-          ),
+          router.navigate("/(authenticated)/cancel-subscription"),
       },
     ];
     // iOS only: Google has no in-app refund flow, and an option that leads

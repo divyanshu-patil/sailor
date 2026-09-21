@@ -39,8 +39,11 @@ const ScriptTextScreen = () => {
           icon={"text.line.first.and.arrowtriangle.forward"}
           accessibilityLabel="Teleprompter"
           disabled={!scriptText}
+          // `push`, not `navigate`: navigate would reuse an existing
+          // prompter screen and only swap its params, leaving the previous
+          // deck's scroll position and running clock in place.
           onPress={() =>
-            router.navigate({
+            router.push({
               pathname: "/(authenticated)/(script)/teleprompter",
               params: { script: deckId, color },
             })

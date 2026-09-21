@@ -33,12 +33,7 @@ import { useAppUserStore } from "@/store/app-user.store";
 import { useUser } from "@/hooks/use-user";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useSubscription } from "@/hooks/use-subscription";
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-  });
+import { formatRenewal } from "@/utils/format-renewal";
 
 const ProfileScreen = () => {
   const { width, height } = useWindowDimensions();
@@ -257,7 +252,11 @@ const ProfileScreen = () => {
   const planLoading = !isReady || isRefreshing;
   const statusLabel = plan
     ? plan.expirationDate
-      ? `${plan.willRenew ? "Renews" : "Ends"} ${formatDate(plan.expirationDate)}`
+      ? `${plan.willRenew ? "Renews" : "Ends"} ${formatRenewal(plan.expirationDate)}${
+          // Only in a dev build, and only when the store says sandbox: it
+          // explains a renewal date that is minutes away rather than a month.
+          __DEV__ && plan.isSandbox ? " · test" : ""
+        }`
       : "Active"
     : isPro
       ? "Active"
@@ -326,6 +325,8 @@ const ProfileScreen = () => {
           <Animated.View style={[styles.cardWrap, planStyle]}>
             <SubscriptionCard
               planName={planName}
+              periodLabel={plan?.period}
+              shimmerName={isPro}
               description={planDescription}
               statusLabel={statusLabel}
               loading={planLoading}

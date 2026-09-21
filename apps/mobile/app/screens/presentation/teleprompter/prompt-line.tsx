@@ -57,13 +57,16 @@ const PromptLineView = memo(function PromptLineView({
     const end = top.value + height.value;
     const mark = offset.value + focusY.value;
     const distance = mark < start ? start - mark : mark > end ? mark - end : 0;
+    const dim = interpolate(
+      distance,
+      [0, T.falloff],
+      [1, T.dimOpacity],
+      Extrapolation.CLAMP,
+    );
+    // Rounded to steps so most frames produce the value the view already has
+    // and Reanimated skips the native write. See `opacitySteps`.
     return {
-      opacity: interpolate(
-        distance,
-        [0, T.falloff],
-        [1, T.dimOpacity],
-        Extrapolation.CLAMP,
-      ),
+      opacity: Math.round(dim * T.opacitySteps) / T.opacitySteps,
     };
   });
 

@@ -69,22 +69,30 @@ export const hasProEntitlement = (info: CustomerInfo | null): boolean =>
   !!info && info.entitlements.active[PRO_ENTITLEMENT] !== undefined;
 
 /**
- * The subscription behind the Pro entitlement, flattened.
+ * The subscription behind the Pro entitlement, flattened into what a card can
+ * draw: what it is called, how long a cycle is, and when the cycle ends.
  *
- * `name` is the store's own display name for the product, which is the only
- * string that changes when someone switches monthly to yearly — the entitlement
- * identifier is "pro" on both, so a card rendered from the entitlement alone
- * looks identical before and after a plan change. Falls back to the product id
- * tidied up, because the store omits `displayName` on some Play products.
+ * The name comes from the store product rather than the entitlement, because
+ * the entitlement is "pro" on every plan — a card built from it alone looks
+ * identical before and after someone switches. The product is also where a
+ * rename lands: renaming the plans in the dashboard changes this string with
+ * no app release.
  */
 export interface ActivePlan {
   productIdentifier: string;
+  /** The plan's own name — "Wave", "Voyager". */
   name: string;
+  /** "Monthly", "Annual", "Weekly"… or null when the store won't say. */
+  period: string | null;
   expirationDate: string | null;
   willRenew: boolean;
   /** Set once the store knows the user has turned renewal off. */
   unsubscribeDetectedAt: string | null;
   isTrial: boolean;
+  /** Sandbox or Test Store. Those renew on compressed cycles — a "monthly"
+   *  plan can expire minutes after it is bought — which is worth saying out
+   *  loud in a dev build before someone files it as a date bug. */
+  isSandbox: boolean;
 }
 
 /** "sailor_pro_yearly" -> "Sailor Pro Yearly". Last resort only. */
@@ -95,23 +103,75 @@ const titleiseProductId = (id: string) =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
-export function activePlan(info: CustomerInfo | null): ActivePlan | null {
+const PERIOD_BY_PACKAGE_TYPE: Record<string, string> = {
+  WEEKLY: "Weekly",
+  MONTHLY: "Monthly",
+  TWO_MONTH: "2-monthly",
+  THREE_MONTH: "Quarterly",
+  SIX_MONTH: "6-monthly",
+  ANNUAL: "Annual",
+  LIFETIME: "Lifetime",
+};
+
+/** ISO 8601 subscription periods, which is what the stores actually return. */
+const periodFromIso = (iso: string | null | undefined): string | null => {
+  if (!iso) return null;
+  const match = /^P(\d+)([DWMY])$/.exec(iso);
+  if (!match) return null;
+  const [, count, unit] = match;
+  if (count === "1") {
+    return { D: "Daily", W: "Weekly", M: "Monthly", Y: "Annual" }[unit] ?? null;
+  }
+  const noun = { D: "day", W: "week", M: "month", Y: "year" }[unit];
+  return noun ? `Every ${count} ${noun}s` : null;
+};
+
+/** The id is the last resort, and only because some stores name nothing. */
+const periodFromId = (id: string): string | null => {
+  const lower = id.toLowerCase();
+  if (/year|annual|12m/.test(lower)) return "Annual";
+  if (/month|1m|30d/.test(lower)) return "Monthly";
+  if (/week/.test(lower)) return "Weekly";
+  return null;
+};
+
+/**
+ * @param offering the current offering, when it has been loaded. It is what
+ * carries the store product — the plan's name and its billing period — so
+ * without it this falls back to the customer info and then to the product id.
+ */
+export function activePlan(
+  info: CustomerInfo | null,
+  offering?: PurchasesOffering | null,
+): ActivePlan | null {
   const entitlement = info?.entitlements.active[PRO_ENTITLEMENT];
   if (!info || !entitlement) return null;
 
-  const subscription =
-    info.subscriptionsByProductIdentifier?.[entitlement.productIdentifier] ??
-    null;
+  const productId = entitlement.productIdentifier;
+  const subscription = info.subscriptionsByProductIdentifier?.[productId] ?? null;
+  // Google Play appends the base plan to the product id in the entitlement
+  // ("sailor_pro:monthly"), so match on both forms.
+  const pkg = offering?.availablePackages.find(
+    (candidate) =>
+      candidate.product.identifier === productId ||
+      productId.startsWith(`${candidate.product.identifier}:`),
+  );
 
   return {
-    productIdentifier: entitlement.productIdentifier,
+    productIdentifier: productId,
     name:
+      pkg?.product.title?.trim() ||
       subscription?.displayName?.trim() ||
-      titleiseProductId(entitlement.productIdentifier),
+      titleiseProductId(productId),
+    period:
+      (pkg ? PERIOD_BY_PACKAGE_TYPE[pkg.packageType] : undefined) ??
+      periodFromIso(pkg?.product.subscriptionPeriod) ??
+      periodFromId(productId),
     expirationDate: entitlement.expirationDate,
     willRenew: entitlement.willRenew,
     unsubscribeDetectedAt: entitlement.unsubscribeDetectedAt,
     isTrial: entitlement.periodType === "TRIAL",
+    isSandbox: entitlement.isSandbox,
   };
 }
 

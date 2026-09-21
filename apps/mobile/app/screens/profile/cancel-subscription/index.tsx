@@ -13,8 +13,8 @@ import Icon from "@react-native-vector-icons/lucide";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { HandwrittenNote } from "@/components/ui/handwritten-note";
-import { BottomTabInset } from "@/constants/theme";
 import { useSubscription } from "@/hooks/use-subscription";
+import { formatRenewal } from "@/utils/format-renewal";
 import { BottomBlobs } from "@/screens/streak-restore/scenes";
 import { restoreColors, restoreFonts } from "@/screens/streak-restore/theme";
 import { CancelScene } from "./scene";
@@ -48,13 +48,6 @@ const SPARKS = [
   { side: "right", out: 30, top: 52, rotate: "-32deg", h: 16 },
 ] as const;
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
 export default function CancelSubscriptionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -77,29 +70,19 @@ export default function CancelSubscriptionScreen() {
   // the period it was paid for, and saying so is the honest version of "you'll
   // lose access" — most cancel screens leave people thinking it stops now.
   const untilLine = plan?.expirationDate
-    ? `You'll keep Pro until ${formatDate(plan.expirationDate)}, then lose access to premium features.`
+    ? `You'll keep Pro until ${formatRenewal(plan.expirationDate, true)}, then lose access to premium features.`
     : "You'll lose access to premium features at the end of your billing period.";
 
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
 
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        onPress={() => router.back()}
-        hitSlop={10}
-        style={[styles.back, { top: insets.top + 6 }]}
-      >
-        <Icon name="arrow-left" size={22} color={C.ink} />
-      </PressableScale>
-
       <HandwrittenNote
         lines={["Sad to", "see you go..."]}
         arrowSize={46}
         color={C.note}
         fontSize={15}
-        style={{ left: 16, top: insets.top + 56 }}
+        style={{ left: 16, top: insets.top + 44 }}
       />
       <HandwrittenNote
         lines={["It's okay!", "You can always", "come back."]}
@@ -107,7 +90,7 @@ export default function CancelSubscriptionScreen() {
         color={C.note}
         fontSize={15}
         flip
-        style={{ right: 16, top: insets.top + 44 }}
+        style={{ right: 16, top: insets.top + 34 }}
       />
 
       <View style={styles.bottomBlobs} pointerEvents="none">
@@ -117,7 +100,7 @@ export default function CancelSubscriptionScreen() {
       {/* Scene and copy in flow, the same stage-then-footer shape the restore
           screen settled on — it is what keeps the two from overlapping on a
           short phone. */}
-      <View style={[styles.stage, { paddingTop: insets.top + 110 }]}>
+      <View style={[styles.stage, { paddingTop: insets.top + 96 }]}>
         <View pointerEvents="none">
           <CancelScene width={W} />
         </View>
@@ -127,14 +110,8 @@ export default function CancelSubscriptionScreen() {
         </View>
       </View>
 
-      {/* This screen is pushed inside the profile tab, so the tab bar is
-          still there — the footer and the note below it both have to clear
-          it, the same way every other screen in this stack does. */}
       <View
-        style={[
-          styles.footer,
-          { paddingBottom: insets.bottom + BottomTabInset + 24 },
-        ]}
+        style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}
       >
         <View style={styles.buttonRow}>
           {SPARKS.map((spark, i) => (
@@ -182,26 +159,19 @@ export default function CancelSubscriptionScreen() {
         </PressableScale>
       </View>
 
-      {/* The design's third aside, bottom left, is not here: this screen is
-          pushed inside the tab bar, so the corner it wants belongs to the
-          tabs. Two notes carry the same voice without crowding the button. */}
+      <HandwrittenNote
+        lines={["Same you,", "brighter days", "ahead."]}
+        arrowSize={38}
+        color={C.note}
+        fontSize={13}
+        style={{ left: 12, bottom: insets.bottom + 152 }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-  back: {
-    position: "absolute",
-    left: 16,
-    zIndex: 2,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F2E8DA",
-  },
   bottomBlobs: { position: "absolute", left: 0, right: 0, bottom: 0 },
 
   stage: {

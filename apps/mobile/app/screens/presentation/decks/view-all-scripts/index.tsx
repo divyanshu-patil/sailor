@@ -20,9 +20,6 @@ import Animated, {
   useAnimatedScrollHandler,
   interpolate,
   Extrapolation,
-  FadeIn,
-  FadeOut,
-  LinearTransition,
 } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
@@ -116,16 +113,18 @@ const AllScriptsScreen = () => {
     transformOrigin: ["50%", "100%", 0],
   }));
 
+  /**
+   * No layout animation wrapper.
+   *
+   * `LinearTransition` + `FadeIn`/`FadeOut` around a recycled cell animates
+   * on recycle, not just on insert: every row scrolled into view started a
+   * spring on its own position while the list was moving. The card's own
+   * entrance (once per cell) is the only animation left here, and scrolling
+   * is smooth again. Filter and sort changes now swap instantly instead of
+   * cross-fading — the cheaper trade.
+   */
   const renderItem: ListRenderItem<DeckItem> = useCallback(
-    ({ item, index }) => (
-      <Animated.View
-        layout={LinearTransition.springify().damping(100)}
-        entering={FadeIn}
-        exiting={FadeOut}
-      >
-        <Card item={item} index={index} />
-      </Animated.View>
-    ),
+    ({ item, index }) => <Card item={item} index={index} />,
     [],
   );
 

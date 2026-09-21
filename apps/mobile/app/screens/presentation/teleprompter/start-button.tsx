@@ -120,9 +120,12 @@ export default StartButton;
 
 const styles = StyleSheet.create({
   pill: {
-    minWidth: 196,
+    // Full width of its footer, not hugging its label: it is the screen's one
+    // control and it sits over the script, so it needs to read as a bar
+    // rather than a chip lost in the text behind it.
+    alignSelf: "stretch",
     paddingHorizontal: 28,
-    paddingVertical: 15,
+    paddingVertical: 16,
     borderRadius: 999,
     backgroundColor: "#211E1C",
     alignItems: "center",
