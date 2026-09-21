@@ -16,9 +16,18 @@ class UserProfileResponse(BaseModel):
     nickname: Optional[str] = None
     experience_level: Optional[ExperienceLevel] = None
     profession: Optional[Profession] = None
+    #: Set once, by the last step of each flow. Never unset by the client —
+    #: there is no "un-onboard" the app can ask for.
+    onboarding_completed: Optional[bool] = None
+    profile_setup_completed: Optional[bool] = None
     subscription_tier: SubscriptionTier
     role: UserRole
     monthly_generations_used: int
+    #: Whether this ACCOUNT has been through onboarding and the profile wizard.
+    #: The client routes off these, so a reinstall or a second device picks up
+    #: where the account left off instead of starting over.
+    onboarding_completed: bool = False
+    profile_setup_completed: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -39,3 +48,7 @@ class UserProfileUpdateRequest(BaseModel):
     nickname: Optional[str] = Field(default=None, max_length=30)
     experience_level: Optional[ExperienceLevel] = None
     profession: Optional[Profession] = None
+    #: Set once, by the last step of each flow. Never unset by the client —
+    #: there is no "un-onboard" the app can ask for.
+    onboarding_completed: Optional[bool] = None
+    profile_setup_completed: Optional[bool] = None

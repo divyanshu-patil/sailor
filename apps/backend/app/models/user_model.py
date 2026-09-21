@@ -3,7 +3,7 @@ import secrets
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Date, DateTime, Enum as SAEnum, Integer, String, func, text
+from sqlalchemy import Boolean, Date, DateTime, Enum as SAEnum, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.enums.user_enums import ExperienceLevel, Profession
 
@@ -141,6 +141,19 @@ class User(Base):
         DateTime(timezone=True), nullable=True,
     )
 
+    # --- onboarding ------------------------------------------------------------
+    # Server-side rather than device-side: onboarding is a fact about the
+    # ACCOUNT, not about a phone. Kept only in MMKV it ran again on every new
+    # install and on a second device, and never ran again after a reinstall on
+    # the first one.
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false"),
+    )
+    #: Same, for the optional profile wizard that follows it.
+    profile_setup_completed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false"),
+    )
+
     # --- daily practice streak -------------------------------------------------
     # Three columns on `users` rather than a table of their own: there is exactly
     # one row per user, it is never queried without the user, and a separate
@@ -155,6 +168,26 @@ class User(Base):
         Integer, nullable=False, default=0, server_default=text("0"),
     )
     last_practiced_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    # --- streak restore --------------------------------------------------------
+    # What `streak_count` held at the moment it lapsed. `get_streak` zeroes the
+    # live count on read, so without this the number a restore is meant to bring
+    # back is gone by the time anyone asks for it — `longest_streak` is not a
+    # substitute, it is a personal best from any time in the past.
+    # Zero means "nothing to restore", which is also the state after a restore
+    # has been spent.
+    lapsed_streak: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0"),
+    )
+    #: The date the streak actually BROKE — derived, not the date the app first
+    #: noticed. A lapse is only detected on read, so "when we found out" would
+    #: hand someone back from a week away a fresh window on a week-old break,
+    #: which is the thing the window exists to prevent.
+    lapsed_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    #: The client-local date a restore was last used, for the one-per-month cap.
+    #: A date rather than a counter: the cap is per calendar month, so the month
+    #: it fell in is the whole of the state, and it needs no monthly reset job.
+    last_restore_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

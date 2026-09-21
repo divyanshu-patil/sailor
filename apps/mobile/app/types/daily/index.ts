@@ -68,6 +68,29 @@ export interface StreakState {
   longestStreak: number;
   lastCompletedDate: string | null;
   completedToday: boolean;
+  /** The streak a restore would bring back; 0 when there is nothing to restore.
+   *  Defaulted on the client because a cached streak written before the restore
+   *  feature shipped has none of these three. */
+  restorableStreak?: number;
+  canRestore?: boolean;
+  /** Distinguishes "already used this month" from "nothing to restore" — the
+   *  two are different screens. */
+  restoreUsedThisMonth?: boolean;
+  /** The last local date (YYYY-MM-DD) a restore would be accepted, or null when
+   *  nothing has lapsed. */
+  restoreExpiresOn?: string | null;
+  /** There IS a lapsed streak, but its window has closed. A third dead end,
+   *  separate from "used this month" and from "nothing to restore". */
+  restoreExpired?: boolean;
+  /**
+   * Written only by the dev streak simulator in Settings.
+   *
+   * Screens that re-read the streak from the server on mount skip that read
+   * while this is set, so a simulated state stays put long enough to look at.
+   * Without it the restore screen corrected itself to the server's answer the
+   * instant it opened, which made the simulator buttons look broken.
+   */
+  simulated?: boolean;
 }
 
 /**

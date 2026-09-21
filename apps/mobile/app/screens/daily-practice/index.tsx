@@ -20,6 +20,8 @@ import { exitToHome } from "./exit";
 import { Mascot } from "./components/Mascot";
 import { MetaRow } from "./components/MetaRow";
 import { StreakAtRisk } from "./components/StreakAtRisk";
+// [COMMENT LATER]
+import { StreakBroken } from "./components/StreakBroken";
 import { PressableCard } from "./components/PressableCard";
 import {
   dailyFonts,
@@ -118,6 +120,10 @@ const DailyPracticeIntro = () => {
 
         {/* Only on the last day a streak can be saved. */}
         <StreakAtRisk />
+        {/* [COMMENT LATER] — the other side of it: already lost. Mutually
+            exclusive with the banner above, since that one needs a live
+            streak and this one needs a dead one. */}
+        <StreakBroken />
 
         {/* Today's topic */}
         <Animated.View

@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, {
+import {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -30,16 +30,31 @@ export const Card = React.memo(
     const opacity = useSharedValue(0);
     const translateY = useSharedValue(24);
 
+    /**
+     * The entrance plays once per cell, on the cell's own first render.
+     *
+     * FlashList recycles cells: scrolling hands an existing instance a new
+     * item and a new index rather than mounting a component. Keying this
+     * effect on `index` therefore re-ran three springs on every row that came
+     * into view, all the way down the list — which is what made scrolling
+     * drop frames. A card that has already arrived stays arrived.
+     */
+    const hasEntered = useRef(false);
     useEffect(() => {
-      const delay = (index % 8) * 55;
+      if (hasEntered.current) return;
+      hasEntered.current = true;
 
+      const delay = (index % 8) * 55;
       opacity.value = withDelay(delay, withTiming(1, { duration: 180 }));
       translateY.value = withDelay(
         delay,
         withSpring(0, { damping: 30, stiffness: 160 }),
       );
       scale.value = withDelay(delay, withSpring(1, JELLY_SPRING));
-    }, [index, opacity, scale, translateY]);
+      // `index` is read once, for the stagger, and deliberately not depended
+      // on: a recycled cell must not animate again.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [opacity, scale, translateY]);
 
     const animatedStyle = useAnimatedStyle(() => ({
       opacity: opacity.value,
@@ -76,13 +91,10 @@ export const Card = React.memo(
       >
         <Link.AppleZoom>
           <AnimatedPressable style={animatedStyle}>
-            <Animated.View
-              style={[
-                { backgroundColor: item.color },
-                styles.cardPressable,
-                animatedStyle,
-              ]}
-            >
+            {/* The animated style belongs to the pressable above and nothing
+                else. It used to be applied here as well, which ran the same
+                transform twice per frame on every visible card. */}
+            <View style={[{ backgroundColor: item.color }, styles.cardPressable]}>
               <Text
                 numberOfLines={2}
                 style={[
@@ -133,7 +145,7 @@ export const Card = React.memo(
                   {item.durationMins}m
                 </Text>
               </View>
-            </Animated.View>
+            </View>
           </AnimatedPressable>
         </Link.AppleZoom>
       </Link>

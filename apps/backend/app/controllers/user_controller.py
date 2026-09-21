@@ -16,6 +16,12 @@ def update_profile(current_user: User, payload: UserProfileUpdateRequest, db: Se
     update_data = payload.model_dump(exclude_unset=True)
 
     for field, value in update_data.items():
+        # The completion flags only ever go false -> true. A client that sent
+        # false — a stale cache, a replayed request — would put the account back
+        # through a flow it has already finished.
+        if field in ("onboarding_completed", "profile_setup_completed"):
+            if not value:
+                continue
         setattr(current_user, field, value)
 
     db.add(current_user)

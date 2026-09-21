@@ -2,13 +2,13 @@ import { Stack } from "expo-router";
 
 const Layout = () => {
   return (
-    <Stack screenOptions={{}}>
-      <Stack.Screen name="index" />
+    <Stack screenOptions={{ title: "Script" }}>
       <Stack.Screen
         name="create-new-script"
         options={{
           // headerLargeTitleEnabled: false,
           headerShown: false,
+          title: "New Script",
           headerTitle: "",
           headerTitleStyle: {
             fontSize: 0,
@@ -22,6 +22,7 @@ const Layout = () => {
         options={{
           // headerLargeTitleEnabled: true,
           headerShown: true,
+          title: "All Scripts",
           headerTitle: "Script",
           headerBackButtonDisplayMode: "minimal",
           headerTransparent: true,
@@ -47,11 +48,24 @@ const Layout = () => {
           headerTransparent: true,
         }}
       />
+      {/* The header stays: the speed menu lives in it, and Stack.Toolbar with
+          a left/right placement turns the header on anyway. */}
+      <Stack.Screen
+        name="teleprompter"
+        options={{
+          headerShown: true,
+          title: "Teleprompter",
+          headerTitle: "Teleprompter",
+          headerBackButtonDisplayMode: "minimal",
+          headerTransparent: true,
+        }}
+      />
       <Stack.Screen
         name="script-practice"
         options={{
           // headerLargeTitleEnabled: true,
           headerShown: true,
+          title: "Practice",
           headerTitle: "",
           headerBackButtonDisplayMode: "minimal",
           headerTransparent: true,
@@ -62,6 +76,7 @@ const Layout = () => {
         options={{
           // headerLargeTitleEnabled: true,
           headerShown: true,
+          title: "Results",
           headerTitle: "",
           headerBackButtonDisplayMode: "minimal",
           headerTransparent: true,
@@ -74,6 +89,7 @@ const Layout = () => {
         options={{
           // headerLargeTitleEnabled: true,
           headerShown: true,
+          title: "Preview",
           headerTitle: "",
           headerBackButtonDisplayMode: "minimal",
           headerTransparent: true,
@@ -84,6 +100,7 @@ const Layout = () => {
       <Stack.Screen
         name="modals"
         options={{
+          title: "Script",
           headerShown: false,
           presentation: "modal",
         }}

@@ -5,6 +5,7 @@ const Layout = () => {
   return (
     <Stack
       screenOptions={{
+        title: "Search",
         headerTitle: "Search",
         headerTransparent: true,
       }}

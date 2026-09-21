@@ -53,6 +53,30 @@ class StreakResponse(BaseModel):
     # wrong in the process.
     completedToday: bool
 
+    # --- restore ---------------------------------------------------------------
+    # The streak a restore would bring back. 0 means there is nothing to
+    # restore, which is the ordinary state for anyone who has not lapsed.
+    restorableStreak: int = 0
+    # Whether a restore would be accepted right now. False covers both "nothing
+    # to restore" and "already used this month"; the two look different on
+    # screen, so `restoreUsedThisMonth` tells them apart rather than the client
+    # inferring it from a date it would have to month-compare itself.
+    canRestore: bool = False
+    restoreUsedThisMonth: bool = False
+    #: The last local date a restore would be accepted, or null when nothing has
+    #: lapsed. Sent so the app can say "until today" rather than making the
+    #: client re-derive a deadline the server already computed.
+    restoreExpiresOn: Optional[date] = None
+    #: True when there IS a lapsed streak but its window has closed. Distinct
+    #: from restoreUsedThisMonth — different reason, different screen.
+    restoreExpired: bool = False
+
+
+class RestoreStreakRequest(BaseModel):
+    """The client's local calendar date — same reasoning as MarkCompleteRequest.
+    The one-per-month cap is a statement about the user's calendar month."""
+    localDate: date
+
 
 class MarkCompleteRequest(BaseModel):
     """The client's local calendar date. Required, not defaulted server-side:

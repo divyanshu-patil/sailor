@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import PressableScale from "@/components/ui/animated/PressableScale";
+
 import GlassAvatar from "@/components/ui/glass-avatar";
 import { PROFILE, PROFILE_PASTELS, profileFonts } from "../theme";
 
@@ -15,6 +17,9 @@ interface ProfileHeroProps {
   avatarName?: string;
   /** Holds off the fallback avatar until Clerk's identity is available. */
   avatarLoading?: boolean;
+  /** Tapping the photo opens Edit Profile — the same affordance as the row
+   *  below it, because the picture is the thing people reach for. */
+  onAvatarPress?: () => void;
 }
 
 /**
@@ -28,10 +33,17 @@ const ProfileHero = memo(function ProfileHero({
   avatarUrl,
   avatarName,
   avatarLoading,
+  onAvatarPress,
 }: ProfileHeroProps) {
   return (
     <View style={styles.container}>
-      <View style={styles.avatarWrap}>
+      <PressableScale
+        style={styles.avatarWrap}
+        onPress={onAvatarPress}
+        disabled={!onAvatarPress}
+        accessibilityRole="button"
+        accessibilityLabel="Edit your profile photo"
+      >
         <GlassAvatar
           imageUrl={avatarUrl}
           name={avatarName ?? name}
@@ -39,7 +51,7 @@ const ProfileHero = memo(function ProfileHero({
           loading={avatarLoading}
           tint={PROFILE_PASTELS.pink}
         />
-      </View>
+      </PressableScale>
 
       <Text style={styles.name} numberOfLines={1}>
         {name}

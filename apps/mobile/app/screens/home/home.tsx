@@ -1,237 +1,312 @@
-import { Alert } from "react-native";
-import React, { useEffect, useState } from "react";
+import { useMemo } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUser } from "@clerk/expo";
+
+import { BottomTabInset } from "@/constants/theme";
+import { haptics } from "@/lib/haptics";
 import { useAppUserStore } from "@/store/app-user.store";
-// import useAuthenticated from "@/hooks/use-authenticated";
-import {
-  Host,
-  Form,
-  Section,
-  Text,
-  Button,
-  Toggle,
-  HStack,
-  Spacer,
-  SwipeActions,
-} from "@expo/ui/swift-ui";
-import {
-  Animation,
-  animation,
-  buttonStyle,
-  contentTransition,
-  foregroundStyle,
-  tint,
-} from "@expo/ui/swift-ui/modifiers";
-import { useAuth, useClerk, useUser } from "@clerk/expo";
-import { useOnboardingStore } from "@/store/onboarding.store";
-import { usePreferences } from "@/hooks";
 import { useDailyStore } from "@/store/daily-store";
 import { useStreakCountdown } from "@/screens/daily-practice/components/StreakAtRisk";
 
-const messages = ["Hello", "Namaste", "Bonjour", "Hola", "Ciao"];
+import { ActionCard, StreakPill } from "./components/action-card";
+import { heroHeight, HomeHero } from "./components/hero";
+import { StreakIcon, streakStatus } from "./components/streak-icons";
+import { cardHeight, homeColors, streakDisplay, wellFor } from "./theme";
 
+/**
+ * Greetings, in the register the app actually speaks in.
+ *
+ * The time-of-day one is computed and prepended rather than listed, so "Good
+ * morning" can never greet someone at 9pm. One is picked per mount — the screen
+ * is returned to several times a day, which is often enough for a rotating
+ * greeting to feel alive and rare enough for it not to feel like a slot machine.
+ */
+const GREETINGS = [
+  "Hey hey,",
+  "Yo,",
+  "Hola,",
+  "Welcome back,",
+  "You're here,",
+  "Look who's back,",
+  "Big day,",
+  "Let's gooo,",
+  "Okay superstar,",
+  "Back at it,",
+];
+
+const GAP = 4; // gap between cards
+
+function pickGreeting(now = new Date()): string {
+  const hour = now.getHours();
+  const timed =
+    hour < 12
+      ? "Good morning,"
+      : hour < 17
+        ? "Good afternoon,"
+        : "Good evening,";
+  const pool = [timed, ...GREETINGS];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+const capitalise = (value: string) =>
+  value.charAt(0).toUpperCase() + value.slice(1);
+
+/**
+ * Home.
+ *
+ * A hero that says who you are and how your streak is doing, then the three
+ * things this app is for — write one, practise today's, read other people's.
+ * Nothing else: every other destination is a tab or lives behind one.
+ *
+ * The three cards are the screen's CTAs and they all sit in the bottom two
+ * thirds, inside thumb reach. The space under the last one is the card's own
+ * bottom padding plus the scroll view's, never a margin: the decoration bleeds
+ * into it, and a margin would cut the blobs off at the card's edge.
+ */
 const HomeScreen = () => {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const appUser = useAppUserStore((s) => s.appUser);
   const { user } = useUser();
-  const { signOut } = useClerk();
-  const { clearAppState } = useAppUserStore();
-  const { resetOnboarding } = useOnboardingStore();
 
-  const { createPreference } = usePreferences({
-    onError: (error) =>
-      Alert.alert("Error", error.message ?? "Failed to create preferences."),
-  });
-
-  // Read straight from the cache, not through useDailyPractice: home should
-  // never fire the daily fetch, it just reflects whatever the screen last saw.
+  // Straight from the cache, not through `useDailyPractice`: home reflects
+  // whatever the practice screen last saw and never fires the daily fetch
+  // itself. That predates this redesign and is still the right split.
   const streak = useDailyStore((s) => s.streak);
-  // Minute ticks: the footer shows hours and minutes, not seconds.
-  const { target: streakTarget, remaining: streakLeft } =
-    useStreakCountdown(60_000);
+  // Hourly ticks. The hero shows a state, not a countdown — the minute-by-minute
+  // clock lives on the practice screen's banner.
+  const { target } = useStreakCountdown(3_600_000);
 
-  const [notifications, setNotifications] = useState(true);
-  const [messageIndex, setMessageIndex] = useState(0);
+  const status = streakStatus(streak, target?.atRisk ?? false);
+  const count = streak?.currentStreak ?? 0;
+  const broken = status === "broken";
 
-  const handleSignOut = async () => {
-    try {
-      clearAppState();
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-      Alert.alert("Error", "An error occurred while signing out.");
-    }
+  // Blob positions are relative to the card, not the window. Full-bleed cards,
+  // so the two are the same — keep this in step with `styles.cards`.
+  const cardWidth = width;
+
+  const greeting = useMemo(() => pickGreeting(), []);
+  const name = capitalise(
+    appUser?.nickname?.trim() || user?.firstName?.trim() || "there",
+  );
+
+  /** Every card is an entrance into a flow, so they all get the same press. */
+  const go = (path: string, options?: { withAnchor: boolean }) => () => {
+    haptics.start();
+    router.push(path as never, options);
   };
-
-  const handleClearOnboardingAndSignOut = async () => {
-    try {
-      resetOnboarding();
-      clearAppState();
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-      Alert.alert("Error", "An error occurred while signing out.");
-    }
-  };
-
-  const handleCreatePreferences = async () => {
-    try {
-      await createPreference({
-        practiceRemindersEnabled: true,
-        practiceReminderTime: "18:00",
-        defaultMood: "confident",
-      });
-      Alert.alert("Preferences created");
-    } catch {
-      // error already surfaced via onError above
-    }
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 2000); // changes every 2 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (!isSignedIn) {
-    return (
-      <Host matchContents>
-        <Text>Please login to continue</Text>
-      </Host>
-    );
-  }
 
   return (
-    <Host style={{ flex: 1 }}>
-      <Form>
-        {/* Today's practice. A section on home rather than a tab: it's a
-            ten-second habit, not a place to live. Same sibling-of-(tabs) route
-            shape as Discover below. */}
-        <Section
-          title="Today"
-          footer={
-            <Text modifiers={[foregroundStyle("#8E8E93")]}>
-              {streakTarget?.atRisk
-                ? `🔥 Your ${streakTarget.count}-day streak ends in ${Math.floor(
-                    streakLeft / 3_600_000,
-                  )}h ${Math.floor((streakLeft % 3_600_000) / 60_000)}m. Practise today!`
-                : streak && streak.currentStreak > 0
-                  ? `${streak.currentStreak} day streak. ${
-                      streak.completedToday
-                        ? "Done for today."
-                        : "Not done yet today."
-                    }`
-                  : "A short snippet to read aloud, new every day."}
-            </Text>
-          }
-        >
-          <Button
-            systemImage="sun.max"
-            onPress={() => router.push("/(authenticated)/daily-practice")}
-            modifiers={[buttonStyle("glassProminent"), tint("#F4D35E")]}
-          >
-            <Text>Daily practice</Text>
-          </Button>
-        </Section>
-        {/* Discover is a full-screen route outside the tab group, so entering
-            it hides the tab bar — see routes/(authenticated)/discover. */}
-        <Section
-          title="Discover"
-          footer={
-            <Text modifiers={[foregroundStyle("#8E8E93")]}>
-              Public decks published by everyone using Sailor.
-            </Text>
-          }
-        >
-          <Button
-            systemImage="sparkles"
-            onPress={() => router.push("/(authenticated)/discover")}
-            modifiers={[buttonStyle("glassProminent"), tint("#c11b5c")]}
-          >
-            <Text>Browse public decks</Text>
-          </Button>
-        </Section>
-        <Section>
-          <HStack spacing={8}>
-            <Text>Notifications</Text>
-            <Spacer />
-            <Toggle isOn={notifications} onIsOnChange={setNotifications} />
-          </HStack>
+    <View style={styles.screen}>
+      {/* The hero runs behind the status bar, and it is a light surface. */}
+      <StatusBar style="dark" />
+      {/* Behind the scroll view, not in it: rubber-banding at the top would
+          otherwise pull the page's dark background down over the hero. It is
+          the hero's full height rather than a fixed strip because a short strip
+          gets out-pulled — past its edge a dark band appears between it and the
+          hero, which is exactly the artifact a hard pull used to show. */}
+      <View
+        pointerEvents="none"
+        style={[styles.overscroll, { height: insets.top + heroHeight(width) }]}
+      />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          // iOS 26's floating tab bar overlaps content rather than insetting it,
+          // so the scroll has to clear it itself. `BottomTabInset` is the bar,
+          // `insets.bottom` the home indicator under it.
+          { paddingBottom: insets.bottom + BottomTabInset + 20 },
+        ]}
+      >
+        <HomeHero
+          width={width}
+          topInset={insets.top}
+          greeting={greeting}
+          name={name}
+          streakCount={count}
+          status={status}
+          // [COMMENT LATER] — target is a placeholder screen.
+          onRestorePress={go("/(authenticated)/streak-restore")}
+        />
 
-          {/* <Button
-            role="destructive"
-            // modifiers={[buttonStyle("glassProminent")]}
-            onPress={() => Alert.alert("Tapped")}
-            systemImage="cross"
-
-          >
-            <Text>Bordered Button</Text> 
-          </Button> 
-          */}
-          <Button
-            onPress={() => Alert.alert("Tapped")}
-            modifiers={[
-              buttonStyle("glassProminent"),
-              tint("#e9347b"),
-              animation(Animation.default, messageIndex),
+        <View style={styles.cards}>
+          <ActionCard
+            title="Create New Script"
+            subtitle={"Turn your ideas into\na great script."}
+            icon="file-plus-2"
+            tint={homeColors.cream}
+            accessibilityHint="Opens the new script wizard"
+            height={cardHeight.script}
+            // `withAnchor` so the push zooms out of the thing that was tapped,
+            // which is what the toolbar button this replaces already did.
+            onPress={go("/(authenticated)/(script)/create-new-script", {
+              withAnchor: true,
+            })}
+            // Each blob is anchored mostly outside the card so only a smooth
+            // arc of it crosses the corner — a shapesoup silhouette dropped
+            // whole into the middle reads as a smudge, not as decoration.
+            // Colours are brand hues at full strength, never a tint of the card.
+            blobs={[
+              {
+                seed: "home-script-a",
+                width: 160,
+                height: 130,
+                color: homeColors.hero,
+                x: cardWidth - 64,
+                y: 62,
+              },
+              {
+                seed: "home-script-b",
+                width: 110,
+                height: 90,
+                color: homeColors.periwinkle,
+                x: -52,
+                y: -48,
+              },
             ]}
-          >
-            <Text
-              modifiers={[
-                contentTransition("numericText", { countsDown: true }),
-                animation(Animation.default, messageIndex),
-              ]}
-            >
-              {messages[messageIndex]}
-            </Text>
-          </Button>
-        </Section>
-        <Section>
-          <SwipeActions>
-            <Text>firstName: {user?.firstName}</Text>
-            <SwipeActions.Actions edge="leading" allowsFullSwipe={false}>
-              <Button
-                label="Verify"
-                systemImage="checkmark"
-                modifiers={[tint("#34c759")]}
-                onPress={() => Alert.alert("Verified", "First name confirmed")}
-              />
-            </SwipeActions.Actions>
-          </SwipeActions>
+            // Mirrored from the practice card's, which peeks in from the left
+            // — two mascots on the same side would read as a repeated element
+            // rather than as two characters.
+            mascot={{ size: 100, left: cardWidth - 124, bottom: -30 }}
+            sparks={[
+              { style: { right: 26, bottom: 16 }, color: homeColors.rose },
+            ]}
+          />
 
-          <SwipeActions>
-            <Text>lastName: {user?.lastName}</Text>
-            <SwipeActions.Actions edge="leading">
-              <Button
-                label="delete"
-                systemImage="checkmark"
-                modifiers={[tint("#dd0e61")]}
-                onPress={() => Alert.alert("Verified", "Last name confirmed")}
-              />
-            </SwipeActions.Actions>
-          </SwipeActions>
-        </Section>
-        <Section>
-          <Button onPress={handleCreatePreferences}>
-            <Text>Create Preferences (test)</Text>
-          </Button>
-        </Section>
+          <ActionCard
+            title="Today's Practice"
+            subtitle={"Build your habit.\nTrack your progress."}
+            icon="flame"
+            tint={homeColors.periwinkle}
+            accessibilityHint="Opens today's daily practice"
+            onPress={go("/(authenticated)/daily-practice")}
+            blobs={[
+              {
+                seed: "home-practice-a",
+                width: 170,
+                height: 150,
+                color: homeColors.rose,
+                x: -96,
+                y: 74,
+              },
+              {
+                seed: "home-practice-b",
+                width: 120,
+                height: 96,
+                color: homeColors.cream,
+                x: cardWidth - 64,
+                y: -50,
+              },
+              {
+                seed: "home-practice-c",
+                width: 200,
+                height: 150,
+                color: wellFor(homeColors.cloudBack),
+                x: cardWidth - 120,
+                y: cardHeight.practice.broken - 50,
+              },
+            ]}
+            // Rides the bottom-left blob, half off the card, the way it
+            // half-clears the cloud in the hero — but only while the streak is
+            // alive. When it breaks, the hero's mascot is the one carrying that
+            // news, and a second one down here just repeats it.
+            mascot={broken ? undefined : { size: 104, left: 4, bottom: -34 }}
+            // Declared per state, so losing the pill to a broken streak does
+            // not collapse the card to one row with the mascot stranded behind
+            // the well.
+            height={
+              broken ? cardHeight.practice.broken : cardHeight.practice.alive
+            }
+            sparks={
+              broken
+                ? []
+                : [{ style: { left: 148, bottom: 34 }, color: homeColors.hero }]
+            }
+            badge={
+              broken ? null : (
+                <StreakPill
+                  count={count}
+                  icon={
+                    <StreakIcon
+                      status={status}
+                      size={streakDisplay.pillIconSize}
+                    />
+                  }
+                />
+              )
+            }
+          />
 
-        <Section>
-          <Button onPress={handleSignOut}>
-            <Text modifiers={[foregroundStyle("#f00")]}>LogOut</Text>
-          </Button>
-        </Section>
-        <Section>
-          <Button onPress={handleClearOnboardingAndSignOut}>
-            <Text>Clear Onboarding and Sign Out</Text>
-          </Button>
-        </Section>
-      </Form>
-    </Host>
+          <ActionCard
+            title="Browse Public Decks"
+            subtitle={"Explore, learn and\npractice from others."}
+            icon="users-round"
+            tint={homeColors.rose}
+            accessibilityHint="Opens decks published by other people"
+            onPress={go("/(authenticated)/discover")}
+            height={cardHeight.decks}
+            blobs={[
+              {
+                seed: "home-decks-a",
+                width: 180,
+                height: 140,
+                color: homeColors.cream,
+                x: -72,
+                y: cardHeight.decks - 70,
+              },
+              {
+                seed: "home-decks-b",
+                width: 140,
+                height: 120,
+                color: homeColors.periwinkle,
+                x: cardWidth - 82,
+                y: 76,
+              },
+              {
+                seed: "home-decks-c",
+                width: 110,
+                height: 84,
+                color: homeColors.hero,
+                x: cardWidth * 0.34,
+                y: 112,
+              },
+            ]}
+            sparks={[
+              { style: { right: 104, bottom: 44 }, color: homeColors.hero },
+            ]}
+            squiggle={{
+              style: { left: cardWidth * 0.3, bottom: 18 },
+              color: homeColors.cream,
+            }}
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: homeColors.screen },
+  content: { backgroundColor: homeColors.screen },
+  overscroll: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: homeColors.hero,
+  },
+  cards: { paddingHorizontal: 0, paddingTop: GAP, gap: GAP },
+});
 
 export default HomeScreen;

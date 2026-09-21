@@ -1,28 +1,117 @@
-import React from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Image as ExpoImage } from "expo-image";
+import {
+  Button,
+  Image,
+  Menu,
+  ProgressView,
+  Section,
+  ZStack,
+} from "@expo/ui/swift-ui";
+import {
+  aspectRatio,
+  background,
+  clipShape,
+  font,
+  foregroundStyle,
+  frame,
+  imageScale,
+  labelStyle,
+  listRowBackground,
+  offset,
+  padding,
+  resizable,
+} from "@expo/ui/swift-ui/modifiers";
 
-import GlassAvatar from "@/components/ui/glass-avatar";
-import PressableScale from "@/components/ui/animated/PressableScale";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useProfilePhoto } from "@/hooks/use-profile-photo";
-import {
-  PROFILE,
-  PROFILE_PASTELS,
-  profileFonts,
-} from "@/screens/profile/theme";
 
-const AVATAR_SIZE = 84;
+const AVATAR_SIZE = 112;
+/** The pencil badge, overlapping the photo's bottom-right like every other
+ *  edit-profile flow. Sized against the photo so the two scale together. */
+const BADGE_SIZE = Math.round(AVATAR_SIZE * 0.3);
+
+/** `file://` in front of a bare path, left alone if it already has a scheme. */
+function toFileUrl(path: string): string {
+  return path.startsWith("file://") ? path : `file://${path}`;
+}
 
 /**
- * The avatar row for Edit Profile.
+ * Turns a remote avatar URL into a local file path.
  *
- * Native `Form` can't render the Blobatar's SVG, so this is a React Native row
- * sitting above the SwiftUI form rather than a `Section` inside it. It shares
- * the exact same ProfileAvatar + Clerk upload path as the profile wizard, so
- * adding, changing or removing a photo updates the Profile screen immediately.
+ * SwiftUI's `Image` takes `uiImage`, which is a file on disk — it cannot fetch
+ * a URL. `expo-image` has already cached the bytes for the profile screen, so
+ * this asks for that cache entry rather than downloading anything twice, and
+ * only prefetches when the entry is missing.
+ *
+ * Null while it resolves, and null forever if it fails, which the caller draws
+ * as the "no photo" state rather than as an error — an avatar that cannot be
+ * read is not something the person can act on.
+ */
+function useLocalAvatarPath(remoteUrl: string | null): string | null {
+  // A pick from the library is already a file, so it needs no resolving and no
+  // state — deriving it keeps the effect below for the one case that is async.
+  const isLocalFile =
+    !!remoteUrl &&
+    (remoteUrl.startsWith("file://") || remoteUrl.startsWith("/"));
+
+  // Stored with the URL it belongs to, so a changed avatar reads as "not
+  // resolved yet" rather than briefly showing the previous one.
+  const [resolved, setResolved] = useState<{
+    url: string;
+    path: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!remoteUrl || isLocalFile) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        let cached = await ExpoImage.getCachePathAsync(remoteUrl);
+        if (!cached) {
+          await ExpoImage.prefetch(remoteUrl, { cachePolicy: "disk" });
+          cached = await ExpoImage.getCachePathAsync(remoteUrl);
+        }
+        // `getCachePathAsync` hands back a bare filesystem path; SwiftUI's
+        // `uiImage` wants a URL. Without the scheme it silently draws nothing,
+        // which is the invisible avatar.
+        if (!cancelled) {
+          setResolved({
+            url: remoteUrl,
+            path: cached ? toFileUrl(cached) : null,
+          });
+        }
+      } catch {
+        if (!cancelled) setResolved({ url: remoteUrl, path: null });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [remoteUrl, isLocalFile]);
+
+  if (!remoteUrl) return null;
+  if (isLocalFile) return toFileUrl(remoteUrl);
+  return resolved?.url === remoteUrl ? resolved.path : null;
+}
+
+/**
+ * The avatar row for Edit Profile — a `Section` in the form, not a view above it.
+ *
+ * It used to be a React Native row sitting on top of the SwiftUI `Form`, which
+ * is why it had its own cream background and stayed nailed in place while the
+ * form scrolled underneath it. Inside the form it scrolls with everything else
+ * and inherits the grouped background, so the row background is cleared to
+ * nothing and the photo is simply centred on the page.
+ *
+ * The only control is the pencil. With no photo it opens the picker; with one,
+ * it is a menu, so replacing and removing are both reachable without putting a
+ * second word of chrome on the screen.
  */
 const ProfilePhotoSection = () => {
-  const { name, imageUrl, isLoaded } = useProfileIdentity();
+  const { imageUrl } = useProfileIdentity();
   const {
     pendingAsset,
     pickImage,
@@ -30,129 +119,107 @@ const ProfilePhotoSection = () => {
     removePhoto,
     isPicking,
     isUploading,
-    error,
   } = useProfilePhoto();
 
   const busy = isPicking || isUploading;
-  const hasImage = imageUrl != null;
-  const previewUrl = pendingAsset?.uri ?? imageUrl;
+  const localPath = useLocalAvatarPath(pendingAsset?.uri ?? imageUrl);
+  const hasPhoto = localPath !== null;
 
   const handleChange = async () => {
     const asset = await pickImage();
     if (asset) await uploadAsset(asset);
   };
 
-  const handleRemove = async () => {
-    await removePhoto();
-  };
-
   return (
-    <View style={styles.container}>
-      <View style={styles.avatar}>
-        <GlassAvatar
-          imageUrl={previewUrl}
-          name={name}
-          size={AVATAR_SIZE}
-          loading={!isLoaded}
-          tint={PROFILE_PASTELS.pink}
-        />
-      </View>
+    <Section modifiers={[listRowBackground("clear")]}>
+      {/* The badge sits ON the photo, bottom-right, rather than under it —
+          which is where every edit-profile flow puts it and where a thumb
+          expects to find it. `ZStack` with a bottomTrailing alignment does
+          that natively; the offset nudges it onto the circle's edge. */}
+      <ZStack
+        alignment="bottomTrailing"
+        modifiers={[
+          frame({ maxWidth: Infinity, alignment: "center" }),
+          padding({ vertical: 14 }),
+        ]}
+      >
+        <ZStack
+          modifiers={[frame({ width: AVATAR_SIZE, height: AVATAR_SIZE })]}
+        >
+          {hasPhoto ? (
+            <Image
+              uiImage={localPath}
+              // Order is SwiftUI's own: resizable and aspectRatio first, so the
+              // photo scales to fill the frame, THEN the frame, then the crop.
+              // Without the first two it draws at its native pixel size and the
+              // circle shows whatever happens to be in the middle of it.
+              modifiers={[
+                resizable(),
+                aspectRatio({ contentMode: "fill" }),
+                frame({ width: AVATAR_SIZE, height: AVATAR_SIZE }),
+                clipShape("circle"),
+              ]}
+            />
+          ) : (
+            <Image
+              systemName="person.crop.circle.fill"
+              size={AVATAR_SIZE}
+              color="#C7C7CC"
+            />
+          )}
+        </ZStack>
 
-      <View style={styles.info}>
-        <Text style={styles.caption}>
-          {hasImage ? "Your profile photo" : "Sailor's generated avatar"}
-        </Text>
-
-        <View style={styles.actions}>
-          <PressableScale
-            onPress={handleChange}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel={hasImage ? "Change photo" : "Add photo"}
-            style={styles.action}
+        {busy ? (
+          <ProgressView
+            modifiers={[frame({ width: BADGE_SIZE, height: BADGE_SIZE })]}
+          />
+        ) : hasPhoto ? (
+          <Menu
+            label="Edit photo"
+            systemImage="pencil.circle.fill"
+            modifiers={[
+              labelStyle("iconOnly"),
+              imageScale("large"),
+              font({ size: BADGE_SIZE }),
+              foregroundStyle("#1F1D1D"),
+              background("#FFFFFF", { shape: "circle" }),
+              clipShape("circle"),
+              // Half on the photo, half off it — the rim is where this badge
+              // belongs; fully inside reads as part of the picture.
+              offset({ x: 4, y: 4 }),
+            ]}
           >
-            {busy && !hasImage ? (
-              <ActivityIndicator size="small" color={PROFILE.ink} />
-            ) : (
-              <Text style={styles.actionText}>
-                {hasImage ? "Change photo" : "Add photo"}
-              </Text>
-            )}
-          </PressableScale>
-
-          {hasImage ? (
-            <PressableScale
-              onPress={handleRemove}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel="Remove photo"
-              style={styles.action}
-            >
-              <Text style={[styles.actionText, styles.removeText]}>Remove</Text>
-            </PressableScale>
-          ) : null}
-        </View>
-
-        {error ? (
-          <Text style={styles.error} accessibilityLiveRegion="polite">
-            {error}
-          </Text>
-        ) : null}
-      </View>
-    </View>
+            <Button
+              systemImage="photo"
+              label="Choose photo"
+              onPress={handleChange}
+            />
+            <Button
+              systemImage="trash"
+              label="Remove photo"
+              role="destructive"
+              onPress={removePhoto}
+            />
+          </Menu>
+        ) : (
+          <Button
+            label="Add photo"
+            systemImage="pencil.circle.fill"
+            onPress={handleChange}
+            modifiers={[
+              labelStyle("iconOnly"),
+              imageScale("large"),
+              font({ size: BADGE_SIZE }),
+              foregroundStyle("#1F1D1D"),
+              background("#FFFFFF", { shape: "circle" }),
+              clipShape("circle"),
+              offset({ x: 4, y: 4 }),
+            ]}
+          />
+        )}
+      </ZStack>
+    </Section>
   );
 };
 
 export default ProfilePhotoSection;
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    marginTop: 56,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    backgroundColor: PROFILE.background,
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    overflow: "hidden",
-  },
-  info: {
-    flex: 1,
-    gap: 8,
-  },
-  caption: {
-    fontFamily: profileFonts.medium,
-    fontSize: 14,
-    color: PROFILE.muted,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 18,
-  },
-  action: {
-    minHeight: 32,
-    justifyContent: "center",
-  },
-  actionText: {
-    fontFamily: profileFonts.semibold,
-    fontSize: 15,
-    color: PROFILE.ink,
-    letterSpacing: -0.2,
-  },
-  removeText: {
-    color: "#D6455D",
-  },
-  error: {
-    fontFamily: profileFonts.medium,
-    fontSize: 12,
-    lineHeight: 16,
-    color: "#C0392B",
-  },
-});

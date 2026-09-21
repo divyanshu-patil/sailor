@@ -1,12 +1,16 @@
 import React, { useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
 import { ENV } from "@/lib/config/env";
-import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
+import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
-import { View } from "react-native";
 import { setupApiAuth } from "@/lib/api/client";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
+import * as SplashScreen from "expo-splash-screen";
+
+import { useAppBootstrap } from "@/hooks/use-app-bootstrap";
+import { useAuthGate } from "@/hooks/use-auth-gate";
+import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
@@ -19,7 +23,6 @@ import { startStreakAlertSync } from "@/lib/streak-alarm";
 import { startHapticsSync } from "@/lib/haptics";
 import { primeWidgetAssets } from "@/lib/widget-assets";
 import * as Font from "expo-font";
-import { preloadMascots } from "@/screens/daily-practice/components/Mascot";
 import {
   reloadWidgets,
   resyncWidgets,
@@ -66,9 +69,9 @@ function ApiAuthSetup() {
 /**
  * RevenueCat, configured once and kept in step with the Clerk session.
  *
- * Inside ClerkLoaded like ApiAuthSetup, and for the same reason: it reads the
- * signed-in user id, and acting on a half-loaded session would attach purchases
- * to the wrong app user.
+ * Guards on the signed-in user id itself rather than on a wrapper that withheld
+ * the whole tree: acting on a half-loaded session would attach purchases to the
+ * wrong app user, and the hook below waits for a real id before it does.
  */
 function PurchasesSetup() {
   useRevenueCatBootstrap();
@@ -101,6 +104,10 @@ function ReminderRouting() {
   return null;
 }
 
+// Held from module load, before the first render, so there is no window where
+// iOS has already taken the splash down and the app has nothing to show.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 function InitialLayout() {
   const isHydrated = useOnboardingStore((s) => s._hasHydrated);
   const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
@@ -114,7 +121,23 @@ function InitialLayout() {
   const profileSetupCompletedForUserId = useProfileSetupStore(
     (s) => s.completedForUserId,
   );
-  const { isSignedIn, isLoaded, userId } = useAuth();
+  const { ready: authReady, isSignedIn, userId } = useAuthGate();
+  const assetsReady = useAppBootstrap();
+
+  // Reconciles the local completion flags with the server's, so a reinstall or
+  // a second device does not repeat a flow this account has already finished.
+  // It only ever writes locally, and only toward "done" — the router below
+  // keeps reading the local stores, which are on disk before the first frame.
+  useOnboardingGate(userId);
+
+  // Everything the first frame needs: the persisted stores, a decision about
+  // who is signed in, and the home screen's own fonts and images.
+  const canRender =
+    isHydrated &&
+    isOnboardingCompletionHydrated &&
+    isProfileSetupHydrated &&
+    authReady &&
+    assetsReady;
 
   // Completion is per Clerk user, so a different account on the same device
   // still runs onboarding and profile setup once.
@@ -127,6 +150,12 @@ function InitialLayout() {
     syncPreferencesOnce();
     syncAppearanceOptionsOnce();
   }, []);
+
+  // The splash stays up until there is something real behind it. `hideAsync`
+  // is safe to call more than once, so no guard is needed beyond the flag.
+  useEffect(() => {
+    if (canRender) SplashScreen.hideAsync().catch(() => {});
+  }, [canRender]);
 
   // Both watch the preference store for the rest of the app's life, so the
   // reminder the OS has scheduled and the colour the widget is drawn in stay in
@@ -143,15 +172,13 @@ function InitialLayout() {
     // first frame on five file copies would be the worse trade.
     void primeWidgetAssets().then(resyncWidgets);
 
-    // Mascots are the first thing an empty or failed screen shows; loaded
-    // now so they don't pop in a beat after the words around them.
-    preloadMascots().catch(() => {});
-    // Kalam is also embedded via app.json, but only after a prebuild; loading
-    // it here makes the handwritten notes work in any build.
+    // Kalam only. The AlanSans faces used to be repeated here as well as in
+    // routes/index.tsx, so every launch parsed them twice; index.tsx owns them
+    // now. Kalam is embedded via app.json but only after a prebuild, so loading
+    // it here is what makes the handwritten notes work in any build.
     Font.loadAsync({
       "Kalam-Light": require("@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf"),
       "Kalam-Regular": require("@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf"),
-      "Kalam-Bold": require("@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"),
     }).catch(() => {});
 
     const stopReminderSync = startReminderSync();
@@ -170,30 +197,28 @@ function InitialLayout() {
     };
   }, []);
 
-  if (
-    !isHydrated ||
-    !isOnboardingCompletionHydrated ||
-    !isProfileSetupHydrated ||
-    !isLoaded
-  ) {
-    return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // white screen instead of null
+  // `authReady` rather than Clerk's `isLoaded`: offline, that never flips, and
+  // this early return was the blank white screen on launch. See useAuthGate.
+  if (!canRender) {
+    // `null`, not a white view: the splash screen is still up, and drawing a
+    // blank page over it is what produced the white flash between the two.
+    return null;
   }
 
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: "slide_from_right",
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ title: "Sailor" }} />
 
       <Stack.Protected guard={!hasSeenOnboarding}>
-        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(onboarding)" options={{ title: "Welcome" }} />
       </Stack.Protected>
 
       <Stack.Protected guard={hasSeenOnboarding && !isSignedIn}>
-        <Stack.Screen name="(unauthenticated)" />
+        <Stack.Screen name="(unauthenticated)" options={{ title: "Sign In" }} />
       </Stack.Protected>
 
       {/*
@@ -226,7 +251,7 @@ function InitialLayout() {
           hasCompletedProfileSetup
         }
       >
-        <Stack.Screen name="(authenticated)" />
+        <Stack.Screen name="(authenticated)" options={{ title: "Sailor" }} />
       </Stack.Protected>
     </Stack>
   );
@@ -238,14 +263,24 @@ function RootLayout() {
       publishableKey={ENV.CLERK_PUBLISHABLE_KEY}
       tokenCache={tokenCache}
     >
-      <ClerkLoaded>
-        <KeyboardProvider>
-          <ApiAuthSetup />
-          <PurchasesSetup />
-          <ReminderRouting />
-          <InitialLayout />
-        </KeyboardProvider>
-      </ClerkLoaded>
+      {/*
+        No ClerkLoaded here on purpose. It renders NOTHING until Clerk has
+        resolved its session against Clerk's servers, so with no connection the
+        whole app tree — including InitialLayout — never mounted at all, and the
+        launch was a blank white screen with no way out of it.
+
+        Nothing below actually needed the wrapper. ApiAuthSetup and
+        PurchasesSetup are effect-only and already guard on `isSignedIn`, so
+        they no-op until the session appears and then run on their own when it
+        does. Deciding when there is enough to render is InitialLayout's job,
+        and it now does it from disk when Clerk cannot answer (useAuthGate).
+      */}
+      <KeyboardProvider>
+        <ApiAuthSetup />
+        <PurchasesSetup />
+        <ReminderRouting />
+        <InitialLayout />
+      </KeyboardProvider>
     </ClerkProvider>
   );
 }

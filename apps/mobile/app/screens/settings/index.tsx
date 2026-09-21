@@ -20,6 +20,8 @@ import { LegalSection } from "./LegalSection";
 import { VersionSection } from "./VersionSection";
 import { AccountSecuritySection } from "./AccountSecuritySection";
 import { SentryTestSection } from "./SentryTestSection";
+// [COMMENT LATER]
+import { DevStreakSection } from "./DevStreakSection";
 
 const SettingsScreen = () => {
   const router = useRouter();
@@ -91,6 +93,8 @@ const SettingsScreen = () => {
             onError={showAlert}
           />
           {__DEV__ && <SentryTestSection onMessage={showAlert} />}
+          {/* [COMMENT LATER] */}
+          {__DEV__ && <DevStreakSection onMessage={showAlert} />}
         </Form>
 
         <Alert

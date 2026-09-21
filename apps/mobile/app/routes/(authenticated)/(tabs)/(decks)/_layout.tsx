@@ -5,6 +5,7 @@ const Layout = () => {
   return (
     <Stack
       screenOptions={{
+        title: "Decks",
         headerTitle: "Decks",
         headerLargeTitleEnabled: false,
         headerTransparent: true,

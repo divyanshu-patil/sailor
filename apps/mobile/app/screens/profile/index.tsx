@@ -22,6 +22,8 @@ import ProfileBackground from "./components/profile-background";
 import ProfileHero from "./components/profile-hero";
 import FloatingNote from "./components/floating-note";
 import SubscriptionCard from "./components/subscription-card";
+import { router } from "expo-router";
+
 import SettingsCard from "./components/settings-card";
 import LogoutButton from "./components/logout-button";
 import { useLogout } from "./hooks/use-logout";
@@ -31,18 +33,13 @@ import { useAppUserStore } from "@/store/app-user.store";
 import { useUser } from "@/hooks/use-user";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useSubscription } from "@/hooks/use-subscription";
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-  });
+import { formatRenewal } from "@/utils/format-renewal";
 
 const ProfileScreen = () => {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { confirmLogout } = useLogout();
-  const { isPro, isReady, expirationDate, willRenew, openManageMenu } =
+  const { isPro, isReady, isRefreshing, plan, openManageMenu } =
     useSubscription();
   const appUser = useAppUserStore((s) => s.appUser);
   const setAppUser = useAppUserStore((s) => s.setAppUser);
@@ -237,25 +234,32 @@ const ProfileScreen = () => {
   }
 
   const displayName =
+    appUser?.nickname ||
     appUser?.fullName ||
     identity.displayName ||
-    appUser?.nickname ||
     profile?.full_name ||
     "Your profile";
-  const displayEmail =
-    identity.email || appUser?.email || profile?.email || "";
+  const displayEmail = identity.email || appUser?.email || profile?.email || "";
   const avatarUrl = identity.imageUrl;
 
-  const planName = isPro ? "Pro Plan" : "Basic Plan";
+  // The store's own name for the product, so switching monthly to yearly
+  // changes the card the moment the new customer info lands. The generic
+  // "Pro Plan" is only the fallback for a store that gives no display name.
+  const planName = plan ? plan.name : isPro ? "Pro Plan" : "Basic Plan";
   const planDescription = isPro
     ? "Keep creating, you're on a roll!"
     : "Upgrade to unlock the full Sailors experience.";
-  const statusLabel = !isReady
-    ? "Checking…"
+  const planLoading = !isReady || isRefreshing;
+  const statusLabel = plan
+    ? plan.expirationDate
+      ? `${plan.willRenew ? "Renews" : "Ends"} ${formatRenewal(plan.expirationDate)}${
+          // Only in a dev build, and only when the store says sandbox: it
+          // explains a renewal date that is minutes away rather than a month.
+          __DEV__ && plan.isSandbox ? " · test" : ""
+        }`
+      : "Active"
     : isPro
-      ? expirationDate
-        ? `${willRenew ? "Renews" : "Ends"} ${formatDate(expirationDate)}`
-        : "Active"
+      ? "Active"
       : "Free plan";
 
   return (
@@ -307,14 +311,25 @@ const ProfileScreen = () => {
               avatarUrl={avatarUrl}
               avatarName={identity.name}
               avatarLoading={!identity.isLoaded}
+              // Same destination as the "Edit Profile" row below. The photo is
+              // what people reach for first, so it should not be the one part
+              // of this block that does nothing.
+              onAvatarPress={() =>
+                router.navigate({
+                  pathname: "/(authenticated)/(tabs)/(profile)/edit-profile",
+                })
+              }
             />
           </Animated.View>
 
           <Animated.View style={[styles.cardWrap, planStyle]}>
             <SubscriptionCard
               planName={planName}
+              periodLabel={plan?.period}
+              shimmerName={isPro}
               description={planDescription}
               statusLabel={statusLabel}
+              loading={planLoading}
               onManagePress={openManageMenu}
             />
           </Animated.View>

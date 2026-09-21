@@ -1,6 +1,18 @@
 import React from "react";
-import { Button, HStack, Image, Overlay, Section, Text } from "@expo/ui/swift-ui";
-import { buttonStyle, foregroundStyle, frame, padding } from "@expo/ui/swift-ui/modifiers";
+import {
+  Button,
+  HStack,
+  Image,
+  Overlay,
+  Section,
+  Text,
+} from "@expo/ui/swift-ui";
+import {
+  buttonStyle,
+  foregroundStyle,
+  frame,
+  padding,
+} from "@expo/ui/swift-ui/modifiers";
 
 import { DECK_PALETTE } from "@/constants/deck-palette";
 

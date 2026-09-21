@@ -30,6 +30,11 @@ const SOURCES = {
   "bg-cool-medium": require("../../assets/widgets/widget-bg-cool-medium.png"),
   "bg-streak-cool": require("../../assets/widgets/widget-bg-streak-cool.png"),
   flame: require("../../assets/widgets/widget-flame.png"),
+  // One per streak state, baked from assets/images/*.svg by
+  // scripts/mascots/bake-icons.mjs. PNG because a widget can render nothing
+  // else — see the note at the top of this file.
+  "broken-heart": require("../../assets/widgets/widget-broken-heart.png"),
+  hourglass: require("../../assets/widgets/widget-hourglass.png"),
 };
 
 export type WidgetArt = keyof typeof SOURCES;

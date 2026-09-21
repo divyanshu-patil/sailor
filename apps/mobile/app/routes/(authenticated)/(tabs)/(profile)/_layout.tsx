@@ -7,6 +7,7 @@ const Layout = () => {
     <Stack
       screenOptions={{
         ...defaultHeaderConfig,
+        title: "Profile",
         headerTitle: "",
         headerLargeTitleEnabled: false,
         headerTransparent: true,
@@ -17,6 +18,7 @@ const Layout = () => {
         name="edit-profile"
         options={{
           presentation: "modal",
+          title: "Edit Profile",
           headerTitle: "Edit Profile",
         }}
       />
@@ -24,6 +26,7 @@ const Layout = () => {
         name="settings"
         options={{
           presentation: "modal",
+          title: "Settings",
           headerTitle: "Settings",
         }}
       />
@@ -31,6 +34,7 @@ const Layout = () => {
         name="terms-of-service"
         options={{
           presentation: "modal",
+          title: "Terms of Service",
           headerTitle: "Terms of Service",
         }}
       />
@@ -38,6 +42,7 @@ const Layout = () => {
         name="privacy-policy"
         options={{
           presentation: "modal",
+          title: "Privacy Policy",
           headerTitle: "Privacy Policy",
         }}
       />
