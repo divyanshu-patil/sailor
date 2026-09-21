@@ -3,7 +3,7 @@ import secrets
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Date, DateTime, Enum as SAEnum, Integer, String, func, text
+from sqlalchemy import Boolean, Date, DateTime, Enum as SAEnum, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.enums.user_enums import ExperienceLevel, Profession
 
@@ -139,6 +139,19 @@ class User(Base):
     # it up. See quota.resolve_tier.
     entitlement_checked_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True,
+    )
+
+    # --- onboarding ------------------------------------------------------------
+    # Server-side rather than device-side: onboarding is a fact about the
+    # ACCOUNT, not about a phone. Kept only in MMKV it ran again on every new
+    # install and on a second device, and never ran again after a reinstall on
+    # the first one.
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false"),
+    )
+    #: Same, for the optional profile wizard that follows it.
+    profile_setup_completed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false"),
     )
 
     # --- daily practice streak -------------------------------------------------

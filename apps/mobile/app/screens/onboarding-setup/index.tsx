@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/expo";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { userService } from "@/services/user.service";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
 
@@ -26,6 +27,13 @@ const OnboardingSetupScreen = () => {
 
   const handleComplete = useCallback(() => {
     if (userId) completeOnboarding(userId);
+    // Local first — the flag above is what moves the navigation, and it has to
+    // work with no connection. The server copy is what survives a reinstall or
+    // a second device; it is fire-and-forget because failing to record it is
+    // not a reason to trap someone in onboarding.
+    void userService
+      .updateProfile({ onboarding_completed: true })
+      .catch(() => {});
     router.replace("/(profile-setup)" as Href);
   }, [userId, completeOnboarding]);
 

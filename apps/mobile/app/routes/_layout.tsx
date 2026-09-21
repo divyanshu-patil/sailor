@@ -10,6 +10,7 @@ import * as SplashScreen from "expo-splash-screen";
 
 import { useAppBootstrap } from "@/hooks/use-app-bootstrap";
 import { useAuthGate } from "@/hooks/use-auth-gate";
+import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { useOnboardingStore } from "@/store/onboarding.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
@@ -122,6 +123,12 @@ function InitialLayout() {
   );
   const { ready: authReady, isSignedIn, userId } = useAuthGate();
   const assetsReady = useAppBootstrap();
+
+  // Reconciles the local completion flags with the server's, so a reinstall or
+  // a second device does not repeat a flow this account has already finished.
+  // It only ever writes locally, and only toward "done" — the router below
+  // keeps reading the local stores, which are on disk before the first frame.
+  useOnboardingGate(userId);
 
   // Everything the first frame needs: the persisted stores, a decision about
   // who is signed in, and the home screen's own fonts and images.

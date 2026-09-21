@@ -4,6 +4,7 @@ import { router, type Href } from "expo-router";
 import { useAuth } from "@clerk/expo";
 
 import ProfilePictureStep from "./components/profile-picture-step";
+import { userService } from "@/services/user.service";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 
 /**
@@ -28,6 +29,11 @@ const OptionalProfileWizard = () => {
   const finish = useCallback(() => {
     if (!userId) return;
     completeProfileSetup(userId);
+    // Same shape as onboarding's: the local flag drives the navigation, the
+    // server copy is what a reinstall reads back.
+    void userService
+      .updateProfile({ profile_setup_completed: true })
+      .catch(() => {});
     router.replace("/(authenticated)" as Href);
   }, [userId, completeProfileSetup]);
 

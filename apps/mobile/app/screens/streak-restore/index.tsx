@@ -4,7 +4,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  LayoutChangeEvent,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -13,6 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { Presets } from "react-native-pulsar";
 import Animated, {
+  Extrapolation,
   interpolate,
   runOnJS,
   type SharedValue,
@@ -53,10 +53,23 @@ import PressableScale from "@/components/ui/animated/PressableScale";
  * beat-by-beat order — every duration and curve lives there.
  */
 
-/** The reveal disc is drawn once at this radius and scaled, so growing it costs
- *  a transform per frame instead of a layout pass. Big enough that the scale at
- *  full size is single-digit and the edge stays clean. */
-const DISC_R = 220;
+/**
+ * The reveal, borrowed from the dial screen (new-script/step-2-delivery).
+ *
+ * A circle drawn ONCE at `ARC_R` and scaled, so growing it costs a transform
+ * per frame rather than a layout pass. Its centre sits a full `ARC_R` below the
+ * bottom of the screen, which puts its top edge exactly on the bottom edge at
+ * rest — invisible — and means what rises is a shallow curve that flattens as
+ * it grows, not a circle ballooning out of a button.
+ *
+ * Anchoring it to the screen rather than to the button is also what killed the
+ * flicker: the button's rect is measured asynchronously and re-measured as the
+ * page reflows under the growing disc, so the disc kept being re-anchored
+ * mid-flight. The bottom of the screen cannot move.
+ */
+const arcRadius = (w: number) => w;
+const targetRadius = (w: number, h: number) =>
+  Math.hypot(w / 2, h + arcRadius(w)) * 1.06;
 
 /** Restores allowed per calendar month. Mirrors RESTORES_PER_MONTH on the
  *  server, which is the one that actually enforces it — this copy only draws
@@ -140,29 +153,18 @@ export default function StreakRestoreScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  /** The button's rect, needed before the disc knows where to grow from. */
-  const [button, setButton] = useState<{
-    cx: number;
-    cy: number;
-    h: number;
-  } | null>(null);
-
   const press = useSharedValue(0);
   const reveal = useSharedValue(0);
-  const puck = useSharedValue(0);
   const won = useSharedValue(0);
+
+  const ARC_R = arcRadius(W);
+  const CIRCLE_R = targetRadius(W, H);
 
   // Guards a second tap while the first is still in flight — the button fades
   // under the reveal but is still mounted, and two restores would spend two
   // months' worth of allowance on one lapse.
   const committed = useRef(false);
 
-  const buttonRef = useRef<View>(null);
-
-  // `measureInWindow`, not the layout event: onLayout reports coordinates
-  // relative to the parent, and the parent here is a footer sitting at the
-  // bottom of the screen — so the disc grew from a point about 800pt too high.
-  // The disc is positioned in screen space, so it has to be measured there.
   // The cached flag is good enough for the first paint, but not to refuse on:
   // it is written by whichever screen last fetched, and a restore spent on
   // another device — or a month that has since rolled over — leaves it saying
@@ -198,33 +200,6 @@ export default function StreakRestoreScreen() {
     };
   }, [setStreak, streak?.simulated]);
 
-  // `reveal` is the freeze: layout fires again as the ask fades under the
-  // growing disc, and re-measuring then moved the disc's anchor and recomputed
-  // its scale — which read as the disc snapping back to nothing and growing a
-  // second time. Once the reveal has started, the rect it grew from is not
-  // allowed to change.
-  const onButtonLayout = useCallback(
-    (_e: LayoutChangeEvent) => {
-      if (reveal.value !== 0) return;
-      buttonRef.current?.measureInWindow((x, y, width, height) => {
-        if (!width || !height || reveal.value !== 0) return;
-        setButton({ cx: x + width / 2, cy: y + height / 2, h: height });
-      });
-    },
-    [reveal],
-  );
-
-  /** Distance from the button's centre to the furthest corner — how far the
-   *  disc has to grow before no part of the screen is left uncovered. */
-  const targetR = button
-    ? Math.hypot(
-        Math.max(button.cx, W - button.cx),
-        Math.max(button.cy, H - button.cy),
-      )
-    : DISC_R;
-  const startScale = button ? button.h / 2 / DISC_R : 0.1;
-  const endScale = (targetR * 1.02) / DISC_R;
-
   const settle = useCallback(() => setPhase("won"), []);
 
   const unwind = useCallback(
@@ -237,16 +212,12 @@ export default function StreakRestoreScreen() {
         duration: M.revealOut,
         easing: M.easing.out,
       });
-      puck.value = withTiming(0, {
-        duration: M.pressOut,
-        easing: M.easing.out,
-      });
       press.value = withTiming(0, {
         duration: M.pressOut,
         easing: M.easing.press,
       });
     },
-    [press, puck, reveal],
+    [press, reveal],
   );
 
   const onPressIn = useCallback(() => {
@@ -281,16 +252,24 @@ export default function StreakRestoreScreen() {
     // to the tap, and holding it until the network replies would put a dead
     // half-second exactly where the screen promises its one piece of delight.
     // A failure unwinds it (see `unwind`), which is the rarer path.
-    puck.value = withTiming(1, { duration: M.puckIn, easing: M.easing.puck });
+    // The circle grows from the bottom edge and covers everything. The
+    // restored state is started from its completion callback rather than on a
+    // delay of its own: the two must not overlap — the new screen appears on a
+    // canvas that is already its colour, which is the whole point of the
+    // reveal.
     reveal.value = withDelay(
       M.revealDelay,
-      withTiming(1, { duration: M.reveal, easing: M.easing.reveal }),
-    );
-    won.value = withDelay(
-      M.wonInDelay,
-      withTiming(1, { duration: M.wonIn, easing: M.easing.won }, (finished) => {
+      withTiming(1, { duration: M.reveal, easing: M.easing.reveal }, (done) => {
         "worklet";
-        if (finished) runOnJS(settle)();
+        if (!done) return;
+        won.value = withTiming(
+          1,
+          { duration: M.wonIn, easing: M.easing.won },
+          (finished) => {
+            "worklet";
+            if (finished) runOnJS(settle)();
+          },
+        );
       }),
     );
 
@@ -304,15 +283,26 @@ export default function StreakRestoreScreen() {
     } catch (e: any) {
       const status = e?.response?.status;
       if (status === 409) {
-        // Someone spent the month's restore elsewhere between this screen
-        // opening and the tap. Not an error — it is the other state.
+        // "Already used this month" — but by whom, and when? If our own store
+        // already shows a live streak restored this month, the restore that
+        // spent it is the one we just made: a duplicate request (a double tap,
+        // a second mount of this screen) racing the first. Showing the dead end
+        // then would tell the person their restore failed when it plainly did
+        // not, and the yellow they are already looking at would snap away.
+        const mine = useDailyStore.getState().streak;
+        if (mine?.restoreUsedThisMonth && (mine.currentStreak ?? 0) > 0) {
+          setBusy(false);
+          return;
+        }
+
+        // Genuinely spent elsewhere — another device, or a month that rolled
+        // over under us. Not an error; it is the other state.
         committed.current = false;
         setBusy(false);
         reveal.value = withTiming(0, {
           duration: M.revealOut,
           easing: M.easing.out,
         });
-        puck.value = withTiming(0, { duration: M.pressOut });
         won.value = 0;
         press.value = withTiming(0, { duration: M.pressOut });
         setPhase("blocked");
@@ -324,31 +314,32 @@ export default function StreakRestoreScreen() {
           : "Couldn't reach the server. Your streak is unchanged.",
       );
     }
-  }, [phase, press, puck, reveal, setStreak, settle, unwind, won]);
+  }, [phase, press, reveal, setStreak, settle, unwind, won]);
 
   // --- styles ----------------------------------------------------------------
 
+  // Same construction as the dial screen's reveal: translate the drawn circle
+  // so its centre sits below the screen, then scale it up in place.
   const discStyle = useAnimatedStyle(() => ({
     opacity: reveal.value > 0 ? 1 : 0,
     transform: [
-      { scale: interpolate(reveal.value, [0, 1], [startScale, endScale]) },
+      { translateX: W / 2 - ARC_R },
+      { translateY: H + ARC_R - ARC_R },
+      { scale: 1 + (CIRCLE_R / ARC_R - 1) * reveal.value },
     ],
   }));
 
   const askStyle = useAnimatedStyle(() => ({
-    // Tied to the disc rather than to its own clock: the words have to be gone
-    // by the time the yellow reaches them, wherever on the screen they sit.
-    opacity: interpolate(reveal.value, [0, 0.28], [1, 0]),
-  }));
-
-  const puckStyle = useAnimatedStyle(() => ({
-    opacity: puck.value * (1 - won.value),
-    transform: [{ scale: interpolate(puck.value, [0, 1], [0.2, 1]) }],
-  }));
-
-  const flameStyle = useAnimatedStyle(() => ({
-    opacity: puck.value * (1 - won.value),
-    transform: [{ scale: interpolate(puck.value, [0, 1], [0.4, 1]) }],
+    // Tied to the disc, and late: the words have to be gone by the time the
+    // yellow reaches them, but going at 0.28 emptied the page well before it
+    // arrived and left a blank cream band above the curve. This window is
+    // roughly where the edge crosses the copy.
+    opacity: interpolate(
+      reveal.value,
+      [0.3, 0.62],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
   }));
 
   const wonStyle = useAnimatedStyle(() => ({
@@ -427,11 +418,7 @@ export default function StreakRestoreScreen() {
             style={[styles.footer, { paddingBottom: insets.bottom + H * 0.15 }]}
             pointerEvents={phase === "ask" ? "box-none" : "none"}
           >
-            <View
-              ref={buttonRef}
-              style={styles.buttonRow}
-              onLayout={onButtonLayout}
-            >
+            <View style={styles.buttonRow}>
               {SPARKS.map((spark, i) => (
                 <Spark
                   key={i}
@@ -493,49 +480,25 @@ export default function StreakRestoreScreen() {
         </Animated.View>
       )}
 
-      {/* The button's own colour, grown. Sits above the ask and below the puck,
-          so it buries the words on its way out and never covers the flame. */}
-      {button && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.disc,
-            {
-              left: button.cx - DISC_R,
-              top: button.cy - DISC_R,
-              backgroundColor: restoreColors.won.bg,
-            },
-            discStyle,
-          ]}
-        />
-      )}
+      {/* The reveal. Anchored to the screen, so it needs nothing measured and
+          nothing can move it once it is running. It sits above the ask and
+          below the restored state, which is exactly the order it reads in:
+          the colour buries the question, then the new screen appears on it. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.disc,
+          {
+            width: ARC_R * 2,
+            height: ARC_R * 2,
+            borderRadius: ARC_R,
+            backgroundColor: restoreColors.won.bg,
+          },
+          discStyle,
+        ]}
+      />
 
-      {/* The white disc and the flame it carries — the one thing that stays put
-          while the screen changes colour underneath it. */}
-      {button && (
-        <>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.puck,
-              { left: button.cx - 86, top: button.cy - 86 },
-              puckStyle,
-            ]}
-          />
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.puckFlame,
-              { left: button.cx - 34, top: button.cy - 34 },
-              flameStyle,
-            ]}
-          >
-            <FlameIcon size={68} />
-          </Animated.View>
-        </>
-      )}
-
-      {/* The restored state, arriving through the puck. */}
+      {/* The restored state, on a canvas that is already its colour. */}
       {phase !== "ask" && (
         <Animated.View
           style={[styles.fill, wonStyle]}
@@ -782,18 +745,7 @@ const styles = StyleSheet.create({
     width: 6,
     borderRadius: 3,
   },
-  disc: {
-    position: "absolute",
-    width: DISC_R * 2,
-    height: DISC_R * 2,
-    borderRadius: DISC_R,
-  },
-  puck: {
-    position: "absolute",
-    width: 172,
-    height: 172,
-    borderRadius: 86,
-    backgroundColor: "#FFFCF0",
-  },
-  puckFlame: { position: "absolute", width: 68, height: 68 },
+  // Size and radius come from the screen width at render time; only the
+  // positioning is fixed here.
+  disc: { position: "absolute", left: 0, top: 0 },
 });

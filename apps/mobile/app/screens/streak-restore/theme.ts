@@ -66,10 +66,8 @@ export const restoreFonts = {
  *   ~`contentOut`       the question, the blurb and the button have faded; by
  *                       now the yellow is well past them, so they are leaving
  *                       under cover rather than blinking out on an empty page.
- *   `reveal`            the yellow has reached every corner. The screen is the
- *                       restored screen's colour, but still holds the flame.
- *   `wonInDelay`        the restored scene fades up through the puck, which
- *                       hands off by fading out underneath it.
+ *   `reveal`            the yellow has reached every corner.
+ *   then                the restored scene fades up on it.
  *
  * The reveal is deliberately the longest beat. It is the only one carrying the
  * screen from one state to the other, and anything under about 700ms reads as a
@@ -100,15 +98,9 @@ export const restoreMotion = {
   /** The intro's words and button leaving under the growing yellow. */
   contentOut: t(300),
 
-  /** The white disc behind the flame, swelling as the yellow passes it. */
-  puckIn: t(520),
-  puckOut: t(420),
-  /** The flame's own lift, so it is not simply riding the puck's scale. */
-  flameIn: t(460),
-
-  /** The restored scene arriving. Starts before the reveal has finished — the
-   *  colour is already right by then, and waiting for it leaves a dead beat. */
-  wonInDelay: t(760),
+  /** The restored scene arriving. Started from the reveal's own completion
+   *  callback, not on a delay of its own — the two must not overlap, so that
+   *  the new screen appears on a canvas that is already its colour. */
   wonIn: t(560),
 
   /** Reversing the reveal after a failed request. Quicker than it grew: an
@@ -120,9 +112,6 @@ export const restoreMotion = {
     reveal: Easing.out(Easing.cubic),
     /** Everything leaving under it. */
     out: Easing.out(Easing.quad),
-    /** The puck and flame: a touch of overshoot would fight the yellow, so
-     *  this is a plain ease with a long tail. */
-    puck: Easing.out(Easing.poly(3)),
     /** The sparks answering the finger. */
     press: Easing.out(Easing.quad),
     /** The restored scene. */

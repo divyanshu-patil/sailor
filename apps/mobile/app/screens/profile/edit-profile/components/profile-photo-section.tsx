@@ -6,24 +6,30 @@ import {
   Menu,
   ProgressView,
   Section,
-  VStack,
+  ZStack,
 } from "@expo/ui/swift-ui";
 import {
   aspectRatio,
-  buttonStyle,
+  background,
   clipShape,
-  controlSize,
+  font,
+  foregroundStyle,
   frame,
+  imageScale,
   labelStyle,
-  resizable,
   listRowBackground,
+  offset,
   padding,
+  resizable,
 } from "@expo/ui/swift-ui/modifiers";
 
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useProfilePhoto } from "@/hooks/use-profile-photo";
 
-const AVATAR_SIZE = 108;
+const AVATAR_SIZE = 112;
+/** The pencil badge, overlapping the photo's bottom-right like every other
+ *  edit-profile flow. Sized against the photo so the two scale together. */
+const BADGE_SIZE = Math.round(AVATAR_SIZE * 0.3);
 
 /** `file://` in front of a bare path, left alone if it already has a scheme. */
 function toFileUrl(path: string): string {
@@ -126,47 +132,61 @@ const ProfilePhotoSection = () => {
 
   return (
     <Section modifiers={[listRowBackground("clear")]}>
-      <VStack
-        spacing={16}
+      {/* The badge sits ON the photo, bottom-right, rather than under it —
+          which is where every edit-profile flow puts it and where a thumb
+          expects to find it. `ZStack` with a bottomTrailing alignment does
+          that natively; the offset nudges it onto the circle's edge. */}
+      <ZStack
+        alignment="bottomTrailing"
         modifiers={[
           frame({ maxWidth: Infinity, alignment: "center" }),
-          padding({ vertical: 12 }),
+          padding({ vertical: 14 }),
         ]}
       >
-        {hasPhoto ? (
-          <Image
-            uiImage={localPath}
-            // Order is SwiftUI's own: resizable and aspectRatio first, so the
-            // photo scales to fill the frame, THEN the frame, then the crop.
-            // Without the first two it draws at its native pixel size and the
-            // circle shows whatever happens to be in the middle of it.
-            modifiers={[
-              resizable(),
-              aspectRatio({ contentMode: "fill" }),
-              frame({ width: AVATAR_SIZE, height: AVATAR_SIZE }),
-              clipShape("circle"),
-            ]}
-          />
-        ) : (
-          <Image
-            systemName="person.crop.circle.fill"
-            size={AVATAR_SIZE}
-            color="#C7C7CC"
-          />
-        )}
+        <ZStack
+          modifiers={[frame({ width: AVATAR_SIZE, height: AVATAR_SIZE })]}
+        >
+          {hasPhoto ? (
+            <Image
+              uiImage={localPath}
+              // Order is SwiftUI's own: resizable and aspectRatio first, so the
+              // photo scales to fill the frame, THEN the frame, then the crop.
+              // Without the first two it draws at its native pixel size and the
+              // circle shows whatever happens to be in the middle of it.
+              modifiers={[
+                resizable(),
+                aspectRatio({ contentMode: "fill" }),
+                frame({ width: AVATAR_SIZE, height: AVATAR_SIZE }),
+                clipShape("circle"),
+              ]}
+            />
+          ) : (
+            <Image
+              systemName="person.crop.circle.fill"
+              size={AVATAR_SIZE}
+              color="#C7C7CC"
+            />
+          )}
+        </ZStack>
 
         {busy ? (
-          <ProgressView />
+          <ProgressView
+            modifiers={[frame({ width: BADGE_SIZE, height: BADGE_SIZE })]}
+          />
         ) : hasPhoto ? (
-          // `labelStyle("iconOnly")` rather than an empty label: the pencil is
-          // all that shows, but the title is still there for VoiceOver to read.
           <Menu
             label="Edit photo"
-            systemImage="pencil"
+            systemImage="pencil.circle.fill"
             modifiers={[
               labelStyle("iconOnly"),
-              buttonStyle("glass"),
-              controlSize("large"),
+              imageScale("large"),
+              font({ size: BADGE_SIZE }),
+              foregroundStyle("#1F1D1D"),
+              background("#FFFFFF", { shape: "circle" }),
+              clipShape("circle"),
+              // Half on the photo, half off it — the rim is where this badge
+              // belongs; fully inside reads as part of the picture.
+              offset({ x: 4, y: 4 }),
             ]}
           >
             <Button
@@ -182,21 +202,22 @@ const ProfilePhotoSection = () => {
             />
           </Menu>
         ) : (
-          // `label` is required for `systemImage` to render at all — a Button
-          // with only a systemImage draws nothing — so it is supplied and then
-          // hidden the same way the menu's is.
           <Button
             label="Add photo"
-            systemImage="pencil"
+            systemImage="pencil.circle.fill"
             onPress={handleChange}
             modifiers={[
               labelStyle("iconOnly"),
-              buttonStyle("glass"),
-              controlSize("large"),
+              imageScale("large"),
+              font({ size: BADGE_SIZE }),
+              foregroundStyle("#1F1D1D"),
+              background("#FFFFFF", { shape: "circle" }),
+              clipShape("circle"),
+              offset({ x: 4, y: 4 }),
             ]}
           />
         )}
-      </VStack>
+      </ZStack>
     </Section>
   );
 };

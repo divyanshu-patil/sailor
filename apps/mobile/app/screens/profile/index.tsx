@@ -22,6 +22,8 @@ import ProfileBackground from "./components/profile-background";
 import ProfileHero from "./components/profile-hero";
 import FloatingNote from "./components/floating-note";
 import SubscriptionCard from "./components/subscription-card";
+import { router } from "expo-router";
+
 import SettingsCard from "./components/settings-card";
 import LogoutButton from "./components/logout-button";
 import { useLogout } from "./hooks/use-logout";
@@ -306,6 +308,14 @@ const ProfileScreen = () => {
               avatarUrl={avatarUrl}
               avatarName={identity.name}
               avatarLoading={!identity.isLoaded}
+              // Same destination as the "Edit Profile" row below. The photo is
+              // what people reach for first, so it should not be the one part
+              // of this block that does nothing.
+              onAvatarPress={() =>
+                router.navigate({
+                  pathname: "/(authenticated)/(tabs)/(profile)/edit-profile",
+                })
+              }
             />
           </Animated.View>
 

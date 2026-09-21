@@ -27,7 +27,10 @@ interface DailyStore {
    */
   pendingCompleteDate: string | null;
 
-  setContent: (unit: DailyContentUnit, tomorrow: DailyContentUnit | null) => void;
+  setContent: (
+    unit: DailyContentUnit,
+    tomorrow: DailyContentUnit | null,
+  ) => void;
   setStreak: (streak: StreakState) => void;
   setPendingComplete: (date: string | null) => void;
   reset: () => void;
@@ -45,7 +48,12 @@ export const useDailyStore = create<DailyStore>()(
       setStreak: (streak) => set({ streak }),
       setPendingComplete: (pendingCompleteDate) => set({ pendingCompleteDate }),
       reset: () =>
-        set({ unit: null, tomorrow: null, streak: null, pendingCompleteDate: null }),
+        set({
+          unit: null,
+          tomorrow: null,
+          streak: null,
+          pendingCompleteDate: null,
+        }),
     }),
     {
       name: "daily-store",
@@ -55,12 +63,32 @@ export const useDailyStore = create<DailyStore>()(
       //   1: `type` (a vague subject) became `framework` + `frameworkLabel`.
       //   2: `frameworkSteps` added — units cached at v1 lack it, and the intro
       //      screen crashed on `.map` of undefined before this was bumped.
+      //   3: clears a `simulated` streak written by the dev section before
+      //      `partialize` below started stripping it. One of those on disk made
+      //      the restore screen refuse to re-read the server on every launch,
+      //      indefinitely.
       // Dropping the cache costs one screen of "no practice yet" and fixes
       // itself on the first refresh.
-      version: 2,
+      version: 3,
+      // A simulated streak lives for the session, never on disk. The dev
+      // section writes one so the home and restore screens can be looked at in
+      // a given state; persisted, it outlived the app and left the restore
+      // screen refusing to re-read the server on every later launch — a dev
+      // tap at lunchtime still shaping the app that evening.
+      partialize: (state) => ({
+        ...state,
+        streak: state.streak?.simulated
+          ? { ...state.streak, simulated: undefined }
+          : state.streak,
+      }),
       migrate: (persisted, version) => {
         if (version < 2) {
-          return { unit: null, tomorrow: null, streak: null, pendingCompleteDate: null };
+          return {
+            unit: null,
+            tomorrow: null,
+            streak: null,
+            pendingCompleteDate: null,
+          };
         }
         return persisted as DailyStore;
       },
