@@ -14,6 +14,7 @@ const STEP_ROUTES: Record<OnboardingStepId, Href> = {
   profile_identity: "/(onboarding)" as Href,
   gender: "/(onboarding)/gender" as Href,
   referral: "/(onboarding)/referral" as Href,
+  speaking_level: "/(onboarding)/speaking-level" as Href,
 };
 
 export function stepRoute(id: OnboardingStepId): Href {
