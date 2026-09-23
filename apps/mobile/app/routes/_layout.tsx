@@ -11,8 +11,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { useAppBootstrap } from "@/hooks/use-app-bootstrap";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
-import { useOnboardingStore } from "@/store/onboarding.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
+import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
@@ -109,9 +109,10 @@ function ReminderRouting() {
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function InitialLayout() {
-  const isHydrated = useOnboardingStore((s) => s._hasHydrated);
-  const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const isOnboardingCompletionHydrated = useOnboardingCompletionStore(
+    (s) => s._hasHydrated,
+  );
+  const isOnboardingPendingHydrated = useOnboardingPendingStore(
     (s) => s._hasHydrated,
   );
   const onboardingCompletedForUserId = useOnboardingCompletionStore(
@@ -133,8 +134,8 @@ function InitialLayout() {
   // Everything the first frame needs: the persisted stores, a decision about
   // who is signed in, and the home screen's own fonts and images.
   const canRender =
-    isHydrated &&
     isOnboardingCompletionHydrated &&
+    isOnboardingPendingHydrated &&
     isProfileSetupHydrated &&
     authReady &&
     assetsReady;
@@ -213,48 +214,30 @@ function InitialLayout() {
     >
       <Stack.Screen name="index" options={{ title: "Sailors" }} />
 
-      {/* Mounted for anyone signed out, alongside (unauthenticated): base is
-          the front door and pushes into this flow on "Get started". */}
-      <Stack.Protected guard={!isSignedIn}>
-        <Stack.Screen name="(onboarding)" options={{ title: "Welcome" }} />
-      </Stack.Protected>
-
-      {/* The auth group is mounted for anyone signed out, onboarding or not:
-          the base screen is now the first screen, and its "Get started"
-          button pushes into the (onboarding) flow above it. */}
+      {/* The base screen is the app's front door. "Get started" opens the
+          onboarding flow the first time; once it is done the button morphs
+          base into its create-account state instead. */}
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(unauthenticated)" options={{ title: "Sign In" }} />
       </Stack.Protected>
 
       {/*
-        Verified (a Clerk session, for email signup, only exists after the code
-        is confirmed) but hasn't finished onboarding. Separate from the pre-auth
-        (onboarding) group, which is the earlier welcome/features flow.
+        One onboarding flow, mounted whenever onboarding is not finished —
+        signed out (the first run, before sign-up) or signed in (a new device
+        that never ran it). The workflow owns its own position.
       */}
-      <Stack.Protected
-        guard={hasSeenOnboarding && isSignedIn && !hasCompletedOnboarding}
-      >
-        <Stack.Screen name="(onboarding-setup)" />
+      <Stack.Protected guard={!hasCompletedOnboarding}>
+        <Stack.Screen name="(onboarding)" options={{ title: "Onboarding" }} />
       </Stack.Protected>
 
       <Stack.Protected
-        guard={
-          hasSeenOnboarding &&
-          isSignedIn &&
-          hasCompletedOnboarding &&
-          !hasCompletedProfileSetup
-        }
+        guard={isSignedIn && hasCompletedOnboarding && !hasCompletedProfileSetup}
       >
         <Stack.Screen name="(profile-setup)" />
       </Stack.Protected>
 
       <Stack.Protected
-        guard={
-          hasSeenOnboarding &&
-          isSignedIn &&
-          hasCompletedOnboarding &&
-          hasCompletedProfileSetup
-        }
+        guard={isSignedIn && hasCompletedOnboarding && hasCompletedProfileSetup}
       >
         <Stack.Screen name="(authenticated)" options={{ title: "Sailors" }} />
       </Stack.Protected>

@@ -14,6 +14,7 @@ import {
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
+import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { useAppUserStore } from "@/store/app-user.store";
 
 export default function Index() {
@@ -29,6 +30,9 @@ export default function Index() {
   );
   const onboardingCompletedForUserId = useOnboardingCompletionStore(
     (s) => s.completedForUserId,
+  );
+  const isOnboardingPendingHydrated = useOnboardingPendingStore(
+    (s) => s._hasHydrated,
   );
   // const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const { ready: authReady, isSignedIn, userId } = useAuthGate();
@@ -68,6 +72,7 @@ export default function Index() {
       !isHydrated ||
       !isProfileSetupHydrated ||
       !isOnboardingCompletionHydrated ||
+      !isOnboardingPendingHydrated ||
       !authReady
     ) {
       return;
@@ -79,21 +84,22 @@ export default function Index() {
     if (isSignedIn) {
       // Verified. Onboarding runs first, then the optional profile wizard.
       if (!hasCompletedOnboarding) {
-        router.replace("/(onboarding-setup)" as Href);
+        router.replace("/(onboarding)" as Href);
       } else if (!hasCompletedProfileSetup) {
         router.replace("/(profile-setup)" as Href);
       } else {
         router.replace("/(authenticated)");
       }
     } else {
-      // The base screen is the app's front door — always, whether or not the
-      // intro has been seen. It hands off to onboarding / create-account.
+      // The base screen is the front door. "Get started" opens onboarding the
+      // first time and morphs into create-account once it has been finished.
       router.replace("/(unauthenticated)");
     }
   }, [
     isHydrated,
     isProfileSetupHydrated,
     isOnboardingCompletionHydrated,
+    isOnboardingPendingHydrated,
     isSignedIn,
     authReady,
     userId,

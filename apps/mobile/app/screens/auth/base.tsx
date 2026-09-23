@@ -40,6 +40,7 @@ import {
   MorphNote,
 } from "@/screens/auth/components/morph-text";
 import { useCreateAccountTransition } from "@/screens/auth/use-create-account-transition";
+import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { mark, startFrameProbe } from "@/lib/frame-probe"; // TEMP profiling
 
 const DESIGN_WIDTH = 416;
@@ -483,14 +484,28 @@ export default function Base() {
     useCreateAccountTransition();
 
   // Entering from login lands on this screen already morphed into the
-  // create-account state; run the forward transition once on mount.
+  // create-account state; run the forward transition once on mount. Onboarding
+  // finishing sets the same request through the store, so the hand-off does not
+  // depend on the route params surviving a pop.
+  const createAccountRequested = useOnboardingPendingStore(
+    (s) => s.createAccountRequested,
+  );
+  const consumeCreateAccountRequest = useOnboardingPendingStore(
+    (s) => s.consumeCreateAccountRequest,
+  );
   const autoStartedRef = useRef(false);
   useEffect(() => {
     if (autoStartedRef.current) return;
-    if (params.createAccount !== "1") return;
+    if (params.createAccount !== "1" && !createAccountRequested) return;
     autoStartedRef.current = true;
+    if (createAccountRequested) consumeCreateAccountRequest();
     startTransition();
-  }, [params.createAccount, startTransition]);
+  }, [
+    params.createAccount,
+    createAccountRequested,
+    consumeCreateAccountRequest,
+    startTransition,
+  ]);
 
   const scale = useMemo(
     () => Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT),
@@ -572,12 +587,19 @@ export default function Base() {
     router.push("/(unauthenticated)/login");
   }, [router]);
 
-  // "Get started" hands off to the onboarding flow. Onboarding finishes by
-  // returning here with `createAccount=1`, which the effect above picks up to
-  // morph into the create-account state.
+  // "Get started" opens the onboarding flow the first time. Once it has been
+  // finished on this device, it morphs straight into the create-account state
+  // instead — onboarding is a one-time thing, not something to replay.
+  const pendingOnboardingCompleted = useOnboardingPendingStore(
+    (s) => s.completed,
+  );
   const handleGetStarted = useCallback(() => {
-    router.push("/(onboarding)/welcome");
-  }, [router]);
+    if (pendingOnboardingCompleted) {
+      startTransition();
+      return;
+    }
+    router.push("/(onboarding)");
+  }, [pendingOnboardingCompleted, startTransition, router]);
 
   // Layout objects are derived from `scale` only; memoizing them keeps the
   // memoized morph/mascot children from re-rendering on unrelated updates.

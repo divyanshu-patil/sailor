@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.middlewares.logging_middleware import LoggingMiddleware
 from app.api.v1 import user_router, appearance_router
+from app.api.v1 import onboarding_router
 from app.api.v1 import webhook_router
 from app.db.database import engine
 from app.db.base import Base
@@ -56,6 +57,7 @@ async def startup_event():
 # ─── Routers ──────────────────────────────────────────────────────────────────
 # All routes are prefixed with /api/v1 for versioning
 app.include_router(user_router.router, prefix="/api/v1")
+app.include_router(onboarding_router.router, prefix="/api/v1")
 app.include_router(appearance_router.router, prefix="/api/v1/appearance")
 app.include_router(deck_router.router, prefix="/api/v1")
 app.include_router(preferences_router.router, prefix="/api/v1/users")

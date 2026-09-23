@@ -50,6 +50,9 @@ export interface HandwrittenNoteProps {
   /** Overrides the 17pt default, for a note that has to carry more or less
    *  weight than the ones around it. */
   fontSize?: number;
+  /** Overrides the Kalam-Light default, for a note that needs the regular
+   *  weight. */
+  fontFamily?: string;
   /** Mirrors the arrow and right-aligns the text, for notes on the right. */
   flip?: boolean;
   /** Position, plus an optional `transform`. Typed without the string form of
@@ -71,6 +74,7 @@ export const HandwrittenNote = memo(function HandwrittenNote({
   arrowSize,
   color,
   fontSize,
+  fontFamily,
   flip,
   style,
 }: HandwrittenNoteProps) {
@@ -97,8 +101,8 @@ export const HandwrittenNote = memo(function HandwrittenNote({
         style={[
           styles.text,
           { color },
+          fontFamily !== undefined && { fontFamily },
           fontSize !== undefined && { fontSize, lineHeight: fontSize * 1.35 },
-          flip && styles.textRight,
         ]}
       >
         {lines.join("\n")}
@@ -116,8 +120,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.kalam.light,
     fontSize: 17,
     lineHeight: 23,
+    textAlign: "center",
   },
-  textRight: { textAlign: "right" },
   arrowLeft: { marginTop: 2, marginLeft: 14 },
   arrowRight: { marginTop: 2, alignItems: "flex-end", marginRight: 34 },
 });

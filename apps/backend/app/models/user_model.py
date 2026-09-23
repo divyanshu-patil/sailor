@@ -3,7 +3,17 @@ import secrets
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Enum as SAEnum, Integer, String, func, text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Enum as SAEnum,
+    Index,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.enums.user_enums import ExperienceLevel, Profession
 
@@ -49,6 +59,19 @@ class User(Base):
     This is the SQLAlchemy model for the `users` table in Supabase.
     """
     __tablename__ = "users"
+    __table_args__ = (
+        # Uniqueness runs on the *normalized* nickname, not the visible one, so
+        # "Alex", "alex" and " ALEX " are one identity. A plain case-sensitive
+        # unique column would let all three exist and the app would show two
+        # people as the same name. Partial because nickname is optional: a
+        # NULL means "hasn't chosen yet" and any number of users can be there.
+        Index(
+            "uq_users_nickname_normalized",
+            "nickname_normalized",
+            unique=True,
+            postgresql_where=text("nickname_normalized IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
@@ -91,6 +114,15 @@ class User(Base):
 
     full_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     nickname: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+    # The canonical, case-folded, whitespace-collapsed form of `nickname` that
+    # the unique index above operates on and that availability checks query.
+    # Kept beside the display value rather than replacing it so the user's own
+    # capitalization survives. Written only by user_controller via
+    # app.utils.nickname, never freehand, so the two columns cannot disagree.
+    nickname_normalized: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
 
     experience_level: Mapped[Optional[ExperienceLevel]] = mapped_column(
         SAEnum(
