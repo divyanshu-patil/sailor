@@ -1,58 +1,28 @@
-import { useAuth } from "@clerk/expo";
+import { Redirect } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { PROFILE } from "@/screens/profile/theme";
-import { PENDING_SCOPE } from "@/types/onboarding";
-import { LAST_STEP_ID } from "./config/steps";
-import { useOnboardingController } from "./hooks/use-onboarding-controller";
-import ProfileIdentityStep from "./steps/profile-identity";
+import { FIRST_STEP_ID } from "./config/steps";
+import { stepRoute } from "./config/routes";
+import { useOnboardingScope } from "./hooks/use-onboarding-scope";
 
 /**
- * The onboarding flow — one flow, rendered by the single `(onboarding)` route.
+ * The onboarding entry point.
  *
- * It runs before sign-up (the first run) and, if an account is signed in but
- * hasn't finished onboarding (e.g. signed in on a new device), it runs there
- * too. Which mode it is follows from whether there is a session, not from a
- * second route.
- *
- * One route rather than one per step: resume is then just "render whatever
- * `currentStepId` says", and there is no navigation stack to get out of step
- * with the persisted position. The route is a projection of the store.
+ * The flow itself is a stack of step routes (`nickname`, `gender`, …). This
+ * route only decides where to send the user on entry: the step the persisted
+ * position says, or the first one. A completed pre-auth flow has a `null`
+ * position, so it resolves to the first step and the stack rebuilds from there
+ * as the user moves forward — going back then walks the steps in reverse.
  */
-export default function OnboardingFlow() {
-  const { userId } = useAuth();
-  const authenticated = !!userId;
-  const scope = userId ?? PENDING_SCOPE;
-  const controller = useOnboardingController(scope, authenticated);
+export default function OnboardingEntry() {
+  const { controller } = useOnboardingScope();
 
-  // The local read is synchronous, but it happens in an effect, so there is one
-  // frame before it lands. A cream field rather than `null` so that frame is
-  // not a flash of white; never a fake interactive step.
   if (!controller.hydrated || !controller.state) {
     return <View style={styles.placeholder} />;
   }
-  // Post-auth, a finished flow is terminal: the account flag is flipped and
-  // the root guard moves the user on, so this route renders nothing. Pre-auth,
-  // "completed" is the hand-off to Create Account — keep rendering the last
-  // step so that popping back from Create Account lands on it again (and
-  // Continue hands off a second time).
-  if (
-    authenticated &&
-    (controller.status === "completed" || !controller.currentStepId)
-  ) {
-    return <View style={styles.placeholder} />;
-  }
 
-  switch (controller.currentStepId ?? LAST_STEP_ID) {
-    case "profile_identity":
-    default:
-      return (
-        <ProfileIdentityStep
-          controller={controller}
-          authenticated={authenticated}
-        />
-      );
-  }
+  return <Redirect href={stepRoute(controller.currentStepId ?? FIRST_STEP_ID)} />;
 }
 
 const styles = StyleSheet.create({

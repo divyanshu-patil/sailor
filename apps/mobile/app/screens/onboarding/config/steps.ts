@@ -19,10 +19,19 @@ export interface OnboardingStepConfig {
 
 export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
   { id: "profile_identity", required: true },
+  { id: "gender", required: true },
 ];
 
 export const FIRST_STEP_ID = ONBOARDING_STEPS[0].id;
-export const LAST_STEP_ID = ONBOARDING_STEPS[ONBOARDING_STEPS.length - 1].id;
+
+/**
+ * The planned length of the flow.
+ *
+ * The bar tracks this rather than the number of *implemented* steps, so a
+ * two-step build does not show a full bar on step 2. Bump it as the plan
+ * changes; once the array catches up it is just `ONBOARDING_STEPS.length`.
+ */
+export const ONBOARDING_TOTAL_STEPS = 14;
 
 export function stepIndex(id: OnboardingStepId | null): number {
   if (!id) return -1;
@@ -39,11 +48,12 @@ export function nextStepId(id: OnboardingStepId): OnboardingStepId | null {
 /**
  * Fraction of the flow completed, 0–1, derived from the config rather than a
  * hard-coded percentage. Counts the step in progress, matching the reference's
- * small-but-nonzero first bar; with a one-step flow this is 1.
+ * small-but-nonzero first bar.
  */
 export function progressForStep(id: OnboardingStepId | null): number {
   if (!id) return 1;
   const index = stepIndex(id);
   if (index < 0) return 0;
-  return (index + 1) / ONBOARDING_STEPS.length;
+  const total = Math.max(ONBOARDING_TOTAL_STEPS, ONBOARDING_STEPS.length);
+  return (index + 1) / total;
 }

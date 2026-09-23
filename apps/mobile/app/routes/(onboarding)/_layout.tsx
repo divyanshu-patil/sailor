@@ -5,8 +5,8 @@ export default function OnboardingLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        gestureEnabled: false,
-        animation: "fade",
+        // A normal stack: the system back gesture walks the steps in reverse.
+        animation: "slide_from_right",
       }}
     />
   );

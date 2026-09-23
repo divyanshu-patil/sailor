@@ -13,6 +13,7 @@ import {
 import {
   createInitialOnboardingState,
   PENDING_SCOPE,
+  type OnboardingData,
   type OnboardingState,
   type OnboardingStatus,
   type OnboardingStepId,
@@ -41,6 +42,13 @@ export interface OnboardingController {
   syncError: string | null;
   setDraftNickname: (value: string) => void;
   submitNickname: (display: string) => Promise<OnboardingStepId | null>;
+  /** Records the gender answer and advances. Returns the next step, or null. */
+  submitGender: (gender: string) => Promise<OnboardingStepId | null>;
+  /**
+   * Marks `stepId` as the screen in view — used by the stack's focus effect so
+   * going back updates the position too, not just going forward.
+   */
+  setCurrentStep: (stepId: OnboardingStepId) => void;
   goBack: () => void;
   retrySync: () => void;
 }
@@ -246,12 +254,65 @@ export function useOnboardingController(
     useOnboardingProgressStore.getState().patchData({ nickname: value });
   }, []);
 
-  const submitNickname = useCallback(
-    async (display: string): Promise<OnboardingStepId | null> => {
+  /**
+   * Marks `stepId` done, stores its answers, and moves the position on.
+   *
+   * Shared by every step: the step-specific work (claiming a nickname, say)
+   * happens before this, and the completion hand-off happens here so a new
+   * step cannot forget it. Returns the next step id, or `null` on finish.
+   */
+  const commitStep = useCallback(
+    async (
+      stepId: OnboardingStepId,
+      data: Partial<OnboardingData>,
+    ): Promise<OnboardingStepId | null> => {
       const store = useOnboardingProgressStore.getState();
       const current = store.state;
       if (!current) throw new Error("Onboarding is not ready yet.");
 
+      const next = nextStepId(stepId);
+      const completedSteps = current.completedSteps.includes(stepId)
+        ? current.completedSteps
+        : [...current.completedSteps, stepId];
+
+      const updated: OnboardingState = {
+        ...current,
+        data: { ...current.data, ...data },
+        completedSteps,
+        currentStepId: next,
+        status: next ? "in_progress" : "completed",
+        completedAt: next ? null : new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+      };
+      // Pre-auth records are local until the hand-off; there is no server
+      // position to sync yet.
+      store.setState(updated, { sync: authenticated });
+
+      if (!next) {
+        if (authenticated) {
+          useOnboardingCompletionStore
+            .getState()
+            .completeOnboarding(current.userId);
+          void onboardingService.markOnboardingComplete().catch(() => {});
+          void flushSync();
+        } else {
+          useOnboardingPendingStore.getState().markCompleted();
+          useOnboardingPendingStore.getState().requestCreateAccount();
+        }
+      } else if (authenticated) {
+        void flushSync();
+      }
+
+      return next;
+    },
+    [authenticated, flushSync],
+  );
+
+  const submitNickname = useCallback(
+    async (display: string): Promise<OnboardingStepId | null> => {
+      if (!useOnboardingProgressStore.getState().state) {
+        throw new Error("Onboarding is not ready yet.");
+      }
       setCommitting(true);
       try {
         // Authoritative first, when there is an account to claim against. If it
@@ -260,48 +321,34 @@ export function useOnboardingController(
         if (authenticated) {
           await onboardingService.claimNickname(display);
         }
-
-        const next = nextStepId("profile_identity");
-        const completedSteps = current.completedSteps.includes("profile_identity")
-          ? current.completedSteps
-          : [...current.completedSteps, "profile_identity" as OnboardingStepId];
-
-        const updated: OnboardingState = {
-          ...current,
-          data: {
-            ...current.data,
-            nickname: display,
-            nicknameNormalized: normalizeNickname(display),
-          },
-          completedSteps,
-          currentStepId: next,
-          status: next ? "in_progress" : "completed",
-          completedAt: next ? null : new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-        };
-        // Pre-auth records are local until the hand-off; there is no server
-        // position to sync yet.
-        store.setState(updated, { sync: authenticated });
-
-        if (!next) {
-          if (authenticated) {
-            useOnboardingCompletionStore
-              .getState()
-              .completeOnboarding(current.userId);
-            void onboardingService.markOnboardingComplete().catch(() => {});
-            void flushSync();
-          } else {
-            useOnboardingPendingStore.getState().markCompleted();
-            useOnboardingPendingStore.getState().requestCreateAccount();
-          }
-        } else if (authenticated) {
-          void flushSync();
-        }
-
-        return next;
+        return await commitStep("profile_identity", {
+          nickname: display,
+          nicknameNormalized: normalizeNickname(display),
+        });
       } finally {
         setCommitting(false);
       }
+    },
+    [authenticated, commitStep],
+  );
+
+  const submitGender = useCallback(
+    (gender: string) => commitStep("gender", { gender }),
+    [commitStep],
+  );
+
+  const setCurrentStep = useCallback(
+    (stepId: OnboardingStepId) => {
+      const store = useOnboardingProgressStore.getState();
+      const current = store.state;
+      // No-op when already there: the focus effect runs on every render while
+      // focused, and a completed flow backing up onto a step re-opens it.
+      if (!current || current.currentStepId === stepId) return;
+      store.patch(
+        { currentStepId: stepId, status: "in_progress", completedAt: null },
+        { sync: authenticated },
+      );
+      if (authenticated) void flushSync();
     },
     [authenticated, flushSync],
   );
@@ -324,12 +371,17 @@ export function useOnboardingController(
     state,
     currentStepId: state?.currentStepId ?? null,
     status: state?.status ?? "not_started",
-    progress: progressForStep(state?.currentStepId ?? null),
+    // A completed pre-auth flow renders the first step (see `index.tsx`), so
+    // the bar shows step one rather than a finished flow. Post-auth completed
+    // is never rendered.
+    progress: progressForStep(state?.currentStepId ?? FIRST_STEP_ID),
     committing,
     reconciling,
     syncError,
     setDraftNickname,
     submitNickname,
+    submitGender,
+    setCurrentStep,
     goBack,
     retrySync: () => void flushSync(),
   };

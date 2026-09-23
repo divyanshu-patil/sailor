@@ -13,6 +13,7 @@ import { HandwrittenNote } from "@/components/ui/handwritten-note";
 import { useNicknameAvailability } from "@/hooks/use-nickname-availability";
 import { isNicknameTakenError } from "@/services/onboarding.service";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import { stepRoute } from "../config/routes";
 import MorphingAvatar from "../components/morphing-avatar";
 import OnboardingInput from "../components/onboarding-input";
 import OnboardingScreen from "../components/onboarding-screen";
@@ -85,6 +86,10 @@ export default function ProfileIdentityStep({
             params: { createAccount: "1", from: "onboarding" },
           } as Href);
         }
+      } else {
+        // A normal stack push: the new step sits on top of this one, so the
+        // system back gesture returns here.
+        router.push(stepRoute(next));
       }
     } catch (error) {
       if (isNicknameTakenError(error)) {
