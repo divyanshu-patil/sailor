@@ -496,11 +496,17 @@ export default function Base() {
   const autoStartedRef = useRef(false);
   useEffect(() => {
     if (autoStartedRef.current) return;
+    // Only the focused instance morphs. Create Account is now pushed as a
+    // second base instance on top of onboarding, and the transient store
+    // request must not also flip the base screen sitting underneath it — that
+    // left the front door stuck in its create-account state after backing out.
+    if (!isFocused) return;
     if (params.createAccount !== "1" && !createAccountRequested) return;
     autoStartedRef.current = true;
     if (createAccountRequested) consumeCreateAccountRequest();
     startTransition();
   }, [
+    isFocused,
     params.createAccount,
     createAccountRequested,
     consumeCreateAccountRequest,
@@ -587,19 +593,12 @@ export default function Base() {
     router.push("/(unauthenticated)/login");
   }, [router]);
 
-  // "Get started" opens the onboarding flow the first time. Once it has been
-  // finished on this device, it morphs straight into the create-account state
-  // instead — onboarding is a one-time thing, not something to replay.
-  const pendingOnboardingCompleted = useOnboardingPendingStore(
-    (s) => s.completed,
-  );
+  // "Get started" always opens the onboarding flow. Create Account is only
+  // reached by finishing the last onboarding step, so the two are never
+  // collapsed into one another.
   const handleGetStarted = useCallback(() => {
-    if (pendingOnboardingCompleted) {
-      startTransition();
-      return;
-    }
     router.push("/(onboarding)");
-  }, [pendingOnboardingCompleted, startTransition, router]);
+  }, [router]);
 
   // Layout objects are derived from `scale` only; memoizing them keeps the
   // memoized morph/mascot children from re-rendering on unrelated updates.

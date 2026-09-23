@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 
 import { PROFILE } from "@/screens/profile/theme";
 import { PENDING_SCOPE } from "@/types/onboarding";
+import { LAST_STEP_ID } from "./config/steps";
 import { useOnboardingController } from "./hooks/use-onboarding-controller";
 import ProfileIdentityStep from "./steps/profile-identity";
 
@@ -30,13 +31,19 @@ export default function OnboardingFlow() {
   if (!controller.hydrated || !controller.state) {
     return <View style={styles.placeholder} />;
   }
-  // Finished (or about to be handed off): the step that completed it owns the
-  // navigation from here, and the root guard unmounts this on the auth side.
-  if (controller.status === "completed" || !controller.currentStepId) {
+  // Post-auth, a finished flow is terminal: the account flag is flipped and
+  // the root guard moves the user on, so this route renders nothing. Pre-auth,
+  // "completed" is the hand-off to Create Account — keep rendering the last
+  // step so that popping back from Create Account lands on it again (and
+  // Continue hands off a second time).
+  if (
+    authenticated &&
+    (controller.status === "completed" || !controller.currentStepId)
+  ) {
     return <View style={styles.placeholder} />;
   }
 
-  switch (controller.currentStepId) {
+  switch (controller.currentStepId ?? LAST_STEP_ID) {
     case "profile_identity":
     default:
       return (

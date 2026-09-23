@@ -73,16 +73,16 @@ export default function ProfileIdentityStep({
     try {
       const next = await controller.submitNickname(availability.display);
       if (next === null) {
-        // Flow finished. Pre-auth, that hands off to the create-account state
-        // of the base screen underneath this flow; post-auth, the account flag
-        // is already flipped and the root guard moves on — this makes the
-        // hand-off immediate.
+        // Flow finished. Post-auth, the account flag is already flipped and the
+        // root guard moves on — this makes the hand-off immediate. Pre-auth,
+        // push Create Account on top of this flow rather than replacing it
+        // away, so Create Account's back button returns to this last step.
         if (authenticated) {
           router.replace("/(profile-setup)" as Href);
         } else {
-          router.dismissTo({
+          router.push({
             pathname: "/(unauthenticated)",
-            params: { createAccount: "1" },
+            params: { createAccount: "1", from: "onboarding" },
           } as Href);
         }
       }
@@ -163,19 +163,24 @@ export default function ProfileIdentityStep({
             color={PROFILE.muted}
             fontFamily={profileFonts.handwritten}
             flip
-            style={{ top: 8, right: 0 }}
+            arrowX={10}
+            arrowY={0}
+            style={{ top: 50, right: -40 }}
           />
         </View>
 
         <View style={styles.form}>
-          <OnboardingInput
-            value={nickname}
-            onChangeText={handleChange}
-            placeholder="Your nickname"
-            returnKeyType="done"
-            onSubmitEditing={handleContinue}
-            accessibilityLabel="Your nickname"
-          />
+          <View style={styles.helloRow}>
+            <Text style={styles.helloLabel}>Hello,</Text>
+            <OnboardingInput
+              value={nickname}
+              onChangeText={handleChange}
+              placeholder="Add Name"
+              returnKeyType="done"
+              onSubmitEditing={handleContinue}
+              accessibilityLabel="Add your name"
+            />
+          </View>
           <Text style={styles.helper}>You can always change this later.</Text>
 
           {availability.status === "checking" ? (
@@ -226,6 +231,21 @@ const styles = StyleSheet.create({
     letterSpacing: -1.2,
     color: PROFILE.ink,
     textAlign: "center",
+  },
+  helloRow: {
+    marginTop: 4,
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  helloLabel: {
+    fontFamily: profileFonts.display,
+    fontSize: 30,
+    lineHeight: 35,
+    letterSpacing: -1,
+    color: PROFILE.ink,
   },
   subtitle: {
     marginTop: 12,

@@ -19,10 +19,15 @@ export const DoodleArrow = memo(function DoodleArrow({
   size,
   color,
   flip,
+  x = 0,
+  y = 0,
 }: {
   size: number;
   color: string;
   flip?: boolean;
+  /** Nudges the arrow from its laid-out spot, in points. */
+  x?: number;
+  y?: number;
 }) {
   return (
     <Svg
@@ -30,7 +35,15 @@ export const DoodleArrow = memo(function DoodleArrow({
       height={size}
       viewBox="0 0 80 115"
       fill="none"
-      style={flip ? { transform: [{ scaleX: -1 }] } : undefined}
+      style={{
+        // Translate before the flip so x/y stay in screen space (positive x is
+        // always right), rather than being mirrored on flipped arrows.
+        transform: [
+          { translateX: x },
+          { translateY: y },
+          ...(flip ? [{ scaleX: -1 }] : []),
+        ],
+      }}
     >
       <Path
         d="M 8 20 C 26 16, 44 24, 54 40 C 64 56, 64 74, 60 94 M 60 94 L 48 83 M 60 94 L 73 84"
@@ -55,6 +68,9 @@ export interface HandwrittenNoteProps {
   fontFamily?: string;
   /** Mirrors the arrow and right-aligns the text, for notes on the right. */
   flip?: boolean;
+  /** Nudges the doodled arrow from its default spot, in points. */
+  arrowX?: number;
+  arrowY?: number;
   /** Position, plus an optional `transform`. Typed without the string form of
    *  `transform`, which cannot be merged into the drift below. */
   style: Omit<ViewStyle, "transform"> & {
@@ -76,6 +92,8 @@ export const HandwrittenNote = memo(function HandwrittenNote({
   fontSize,
   fontFamily,
   flip,
+  arrowX,
+  arrowY,
   style,
 }: HandwrittenNoteProps) {
   const drift = useFloatingValue(0, -5, 5, 2600, 4200, 1);
@@ -108,14 +126,20 @@ export const HandwrittenNote = memo(function HandwrittenNote({
         {lines.join("\n")}
       </Text>
       <View style={flip ? styles.arrowRight : styles.arrowLeft}>
-        <DoodleArrow size={arrowSize} color={color} flip={flip} />
+        <DoodleArrow
+          size={arrowSize}
+          color={color}
+          flip={flip}
+          x={arrowX}
+          y={arrowY}
+        />
       </View>
     </Animated.View>
   );
 });
 
 const styles = StyleSheet.create({
-  note: { position: "absolute" },
+  note: { position: "absolute", flex: 1, flexDirection: "row-reverse", alignItems: "center" },
   text: {
     fontFamily: fonts.kalam.light,
     fontSize: 17,

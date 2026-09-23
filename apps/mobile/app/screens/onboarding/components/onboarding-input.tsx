@@ -1,5 +1,4 @@
 import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
-import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { profileFonts, PROFILE } from "@/screens/profile/theme";
 
@@ -14,11 +13,17 @@ interface OnboardingInputProps {
   accessibilityLabel?: string;
 }
 
-/** The rounded nickname field: icon, large touch target, warm light surface. */
+/** The dashed outline and the "Add Name" placeholder share this pastel green. */
+const FIELD_GREEN = "#A8DDB5";
+
+/**
+ * The nickname field: a dashed pill with a pastel-green placeholder that grows
+ * with the name as it is typed.
+ */
 export default function OnboardingInput({
   value,
   onChangeText,
-  placeholder,
+  placeholder = "Add Name",
   autoFocus,
   editable = true,
   returnKeyType,
@@ -26,18 +31,12 @@ export default function OnboardingInput({
   accessibilityLabel,
 }: OnboardingInputProps) {
   return (
-    <View style={styles.container}>
-      <Ionicons
-        name="person-add"
-        size={20}
-        color={PROFILE.ink}
-        style={styles.icon}
-      />
+    <View style={styles.pill}>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={PROFILE.muted}
+        placeholderTextColor={FIELD_GREEN}
         autoFocus={autoFocus}
         editable={editable}
         returnKeyType={returnKeyType}
@@ -46,29 +45,33 @@ export default function OnboardingInput({
         autoCorrect={false}
         maxLength={40}
         accessibilityLabel={accessibilityLabel ?? placeholder}
-        style={styles.input}
+        // Hug the text so the pill stays compact and grows as the name is typed.
+        style={[
+          styles.input,
+          { width: Math.max(88, Math.min(220, value.length * 11 + 30)) },
+        ]}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  pill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: PROFILE.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: PROFILE.track,
+    minHeight: 52,
     paddingHorizontal: 18,
-    minHeight: 60,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: FIELD_GREEN,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 255, 255, 0.45)",
   },
-  icon: { marginRight: 12 },
   input: {
-    flex: 1,
-    fontFamily: profileFonts.medium,
+    fontFamily: profileFonts.semibold,
     fontSize: 17,
     color: PROFILE.ink,
-    paddingVertical: 16,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
   },
 });

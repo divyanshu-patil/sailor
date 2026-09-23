@@ -22,6 +22,7 @@ export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
 ];
 
 export const FIRST_STEP_ID = ONBOARDING_STEPS[0].id;
+export const LAST_STEP_ID = ONBOARDING_STEPS[ONBOARDING_STEPS.length - 1].id;
 
 export function stepIndex(id: OnboardingStepId | null): number {
   if (!id) return -1;
