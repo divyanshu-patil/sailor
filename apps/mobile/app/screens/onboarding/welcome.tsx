@@ -3,17 +3,25 @@ import React from "react";
 import { useRouter } from "expo-router";
 
 import { weight } from "@/lib/haptics";
+import { useOnboardingStore } from "@/store/onboarding.store";
 
 
 const WelcomeScreen = () => {
   const router = useRouter();
+  const { completeOnboarding } = useOnboardingStore();
 
   const handleGetStarted = () => {
     router.push("/(onboarding)/features");
   };
 
+  // Skipping the intro still counts as having seen it, and lands on the base
+  // screen in its create-account state.
   const handleSkip = () => {
-    router.push("/(unauthenticated)" as any);
+    completeOnboarding(true);
+    router.push({
+      pathname: "/(unauthenticated)",
+      params: { createAccount: "1" },
+    });
   };
 
   return (

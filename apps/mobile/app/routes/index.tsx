@@ -12,7 +12,6 @@ import {
   Newsreader_600SemiBold_Italic,
 } from "@expo-google-fonts/newsreader";
 import { useAuthGate } from "@/hooks/use-auth-gate";
-import { useOnboardingStore } from "@/store/onboarding.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useAppUserStore } from "@/store/app-user.store";
@@ -20,7 +19,6 @@ import { useAppUserStore } from "@/store/app-user.store";
 export default function Index() {
   const router = useRouter();
   // const isAuthenticated = useAppUserStore((s) => s.isAuthenticated);
-  const hasSeenOnboarding = useOnboardingStore((s) => s.hasSeenOnboarding);
   const isHydrated = useAppUserStore((s) => s._hasHydrated);
   const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
   const profileSetupCompletedForUserId = useProfileSetupStore(
@@ -78,9 +76,7 @@ export default function Index() {
 
     hasNavigated.current = true;
 
-    if (!hasSeenOnboarding) {
-      router.replace("/(onboarding)/welcome");
-    } else if (isSignedIn) {
+    if (isSignedIn) {
       // Verified. Onboarding runs first, then the optional profile wizard.
       if (!hasCompletedOnboarding) {
         router.replace("/(onboarding-setup)" as Href);
@@ -90,6 +86,8 @@ export default function Index() {
         router.replace("/(authenticated)");
       }
     } else {
+      // The base screen is the app's front door — always, whether or not the
+      // intro has been seen. It hands off to onboarding / create-account.
       router.replace("/(unauthenticated)");
     }
   }, [
@@ -99,7 +97,6 @@ export default function Index() {
     isSignedIn,
     authReady,
     userId,
-    hasSeenOnboarding,
     hasCompletedOnboarding,
     hasCompletedProfileSetup,
     router,

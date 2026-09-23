@@ -28,19 +28,22 @@ const FeaturesScreen = () => {
   const router = useRouter();
   const { completeOnboarding } = useOnboardingStore();
 
-  const handleContinue = () => {
-    // TODO: chnage this to no parameter once onbaording screen done
-    // completeOnboarding();
+  // Onboarding is done either way — "Skip" means seen and dismissed, not
+  // unseen. Both paths return to the base screen already morphed into its
+  // create-account state, which is where signup actually happens now.
+  const finish = () => {
     completeOnboarding(true);
-    router.replace("/(unauthenticated)" as any);
+    // Pushed on top of onboarding, not replacing it: the create-account
+    // screen's back then returns to this screen.
+    router.push({
+      pathname: "/(unauthenticated)",
+      params: { createAccount: "1" },
+    });
   };
 
-  const handleSkip = () => {
-    // TODO: chnage this to no parameter once onbaording screen done
-    // completeOnboarding();
-    completeOnboarding(true);
-    router.replace("/(unauthenticated)" as any);
-  };
+  const handleContinue = finish;
+
+  const handleSkip = finish;
 
   return (
     <View style={styles.container}>

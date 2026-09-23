@@ -6,7 +6,6 @@ import {
 } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BackHandler,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -479,11 +478,8 @@ export default function Base() {
     createAccount?: string;
     from?: string;
   }>();
-  // Set when the login screen sent us here via its "Sign up" link. The back
-  // button then pops to login instead of reversing the morph.
-  const cameFromLogin = params.from === "login";
 
-  const { screenMode, settled, progress, startTransition, goBack } =
+  const { screenMode, progress, startTransition } =
     useCreateAccountTransition();
 
   // Entering from login lands on this screen already morphed into the
@@ -496,14 +492,6 @@ export default function Base() {
     startTransition();
   }, [params.createAccount, startTransition]);
 
-  const handleBack = useCallback(() => {
-    if (cameFromLogin) {
-      router.back();
-      return;
-    }
-    goBack();
-  }, [cameFromLogin, goBack, router]);
-
   const scale = useMemo(
     () => Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT),
     [width, height],
@@ -515,19 +503,6 @@ export default function Base() {
   const safeTop = Math.max(insets.top, 0);
   const topLift = Math.min(safeTop, 32);
   const isBase = screenMode === "base";
-
-  // Android hardware back reverses the morph instead of leaving the route.
-  useEffect(() => {
-    if (screenMode !== "create-account") return;
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        handleBack();
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [screenMode, handleBack]);
 
   const baseButtonsStyle = useAnimatedStyle(() => {
     const p = interpolate(
@@ -595,6 +570,13 @@ export default function Base() {
     startFrameProbe("base->login"); // TEMP profiling
     mark("router.push");
     router.push("/(unauthenticated)/login");
+  }, [router]);
+
+  // "Get started" hands off to the onboarding flow. Onboarding finishes by
+  // returning here with `createAccount=1`, which the effect above picks up to
+  // morph into the create-account state.
+  const handleGetStarted = useCallback(() => {
+    router.push("/(onboarding)/welcome");
   }, [router]);
 
   // Layout objects are derived from `scale` only; memoizing them keeps the
@@ -665,15 +647,6 @@ export default function Base() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerTransparent: true, title: "" }} />
-
-      {/* The same toolbar back button used across the auth screens. Mounted
-          only once the forward morph has settled, so it appears after the
-          animation; unmounting on the reverse morph hides it again. */}
-      {settled && (
-        <Stack.Toolbar placement="left">
-          <Stack.Toolbar.Button icon="chevron.backward" onPress={handleBack} />
-        </Stack.Toolbar>
-      )}
 
       <StatusBar style="dark" />
 
@@ -754,9 +727,9 @@ export default function Base() {
           style={[styles.buttonStack, baseButtonsStyle]}
         >
           <CTAButton
-            label="Create an account"
+            label="Get started"
             variant="primary"
-            onPress={startTransition}
+            onPress={handleGetStarted}
           />
           <CTAButton label="Log in" variant="secondary" onPress={handleLogin} />
         </Animated.View>

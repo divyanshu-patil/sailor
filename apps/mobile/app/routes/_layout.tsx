@@ -213,11 +213,16 @@ function InitialLayout() {
     >
       <Stack.Screen name="index" options={{ title: "Sailors" }} />
 
-      <Stack.Protected guard={!hasSeenOnboarding}>
+      {/* Mounted for anyone signed out, alongside (unauthenticated): base is
+          the front door and pushes into this flow on "Get started". */}
+      <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(onboarding)" options={{ title: "Welcome" }} />
       </Stack.Protected>
 
-      <Stack.Protected guard={hasSeenOnboarding && !isSignedIn}>
+      {/* The auth group is mounted for anyone signed out, onboarding or not:
+          the base screen is now the first screen, and its "Get started"
+          button pushes into the (onboarding) flow above it. */}
+      <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(unauthenticated)" options={{ title: "Sign In" }} />
       </Stack.Protected>
 
