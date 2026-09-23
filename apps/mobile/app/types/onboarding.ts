@@ -23,7 +23,7 @@ export type OnboardingStatus = "not_started" | "in_progress" | "completed";
  * Every step the flow knows. Extend this union as steps are added; the config
  * in `screens/onboarding/config/steps.ts` is the ordered list.
  */
-export type OnboardingStepId = "profile_identity" | "gender";
+export type OnboardingStepId = "profile_identity" | "gender" | "referral";
 
 /**
  * The scope a pre-auth onboarding record is stored under.
@@ -41,6 +41,8 @@ export interface OnboardingData {
   nicknameNormalized?: string;
   /** "male" | "female" | "unspecified" — the display gender the user chose. */
   gender?: string;
+  /** Where the user heard about Sailors, e.g. "instagram" | "search". */
+  referral?: string;
   /** Future steps' answers, each keyed by its own name. */
   [key: string]: unknown;
 }

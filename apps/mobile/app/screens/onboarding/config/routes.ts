@@ -11,8 +11,9 @@ import type { OnboardingStepId } from "@/types/onboarding";
  * step ids and the route names meet.
  */
 const STEP_ROUTES: Record<OnboardingStepId, Href> = {
-  profile_identity: "/(onboarding)/nickname" as Href,
+  profile_identity: "/(onboarding)" as Href,
   gender: "/(onboarding)/gender" as Href,
+  referral: "/(onboarding)/referral" as Href,
 };
 
 export function stepRoute(id: OnboardingStepId): Href {

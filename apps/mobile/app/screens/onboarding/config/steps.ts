@@ -20,6 +20,7 @@ export interface OnboardingStepConfig {
 export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
   { id: "profile_identity", required: true },
   { id: "gender", required: true },
+  { id: "referral", required: true },
 ];
 
 export const FIRST_STEP_ID = ONBOARDING_STEPS[0].id;

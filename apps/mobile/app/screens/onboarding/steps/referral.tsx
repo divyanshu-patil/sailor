@@ -1,64 +1,97 @@
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { router, type Href } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { stepRoute } from "../config/routes";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
 import OnboardingScreen from "../components/onboarding-screen";
+import { stepRoute } from "../config/routes";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
-interface GenderOption {
+interface ReferralOption {
   /** Persisted value. */
   value: string;
-  title: string;
-  subtitle: string;
-  background: string;
+  label: string;
+  icon: ComponentProps<typeof Ionicons>["name"];
+  card: string;
+  badge: string;
   blob: string;
   accent: string;
   eyes: BlobEyes;
 }
 
-const OPTIONS: GenderOption[] = [
+const OPTIONS: ReferralOption[] = [
   {
-    value: "male",
-    title: "Male",
-    subtitle: "He / Him",
-    background: "#FBE3EA",
-    blob: "#A9B8F0",
-    accent: "#6D8BEA",
+    value: "instagram",
+    label: "Instagram",
+    icon: "logo-instagram",
+    card: "#FCE4EC",
+    badge: "#F8C7D8",
+    blob: "#F7A8C4",
+    accent: "#F27CA0",
     eyes: "open",
   },
   {
-    value: "female",
-    title: "Female",
-    subtitle: "She / Her",
-    background: "#FDF0DE",
-    blob: "#F7B9CD",
-    accent: "#F27CA0",
+    value: "tiktok",
+    label: "TikTok",
+    icon: "logo-tiktok",
+    card: "#FDF3DC",
+    badge: "#FBE3A8",
+    blob: "#F7CF7E",
+    accent: "#F0B840",
     eyes: "closed",
   },
   {
-    value: "unspecified",
-    title: "Prefer not to say",
-    subtitle: "Any pronouns",
-    background: "#E4F1E6",
+    value: "youtube",
+    label: "YouTube",
+    icon: "logo-youtube",
+    card: "#E4F3E7",
+    badge: "#BEE7CB",
     blob: "#9FD9B8",
     accent: "#5FC79A",
     eyes: "open",
   },
+  {
+    value: "friend_family",
+    label: "Friend or family",
+    icon: "people",
+    card: "#EFE8FB",
+    badge: "#D9CCF5",
+    blob: "#C9B6F0",
+    accent: "#A98BE8",
+    eyes: "closed",
+  },
+  {
+    value: "search",
+    label: "Search",
+    icon: "search",
+    card: "#E7F0FC",
+    badge: "#C7DDF7",
+    blob: "#A9C6F0",
+    accent: "#6D8BEA",
+    eyes: "open",
+  },
+  {
+    value: "other",
+    label: "Other",
+    icon: "ellipsis-horizontal",
+    card: "#FDEAE2",
+    badge: "#FBD3C0",
+    blob: "#F7B0A6",
+    accent: "#E86B5A",
+    eyes: "squint",
+  },
 ];
 
 /**
- * Step 2 — the gender.
+ * Step 3 — where the user heard about Sailors.
  *
- * Three pastel cards, each with its own little blob. A choice is required to
- * continue; the answer is stored on the step and never claimed against the
- * account (there is nothing to claim, unlike the nickname).
+ * A single-choice list; the answer is stored on the step and only helps tailor
+ * the app, so nothing is claimed against the account.
  */
-export default function GenderStep({
+export default function ReferralStep({
   controller,
   authenticated,
 }: {
@@ -67,8 +100,8 @@ export default function GenderStep({
 }) {
   // Restored from the persisted draft, so a force-close mid-step resumes.
   const persisted =
-    typeof controller.state?.data.gender === "string"
-      ? controller.state.data.gender
+    typeof controller.state?.data.referral === "string"
+      ? controller.state.data.referral
       : null;
   const [selected, setSelected] = useState<string | null>(persisted);
   const [submitting, setSubmitting] = useState(false);
@@ -80,9 +113,9 @@ export default function GenderStep({
     if (!canContinue || !selected) return;
     setSubmitting(true);
     try {
-      const next = await controller.submitGender(selected);
+      const next = await controller.submitReferral(selected);
       if (next === null) {
-        // Flow finished — same hand-off as the nickname step's last step.
+        // Flow finished — same hand-off as the last step.
         if (authenticated) {
           router.replace("/(profile-setup)" as Href);
         } else {
@@ -130,21 +163,11 @@ export default function GenderStep({
       }
     >
       <View style={styles.body}>
-        <Text style={styles.heading}>{"Choose your\nGender"}</Text>
+        <Text style={styles.heading}>{"Where did you\nhear about us?"}</Text>
         <View style={styles.underline} />
         <Text style={styles.subtitle}>
-          This will be used to personalise your speaking journey.
+          This helps us make Sailors better for you.
         </Text>
-
-        <View style={styles.note} pointerEvents="none">
-          <Text style={styles.noteText}>{"Be you\nAlways!"}</Text>
-          <Ionicons
-            name="heart-outline"
-            size={22}
-            color={PROFILE.muted}
-            style={styles.heart}
-          />
-        </View>
 
         <View style={styles.options}>
           {OPTIONS.map((option) => {
@@ -155,23 +178,23 @@ export default function GenderStep({
                 onPress={() => setSelected(option.value)}
                 style={[
                   styles.card,
-                  { backgroundColor: option.background },
+                  { backgroundColor: option.card },
                   active && styles.cardActive,
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`${option.title}, ${option.subtitle}`}
+                accessibilityLabel={option.label}
               >
-                <View style={styles.cardText}>
-                  <Text style={styles.cardTitle}>{option.title}</Text>
-                  <Text style={styles.cardSubtitle}>{option.subtitle}</Text>
+                <View style={[styles.badge, { backgroundColor: option.badge }]}>
+                  <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
                 </View>
+                <Text style={styles.label}>{option.label}</Text>
                 <View style={styles.mascot}>
                   <BlobMascot
                     color={option.blob}
                     accent={option.accent}
                     eyes={option.eyes}
-                    size={122}
+                    size={90}
                   />
                 </View>
               </PressableScale>
@@ -191,14 +214,15 @@ const styles = StyleSheet.create({
   heading: {
     marginTop: 16,
     fontFamily: profileFonts.display,
-    fontSize: 36,
-    lineHeight: 41,
+    fontSize: 34,
+    lineHeight: 40,
     letterSpacing: -1.2,
     color: PROFILE.ink,
   },
   underline: {
     marginTop: 2,
-    width: 156,
+    width: 200,
+    maxWidth: "100%",
     height: 9,
     borderRadius: 5,
     backgroundColor: PROFILE.accentYellow,
@@ -206,58 +230,52 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 16,
-    maxWidth: "78%",
+    maxWidth: "74%",
     fontFamily: profileFonts.body,
     fontSize: 17,
     lineHeight: 24,
     color: PROFILE.muted,
   },
-  note: {
+  hero: {
     position: "absolute",
-    top: 6,
-    right: 0,
-    alignItems: "center",
+    top: -12,
+    right: -26,
   },
-  noteText: {
-    fontFamily: profileFonts.handwritten,
-    fontSize: 18,
-    lineHeight: 23,
-    color: PROFILE.muted,
-    textAlign: "center",
-  },
-  heart: { marginTop: 2 },
   options: {
-    marginTop: 28,
+    marginTop: 24,
   },
   card: {
-    minHeight: 132,
-    marginBottom: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 92,
+    marginBottom: 14,
+    paddingLeft: 14,
+    paddingRight: 86,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: "transparent",
-    justifyContent: "center",
     overflow: "hidden",
   },
   cardActive: { borderColor: PROFILE.ink },
-  cardText: { maxWidth: "64%" },
-  cardTitle: {
+  badge: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  label: {
+    flex: 1,
+    marginLeft: 14,
     fontFamily: profileFonts.display,
-    fontSize: 21,
+    fontSize: 20,
     letterSpacing: -0.4,
     color: PROFILE.ink,
   },
-  cardSubtitle: {
-    marginTop: 4,
-    fontFamily: profileFonts.body,
-    fontSize: 16,
-    color: PROFILE.muted,
-  },
   mascot: {
     position: "absolute",
-    right: -10,
-    bottom: -6,
+    right: -8,
+    bottom: -12,
   },
   continue: {
     height: 58,

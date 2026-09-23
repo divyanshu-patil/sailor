@@ -2,37 +2,30 @@ import { memo } from "react";
 import { View } from "react-native";
 import Svg, { Ellipse, Path, Rect } from "react-native-svg";
 
-export type GenderMascotVariant = "male" | "female" | "neutral";
+export type BlobEyes = "open" | "closed" | "squint";
 
-/** The accent strokes above the blob, per card. */
-const ACCENTS: Record<GenderMascotVariant, string> = {
-  male: "#6D8BEA",
-  female: "#F27CA0",
-  neutral: "#5FC79A",
-};
-
-interface GenderMascotProps {
+interface BlobMascotProps {
   /** The blob's fill. */
   color: string;
-  variant: GenderMascotVariant;
+  /** The three accent strokes above the blob. */
+  accent: string;
+  eyes?: BlobEyes;
   /** Rendered width in points; the height follows the 132:108 ratio. */
   size?: number;
 }
 
 /**
- * The little gumdrop character on each gender card: a blob, a pair of eyes and
- * three accent strokes. Female gets the closed, happy eyes; the others get the
- * round ones. Drawn directly rather than through `Blobatar`, which seeds a
- * whole face and would not match the reference's simple shape.
+ * The little gumdrop character on the onboarding cards: a blob, a pair of eyes
+ * and three accent strokes. Drawn directly rather than through `Blobatar`, which
+ * seeds a whole face and would not match the reference's simple shape.
  */
-const GenderMascot = memo(function GenderMascot({
+const BlobMascot = memo(function BlobMascot({
   color,
-  variant,
+  accent,
+  eyes = "open",
   size = 132,
-}: GenderMascotProps) {
+}: BlobMascotProps) {
   const height = size * (108 / 132);
-  const accent = ACCENTS[variant];
-  const closedEyes = variant === "female";
 
   return (
     <View pointerEvents="none" style={{ width: size, height }}>
@@ -59,16 +52,21 @@ const GenderMascot = memo(function GenderMascot({
 
         <Path d="M18 108 C2 70 30 22 66 22 C102 22 130 70 114 108 Z" fill={color} />
 
-        {closedEyes ? (
+        {eyes === "open" ? (
+          <>
+            <Ellipse cx="56" cy="82" rx="6.5" ry="10" fill="#1C1A18" />
+            <Ellipse cx="84" cy="82" rx="6.5" ry="10" fill="#1C1A18" />
+          </>
+        ) : eyes === "closed" ? (
           <>
             <Path
-              d="M46 80 Q56 70 66 80"
+              d="M46 82 Q56 72 66 82"
               stroke="#1C1A18"
               strokeWidth="6"
               strokeLinecap="round"
             />
             <Path
-              d="M74 80 Q84 70 94 80"
+              d="M74 82 Q84 72 94 82"
               stroke="#1C1A18"
               strokeWidth="6"
               strokeLinecap="round"
@@ -76,8 +74,20 @@ const GenderMascot = memo(function GenderMascot({
           </>
         ) : (
           <>
-            <Ellipse cx="56" cy="82" rx="6.5" ry="10" fill="#1C1A18" />
-            <Ellipse cx="84" cy="82" rx="6.5" ry="10" fill="#1C1A18" />
+            <Path
+              d="M48 76 L60 84 L48 92"
+              stroke="#1C1A18"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M84 76 L72 84 L84 92"
+              stroke="#1C1A18"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </>
         )}
       </Svg>
@@ -85,4 +95,4 @@ const GenderMascot = memo(function GenderMascot({
   );
 });
 
-export default GenderMascot;
+export default BlobMascot;

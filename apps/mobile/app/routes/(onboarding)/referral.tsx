@@ -4,17 +4,15 @@ import { useFocusEffect } from "expo-router";
 
 import { PROFILE } from "@/screens/profile/theme";
 import { useOnboardingScope } from "@/screens/onboarding/hooks/use-onboarding-scope";
-import ProfileIdentityStep from "@/screens/onboarding/steps/profile-identity";
+import ReferralStep from "@/screens/onboarding/steps/referral";
 
-export default function NicknameRoute() {
+export default function ReferralRoute() {
   const { controller, authenticated } = useOnboardingScope();
   const { setCurrentStep } = controller;
 
-  // Keep the persisted position on the screen actually in view, so a back
-  // gesture resumes here next launch rather than at the step ahead.
   useFocusEffect(
     useCallback(() => {
-      setCurrentStep("profile_identity");
+      setCurrentStep("referral");
     }, [setCurrentStep]),
   );
 
@@ -22,9 +20,7 @@ export default function NicknameRoute() {
     return <View style={styles.placeholder} />;
   }
 
-  return (
-    <ProfileIdentityStep controller={controller} authenticated={authenticated} />
-  );
+  return <ReferralStep controller={controller} authenticated={authenticated} />;
 }
 
 const styles = StyleSheet.create({
