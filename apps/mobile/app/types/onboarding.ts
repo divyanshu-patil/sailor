@@ -30,7 +30,11 @@ export type OnboardingStepId =
   | "speaking_level"
   | "speaking_contexts"
   | "improve_areas"
-  | "thank_you";
+  | "thank_you"
+  | "notifications"
+  | "home_widget"
+  | "build_streak"
+  | "reminder_time";
 
 /**
  * The scope a pre-auth onboarding record is stored under.
@@ -56,6 +60,15 @@ export interface OnboardingData {
   speakingContexts?: string[];
   /** Skills the user wants to improve. Multi-select, e.g. ["fluency", "words"]. */
   improvementAreas?: string[];
+  /** Whether the OS granted notifications at the onboarding ask. `false`
+   *  covers both "Not now" and a declined system prompt. */
+  notificationsAllowed?: boolean;
+  /** Tapped "Add widget" rather than "Maybe later". */
+  widgetPromptAccepted?: boolean;
+  /** Tapped "Let's get started" on the streak intro rather than "Maybe later". */
+  streakIntroAccepted?: boolean;
+  /** Daily reminder, local 24h "HH:MM"; `null` when skipped. */
+  reminderTime?: string | null;
   /** Future steps' answers, each keyed by its own name. */
   [key: string]: unknown;
 }

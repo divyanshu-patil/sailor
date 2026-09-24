@@ -25,6 +25,12 @@ export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
   { id: "speaking_contexts", required: true },
   { id: "improve_areas", required: true },
   { id: "thank_you", required: true },
+  // Optional in spirit — "Not now" completes it just the same.
+  { id: "notifications", required: false },
+  { id: "home_widget", required: false },
+  { id: "build_streak", required: false },
+  // The last step: the profile screen comes straight after.
+  { id: "reminder_time", required: false },
 ];
 
 export const FIRST_STEP_ID = ONBOARDING_STEPS[0].id;

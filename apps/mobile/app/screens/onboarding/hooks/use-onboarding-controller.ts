@@ -54,11 +54,15 @@ export interface OnboardingController {
     contexts: string[],
   ) => Promise<OnboardingStepId | null>;
   /** Records the skills the user wants to improve and advances. */
-  submitImprovementAreas: (
-    areas: string[],
-  ) => Promise<OnboardingStepId | null>;
+  submitImprovementAreas: (areas: string[]) => Promise<OnboardingStepId | null>;
   /** Advances past the thank-you screen. It has no answer of its own. */
   submitThankYou: () => Promise<OnboardingStepId | null>;
+  /** Commits a step with no bespoke work of its own — the prompts and
+   *  permission asks happen in the frame, this only stores the outcome. */
+  submitStep: (
+    stepId: OnboardingStepId,
+    data: Partial<OnboardingData>,
+  ) => Promise<OnboardingStepId | null>;
   /**
    * Marks `stepId` as the screen in view — called on focus so the persisted
    * position (and the progress bar) follows the stack, back included.
@@ -428,6 +432,7 @@ export function useOnboardingController(
     submitSpeakingContexts,
     submitImprovementAreas,
     submitThankYou,
+    submitStep: commitStep,
     setCurrentStep,
     goBack,
     retrySync: () => void flushSync(),
