@@ -31,6 +31,7 @@ export type OnboardingStepId =
   | "speaking_contexts"
   | "improve_areas"
   | "thank_you"
+  | "script_demo"
   | "notifications"
   | "home_widget"
   | "build_streak"
@@ -63,6 +64,9 @@ export interface OnboardingData {
   /** Whether the OS granted notifications at the onboarding ask. `false`
    *  covers both "Not now" and a declined system prompt. */
   notificationsAllowed?: boolean;
+  /** The onboarding demo the user made, or null when they skipped it. */
+  demoId?: string | null;
+  demoTitle?: string | null;
   /** Tapped "Add widget" rather than "Maybe later". */
   widgetPromptAccepted?: boolean;
   /** Tapped "Let's get started" on the streak intro rather than "Maybe later". */

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,7 @@ import Animated, {
   FadeOutLeft,
   FadeOutRight,
   interpolateColor,
+  LayoutAnimationConfig,
   LinearTransition,
   useAnimatedStyle,
   useSharedValue,
@@ -43,12 +44,14 @@ import type { OnboardingStepId } from "@/types/onboarding";
 import { usePreferenceStore } from "@/store/preference-store";
 import { validateNickname } from "@/utils/nickname";
 import OnboardingProgress from "./components/onboarding-progress";
+import { ASK_CLEARANCE, CONTINUE_CLEARANCE } from "./config/footer";
 import {
   FIRST_STEP_ID,
   ONBOARDING_STEPS,
   stepIndex,
   progressForStep,
 } from "./config/steps";
+import DemoFlow, { type DemoActions, type DemoFooter } from "./demo/demo-flow";
 import { useOnboardingScope } from "./hooks/use-onboarding-scope";
 import BuildStreakStep from "./steps/build-streak";
 import GenderStep from "./steps/gender";
@@ -62,11 +65,6 @@ import SpeakingContextsStep from "./steps/speaking-contexts";
 import SpeakingLevelStep from "./steps/speaking-level";
 import ThankYouStep from "./steps/thank-you";
 
-/** Room for the floating Continue pill: its height, its padding and a gap. */
-const CONTINUE_CLEARANCE = 58 + 12 + 8;
-/** A two-choice footer: the primary pill, a gap, the secondary pill. */
-const ASK_CLEARANCE = 58 + 10 + 54 + 12 + 8;
-
 /**
  * Steps whose footer is a choice rather than Continue. The primary pill is
  * the thing the step is asking for; the secondary always moves on too — none
@@ -75,7 +73,7 @@ const ASK_CLEARANCE = 58 + 10 + 54 + 12 + 8;
 const CHOICES: Partial<
   Record<
     OnboardingStepId,
-    { primary: string; secondary: string; arrow?: boolean }
+    { primary: string; secondary?: string; arrow?: boolean }
   >
 > = {
   notifications: {
@@ -188,6 +186,14 @@ export default function OnboardingFrame() {
   // opens onboarding again (e.g. Get started a second time) is a fresh run and
   // starts at the first step.
   const [handedOff, setHandedOff] = useState(false);
+  // While the demo step is up, the demo drives the footer: what it says,
+  // whether it's live, and what a tap on it does.
+  const [demoFooter, setDemoFooter] = useState<DemoFooter>({
+    primary: "Use this brief",
+    secondary: "Skip the demo",
+    enabled: false,
+  });
+  const demoActions = useRef<DemoActions | null>(null);
 
   // The persisted position, or — after a hand-off that completed the flow — the
   // last step it reached. `reviewStep` is a local cursor for walking back; it
@@ -228,6 +234,8 @@ export default function OnboardingFrame() {
           Array.isArray(data.improvementAreas) &&
           data.improvementAreas.length > 0
         );
+      case "script_demo":
+        return demoFooter.enabled;
       case "thank_you":
       case "notifications":
       case "home_widget":
@@ -252,6 +260,25 @@ export default function OnboardingFrame() {
     };
   }, [busy]);
   const slow = busy && slowFlag;
+
+  /** The demo is over — made, or skipped — and the flow moves on. */
+  const finishDemo = async (demo: { id: string; title: string } | null) => {
+    setReviewStep(null);
+    setSubmitting(true);
+    setError(null);
+    try {
+      const next = await controller.submitStep("script_demo", {
+        demoId: demo?.id ?? null,
+        demoTitle: demo?.title ?? null,
+      });
+      if (!next) handOff();
+    } catch {
+      setError("Couldn't save your answer. Check your connection and retry.");
+    } finally {
+      setSubmitting(false);
+      setPressed(null);
+    }
+  };
 
   const handOff = () => {
     setHandedOff(true);
@@ -357,8 +384,9 @@ export default function OnboardingFrame() {
     }
   };
 
-  const choice = CHOICES[step];
-  const ask = !!choice;
+  const inDemo = step === "script_demo";
+  const choice = inDemo ? demoFooter : CHOICES[step];
+  const ask = !!choice?.secondary;
   const primaryLabel = choice?.primary ?? "Continue";
 
   const content = ((): ReactNode => {
@@ -387,7 +415,13 @@ export default function OnboardingFrame() {
       case "thank_you":
         return <ThankYouStep />;
       case "notifications":
-        return <NotificationsStep />;
+        return (
+          <NotificationsStep
+            madeTitle={
+              typeof data.demoTitle === "string" ? data.demoTitle : null
+            }
+          />
+        );
       case "home_widget":
         return <HomeWidgetStep />;
       case "build_streak":
@@ -421,6 +455,14 @@ export default function OnboardingFrame() {
       [PROFILE.track, PROFILE.ink],
     ),
   }));
+  // A dial or card in the demo takes the whole screen; the footer fades out of
+  // its way rather than unmounting, so it comes back as the same button.
+  const footerHidden = inDemo && !!demoFooter.hidden;
+  const footerShown = useSharedValue(1);
+  useEffect(() => {
+    footerShown.value = withTiming(footerHidden ? 0 : 1, { duration: 180 });
+  }, [footerHidden, footerShown]);
+  const footerFade = useAnimatedStyle(() => ({ opacity: footerShown.value }));
   const continueInk = useAnimatedStyle(() => ({
     color: interpolateColor(
       enabled.value,
@@ -435,6 +477,8 @@ export default function OnboardingFrame() {
 
   const showBack = index > 0 || router.canGoBack();
   const handleBack = () => {
+    // Inside the demo, back walks the demo's own stages first.
+    if (inDemo && demoActions.current?.back()) return;
     if (index <= 0) {
       router.back();
     } else if (controllerStep) {
@@ -446,151 +490,186 @@ export default function OnboardingFrame() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="dark" />
-      <OnboardingBackdrop />
+    // Entrances are skipped for whatever mounts with the screen itself: on a
+    // cold open the first page mounts while the native screen is still being
+    // attached, and an entrance started then can stall at zero opacity — a
+    // step, or the footer, simply missing. Later mounts (every step change)
+    // animate as normal.
+    <LayoutAnimationConfig skipEntering>
+      <View style={styles.root}>
+        <StatusBar style="dark" />
+        <OnboardingBackdrop />
 
-      {/* Back is a real header item (native glass), driving our in-place step
+        {/* Back is a real header item (native glass), driving our in-place step
           walk; the progress bar rides the header title beside it. */}
-      {showBack ? (
-        <Stack.Toolbar placement="left">
-          <Stack.Toolbar.Button
-            icon="chevron.backward"
-            tintColor={PROFILE.ink}
-            onPress={handleBack}
-          />
-        </Stack.Toolbar>
-      ) : null}
-      <Stack.Screen
-        options={{
-          headerTitle: () => (
-            <View style={{ width: width - 120 }}>
-              <OnboardingProgress progress={progressForStep(step)} />
-            </View>
-          ),
-        }}
-      />
+        {showBack ? (
+          <Stack.Toolbar placement="left">
+            <Stack.Toolbar.Button
+              icon="chevron.backward"
+              tintColor={PROFILE.ink}
+              onPress={handleBack}
+            />
+          </Stack.Toolbar>
+        ) : null}
+        <Stack.Screen
+          options={{
+            headerTitle: () => (
+              <View style={{ width: width - 120 }}>
+                <OnboardingProgress progress={progressForStep(step)} />
+              </View>
+            ),
+          }}
+        />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.content}>
-          {/* One page per step, keyed so the outgoing page plays its exit
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.content}>
+            {/* One page per step, keyed so the outgoing page plays its exit
               while the incoming one enters — a short slide and fade, the
               chrome around them never moving. */}
-          <Animated.View
-            key={step}
-            entering={(direction > 0 ? FadeInRight : FadeInLeft)
-              .duration(280)
-              .withInitialValues({
-                transform: [{ translateX: direction * 36 }],
-              })}
-            exiting={(direction > 0 ? FadeOutLeft : FadeOutRight).duration(160)}
-            style={[styles.page, { top: headerHeight }]}
-          >
-            <ScrollView
-              style={styles.flex}
-              contentContainerStyle={[
-                styles.scrollBody,
-                {
-                  paddingBottom:
-                    (ask ? ASK_CLEARANCE : CONTINUE_CLEARANCE) +
-                    Math.max(insets.bottom, 16),
-                },
-              ]}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              alwaysBounceVertical
-              // The dials turn under a vertical drag; a page that scrolled
-              // with them would fight every turn.
-              scrollEnabled={step !== "reminder_time"}
+            <Animated.View
+              key={step}
+              entering={(direction > 0 ? FadeInRight : FadeInLeft)
+                .duration(280)
+                .withInitialValues({
+                  transform: [{ translateX: direction * 36 }],
+                })}
+              exiting={(direction > 0 ? FadeOutLeft : FadeOutRight).duration(
+                160,
+              )}
+              style={[styles.page, { top: headerHeight }]}
             >
-              {content}
-            </ScrollView>
-          </Animated.View>
-        </View>
+              {inDemo ? (
+                <DemoFlow
+                  contexts={
+                    Array.isArray(data.speakingContexts)
+                      ? (data.speakingContexts as string[])
+                      : []
+                  }
+                  headerHeight={headerHeight}
+                  safeBottom={Math.max(insets.bottom, 16)}
+                  actionsRef={demoActions}
+                  onFooterChange={setDemoFooter}
+                  onFinish={(demo) => void finishDemo(demo)}
+                />
+              ) : (
+                <ScrollView
+                  style={styles.flex}
+                  contentContainerStyle={[
+                    styles.scrollBody,
+                    {
+                      paddingBottom:
+                        (ask ? ASK_CLEARANCE : CONTINUE_CLEARANCE) +
+                        Math.max(insets.bottom, 16),
+                    },
+                  ]}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  alwaysBounceVertical
+                  // The dials turn under a vertical drag; a page that scrolled
+                  // with them would fight every turn.
+                  scrollEnabled={step !== "reminder_time"}
+                >
+                  {content}
+                </ScrollView>
+              )}
+            </Animated.View>
+          </View>
 
-        <View
-          style={[
-            styles.footer,
-            { paddingBottom: Math.max(insets.bottom, 16) },
-          ]}
-        >
-          {/* One primary pill for the whole flow, never remounted: its label
+          <Animated.View
+            pointerEvents={footerHidden ? "none" : "box-none"}
+            style={[
+              styles.footer,
+              { paddingBottom: Math.max(insets.bottom, 16) },
+              footerFade,
+            ]}
+          >
+            {/* One primary pill for the whole flow, never remounted: its label
               crossfades when a step renames it, and the secondary pill slides
               in beneath it only on the steps that offer a choice. */}
-          <Animated.View layout={LinearTransition.duration(240)}>
-            <PressableScale
-              onPress={() => {
-                setPressed("primary");
-                void handleContinue(true);
-              }}
-              disabled={!canContinue}
-              style={styles.continue}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canContinue }}
-              accessibilityLabel={primaryLabel}
-            >
-              <Animated.View style={[styles.continueFill, continueFill]} />
-              {slow && pressed === "primary" ? (
-                <ActivityIndicator color={PROFILE.white} />
-              ) : (
-                <Animated.Text
-                  key={primaryLabel}
-                  entering={FadeIn.duration(200)}
-                  style={[styles.continueLabel, continueInk]}
-                >
-                  {primaryLabel}
-                </Animated.Text>
-              )}
-              {choice?.arrow ? (
-                <Animated.View
-                  entering={FadeIn.duration(200)}
-                  exiting={FadeOut.duration(120)}
-                  style={styles.continueArrow}
-                >
-                  <Ionicons
-                    name="arrow-forward"
-                    size={22}
-                    color={PROFILE.white}
-                  />
-                </Animated.View>
-              ) : null}
-            </PressableScale>
-          </Animated.View>
-          {choice ? (
-            <Animated.View
-              entering={FadeInDown.duration(240)}
-              exiting={FadeOutDown.duration(160)}
-            >
+            <Animated.View layout={LinearTransition.duration(240)}>
               <PressableScale
                 onPress={() => {
-                  setPressed("secondary");
-                  void handleContinue(false);
+                  if (inDemo) {
+                    demoActions.current?.primary();
+                    return;
+                  }
+                  setPressed("primary");
+                  void handleContinue(true);
                 }}
-                disabled={busy}
-                style={styles.secondary}
+                disabled={!canContinue}
+                style={styles.continue}
                 accessibilityRole="button"
-                accessibilityLabel={choice.secondary}
+                accessibilityState={{ disabled: !canContinue }}
+                accessibilityLabel={primaryLabel}
               >
-                {slow && pressed === "secondary" ? (
-                  <ActivityIndicator color={PROFILE.ink} />
+                <Animated.View style={[styles.continueFill, continueFill]} />
+                {slow && pressed === "primary" ? (
+                  <ActivityIndicator color={PROFILE.white} />
                 ) : (
                   <Animated.Text
-                    key={choice.secondary}
+                    key={primaryLabel}
                     entering={FadeIn.duration(200)}
-                    style={styles.secondaryLabel}
+                    style={[styles.continueLabel, continueInk]}
                   >
-                    {choice.secondary}
+                    {primaryLabel}
                   </Animated.Text>
                 )}
+                {choice?.arrow ? (
+                  <Animated.View
+                    entering={FadeIn.duration(200)}
+                    exiting={FadeOut.duration(120)}
+                    style={styles.continueArrow}
+                  >
+                    <Ionicons
+                      name="arrow-forward"
+                      size={22}
+                      color={PROFILE.white}
+                    />
+                  </Animated.View>
+                ) : null}
               </PressableScale>
             </Animated.View>
-          ) : null}
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+            {choice?.secondary ? (
+              <Animated.View
+                entering={FadeInDown.duration(240)}
+                exiting={FadeOutDown.duration(160)}
+              >
+                <PressableScale
+                  onPress={() => {
+                    if (inDemo) {
+                      setPressed("secondary");
+                      demoActions.current?.secondary();
+                      return;
+                    }
+                    setPressed("secondary");
+                    void handleContinue(false);
+                  }}
+                  disabled={busy}
+                  style={styles.secondary}
+                  accessibilityRole="button"
+                  accessibilityLabel={choice.secondary}
+                >
+                  {slow && pressed === "secondary" ? (
+                    <ActivityIndicator color={PROFILE.ink} />
+                  ) : (
+                    <Animated.Text
+                      key={choice.secondary}
+                      entering={FadeIn.duration(200)}
+                      style={styles.secondaryLabel}
+                    >
+                      {choice.secondary}
+                    </Animated.Text>
+                  )}
+                </PressableScale>
+              </Animated.View>
+            ) : null}
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
+    </LayoutAnimationConfig>
   );
 }
 

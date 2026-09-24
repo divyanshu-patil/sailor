@@ -2,6 +2,8 @@ import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
+import Ionicons from "@react-native-vector-icons/ionicons";
+
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
 import { Ticks } from "../components/doodles";
 import PhoneFrame from "../components/phone-frame";
@@ -17,7 +19,13 @@ const PINK = "#F28DB2";
  * The frame swaps its Continue for Allow / Not now on this step — see
  * `frame.tsx`. The phone's notification is a slot, filled later.
  */
-export default function NotificationsStep() {
+export default function NotificationsStep({
+  madeTitle,
+}: {
+  /** The demo script the user just made, when they made one — named here so
+   *  the ask lands as "keep practising this", not a generic permission. */
+  madeTitle?: string | null;
+} = {}) {
   const { width } = useWindowDimensions();
   // The hero breaks out of the frame's 28pt inset (see `hero` below) so the
   // handwritten asides get the screen's full margins, not the text column's.
@@ -123,7 +131,19 @@ export default function NotificationsStep() {
         </Animated.View>
       </View>
 
-      <View style={styles.title}>
+      {madeTitle ? (
+        <Animated.View
+          entering={FadeInDown.delay(260).duration(420)}
+          style={styles.made}
+        >
+          <Ionicons name="checkmark-circle" size={16} color="#3FA06E" />
+          <Text style={styles.madeLabel} numberOfLines={1}>
+            {`“${madeTitle}” is ready to practise`}
+          </Text>
+        </Animated.View>
+      ) : null}
+
+      <View style={[styles.title, madeTitle ? styles.titleAfterMade : null]}>
         <StepTitle
           title="Stay in the loop."
           underline={{ width: 214, x: 14 }}
@@ -178,5 +198,26 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 30,
+  },
+  titleAfterMade: {
+    marginTop: 14,
+  },
+  made: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 26,
+    maxWidth: "100%",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#E4F3E7",
+  },
+  madeLabel: {
+    flexShrink: 1,
+    fontFamily: profileFonts.semibold,
+    fontSize: 13.5,
+    color: "#2E6B4F",
   },
 });

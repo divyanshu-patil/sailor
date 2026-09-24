@@ -25,6 +25,8 @@ export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
   { id: "speaking_contexts", required: true },
   { id: "improve_areas", required: true },
   { id: "thank_you", required: true },
+  // Make a script and a deck before signing up — from a stored demo.
+  { id: "script_demo", required: false },
   // Optional in spirit — "Not now" completes it just the same.
   { id: "notifications", required: false },
   { id: "home_widget", required: false },

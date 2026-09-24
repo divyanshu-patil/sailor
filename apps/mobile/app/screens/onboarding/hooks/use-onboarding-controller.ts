@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { onboardingService } from "@/services/onboarding.service";
 import { userService } from "@/services/user.service";
@@ -189,10 +183,12 @@ export function useOnboardingController(
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Local first: synchronous, so the right step renders before any request.
-  // A layout effect, not a plain one: the MMKV read is sync, and doing it
-  // before paint means the first frame is the step itself rather than a blank
-  // placeholder that the real content replaces a frame later.
-  useLayoutEffect(() => {
+  // A plain effect, not a layout one: hydrating before paint mounts the first
+  // page before the native screen is attached, and its entrance animations
+  // then stall at zero opacity — a blank step until something re-renders it.
+  // The frame this saves is invisible anyway (the placeholder is the same
+  // colour as the page).
+  useEffect(() => {
     if (!scope) return;
     useOnboardingProgressStore.getState().hydrate(scope);
     // Pre-auth has no server round trip to seed the first position, so create
