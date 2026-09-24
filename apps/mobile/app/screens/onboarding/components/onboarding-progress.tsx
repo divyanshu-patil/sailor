@@ -1,6 +1,7 @@
 import { StyleSheet, View } from "react-native";
 
 import { PROFILE } from "@/screens/profile/theme";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 interface OnboardingProgressProps {
   /** 0–1, derived from the configured flow. */
@@ -22,7 +23,7 @@ export default function OnboardingProgress({
         now: Math.round(clamped * 100),
       }}
     >
-      <View style={[styles.fill, { width: `${clamped * 100}%` }]} />
+      <Animated.View layout={LinearTransition.springify()} style={[styles.fill, { width: `${clamped * 100}%` }]} />
     </View>
   );
 }

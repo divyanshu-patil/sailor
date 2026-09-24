@@ -1,13 +1,9 @@
-import { useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { router, type Href } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { stepRoute } from "../config/routes";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
-import OnboardingScreen from "../components/onboarding-screen";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
 interface GenderOption {
@@ -52,134 +48,72 @@ const OPTIONS: GenderOption[] = [
 ];
 
 /**
- * Step 2 — the gender.
+ * Step 2 — the gender. Content only; the shell owns progress and Continue.
  *
- * Three pastel cards, each with its own little blob. A choice is required to
- * continue; the answer is stored on the step and never claimed against the
- * account (there is nothing to claim, unlike the nickname).
+ * Three pastel cards, each with its own little blob. The choice is written to
+ * the draft on tap and committed when the step advances.
  */
 export default function GenderStep({
   controller,
-  authenticated,
 }: {
   controller: OnboardingController;
-  authenticated: boolean;
 }) {
-  // Restored from the persisted draft, so a force-close mid-step resumes.
-  const persisted =
+  const selected =
     typeof controller.state?.data.gender === "string"
       ? controller.state.data.gender
       : null;
-  const [selected, setSelected] = useState<string | null>(persisted);
-  const [submitting, setSubmitting] = useState(false);
-
-  const busy = submitting || controller.committing;
-  const canContinue = selected !== null && !busy;
-
-  const handleContinue = async () => {
-    if (!canContinue || !selected) return;
-    setSubmitting(true);
-    try {
-      const next = await controller.submitGender(selected);
-      if (next === null) {
-        // Flow finished — same hand-off as the nickname step's last step.
-        if (authenticated) {
-          router.replace("/(profile-setup)" as Href);
-        } else {
-          router.push({
-            pathname: "/(unauthenticated)",
-            params: { createAccount: "1", from: "onboarding" },
-          } as Href);
-        }
-      } else {
-        router.push(stepRoute(next));
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
-    <OnboardingScreen
-      progress={controller.progress}
-      showBack={false}
-      footer={
-        <PressableScale
-          onPress={handleContinue}
-          disabled={!canContinue}
-          style={[styles.continue, !canContinue && styles.continueDisabled]}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canContinue }}
-          accessibilityLabel="Continue"
-        >
-          {busy ? (
-            <ActivityIndicator
-              color={canContinue ? PROFILE.white : PROFILE.muted}
-            />
-          ) : (
-            <Text
-              style={[
-                styles.continueLabel,
-                !canContinue && styles.continueLabelDisabled,
-              ]}
-            >
-              Continue
-            </Text>
-          )}
-        </PressableScale>
-      }
-    >
-      <View style={styles.body}>
-        <Text style={styles.heading}>{"Choose your\nGender"}</Text>
-        <View style={styles.underline} />
-        <Text style={styles.subtitle}>
-          This will be used to personalise your speaking journey.
-        </Text>
+    <View style={styles.body}>
+      <Text style={styles.heading}>{"Choose your\nGender"}</Text>
+      <View style={styles.underline} />
+      <Text style={styles.subtitle}>
+        This will be used to personalise your speaking journey.
+      </Text>
 
-        <View style={styles.note} pointerEvents="none">
-          <Text style={styles.noteText}>{"Be you\nAlways!"}</Text>
-          <Ionicons
-            name="heart-outline"
-            size={22}
-            color={PROFILE.muted}
-            style={styles.heart}
-          />
-        </View>
-
-        <View style={styles.options}>
-          {OPTIONS.map((option) => {
-            const active = selected === option.value;
-            return (
-              <PressableScale
-                key={option.value}
-                onPress={() => setSelected(option.value)}
-                style={[
-                  styles.card,
-                  { backgroundColor: option.background },
-                  active && styles.cardActive,
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={`${option.title}, ${option.subtitle}`}
-              >
-                <View style={styles.cardText}>
-                  <Text style={styles.cardTitle}>{option.title}</Text>
-                  <Text style={styles.cardSubtitle}>{option.subtitle}</Text>
-                </View>
-                <View style={styles.mascot}>
-                  <BlobMascot
-                    color={option.blob}
-                    accent={option.accent}
-                    eyes={option.eyes}
-                    size={122}
-                  />
-                </View>
-              </PressableScale>
-            );
-          })}
-        </View>
+      <View style={styles.note} pointerEvents="none">
+        <Text style={styles.noteText}>{"Be you\nAlways!"}</Text>
+        <Ionicons
+          name="heart-outline"
+          size={22}
+          color={PROFILE.muted}
+          style={styles.heart}
+        />
       </View>
-    </OnboardingScreen>
+
+      <View style={styles.options}>
+        {OPTIONS.map((option) => {
+          const active = selected === option.value;
+          return (
+            <PressableScale
+              key={option.value}
+              onPress={() => controller.setDraft({ gender: option.value })}
+              style={[
+                styles.card,
+                { backgroundColor: option.background },
+                active && styles.cardActive,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${option.title}, ${option.subtitle}`}
+            >
+              <View style={styles.cardText}>
+                <Text style={styles.cardTitle}>{option.title}</Text>
+                <Text style={styles.cardSubtitle}>{option.subtitle}</Text>
+              </View>
+              <View style={styles.mascot}>
+                <BlobMascot
+                  color={option.blob}
+                  accent={option.accent}
+                  eyes={option.eyes}
+                  size={122}
+                />
+              </View>
+            </PressableScale>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -259,19 +193,4 @@ const styles = StyleSheet.create({
     right: -10,
     bottom: -6,
   },
-  continue: {
-    height: 58,
-    borderRadius: 999,
-    backgroundColor: PROFILE.ink,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  continueDisabled: { backgroundColor: PROFILE.track },
-  continueLabel: {
-    fontFamily: profileFonts.semibold,
-    fontSize: 17,
-    letterSpacing: -0.2,
-    color: PROFILE.white,
-  },
-  continueLabelDisabled: { color: PROFILE.muted },
 });

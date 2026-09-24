@@ -1,13 +1,10 @@
-import { useState, type ComponentProps } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { router, type Href } from "expo-router";
+import { type ComponentProps } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
-import OnboardingScreen from "../components/onboarding-screen";
-import { stepRoute } from "../config/routes";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
 interface ReferralOption {
@@ -86,123 +83,60 @@ const OPTIONS: ReferralOption[] = [
 ];
 
 /**
- * Step 3 — where the user heard about Sailors.
- *
- * A single-choice list; the answer is stored on the step and only helps tailor
- * the app, so nothing is claimed against the account.
+ * Step 3 — where the user heard about Sailors. Content only; the shell owns
+ * progress and Continue.
  */
 export default function ReferralStep({
   controller,
-  authenticated,
 }: {
   controller: OnboardingController;
-  authenticated: boolean;
 }) {
-  // Restored from the persisted draft, so a force-close mid-step resumes.
-  const persisted =
+  const selected =
     typeof controller.state?.data.referral === "string"
       ? controller.state.data.referral
       : null;
-  const [selected, setSelected] = useState<string | null>(persisted);
-  const [submitting, setSubmitting] = useState(false);
-
-  const busy = submitting || controller.committing;
-  const canContinue = selected !== null && !busy;
-
-  const handleContinue = async () => {
-    if (!canContinue || !selected) return;
-    setSubmitting(true);
-    try {
-      const next = await controller.submitReferral(selected);
-      if (next === null) {
-        // Flow finished — same hand-off as the last step.
-        if (authenticated) {
-          router.replace("/(profile-setup)" as Href);
-        } else {
-          router.push({
-            pathname: "/(unauthenticated)",
-            params: { createAccount: "1", from: "onboarding" },
-          } as Href);
-        }
-      } else {
-        router.push(stepRoute(next));
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
-    <OnboardingScreen
-      progress={controller.progress}
-      showBack={false}
-      footer={
-        <PressableScale
-          onPress={handleContinue}
-          disabled={!canContinue}
-          style={[styles.continue, !canContinue && styles.continueDisabled]}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canContinue }}
-          accessibilityLabel="Continue"
-        >
-          {busy ? (
-            <ActivityIndicator
-              color={canContinue ? PROFILE.white : PROFILE.muted}
-            />
-          ) : (
-            <Text
-              style={[
-                styles.continueLabel,
-                !canContinue && styles.continueLabelDisabled,
-              ]}
-            >
-              Continue
-            </Text>
-          )}
-        </PressableScale>
-      }
-    >
-      <View style={styles.body}>
-        <Text style={styles.heading}>{"Where did you\nhear about us?"}</Text>
-        <View style={styles.underline} />
-        <Text style={styles.subtitle}>
-          This helps us make Sailors better for you.
-        </Text>
+    <View style={styles.body}>
+      <Text style={styles.heading}>{"Where did you\nhear about us?"}</Text>
+      <View style={styles.underline} />
+      <Text style={styles.subtitle}>
+        This helps us make Sailors better for you.
+      </Text>
 
-        <View style={styles.options}>
-          {OPTIONS.map((option) => {
-            const active = selected === option.value;
-            return (
-              <PressableScale
-                key={option.value}
-                onPress={() => setSelected(option.value)}
-                style={[
-                  styles.card,
-                  { backgroundColor: option.card },
-                  active && styles.cardActive,
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={option.label}
-              >
-                <View style={[styles.badge, { backgroundColor: option.badge }]}>
-                  <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
-                </View>
-                <Text style={styles.label}>{option.label}</Text>
-                <View style={styles.mascot}>
-                  <BlobMascot
-                    color={option.blob}
-                    accent={option.accent}
-                    eyes={option.eyes}
-                    size={90}
-                  />
-                </View>
-              </PressableScale>
-            );
-          })}
-        </View>
+      <View style={styles.options}>
+        {OPTIONS.map((option) => {
+          const active = selected === option.value;
+          return (
+            <PressableScale
+              key={option.value}
+              onPress={() => controller.setDraft({ referral: option.value })}
+              style={[
+                styles.card,
+                { backgroundColor: option.card },
+                active && styles.cardActive,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={option.label}
+            >
+              <View style={[styles.badge, { backgroundColor: option.badge }]}>
+                <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
+              </View>
+              <Text style={styles.label}>{option.label}</Text>
+              <View style={styles.mascot}>
+                <BlobMascot
+                  color={option.blob}
+                  accent={option.accent}
+                  eyes={option.eyes}
+                  size={90}
+                />
+              </View>
+            </PressableScale>
+          );
+        })}
       </View>
-    </OnboardingScreen>
+    </View>
   );
 }
 
@@ -221,7 +155,7 @@ const styles = StyleSheet.create({
   },
   underline: {
     marginTop: 2,
-    width: 200,
+    width: 220,
     maxWidth: "100%",
     height: 9,
     borderRadius: 5,
@@ -277,19 +211,4 @@ const styles = StyleSheet.create({
     right: -8,
     bottom: -12,
   },
-  continue: {
-    height: 58,
-    borderRadius: 999,
-    backgroundColor: PROFILE.ink,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  continueDisabled: { backgroundColor: PROFILE.track },
-  continueLabel: {
-    fontFamily: profileFonts.semibold,
-    fontSize: 17,
-    letterSpacing: -0.2,
-    color: PROFILE.white,
-  },
-  continueLabelDisabled: { color: PROFILE.muted },
 });

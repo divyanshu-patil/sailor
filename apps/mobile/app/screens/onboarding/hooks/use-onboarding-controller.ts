@@ -40,7 +40,8 @@ export interface OnboardingController {
   committing: boolean;
   reconciling: boolean;
   syncError: string | null;
-  setDraftNickname: (value: string) => void;
+  /** Local-only draft write — the answer is committed when the step advances. */
+  setDraft: (data: Partial<OnboardingData>) => void;
   submitNickname: (display: string) => Promise<OnboardingStepId | null>;
   /** Records the gender answer and advances. Returns the next step, or null. */
   submitGender: (gender: string) => Promise<OnboardingStepId | null>;
@@ -49,8 +50,8 @@ export interface OnboardingController {
   /** Records the self-described speaking level and advances. */
   submitSpeakingLevel: (level: string) => Promise<OnboardingStepId | null>;
   /**
-   * Marks `stepId` as the screen in view — used by the stack's focus effect so
-   * going back updates the position too, not just going forward.
+   * Marks `stepId` as the screen in view — called on focus so the persisted
+   * position (and the progress bar) follows the stack, back included.
    */
   setCurrentStep: (stepId: OnboardingStepId) => void;
   goBack: () => void;
@@ -254,8 +255,8 @@ export function useOnboardingController(
     };
   }, [authenticated, userId, hydrated, flushSync]);
 
-  const setDraftNickname = useCallback((value: string) => {
-    useOnboardingProgressStore.getState().patchData({ nickname: value });
+  const setDraft = useCallback((data: Partial<OnboardingData>) => {
+    useOnboardingProgressStore.getState().patchData(data);
   }, []);
 
   /**
@@ -355,9 +356,9 @@ export function useOnboardingController(
     (stepId: OnboardingStepId) => {
       const store = useOnboardingProgressStore.getState();
       const current = store.state;
-      // No-op when already there: the focus effect runs on every render while
-      // focused, and a completed flow backing up onto a step re-opens it.
       if (!current || current.currentStepId === stepId) return;
+      // Focus is a step, not a completion: backing onto a finished step reopens
+      // the flow there.
       store.patch(
         { currentStepId: stepId, status: "in_progress", completedAt: null },
         { sync: authenticated },
@@ -392,7 +393,7 @@ export function useOnboardingController(
     committing,
     reconciling,
     syncError,
-    setDraftNickname,
+    setDraft,
     submitNickname,
     submitGender,
     submitReferral,

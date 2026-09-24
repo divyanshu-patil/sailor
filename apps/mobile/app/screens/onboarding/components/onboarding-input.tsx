@@ -1,6 +1,7 @@
-import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
+import { StyleSheet, TextInput, type TextInputProps } from "react-native";
 
 import { profileFonts, PROFILE } from "@/screens/profile/theme";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 interface OnboardingInputProps {
   value: string;
@@ -31,7 +32,7 @@ export default function OnboardingInput({
   accessibilityLabel,
 }: OnboardingInputProps) {
   return (
-    <View style={styles.pill}>
+    <Animated.View style={styles.pill} layout={LinearTransition.springify()}>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -51,7 +52,7 @@ export default function OnboardingInput({
           { width: Math.max(88, Math.min(220, value.length * 11 + 30)) },
         ]}
       />
-    </View>
+    </Animated.View>
   );
 }
 
