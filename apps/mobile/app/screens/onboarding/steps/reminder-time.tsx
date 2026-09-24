@@ -90,7 +90,7 @@ export default function ReminderTimeStep({
         <StepTitle
           title={"When should we\nremind you?"}
           underline={{ width: 180, x: 34 }}
-          subtitle="Pick a time that fits your day. We'll send one gentle nudge to keep your streak going."
+          subtitle="One gentle nudge, at a time that suits you."
           delay={60}
         />
       </View>
@@ -167,7 +167,7 @@ export default function ReminderTimeStep({
         entering={FadeIn.delay(420).duration(400)}
         style={styles.note}
       >
-        You can change this anytime in Settings.
+        Change it anytime in Settings.
       </Animated.Text>
     </View>
   );

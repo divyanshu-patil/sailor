@@ -68,7 +68,7 @@ export default function HomeWidgetStep() {
         <StepTitle
           title={"Add Sailors to\nyour home screen"}
           underline={{ width: 250, x: 10 }}
-          subtitle="Track your progress, get practice reminders and jump into a session — all from your home screen."
+          subtitle="Your practice and streak, one tap away."
           delay={200}
         />
       </View>

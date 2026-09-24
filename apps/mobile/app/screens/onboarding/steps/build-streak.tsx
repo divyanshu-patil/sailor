@@ -79,7 +79,7 @@ export default function BuildStreakStep() {
         <StepTitle
           title="Build your streak"
           underline={{ width: 170, x: 58 }}
-          subtitle="Show up a little each day and make real progress in your speaking journey."
+          subtitle="A little every day adds up fast."
           delay={180}
         />
       </View>

@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
     backgroundColor: PROFILE.accentYellow,
   },
   subtitle: {
-    marginTop: 16,
-    paddingHorizontal: 24,
+    marginTop: 14,
+    paddingHorizontal: 8,
     fontFamily: profileFonts.body,
     fontSize: 17,
     lineHeight: 25,

@@ -51,7 +51,7 @@ export const SelectionMark = memo(function SelectionMark({
 /** A list item that rises in after the ones above it. */
 export function Stagger({
   index,
-  base = 80,
+  base = 60,
   children,
   style,
 }: {
@@ -62,8 +62,9 @@ export function Stagger({
 }) {
   return (
     <Animated.View
-      entering={FadeInDown.delay(base + index * 45)
-        .duration(380)
+      // Capped, so an eight-card list is settled as fast as a four-card one.
+      entering={FadeInDown.delay(base + Math.min(index, 5) * 35)
+        .duration(320)
         .withInitialValues({ transform: [{ translateY: 14 }] })}
       style={style}
     >

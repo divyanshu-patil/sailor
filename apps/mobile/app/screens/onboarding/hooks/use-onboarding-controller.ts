@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { onboardingService } from "@/services/onboarding.service";
 import { userService } from "@/services/user.service";
@@ -183,7 +189,10 @@ export function useOnboardingController(
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Local first: synchronous, so the right step renders before any request.
-  useEffect(() => {
+  // A layout effect, not a plain one: the MMKV read is sync, and doing it
+  // before paint means the first frame is the step itself rather than a blank
+  // placeholder that the real content replaces a frame later.
+  useLayoutEffect(() => {
     if (!scope) return;
     useOnboardingProgressStore.getState().hydrate(scope);
     // Pre-auth has no server round trip to seed the first position, so create

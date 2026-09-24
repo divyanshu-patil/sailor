@@ -151,15 +151,33 @@ const PhoneFrame = memo(function PhoneFrame({
         </View>
       </View>
 
-      {/* The dissolve. Wider than the phone so the bezel's shadow fades too. */}
+      {/* The cloud the phone dissolves into: a white mist rising over the
+          lower screen — radial, so it has no edge anywhere — and then the
+          page's own cream closing over the bezel and its shadow. */}
+      <Svg
+        pointerEvents="none"
+        width={width * 1.6}
+        height={height * 0.72}
+        style={[styles.cloud, { left: -width * 0.3, bottom: -height * 0.2 }]}
+      >
+        <Defs>
+          <RadialGradient id="mist" cx="50%" cy="58%" rx="50%" ry="50%">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.96" />
+            <Stop offset="0.5" stopColor="#FFFDFA" stopOpacity="0.7" />
+            <Stop offset="1" stopColor="#FFFDFA" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="url(#mist)" />
+      </Svg>
       <LinearGradient
+        pointerEvents="none"
         colors={[
           "rgba(251,243,234,0)",
-          "rgba(251,243,234,0.75)",
+          "rgba(251,243,234,0.7)",
           PROFILE.background,
         ]}
-        locations={[0, 0.6, 1]}
-        style={[styles.fade, { height: height * 0.3 }]}
+        locations={[0, 0.5, 1]}
+        style={[styles.fade, { height: height * 0.3, bottom: -height * 0.1 }]}
       />
     </View>
   );
@@ -212,10 +230,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
+  cloud: {
+    position: "absolute",
+  },
   fade: {
     position: "absolute",
-    left: -30,
-    right: -30,
-    bottom: -2,
+    // Past the bezel shadow's 22pt reach, so no edge of it is left showing.
+    left: -28,
+    right: -28,
   },
 });

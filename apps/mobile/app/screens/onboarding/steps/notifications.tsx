@@ -127,7 +127,7 @@ export default function NotificationsStep() {
         <StepTitle
           title="Stay in the loop."
           underline={{ width: 214, x: 14 }}
-          subtitle="Get gentle reminders when it's time to practice, so your speaking streak keeps growing."
+          subtitle="Gentle nudges to keep your streak alive."
         />
       </View>
     </View>

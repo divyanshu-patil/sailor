@@ -482,11 +482,11 @@ export default function OnboardingFrame() {
           <Animated.View
             key={step}
             entering={(direction > 0 ? FadeInRight : FadeInLeft)
-              .duration(340)
+              .duration(280)
               .withInitialValues({
                 transform: [{ translateX: direction * 36 }],
               })}
-            exiting={(direction > 0 ? FadeOutLeft : FadeOutRight).duration(200)}
+            exiting={(direction > 0 ? FadeOutLeft : FadeOutRight).duration(160)}
             style={[styles.page, { top: headerHeight }]}
           >
             <ScrollView
