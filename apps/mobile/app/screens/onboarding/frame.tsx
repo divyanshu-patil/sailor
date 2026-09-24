@@ -502,6 +502,9 @@ export default function OnboardingFrame() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               alwaysBounceVertical
+              // The dials turn under a vertical drag; a page that scrolled
+              // with them would fight every turn.
+              scrollEnabled={step !== "reminder_time"}
             >
               {content}
             </ScrollView>
