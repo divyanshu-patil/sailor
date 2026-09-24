@@ -1,6 +1,6 @@
 """The user's own material for one generation, in the shape the AI layer wants.
 
-Images are fetched from MinIO as bytes; documents were already reduced to text
+Images are fetched from S3 as bytes; documents were already reduced to text
 at upload, so nothing is parsed here. Both generation and revision go through
 this, which is what keeps a revision grounded in the same sources the original
 script was written from.

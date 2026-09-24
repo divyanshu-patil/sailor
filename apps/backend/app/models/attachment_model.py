@@ -53,7 +53,7 @@ class Attachment(Base):
     content_type: Mapped[str] = mapped_column(String, nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # The MinIO object key. Opaque and server-generated — a user-supplied
+    # The S3 object key. Opaque and server-generated — a user-supplied
     # filename never reaches a storage path.
     object_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 

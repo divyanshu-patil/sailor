@@ -50,7 +50,7 @@ make the same thing good.
 | **pnpm** | 11.13.1 (pinned via `packageManager`) | Workspace package manager |
 | **Python** | 3.14+ | The API |
 | **uv** | latest | Python dependency and venv management |
-| **Docker** | latest | Redis and MinIO for local development |
+| **Docker** | latest | Redis for local development |
 | **CocoaPods** | latest | Installed by the Expo prebuild step |
 
 ```bash
@@ -99,7 +99,7 @@ sailor/
 │       │   └── config/         # Settings
 │       ├── migrations/         # Alembic
 │       ├── tests/
-│       └── docker-compose.yml  # Redis + MinIO
+│       └── docker-compose.yml  # Redis
 └── turbo.json                  # Task graph
 ```
 
@@ -124,7 +124,7 @@ pnpm install
 cp apps/mobile/.env.example apps/mobile/.env
 cp apps/backend/.env.example apps/backend/.env
 
-# 3. Start Redis and MinIO
+# 3. Start Redis
 cd apps/backend && docker compose up -d && cd ../..
 
 # 4. Apply database migrations
@@ -165,7 +165,7 @@ Everything the app reads goes through `app/lib/config/env.ts`, which throws on a
 | `CLERK_SECRET_KEY`, `CLERK_JWT_PUBLIC_KEY` | ✅ | Verifies the app's tokens |
 | `CLERK_WEBHOOK_SIGNING_SECRET` | ✅ | Clerk → webhooks, verified with Svix |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server-side only. Never put these in the app. |
-| `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_PORT`, `MINIO_PUBLIC_ENDPOINT`, `MINIO_PUBLIC_SECURE` | ✅ | Object storage for recordings and attachments |
+| `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | ✅ | S3 bucket for recordings and attachments. `AWS_REGION` must match the bucket's region. |
 | `AI_PROVIDER` | ✅ | `ollama` (the default — runs locally, no key), `anthropic`, `openai`, `groq`, `gemini` or `openrouter` |
 | `OPENROUTER_API_KEY`, `AI_USE_OPENROUTER`, `OPENROUTER_MODEL`, `OPENROUTER_FALLBACK_MODEL` | — | On by default; free models are tried first and fall through to `AI_PROVIDER` |
 | `OPENAI_API_KEY` / `GROQ_API_KEY` / `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OLLAMA_HOST` | — | Whichever provider you configured |

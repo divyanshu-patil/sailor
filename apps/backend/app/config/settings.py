@@ -20,16 +20,13 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
 
-    MINIO_ROOT_USER: str
-    MINIO_ROOT_PASSWORD: str
-    MINIO_PORT: int
-
-    # Host:port a *client device* can reach MinIO on, used only for signing
-    # presigned URLs — e.g. "192.168.1.42:9000" on a LAN, or "media.example.com"
-    # behind a proxy. Left empty, URLs are signed for localhost, which a
-    # simulator can reach and a physical phone cannot.
-    MINIO_PUBLIC_ENDPOINT: str = ""
-    MINIO_PUBLIC_SECURE: bool = False
+    # S3 holds attachments and deck recordings. Empty keys fall back to boto3's
+    # default credential chain (IAM role, ~/.aws), which is what production
+    # should use.
+    AWS_REGION: str
+    AWS_S3_BUCKET: str
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
 
     # ---- AI provider -----------------------------------------------------
     # Which service generates scripts and cards: "ollama", "anthropic",

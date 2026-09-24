@@ -1,21 +1,20 @@
-import io
 import logging
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
 from fastapi import UploadFile
-from minio.error import S3Error
+from botocore.exceptions import BotoCoreError, ClientError
 
-from app.core.minio_client import client, public_client
+from app.core.s3_client import BUCKET, client
 from app.services.ai.providers.base import ImageInput
 from app.services.attachments.extract import DOCUMENT_TYPES, IMAGE_TYPES
 from app.utils.enums.attachment_enums import AttachmentKind
 
 logger = logging.getLogger("celery")
 
-ATTACHMENT_BUCKET = "attachments"
-AUDIO_BUCKET = "deck-audio"
+# Any failure talking to S3: an error response, or no response at all.
+S3Error = (ClientError, BotoCoreError)
 
 # Caps, enforced here as well as in the app. The client checks first so the user
 # is told before a slow upload rather than after it, but the client is not a
@@ -51,7 +50,7 @@ def max_bytes_for(kind: AttachmentKind) -> int:
 
 
 def _object_name(filename: str | None) -> str:
-    """Keep user-supplied filenames out of MinIO object paths."""
+    """Keep user-supplied filenames out of S3 object keys."""
     suffix = Path(filename or "").suffix.lower()
     return f"uploads/{uuid4()}{suffix}"
 
@@ -82,15 +81,14 @@ async def read_upload(file: UploadFile, kind: AttachmentKind) -> bytes:
 
 
 def store_attachment(data: bytes, filename: str | None, content_type: str) -> str:
-    """Put one attachment in MinIO and return its opaque object key."""
+    """Put one attachment in S3 and return its opaque object key."""
     object_name = _object_name(filename)
     try:
         client.put_object(
-            bucket_name=ATTACHMENT_BUCKET,
-            object_name=object_name,
-            data=io.BytesIO(data),
-            length=len(data),
-            content_type=content_type,
+            Bucket=BUCKET,
+            Key=object_name,
+            Body=data,
+            ContentType=content_type,
         )
     except S3Error as exc:
         raise AttachmentStorageError("Could not store the attachment.") from exc
@@ -100,37 +98,33 @@ def store_attachment(data: bytes, filename: str | None, content_type: str) -> st
 def read_attachment_image(object_name: str) -> ImageInput:
     """Load an image attachment into the provider-neutral vision input.
 
-    The worker reads bytes from MinIO over the internal address and base64s them
-    into the request. It deliberately does not hand the provider a presigned URL:
-    that URL points at this deployment's MinIO, which a cloud provider cannot
-    reach, and Ollama and Gemini take bytes regardless. The presigned URL is for
-    the app, not for the model.
+    The worker reads the bytes and base64s them into the request rather than
+    handing the provider a presigned URL: Ollama and Gemini take bytes
+    regardless, and a URL would leak a week-long link to a third party. The
+    presigned URL is for the app, not for the model.
     """
-    response = None
     try:
-        metadata = client.stat_object(ATTACHMENT_BUCKET, object_name)
-        response = client.get_object(ATTACHMENT_BUCKET, object_name)
-        contents = response.read()
+        response = client.get_object(Bucket=BUCKET, Key=object_name)
+        with response["Body"] as body:
+            contents = body.read()
     except S3Error as exc:
         raise AttachmentStorageError("Could not load the attachment.") from exc
-    finally:
-        if response is not None:
-            response.close()
-            response.release_conn()
 
     if not contents:
         raise AttachmentStorageError("The stored attachment is empty.")
 
     return ImageInput(
-        data=contents, media_type=metadata.content_type or "application/octet-stream"
+        data=contents, media_type=response.get("ContentType") or "application/octet-stream"
     )
 
 
 def get_attachment_url(object_name: str, expires: timedelta = timedelta(days=7)) -> str:
-    """A URL the *app* can show. Signed against the public endpoint."""
+    """A URL the *app* can show."""
     try:
-        return public_client.presigned_get_object(
-            ATTACHMENT_BUCKET, object_name, expires=expires
+        return client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": BUCKET, "Key": object_name},
+            ExpiresIn=int(expires.total_seconds()),
         )
     except S3Error as exc:
         raise AttachmentStorageError("Could not create a link for the attachment.") from exc
@@ -138,7 +132,7 @@ def get_attachment_url(object_name: str, expires: timedelta = timedelta(days=7))
 
 def delete_attachment(object_name: str) -> None:
     try:
-        client.remove_object(ATTACHMENT_BUCKET, object_name)
+        client.delete_object(Bucket=BUCKET, Key=object_name)
     except S3Error as exc:
         raise AttachmentStorageError("Could not remove the attachment.") from exc
 
@@ -164,11 +158,10 @@ async def upload_deck_audio(deck_id: int, file: UploadFile) -> str:
 
     try:
         client.put_object(
-            bucket_name=AUDIO_BUCKET,
-            object_name=object_name,
-            data=io.BytesIO(contents),
-            length=len(contents),
-            content_type=file.content_type,
+            Bucket=BUCKET,
+            Key=object_name,
+            Body=contents,
+            ContentType=file.content_type,
         )
     except S3Error as exc:
         raise AudioStorageError("Could not store the audio recording.") from exc
@@ -178,13 +171,13 @@ async def upload_deck_audio(deck_id: int, file: UploadFile) -> str:
 
 def get_deck_audio_url(object_name: str, expires: timedelta = timedelta(days=7)) -> str:
     """Presigned GET URL the app downloads and caches from, bypassing the backend.
-
-    Signed with `public_client`, not `client`: the signature covers the host, so
-    signing with the internal client would hand the phone a valid signature for
-    `localhost:9000` — which resolves to the phone. See core/minio_client.
-    """
+    7 days is the SigV4 maximum."""
     try:
-        return public_client.presigned_get_object(AUDIO_BUCKET, object_name, expires=expires)
+        return client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": BUCKET, "Key": object_name},
+            ExpiresIn=int(expires.total_seconds()),
+        )
     except S3Error as exc:
         raise AudioStorageError("Could not create a playback link for the recording.") from exc
 
@@ -193,6 +186,6 @@ def delete_deck_audio(object_name: str) -> None:
     """Remove a deck's recording — used when the deck itself is deleted, not on
     a normal re-record (which overwrites the same key instead)."""
     try:
-        client.remove_object(AUDIO_BUCKET, object_name)
+        client.delete_object(Bucket=BUCKET, Key=object_name)
     except S3Error as exc:
         raise AudioStorageError("Could not remove the audio recording.") from exc

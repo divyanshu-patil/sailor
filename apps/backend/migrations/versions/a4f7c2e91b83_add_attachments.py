@@ -1,7 +1,7 @@
 """add attachments
 
 Files the user uploads to ground a generation in their own material. Replaces
-the single-image flow, which kept its MinIO key in Redis under a one-hour TTL —
+the single-image flow, which kept its S3 key in Redis under a one-hour TTL —
 that could describe only one file, held no extracted text, and expired long
 before a revision might need it.
 
@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         # Null until a brief is submitted carrying this attachment's id. SET NULL
         # rather than CASCADE so a deleted generation leaves the row for the
-        # orphan sweep to clean up along with its MinIO object.
+        # orphan sweep to clean up along with its S3 object.
         sa.Column("generation_id", sa.Integer(), nullable=True),
         sa.Column("kind", sa.String(), nullable=False),
         sa.Column("filename", sa.String(), nullable=False),
