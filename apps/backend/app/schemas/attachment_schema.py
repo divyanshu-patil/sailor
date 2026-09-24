@@ -17,7 +17,7 @@ class AttachmentResponse(BaseModel):
     filename: str
     content_type: str
     size_bytes: int
-    # None when the object stored fine but MinIO couldn't be asked for a link.
+    # None when the object stored fine but S3 couldn't be asked for a link.
     url: Optional[str] = None
     has_text: bool = False
     created_at: datetime

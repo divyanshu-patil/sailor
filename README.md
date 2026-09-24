@@ -216,7 +216,7 @@ A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)
   </tr>
   <tr>
     <td><b>Object storage</b></td>
-    <td><img src="https://cdn.simpleicons.org/minio/C72E49" width="20" align="middle" />&nbsp;MinIO&nbsp;&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
+    <td><img src="https://cdn.simpleicons.org/amazons3/569A31" width="20" align="middle" />&nbsp;AWS S3&nbsp;&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
   </tr>
   <tr>
     <td><b>Identity &amp; billing</b></td>

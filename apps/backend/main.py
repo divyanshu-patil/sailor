@@ -11,7 +11,7 @@ from app.db.base import Base
 from app.api.v1 import deck_router, preferences_router
 from app.api.v1 import card_router, script_router, audio_router, attachment_router
 from app.api.v1 import daily_router, admin_router
-from app.core.minio_client import ensure_buckets
+from app.core.s3_client import ensure_bucket
 
 import app.models
 from app.models.preferences_model import UserPreferences
@@ -51,8 +51,8 @@ app.add_middleware(LoggingMiddleware)
 @app.on_event("startup")
 async def startup_event():
     """Startup event handler."""
-    # Ensure MinIO buckets exist
-    ensure_buckets()
+    # Fail fast if S3 is unreachable or misconfigured
+    ensure_bucket()
 
 # ─── Routers ──────────────────────────────────────────────────────────────────
 # All routes are prefixed with /api/v1 for versioning

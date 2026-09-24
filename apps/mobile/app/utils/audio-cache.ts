@@ -3,7 +3,7 @@ import { Directory, File, Paths } from "expo-file-system";
 /**
  * On-disk cache of deck recordings.
  *
- * A recording lives in MinIO, but playback shouldn't wait on a network round
+ * A recording lives in S3, but playback shouldn't wait on a network round
  * trip every time the user opens practice — and a presigned URL expires, so
  * holding onto one is not a substitute for holding onto the file. The download
  * happens once; every later open reads from disk.

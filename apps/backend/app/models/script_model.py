@@ -90,7 +90,7 @@ class ScriptGeneration(Base):
     fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
     # Reference URLs, newline-separated. Stored on the generation rather than as
-    # Attachment rows: a link has no bytes in MinIO, no size, and nothing to
+    # Attachment rows: a link has no bytes in S3, no size, and nothing to
     # extract, so an attachment row would be almost entirely null columns.
     # Kept because a revision needs the same references the script was written
     # against — same reason attachments keep their extracted text.
