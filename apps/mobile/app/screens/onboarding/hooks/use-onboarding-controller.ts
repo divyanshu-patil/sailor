@@ -49,6 +49,10 @@ export interface OnboardingController {
   submitReferral: (referral: string) => Promise<OnboardingStepId | null>;
   /** Records the self-described speaking level and advances. */
   submitSpeakingLevel: (level: string) => Promise<OnboardingStepId | null>;
+  /** Records where the user speaks most often and advances. */
+  submitSpeakingContexts: (
+    contexts: string[],
+  ) => Promise<OnboardingStepId | null>;
   /**
    * Marks `stepId` as the screen in view — called on focus so the persisted
    * position (and the progress bar) follows the stack, back included.
@@ -352,6 +356,12 @@ export function useOnboardingController(
     [commitStep],
   );
 
+  const submitSpeakingContexts = useCallback(
+    (contexts: string[]) =>
+      commitStep("speaking_contexts", { speakingContexts: contexts }),
+    [commitStep],
+  );
+
   const setCurrentStep = useCallback(
     (stepId: OnboardingStepId) => {
       const store = useOnboardingProgressStore.getState();
@@ -398,6 +408,7 @@ export function useOnboardingController(
     submitGender,
     submitReferral,
     submitSpeakingLevel,
+    submitSpeakingContexts,
     setCurrentStep,
     goBack,
     retrySync: () => void flushSync(),

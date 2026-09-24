@@ -36,6 +36,7 @@ import { useOnboardingScope } from "./hooks/use-onboarding-scope";
 import GenderStep from "./steps/gender";
 import ProfileIdentityStep from "./steps/profile-identity";
 import ReferralStep from "./steps/referral";
+import SpeakingContextsStep from "./steps/speaking-contexts";
 import SpeakingLevelStep from "./steps/speaking-level";
 
 /** Continue unlocks once the nickname is at least this many characters. */
@@ -145,6 +146,11 @@ export default function OnboardingFrame() {
         return typeof data.referral === "string";
       case "speaking_level":
         return typeof data.speakingLevel === "string";
+      case "speaking_contexts":
+        return (
+          Array.isArray(data.speakingContexts) &&
+          data.speakingContexts.length > 0
+        );
       default:
         return false;
     }
@@ -184,6 +190,11 @@ export default function OnboardingFrame() {
             String(data.speakingLevel),
           );
           break;
+        case "speaking_contexts":
+          next = await controller.submitSpeakingContexts(
+            (data.speakingContexts as string[]) ?? [],
+          );
+          break;
       }
       // The commit already moved the persisted position, so the content below
       // swaps in place. Only the very end leaves the screen.
@@ -220,6 +231,8 @@ export default function OnboardingFrame() {
         return <ReferralStep controller={controller} />;
       case "speaking_level":
         return <SpeakingLevelStep controller={controller} />;
+      case "speaking_contexts":
+        return <SpeakingContextsStep controller={controller} />;
     }
   })();
 

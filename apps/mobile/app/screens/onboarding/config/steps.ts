@@ -22,6 +22,7 @@ export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
   { id: "gender", required: true },
   { id: "referral", required: true },
   { id: "speaking_level", required: true },
+  { id: "speaking_contexts", required: true },
 ];
 
 export const FIRST_STEP_ID = ONBOARDING_STEPS[0].id;
