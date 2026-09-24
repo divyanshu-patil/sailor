@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import { SelectionMark, Stagger } from "../components/choice-motion";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
 interface ImproveOption {
@@ -107,32 +109,37 @@ export default function ImproveAreasStep({
   return (
     <View style={styles.body}>
       <Text style={styles.heading}>{"What do you want\nto improve?"}</Text>
-      <Text style={styles.subtitle}>Pick what you’d like to get better at.</Text>
+      <Text style={styles.subtitle}>
+        Pick what you’d like to get better at.
+      </Text>
 
       <View style={styles.options}>
-        {OPTIONS.map((option) => {
+        {OPTIONS.map((option, i) => {
           const active = selected.includes(option.value);
           return (
-            <PressableScale
-              key={option.value}
-              onPress={() => toggle(option.value)}
-              style={[
-                styles.card,
-                { backgroundColor: option.card },
-                active && { borderColor: option.badge },
-              ]}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: active }}
-              accessibilityLabel={`${option.title}. ${option.subtitle}`}
-            >
-              <View style={[styles.badge, { backgroundColor: option.badge }]}>
-                <Ionicons name={option.icon} size={24} color={PROFILE.ink} />
-              </View>
-              <View style={styles.text}>
-                <Text style={styles.title}>{option.title}</Text>
-                <Text style={styles.description}>{option.subtitle}</Text>
-              </View>
-            </PressableScale>
+            <Stagger key={option.value} index={i}>
+              <PressableScale
+                haptic={haptics.select}
+                onPress={() => toggle(option.value)}
+                style={[
+                  styles.card,
+                  { backgroundColor: option.card },
+                  active && { borderColor: option.badge },
+                ]}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: active }}
+                accessibilityLabel={`${option.title}. ${option.subtitle}`}
+              >
+                <View style={[styles.badge, { backgroundColor: option.badge }]}>
+                  <Ionicons name={option.icon} size={24} color={PROFILE.ink} />
+                </View>
+                <View style={styles.text}>
+                  <Text style={styles.title}>{option.title}</Text>
+                  <Text style={styles.description}>{option.subtitle}</Text>
+                </View>
+                <SelectionMark active={active} />
+              </PressableScale>
+            </Stagger>
           );
         })}
       </View>

@@ -29,9 +29,7 @@ export default function NotificationsStep() {
   return (
     <View style={styles.body}>
       <View style={[styles.hero, { height: phoneHeight }]}>
-        <Animated.View
-          entering={FadeInDown.duration(700).springify().damping(18)}
-        >
+        <Animated.View entering={FadeInDown.springify().damping(70)}>
           <PhoneFrame width={phoneWidth} />
         </Animated.View>
 

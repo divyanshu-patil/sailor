@@ -96,7 +96,7 @@ export default function ReminderTimeStep({
       </View>
 
       <Animated.View
-        entering={FadeInDown.delay(160).duration(560).springify().damping(18)}
+        entering={FadeInDown.delay(160).springify().damping(70)}
         style={styles.card}
       >
         <View style={styles.band} pointerEvents="none" />
@@ -137,12 +137,12 @@ export default function ReminderTimeStep({
             <PressableScale
               key={preset.label}
               onPress={() => {
-                haptics.select();
                 const next = splitTime(preset.time);
                 hourWheel.current?.scrollToIndex(next.hourIndex);
                 minuteWheel.current?.scrollToIndex(next.minuteIndex);
                 set(preset.time);
               }}
+              haptic={haptics.select}
               style={[styles.preset, active && styles.presetActive]}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}

@@ -37,7 +37,7 @@ export default function HomeWidgetStep() {
       </Animated.View>
 
       <Animated.View
-        entering={FadeInDown.duration(560).springify().damping(18)}
+        entering={FadeInDown.springify().damping(70)}
         style={styles.medium}
       >
         <PracticePreview width={medium} />
@@ -45,13 +45,13 @@ export default function HomeWidgetStep() {
 
       <View style={[styles.smallRow, { gap }]}>
         <Animated.View
-          entering={FadeInDown.delay(90).duration(560).springify().damping(18)}
+          entering={FadeInDown.delay(90).springify().damping(70)}
           style={{ transform: [{ rotate: "-1.5deg" }] }}
         >
           <ReminderPreview width={small} />
         </Animated.View>
         <Animated.View
-          entering={FadeInDown.delay(160).duration(560).springify().damping(18)}
+          entering={FadeInDown.delay(160).springify().damping(70)}
           style={{ transform: [{ rotate: "1.5deg" }] }}
         >
           <StreakPreview width={small} />

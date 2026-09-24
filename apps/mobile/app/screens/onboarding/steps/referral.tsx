@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import { SelectionMark, Stagger } from "../components/choice-motion";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
@@ -105,34 +107,37 @@ export default function ReferralStep({
       </Text>
 
       <View style={styles.options}>
-        {OPTIONS.map((option) => {
+        {OPTIONS.map((option, i) => {
           const active = selected === option.value;
           return (
-            <PressableScale
-              key={option.value}
-              onPress={() => controller.setDraft({ referral: option.value })}
-              style={[
-                styles.card,
-                { backgroundColor: option.card },
-                active && styles.cardActive,
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={option.label}
-            >
-              <View style={[styles.badge, { backgroundColor: option.badge }]}>
-                <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
-              </View>
-              <Text style={styles.label}>{option.label}</Text>
-              <View style={styles.mascot}>
-                <BlobMascot
-                  color={option.blob}
-                  accent={option.accent}
-                  eyes={option.eyes}
-                  size={90}
-                />
-              </View>
-            </PressableScale>
+            <Stagger key={option.value} index={i}>
+              <PressableScale
+                haptic={haptics.select}
+                onPress={() => controller.setDraft({ referral: option.value })}
+                style={[
+                  styles.card,
+                  { backgroundColor: option.card },
+                  active && styles.cardActive,
+                ]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={option.label}
+              >
+                <View style={[styles.badge, { backgroundColor: option.badge }]}>
+                  <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
+                </View>
+                <Text style={styles.label}>{option.label}</Text>
+                <View style={styles.mascot}>
+                  <BlobMascot
+                    color={option.blob}
+                    accent={option.accent}
+                    eyes={option.eyes}
+                    size={90}
+                  />
+                </View>
+                <SelectionMark active={active} />
+              </PressableScale>
+            </Stagger>
           );
         })}
       </View>

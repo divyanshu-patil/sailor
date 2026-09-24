@@ -68,7 +68,7 @@ export default function BuildStreakStep() {
           <Ticks color="#F28DB2" rotate="-110deg" />
         </Animated.View>
         <Animated.View
-          entering={FadeInDown.duration(620).springify().damping(16)}
+          entering={FadeInDown.springify().damping(70)}
           style={{ transform: [{ rotate: "-3deg" }] }}
         >
           <StreakWeekPreview width={cardWidth} />

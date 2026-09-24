@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -15,10 +14,17 @@ import { useHeaderHeight } from "expo-router/react-navigation";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
+  FadeIn,
+  FadeInDown,
   FadeInLeft,
+  FadeOut,
+  FadeOutDown,
   FadeInRight,
   FadeOutLeft,
   FadeOutRight,
+  interpolateColor,
+  LinearTransition,
+  useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
@@ -200,8 +206,9 @@ export default function OnboardingFrame() {
 
   const busy = submitting || controller.committing;
 
-  const canContinue = (() => {
-    if (busy) return false;
+  // Whether the step is answered — what the button's colour follows. Kept
+  // apart from `busy` so a commit in flight doesn't fade it to grey and back.
+  const ready = (() => {
     switch (step) {
       case "profile_identity":
         return validateNickname(nickname).valid;
@@ -231,6 +238,20 @@ export default function OnboardingFrame() {
         return false;
     }
   })();
+  const canContinue = ready && !busy;
+
+  // A spinner only for a commit that is actually slow. Most are local and
+  // finish in a frame; swapping the label out for those was the flicker.
+  const [slowFlag, setSlowFlag] = useState(false);
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setTimeout(() => setSlowFlag(true), 350);
+    return () => {
+      clearTimeout(timer);
+      setSlowFlag(false);
+    };
+  }, [busy]);
+  const slow = busy && slowFlag;
 
   const handOff = () => {
     setHandedOff(true);
@@ -338,6 +359,7 @@ export default function OnboardingFrame() {
 
   const choice = CHOICES[step];
   const ask = !!choice;
+  const primaryLabel = choice?.primary ?? "Continue";
 
   const content = ((): ReactNode => {
     switch (step) {
@@ -385,6 +407,27 @@ export default function OnboardingFrame() {
   }
   const direction =
     index === nav.index ? nav.direction : index > nav.index ? 1 : -1;
+
+  // Continue eases between ink and track instead of snapping, so answering a
+  // question visibly "wakes" the button.
+  const enabled = useSharedValue(ready ? 1 : 0);
+  useEffect(() => {
+    enabled.value = withTiming(ready ? 1 : 0, { duration: 240 });
+  }, [ready, enabled]);
+  const continueFill = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      enabled.value,
+      [0, 1],
+      [PROFILE.track, PROFILE.ink],
+    ),
+  }));
+  const continueInk = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      enabled.value,
+      [0, 1],
+      [PROFILE.muted, PROFILE.white],
+    ),
+  }));
 
   if (!controller.hydrated || !controller.state) {
     return <View style={styles.placeholder} />;
@@ -471,38 +514,53 @@ export default function OnboardingFrame() {
             { paddingBottom: Math.max(insets.bottom, 16) },
           ]}
         >
+          {/* One primary pill for the whole flow, never remounted: its label
+              crossfades when a step renames it, and the secondary pill slides
+              in beneath it only on the steps that offer a choice. */}
+          <Animated.View layout={LinearTransition.duration(240)}>
+            <PressableScale
+              onPress={() => {
+                setPressed("primary");
+                void handleContinue(true);
+              }}
+              disabled={!canContinue}
+              style={styles.continue}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canContinue }}
+              accessibilityLabel={primaryLabel}
+            >
+              <Animated.View style={[styles.continueFill, continueFill]} />
+              {slow && pressed === "primary" ? (
+                <ActivityIndicator color={PROFILE.white} />
+              ) : (
+                <Animated.Text
+                  key={primaryLabel}
+                  entering={FadeIn.duration(200)}
+                  style={[styles.continueLabel, continueInk]}
+                >
+                  {primaryLabel}
+                </Animated.Text>
+              )}
+              {choice?.arrow ? (
+                <Animated.View
+                  entering={FadeIn.duration(200)}
+                  exiting={FadeOut.duration(120)}
+                  style={styles.continueArrow}
+                >
+                  <Ionicons
+                    name="arrow-forward"
+                    size={22}
+                    color={PROFILE.white}
+                  />
+                </Animated.View>
+              ) : null}
+            </PressableScale>
+          </Animated.View>
           {choice ? (
             <Animated.View
-              key={step}
-              entering={FadeInRight.duration(260)}
-              style={styles.askActions}
+              entering={FadeInDown.duration(240)}
+              exiting={FadeOutDown.duration(160)}
             >
-              <PressableScale
-                onPress={() => {
-                  setPressed("primary");
-                  void handleContinue(true);
-                }}
-                disabled={busy}
-                style={styles.continue}
-                accessibilityRole="button"
-                accessibilityLabel={choice.primary}
-              >
-                {busy && pressed === "primary" ? (
-                  <ActivityIndicator color={PROFILE.white} />
-                ) : (
-                  <>
-                    <Text style={styles.continueLabel}>{choice.primary}</Text>
-                    {choice.arrow ? (
-                      <Ionicons
-                        name="arrow-forward"
-                        size={22}
-                        color={PROFILE.white}
-                        style={styles.continueArrow}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </PressableScale>
               <PressableScale
                 onPress={() => {
                   setPressed("secondary");
@@ -513,38 +571,20 @@ export default function OnboardingFrame() {
                 accessibilityRole="button"
                 accessibilityLabel={choice.secondary}
               >
-                {busy && pressed === "secondary" ? (
+                {slow && pressed === "secondary" ? (
                   <ActivityIndicator color={PROFILE.ink} />
                 ) : (
-                  <Text style={styles.secondaryLabel}>{choice.secondary}</Text>
+                  <Animated.Text
+                    key={choice.secondary}
+                    entering={FadeIn.duration(200)}
+                    style={styles.secondaryLabel}
+                  >
+                    {choice.secondary}
+                  </Animated.Text>
                 )}
               </PressableScale>
             </Animated.View>
-          ) : (
-            <PressableScale
-              onPress={() => void handleContinue()}
-              disabled={!canContinue}
-              style={[styles.continue, !canContinue && styles.continueDisabled]}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canContinue }}
-              accessibilityLabel="Continue"
-            >
-              {busy ? (
-                <ActivityIndicator
-                  color={canContinue ? PROFILE.white : PROFILE.muted}
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.continueLabel,
-                    !canContinue && styles.continueLabelDisabled,
-                  ]}
-                >
-                  Continue
-                </Text>
-              )}
-            </PressableScale>
-          )}
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -582,10 +622,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  continueDisabled: { backgroundColor: PROFILE.track },
   continueArrow: { position: "absolute", right: 26 },
-  askActions: { gap: 10 },
+  continueFill: { ...StyleSheet.absoluteFill, borderRadius: 999 },
   secondary: {
+    marginTop: 10,
     height: 54,
     borderRadius: 999,
     backgroundColor: "#F1E7DB",
@@ -606,5 +646,4 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     color: PROFILE.white,
   },
-  continueLabelDisabled: { color: PROFILE.muted },
 });

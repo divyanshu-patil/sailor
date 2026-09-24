@@ -3,7 +3,13 @@ import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
-import { PROFILE, PROFILE_PASTELS, profileFonts } from "@/screens/profile/theme";
+import { haptics } from "@/lib/haptics";
+import {
+  PROFILE,
+  PROFILE_PASTELS,
+  profileFonts,
+} from "@/screens/profile/theme";
+import { SelectionMark, Stagger } from "../components/choice-motion";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
 interface ContextOption {
@@ -87,35 +93,38 @@ export default function SpeakingContextsStep({
       <Text style={styles.subtitle}>Pick all that apply.</Text>
 
       <View style={styles.options}>
-        {OPTIONS.map((option) => {
+        {OPTIONS.map((option, i) => {
           const active = selected.includes(option.value);
           return (
-            <PressableScale
-              key={option.value}
-              onPress={() => toggle(option.value)}
-              style={[
-                styles.card,
-                { backgroundColor: option.card },
-                active && { borderColor: option.dark },
-              ]}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: active }}
-              accessibilityLabel={option.label}
-            >
-              <View
+            <Stagger key={option.value} index={i}>
+              <PressableScale
+                haptic={haptics.select}
+                onPress={() => toggle(option.value)}
                 style={[
-                  styles.badge,
-                  active && { backgroundColor: option.dark },
+                  styles.card,
+                  { backgroundColor: option.card },
+                  active && { borderColor: option.dark },
                 ]}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: active }}
+                accessibilityLabel={option.label}
               >
-                <Ionicons
-                  name={option.icon}
-                  size={22}
-                  color={active ? PROFILE.white : PROFILE.ink}
-                />
-              </View>
-              <Text style={styles.label}>{option.label}</Text>
-            </PressableScale>
+                <View
+                  style={[
+                    styles.badge,
+                    active && { backgroundColor: option.dark },
+                  ]}
+                >
+                  <Ionicons
+                    name={option.icon}
+                    size={22}
+                    color={active ? PROFILE.white : PROFILE.ink}
+                  />
+                </View>
+                <Text style={styles.label}>{option.label}</Text>
+                <SelectionMark active={active} />
+              </PressableScale>
+            </Stagger>
           );
         })}
       </View>

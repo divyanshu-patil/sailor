@@ -146,8 +146,7 @@ export const PeriodToggle = memo(function PeriodToggle({
 
   useEffect(() => {
     position.value = withSpring(value === "AM" ? 0 : 1, {
-      damping: 18,
-      stiffness: 220,
+      damping: 70,
     });
   }, [position, value]);
 
@@ -168,10 +167,9 @@ export const PeriodToggle = memo(function PeriodToggle({
         <PressableScale
           key={period}
           onPress={() => {
-            if (period === value) return;
-            haptics.select();
-            onChange(period);
+            if (period !== value) onChange(period);
           }}
+          haptic={haptics.select}
           style={styles.periodRow}
           accessibilityRole="button"
           accessibilityState={{ selected: period === value }}
