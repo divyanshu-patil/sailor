@@ -20,7 +20,9 @@ import type { DeckItem } from "@/types/presentation/deck";
 import { AUDIENCE_OPTIONS } from "@/types/presentation";
 import { moodLabel } from "./demo-picker";
 
-export type DemoPhase = "generating" | "completed";
+import type { DemoPhase } from "./demo-footer";
+
+export type { DemoPhase } from "./demo-footer";
 
 /** The preview screen's own lines, minus its opener ("Hii lol") — this is a
  *  first impression, and it's the one line that reads as a placeholder. */

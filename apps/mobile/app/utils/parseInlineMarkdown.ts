@@ -9,7 +9,9 @@ export function parseInlineMarkdown(line: string): Segment[] {
       segments.push({ text: match[1], bold: true, italic: false });
     } else if (match[2] !== undefined) {
       segments.push({ text: match[2], bold: false, italic: true });
-    } else if (match[3] !== undefined) {
+    } else {
+      // The third alternative is the only one left: the pattern always
+      // matches exactly one of its three groups.
       segments.push({ text: match[3], bold: false, italic: false });
     }
   }
