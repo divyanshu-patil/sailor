@@ -34,6 +34,7 @@ import {
 } from "./config/steps";
 import { useOnboardingScope } from "./hooks/use-onboarding-scope";
 import GenderStep from "./steps/gender";
+import ImproveAreasStep from "./steps/improve-areas";
 import ProfileIdentityStep from "./steps/profile-identity";
 import ReferralStep from "./steps/referral";
 import SpeakingContextsStep from "./steps/speaking-contexts";
@@ -151,6 +152,11 @@ export default function OnboardingFrame() {
           Array.isArray(data.speakingContexts) &&
           data.speakingContexts.length > 0
         );
+      case "improve_areas":
+        return (
+          Array.isArray(data.improvementAreas) &&
+          data.improvementAreas.length > 0
+        );
       default:
         return false;
     }
@@ -195,6 +201,11 @@ export default function OnboardingFrame() {
             (data.speakingContexts as string[]) ?? [],
           );
           break;
+        case "improve_areas":
+          next = await controller.submitImprovementAreas(
+            (data.improvementAreas as string[]) ?? [],
+          );
+          break;
       }
       // The commit already moved the persisted position, so the content below
       // swaps in place. Only the very end leaves the screen.
@@ -233,6 +244,8 @@ export default function OnboardingFrame() {
         return <SpeakingLevelStep controller={controller} />;
       case "speaking_contexts":
         return <SpeakingContextsStep controller={controller} />;
+      case "improve_areas":
+        return <ImproveAreasStep controller={controller} />;
     }
   })();
 

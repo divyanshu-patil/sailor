@@ -53,6 +53,10 @@ export interface OnboardingController {
   submitSpeakingContexts: (
     contexts: string[],
   ) => Promise<OnboardingStepId | null>;
+  /** Records the skills the user wants to improve and advances. */
+  submitImprovementAreas: (
+    areas: string[],
+  ) => Promise<OnboardingStepId | null>;
   /**
    * Marks `stepId` as the screen in view — called on focus so the persisted
    * position (and the progress bar) follows the stack, back included.
@@ -362,6 +366,12 @@ export function useOnboardingController(
     [commitStep],
   );
 
+  const submitImprovementAreas = useCallback(
+    (areas: string[]) =>
+      commitStep("improve_areas", { improvementAreas: areas }),
+    [commitStep],
+  );
+
   const setCurrentStep = useCallback(
     (stepId: OnboardingStepId) => {
       const store = useOnboardingProgressStore.getState();
@@ -409,6 +419,7 @@ export function useOnboardingController(
     submitReferral,
     submitSpeakingLevel,
     submitSpeakingContexts,
+    submitImprovementAreas,
     setCurrentStep,
     goBack,
     retrySync: () => void flushSync(),

@@ -28,7 +28,8 @@ export type OnboardingStepId =
   | "gender"
   | "referral"
   | "speaking_level"
-  | "speaking_contexts";
+  | "speaking_contexts"
+  | "improve_areas";
 
 /**
  * The scope a pre-auth onboarding record is stored under.
@@ -52,6 +53,8 @@ export interface OnboardingData {
   speakingLevel?: string;
   /** Where the user speaks most often. Multi-select, e.g. ["work", "interviews"]. */
   speakingContexts?: string[];
+  /** Skills the user wants to improve. Multi-select, e.g. ["fluency", "words"]. */
+  improvementAreas?: string[];
   /** Future steps' answers, each keyed by its own name. */
   [key: string]: unknown;
 }
