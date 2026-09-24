@@ -6,7 +6,6 @@ import {
 } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BackHandler,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -41,6 +40,7 @@ import {
   MorphNote,
 } from "@/screens/auth/components/morph-text";
 import { useCreateAccountTransition } from "@/screens/auth/use-create-account-transition";
+import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { mark, startFrameProbe } from "@/lib/frame-probe"; // TEMP profiling
 
 const DESIGN_WIDTH = 416;
@@ -479,30 +479,39 @@ export default function Base() {
     createAccount?: string;
     from?: string;
   }>();
-  // Set when the login screen sent us here via its "Sign up" link. The back
-  // button then pops to login instead of reversing the morph.
-  const cameFromLogin = params.from === "login";
 
-  const { screenMode, settled, progress, startTransition, goBack } =
+  const { screenMode, progress, startTransition } =
     useCreateAccountTransition();
 
   // Entering from login lands on this screen already morphed into the
-  // create-account state; run the forward transition once on mount.
+  // create-account state; run the forward transition once on mount. Onboarding
+  // finishing sets the same request through the store, so the hand-off does not
+  // depend on the route params surviving a pop.
+  const createAccountRequested = useOnboardingPendingStore(
+    (s) => s.createAccountRequested,
+  );
+  const consumeCreateAccountRequest = useOnboardingPendingStore(
+    (s) => s.consumeCreateAccountRequest,
+  );
   const autoStartedRef = useRef(false);
   useEffect(() => {
     if (autoStartedRef.current) return;
-    if (params.createAccount !== "1") return;
+    // Only the focused instance morphs. Create Account is now pushed as a
+    // second base instance on top of onboarding, and the transient store
+    // request must not also flip the base screen sitting underneath it — that
+    // left the front door stuck in its create-account state after backing out.
+    if (!isFocused) return;
+    if (params.createAccount !== "1" && !createAccountRequested) return;
     autoStartedRef.current = true;
+    if (createAccountRequested) consumeCreateAccountRequest();
     startTransition();
-  }, [params.createAccount, startTransition]);
-
-  const handleBack = useCallback(() => {
-    if (cameFromLogin) {
-      router.back();
-      return;
-    }
-    goBack();
-  }, [cameFromLogin, goBack, router]);
+  }, [
+    isFocused,
+    params.createAccount,
+    createAccountRequested,
+    consumeCreateAccountRequest,
+    startTransition,
+  ]);
 
   const scale = useMemo(
     () => Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT),
@@ -515,19 +524,6 @@ export default function Base() {
   const safeTop = Math.max(insets.top, 0);
   const topLift = Math.min(safeTop, 32);
   const isBase = screenMode === "base";
-
-  // Android hardware back reverses the morph instead of leaving the route.
-  useEffect(() => {
-    if (screenMode !== "create-account") return;
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        handleBack();
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [screenMode, handleBack]);
 
   const baseButtonsStyle = useAnimatedStyle(() => {
     const p = interpolate(
@@ -595,6 +591,13 @@ export default function Base() {
     startFrameProbe("base->login"); // TEMP profiling
     mark("router.push");
     router.push("/(unauthenticated)/login");
+  }, [router]);
+
+  // "Get started" always opens the onboarding flow. Create Account is only
+  // reached by finishing the last onboarding step, so the two are never
+  // collapsed into one another.
+  const handleGetStarted = useCallback(() => {
+    router.push("/(onboarding)");
   }, [router]);
 
   // Layout objects are derived from `scale` only; memoizing them keeps the
@@ -665,15 +668,6 @@ export default function Base() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerTransparent: true, title: "" }} />
-
-      {/* The same toolbar back button used across the auth screens. Mounted
-          only once the forward morph has settled, so it appears after the
-          animation; unmounting on the reverse morph hides it again. */}
-      {settled && (
-        <Stack.Toolbar placement="left">
-          <Stack.Toolbar.Button icon="chevron.backward" onPress={handleBack} />
-        </Stack.Toolbar>
-      )}
 
       <StatusBar style="dark" />
 
@@ -754,9 +748,9 @@ export default function Base() {
           style={[styles.buttonStack, baseButtonsStyle]}
         >
           <CTAButton
-            label="Create an account"
+            label="Get started"
             variant="primary"
-            onPress={startTransition}
+            onPress={handleGetStarted}
           />
           <CTAButton label="Log in" variant="secondary" onPress={handleLogin} />
         </Animated.View>

@@ -1,29 +1,43 @@
 // utils/dev-tools.ts
 import { useAppUserStore } from "@/store/app-user.store";
-import { useOnboardingStore } from "@/store/onboarding.store";
+import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
+import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
+import {
+  clearOnboardingProgress,
+  useOnboardingProgressStore,
+} from "@/store/onboarding-progress.store";
+import { useProfileSetupStore } from "@/store/profile-setup.store";
+import { PENDING_SCOPE } from "@/types/onboarding";
 
 /**
- * Wipes all persisted app storage (auth store + any other MMKV-backed
- * zustand stores) and resets in-memory state to defaults.
- * Intended for dev/debug use only.
+ * Wipes all persisted onboarding/profile state and resets in-memory state to
+ * defaults. Intended for dev/debug use only.
+ *
+ * The completion and workflow stores are reset here too, not just the
+ * signed-in user — otherwise "clear storage" left the account marked as having
+ * finished onboarding and the flow could not be re-run without a new account.
+ * The backend's one-way completion flags are deliberately NOT reset: they can
+ * only move toward done, and a debug button should not be able to undo that.
+ * Use a fresh test account to re-run the server-side path.
  */
 export async function clearAppStorage() {
   try {
-    // Clears the persisted MMKV entries for both stores.
     await useAppUserStore.persist.clearStorage();
-    await useOnboardingStore.persist.clearStorage();
+    await useOnboardingCompletionStore.persist.clearStorage();
+    await useProfileSetupStore.persist.clearStorage();
+    await useOnboardingPendingStore.persist.clearStorage();
+    // Not zustand/persist stores: they key per scope and clear themselves.
+    useOnboardingProgressStore.getState().clearAll();
+    clearOnboardingProgress(PENDING_SCOPE);
 
     // Reset in-memory state back to initial values.
-    //
-    // `hasSeenOnboarding` is NOT set here any more: onboarding moved into its
-    // own store (see app-user.store's clearAppState, which deliberately leaves
-    // onboarding alone), so writing it onto the app-user store set a key that
-    // store no longer has. It reset nothing and was a type error.
     useAppUserStore.setState({
       appUser: null,
       _hasHydrated: true, // keep true so UI doesn't re-show a loading spinner
     });
-    useOnboardingStore.getState().resetOnboarding();
+    useOnboardingCompletionStore.getState().resetOnboardingCompletion();
+    useProfileSetupStore.getState().resetProfileSetup();
+    useOnboardingPendingStore.getState().reset();
 
     console.log("App storage cleared");
     return true;

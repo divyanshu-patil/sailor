@@ -34,5 +34,13 @@ export function createMMKVStorage(id: string) {
         console.error(`MMKV[${id}] removeItem error:`, e);
       }
     },
+    /** Wipes only this instance's keys. Used by the dev storage reset. */
+    clearAll: (): void => {
+      try {
+        mmkv.clearAll();
+      } catch (e) {
+        console.error(`MMKV[${id}] clearAll error:`, e);
+      }
+    },
   };
 }

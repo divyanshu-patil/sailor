@@ -22,6 +22,7 @@ from app.models.deck_save_model import DeckSave
 from app.models.preferences_model import UserPreferences
 from app.models.script_model import ScriptGeneration, ScriptVersion
 from app.models.user_model import User
+from app.models.onboarding_model import OnboardingProgress
 
 from app.db.base import Base
 

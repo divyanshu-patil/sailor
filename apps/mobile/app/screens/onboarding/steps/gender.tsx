@@ -1,0 +1,196 @@
+import { StyleSheet, Text, View } from "react-native";
+import Ionicons from "@react-native-vector-icons/ionicons";
+
+import PressableScale from "@/components/ui/animated/PressableScale";
+import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
+import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+interface GenderOption {
+  /** Persisted value. */
+  value: string;
+  title: string;
+  subtitle: string;
+  background: string;
+  blob: string;
+  accent: string;
+  eyes: BlobEyes;
+}
+
+const OPTIONS: GenderOption[] = [
+  {
+    value: "male",
+    title: "Male",
+    subtitle: "He / Him",
+    background: "#FBE3EA",
+    blob: "#A9B8F0",
+    accent: "#6D8BEA",
+    eyes: "open",
+  },
+  {
+    value: "female",
+    title: "Female",
+    subtitle: "She / Her",
+    background: "#FDF0DE",
+    blob: "#F7B9CD",
+    accent: "#F27CA0",
+    eyes: "closed",
+  },
+  {
+    value: "unspecified",
+    title: "Prefer not to say",
+    subtitle: "Any pronouns",
+    background: "#E4F1E6",
+    blob: "#9FD9B8",
+    accent: "#5FC79A",
+    eyes: "open",
+  },
+];
+
+/**
+ * Step 2 — the gender. Content only; the shell owns progress and Continue.
+ *
+ * Three pastel cards, each with its own little blob. The choice is written to
+ * the draft on tap and committed when the step advances.
+ */
+export default function GenderStep({
+  controller,
+}: {
+  controller: OnboardingController;
+}) {
+  const selected =
+    typeof controller.state?.data.gender === "string"
+      ? controller.state.data.gender
+      : null;
+
+  return (
+    <View style={styles.body}>
+      <Text style={styles.heading}>{"Choose your\nGender"}</Text>
+      <View style={styles.underline} />
+      <Text style={styles.subtitle}>
+        This will be used to personalise your speaking journey.
+      </Text>
+
+      <View style={styles.note} pointerEvents="none">
+        <Text style={styles.noteText}>{"Be you\nAlways!"}</Text>
+        <Ionicons
+          name="heart-outline"
+          size={22}
+          color={PROFILE.muted}
+          style={styles.heart}
+        />
+      </View>
+
+      <View style={styles.options}>
+        {OPTIONS.map((option) => {
+          const active = selected === option.value;
+          return (
+            <PressableScale
+              key={option.value}
+              onPress={() => controller.setDraft({ gender: option.value })}
+              style={[
+                styles.card,
+                { backgroundColor: option.background },
+                active && styles.cardActive,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${option.title}, ${option.subtitle}`}
+            >
+              <View style={styles.cardText}>
+                <Text style={styles.cardTitle}>{option.title}</Text>
+                <Text style={styles.cardSubtitle}>{option.subtitle}</Text>
+              </View>
+              <View style={styles.mascot}>
+                <BlobMascot
+                  color={option.blob}
+                  accent={option.accent}
+                  eyes={option.eyes}
+                  size={122}
+                />
+              </View>
+            </PressableScale>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  body: {
+    flex: 1,
+    position: "relative",
+  },
+  heading: {
+    marginTop: 16,
+    fontFamily: profileFonts.display,
+    fontSize: 36,
+    lineHeight: 41,
+    letterSpacing: -1.2,
+    color: PROFILE.ink,
+  },
+  underline: {
+    marginTop: 2,
+    width: 156,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: PROFILE.accentYellow,
+    transform: [{ rotate: "-1deg" }],
+  },
+  subtitle: {
+    marginTop: 16,
+    maxWidth: "78%",
+    fontFamily: profileFonts.body,
+    fontSize: 17,
+    lineHeight: 24,
+    color: PROFILE.muted,
+  },
+  note: {
+    position: "absolute",
+    top: 6,
+    right: 0,
+    alignItems: "center",
+  },
+  noteText: {
+    fontFamily: profileFonts.handwritten,
+    fontSize: 18,
+    lineHeight: 23,
+    color: PROFILE.muted,
+    textAlign: "center",
+  },
+  heart: { marginTop: 2 },
+  options: {
+    marginTop: 28,
+  },
+  card: {
+    minHeight: 132,
+    marginBottom: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: "transparent",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  cardActive: { borderColor: PROFILE.ink },
+  cardText: { maxWidth: "64%" },
+  cardTitle: {
+    fontFamily: profileFonts.display,
+    fontSize: 21,
+    letterSpacing: -0.4,
+    color: PROFILE.ink,
+  },
+  cardSubtitle: {
+    marginTop: 4,
+    fontFamily: profileFonts.body,
+    fontSize: 16,
+    color: PROFILE.muted,
+  },
+  mascot: {
+    position: "absolute",
+    right: -10,
+    bottom: -6,
+  },
+});

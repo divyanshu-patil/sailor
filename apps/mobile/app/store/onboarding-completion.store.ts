@@ -9,9 +9,10 @@ const onboardingCompletionStorage = createMMKVStorage(
 /**
  * Which Clerk user has completed the post-verification onboarding.
  *
- * Distinct from `onboarding.store.ts`'s `hasSeenOnboarding`, which tracks the
- * pre-auth welcome/features marketing flow. This one gates what happens *after*
- * a session exists: verify → onboarding → optional profile setup → app.
+ * This is the boundary the router reads between a signed-in account and the
+ * app: onboarding (`(onboarding)`) → optional profile setup → app. The
+ * workflow's position within onboarding lives in
+ * `onboarding-progress.store.ts`; this store only answers "finished or not".
  *
  * Keyed by Clerk user id so each new account runs onboarding once, even when
  * several accounts share a device.

@@ -13,6 +13,10 @@ export const PROFILE = {
   muted: "#8E887E",
   lightButton: "#F5EDE4",
   white: "#FFFFFF",
+  /** The marigold used for the onboarding mascots' accent marks. */
+  accentYellow: "#F4CF66",
+  /** Track behind the onboarding progress fill. */
+  track: "#E8E2D9",
 } as const;
 
 /** Soft pastels for the decorative shapes and the settings icon badges. */

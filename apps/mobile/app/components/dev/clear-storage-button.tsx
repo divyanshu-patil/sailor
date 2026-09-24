@@ -18,7 +18,7 @@ export default function ClearStorageButton() {
           onPress: async () => {
             const success = await clearAppStorage();
             if (success) {
-              router.replace("/(onboarding)/welcome");
+              router.replace("/(unauthenticated)");
             } else {
               Alert.alert("Error", "Failed to clear storage. Check console.");
             }

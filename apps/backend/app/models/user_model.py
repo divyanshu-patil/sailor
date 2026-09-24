@@ -3,7 +3,16 @@ import secrets
 from datetime import date, datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Enum as SAEnum, Integer, String, func, text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Enum as SAEnum,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.enums.user_enums import ExperienceLevel, Profession
 
@@ -91,6 +100,15 @@ class User(Base):
 
     full_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     nickname: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+    # The canonical, case-folded, whitespace-collapsed form of `nickname`.
+    # Nicknames are no longer unique, so this is no longer an identity key —
+    # it is kept as the searchable/normalized form (and for parity with older
+    # records). Written only by user_controller via app.utils.nickname, never
+    # freehand, so the two columns cannot disagree.
+    nickname_normalized: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
 
     experience_level: Mapped[Optional[ExperienceLevel]] = mapped_column(
         SAEnum(
