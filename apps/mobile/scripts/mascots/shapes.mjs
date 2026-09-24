@@ -214,6 +214,67 @@ export const widgetMascots = () => [
   { name: "widget-mascot-green",  svg: widgetMascot({ fill: WIDGET_PALETTE.green,  eyes: widgetEyesOpen() }) },
 ];
 
+/**
+ * The week-streak tile's character: a peach dome peeking over the day row.
+ *
+ * [REPLACE-LATER] — placeholder. Two PNGs on one canvas, because the tile
+ * stacks them either side of the day card: the body behind it, the paws in
+ * front, gripping its top edge. Swap both at the same size and they still line
+ * up. Eyes at ~50% height (not the 64% of the domes above) since the bottom
+ * third is hidden behind the card.
+ */
+const P_W = 400;
+const P_H = 300;
+const PEEK_INK = "#1E1C24";
+
+export const widgetPeekBody = () => `<svg xmlns="http://www.w3.org/2000/svg" width="${P_W}" height="${P_H}" viewBox="0 0 ${P_W} ${P_H}">
+  <defs>
+    <linearGradient id="peach" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#FDF0E4"/>
+      <stop offset="1" stop-color="#F7DCC8"/>
+    </linearGradient>
+  </defs>
+  <path d="M 44 ${P_H} C 40 150 118 56 212 56 C 306 56 380 150 372 ${P_H} Z" fill="url(#peach)"/>
+  <ellipse cx="136" cy="190" rx="22" ry="12" fill="#F3A99A" opacity="0.45"/>
+  <ellipse cx="292" cy="186" rx="22" ry="12" fill="#F3A99A" opacity="0.45"/>
+  <path d="M 150 170 Q 176 128 202 170" fill="none" stroke="${PEEK_INK}" stroke-width="17" stroke-linecap="round"/>
+  <path d="M 236 164 Q 262 122 288 164" fill="none" stroke="${PEEK_INK}" stroke-width="17" stroke-linecap="round"/>
+  <g fill="#F5C95C">
+    <rect x="0" y="0" width="46" height="16" rx="8" transform="translate(42 92) rotate(30)"/>
+    <rect x="0" y="0" width="42" height="16" rx="8" transform="translate(114 34) rotate(64)"/>
+  </g>
+</svg>`;
+
+export const widgetPeekPaws = () => `<svg xmlns="http://www.w3.org/2000/svg" width="${P_W}" height="${P_H}" viewBox="0 0 ${P_W} ${P_H}">
+  <ellipse cx="0" cy="0" rx="33" ry="36" fill="${PEEK_INK}" transform="translate(96 236) rotate(-18)"/>
+  <path d="M 294 238 C 290 206 322 192 350 200 C 372 206 384 224 376 238 C 366 256 336 262 316 258 C 302 255 295 248 294 238 Z" fill="${PEEK_INK}"/>
+  <ellipse cx="86" cy="222" rx="10" ry="6" fill="#FFFFFF" opacity="0.14" transform="rotate(-30 86 222)"/>
+  <ellipse cx="336" cy="210" rx="10" ry="5" fill="#FFFFFF" opacity="0.14" transform="rotate(-12 336 210)"/>
+</svg>`;
+
+/** The week tile's flame: a warm coral outer with a dusky core, softer than
+ *  the small tile's orange-and-yellow. Same 1:1 canvas as widgetFlame. */
+export const widgetFlameSoft = () => `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
+  <defs>
+    <linearGradient id="outer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7B48E"/>
+      <stop offset="1" stop-color="#E9805E"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C47585"/>
+      <stop offset="1" stop-color="#9C5470"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(15 0)">
+  <path d="M 60 6 C 76 34 96 44 104 70 C 114 102 92 144 60 144
+           C 28 144 6 102 16 70 C 23 47 40 40 48 20
+           C 54 34 52 46 60 56 C 66 44 64 24 60 6 Z" fill="url(#outer)"/>
+  <path d="M 60 72 C 70 86 80 94 80 110 C 80 126 71 136 60 136
+           C 49 136 40 126 40 110 C 40 97 49 90 53 78
+           C 56 86 56 92 60 98 C 63 90 62 80 60 72 Z" fill="url(#core)"/>
+  </g>
+</svg>`;
+
 /* ------------------------------------------------- widget background plates */
 
 /**
@@ -332,10 +393,29 @@ const PLATES = {
   },
 };
 
+/** The week tile. Most of it is under two cards, so the shapes sit where the
+ *  tile shows: around the cards' corners, the gap above the week card, and a
+ *  lilac patch behind the character so the peach dome doesn't melt into the
+ *  peach ground. */
+PLATES.streakWeek = {
+  w: 338,
+  h: 158,
+  shapes: [
+    { at: [-0.02, -0.04], r: 0.13, color: 1 },
+    { at: [0.6, -0.06], r: 0.1, color: 0 },
+    { at: [0.84, 0.44], r: 0.15, color: 3 },
+    { at: [1.03, -0.02], r: 0.12, color: 2 },
+    { at: [-0.02, 1.04], r: 0.12, color: 2 },
+    { at: [1.02, 1.04], r: 0.1, color: 1 },
+  ],
+  curls: [{ at: [0.54, 0.3], r: 0.035, turns: 1.4, rotate: 0.9, color: 4 }],
+};
+
 /** Five pastels: four fills and the curl's stroke. */
 const PLATE_COLOURS = {
   practice: ["#C7DBFB", "#FFE4B5", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
   streak: ["#CFE0FB", "#D6EFD8", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
+  streakWeek: ["#FADFC4", "#F8E9B4", "#F6D4DA", "#E6DDF6", "#EFAE95"],
 };
 
 const PLATE_BASE = "#FBFCFF";
@@ -374,6 +454,8 @@ export const widgetPlates = () => [
     svg: plate({ layout: PLATES.practiceMedium, colours: PLATE_COLOURS.practice, base: PLATE_BASE, seed: 20260921 }) },
   { name: "widget-bg-streak-cool", layout: PLATES.streak,
     svg: plate({ layout: PLATES.streak, colours: PLATE_COLOURS.streak, base: PLATE_BASE, seed: 20260923 }) },
+  { name: "widget-bg-streak-week", layout: PLATES.streakWeek,
+    svg: plate({ layout: PLATES.streakWeek, colours: PLATE_COLOURS.streakWeek, base: "#F4EFE8", seed: 20260925 }) },
 ];
 
 /* --------------------------------------------------------------- the flame */

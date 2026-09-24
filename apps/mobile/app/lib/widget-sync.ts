@@ -3,6 +3,8 @@ import { Platform } from "react-native";
 import { streakDeadline } from "@/lib/streak-alarm";
 import { useDailyStore } from "@/store/daily-store";
 import { usePreferenceStore } from "@/store/preference-store";
+import { mergeDays, shiftDate, weekPattern } from "@/lib/streak-days";
+import { StreakWeekWidget } from "@/widgets/StreakWeekWidget";
 import { StreakWidget } from "@/widgets/StreakWidget";
 import { TodaysPracticeWidget } from "@/widgets/TodaysPracticeWidget";
 import { DailyContentUnit, localDate, StreakState } from "@/types/daily";
@@ -36,6 +38,10 @@ const ART = {
   plateSmall: "bg-cool-small",
   plateMedium: "bg-cool-medium",
   plateStreak: "bg-streak-cool",
+  /** The medium week tile: body behind the day card, paws in front. */
+  mascotWeek: "mascot-peek",
+  mascotWeekPaws: "mascot-peek-paws",
+  plateWeek: "bg-streak-week",
 } as const;
 
 /**
@@ -203,7 +209,8 @@ export function syncPracticeWidget(
     return {
       situationLabel: SITUATION_LABELS[unit.situation] ?? "Speaking",
       oneLiner: trim(firstSentenceOf(unit.body), 76),
-      oneLinerShort: trim(firstSentenceOf(unit.body), 48),
+      // Four lines of ~11 characters beside the character on systemSmall.
+      oneLinerShort: trim(firstSentenceOf(unit.body), 40),
       // One short line inside the tip box. A longer tip is the app's job.
       tip: trim(unit.tip ?? "", 62),
       dateLabel: dateLabelFrom(unit.date),
@@ -350,6 +357,78 @@ export function syncStreakWidget(
   } catch (e) {
     console.log("streak widget update failed", e);
   }
+
+  syncStreakWeekWidget(streak, status, date);
+}
+
+/** Short enough for the pill on the week tile — one line, no wrapping. */
+const WEEK_NOTES = {
+  alive: [
+    "Keep going!",
+    "On a roll!",
+    "Nice work!",
+    "Look at you!",
+    "Keep it up!",
+    "Onward!",
+    "You got this!",
+    "Tiny wins!",
+  ],
+  atRisk: ["Practise today!", "Don't break it!", "Almost there!"],
+  broken: ["Tap to restore"],
+  expired: ["Fresh start!", "Day one today!"],
+} as const;
+
+/**
+ * The medium tile: the count, and the week it sits in.
+ *
+ * The week comes from the per-day log (lib/streak-days) unioned with the
+ * current run, so a simulated streak from the dev section still draws its days
+ * without ever being written to the log.
+ *
+ * Two timeline entries, because the row is about *today*: at midnight today's
+ * dot becomes a tick or a gap, and on Monday the row starts over. Without the
+ * second entry a tile nobody opens the app for keeps showing yesterday's week.
+ */
+function syncStreakWeekWidget(
+  streak: StreakState,
+  status: keyof typeof STATE_PRESENTATION,
+  date: string,
+): void {
+  const run = mergeDays(
+    useDailyStore.getState().completedDays ?? [],
+    streak,
+    date,
+  );
+  const count = streak.currentStreak;
+  const salt = count * 2 + (streak.completedToday ? 1 : 0);
+
+  const entryFor = (day: string) => ({
+    streakCount: count,
+    line1: count === 1 ? "day" : "days",
+    line2:
+      status === "broken" || status === "expired"
+        ? "streak lost"
+        : count === 1
+          ? "and counting!"
+          : "in a row!",
+    note: noteFor(WEEK_NOTES[status], day, salt),
+    status,
+    week: weekPattern(run, day),
+    deepLink: STATE_PRESENTATION[status].link,
+    flameUri: widgetArtUri("flame-soft") ?? "",
+    plateUri: widgetArtUri(ART.plateWeek) ?? "",
+    mascotUri: widgetArtUri(ART.mascotWeek) ?? "",
+    pawsUri: widgetArtUri(ART.mascotWeekPaws) ?? "",
+  });
+
+  try {
+    StreakWeekWidget.updateTimeline([
+      { date: new Date(), props: entryFor(date) },
+      { date: nextMidnight(), props: entryFor(shiftDate(date, 1)) },
+    ]);
+  } catch (e) {
+    console.log("streak week widget update failed", e);
+  }
 }
 
 /**
@@ -446,6 +525,7 @@ export function reloadWidgets(): void {
   try {
     TodaysPracticeWidget.reload();
     StreakWidget.reload();
+    StreakWeekWidget.reload();
   } catch (e) {
     console.log("widget reload failed", e);
   }

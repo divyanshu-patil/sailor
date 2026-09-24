@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { createMMKVStorage } from "@/store/mmkv.storage";
-import { DailyContentUnit, StreakState } from "@/types/daily";
+import { mergeDays } from "@/lib/streak-days";
+import { DailyContentUnit, localDate, StreakState } from "@/types/daily";
 
 /**
  * The offline half of daily practice.
@@ -26,6 +27,9 @@ interface DailyStore {
    * replay — the streak it would have continued has already lapsed.
    */
   pendingCompleteDate: string | null;
+  /** Local dates practised, last two weeks — the week row on the streak
+   *  widget. Fed by every `setStreak`; see lib/streak-days. */
+  completedDays: string[];
 
   setContent: (
     unit: DailyContentUnit,
@@ -43,9 +47,18 @@ export const useDailyStore = create<DailyStore>()(
       tomorrow: null,
       streak: null,
       pendingCompleteDate: null,
+      completedDays: [],
 
       setContent: (unit, tomorrow) => set({ unit, tomorrow }),
-      setStreak: (streak) => set({ streak }),
+      // A simulated streak never reaches the log: it would outlive the dev
+      // tap that made it, the same failure `partialize` guards below.
+      setStreak: (streak) =>
+        set((s) => ({
+          streak,
+          completedDays: streak.simulated
+            ? s.completedDays
+            : mergeDays(s.completedDays ?? [], streak, localDate()),
+        })),
       setPendingComplete: (pendingCompleteDate) => set({ pendingCompleteDate }),
       reset: () =>
         set({
@@ -53,6 +66,7 @@ export const useDailyStore = create<DailyStore>()(
           tomorrow: null,
           streak: null,
           pendingCompleteDate: null,
+          completedDays: [],
         }),
     }),
     {

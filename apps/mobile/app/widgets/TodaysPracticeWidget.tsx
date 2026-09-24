@@ -210,7 +210,13 @@ function TodaysPractice(
             maxHeight: Infinity,
             alignment: "topLeading",
           }),
-          padding({ all: isSmall ? 15 : 16 }),
+          // Small: bottom inset trimmed because the character owns that edge
+          // anyway. Title + four quote lines + the old 15pt all round came to
+          // more than the tile's 158pt, and SwiftUI centres an overflowing
+          // stack — which pushed the title up against the top edge.
+          isSmall
+            ? padding({ top: 15, leading: 15, trailing: 15, bottom: 4 })
+            : padding({ all: 16 }),
         ]}
       >
         <HStack spacing={isSmall ? 6 : 9}>
@@ -230,7 +236,7 @@ function TodaysPractice(
             <VStack
               alignment="leading"
               spacing={-2}
-              modifiers={[padding({ top: 4 })]}
+              modifiers={[padding({ top: 2 })]}
             >
               <Text
                 modifiers={[
@@ -315,7 +321,7 @@ function TodaysPractice(
               family: "Amarna-Regular",
             }),
             foregroundStyle(hasContent ? ink : inkSoft),
-            lineLimit(isSmall ? 5 : 3),
+            lineLimit(isSmall ? 4 : 3),
             minimumScaleFactor(0.72),
             // A hard width cap, not a trailing inset — see the file doc
             // comment. This is what keeps the sentence off the character

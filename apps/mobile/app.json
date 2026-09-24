@@ -150,6 +150,15 @@
                 "supportedFamilies": ["systemSmall"],
                 "contentMarginsDisabled": true
               }
+            },
+            {
+              "name": "StreakWeekWidget",
+              "displayName": "Streak Week",
+              "description": "Your streak and the days you practised this week",
+              "ios": {
+                "supportedFamilies": ["systemMedium"],
+                "contentMarginsDisabled": true
+              }
             }
           ]
         }

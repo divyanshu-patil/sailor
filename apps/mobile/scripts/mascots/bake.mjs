@@ -31,7 +31,10 @@ import {
   mascotSearch,
   mascotReading,
   widgetFlame,
+  widgetFlameSoft,
   widgetMascots,
+  widgetPeekBody,
+  widgetPeekPaws,
   widgetPlates,
 } from "./shapes.mjs";
 
@@ -161,6 +164,18 @@ for (const art of PLATES) {
 writeSource(join(WIDGET_OUT, "widget-flame.svg"), widgetFlame());
 if (rasterise(widgetFlame(), join(WIDGET_OUT, "widget-flame.png"), 150, 150)) {
   console.log("  widgets/widget-flame.png  150x150");
+}
+
+/** The week tile's character (body + paws, one canvas) and its flame. */
+for (const [name, svg, w, h] of [
+  ["widget-mascot-peek", widgetPeekBody(), 400, 300],
+  ["widget-mascot-peek-paws", widgetPeekPaws(), 400, 300],
+  ["widget-flame-soft", widgetFlameSoft(), 150, 150],
+]) {
+  writeSource(join(WIDGET_OUT, `${name}.svg`), svg);
+  if (rasterise(svg, join(WIDGET_OUT, `${name}.png`), w, h)) {
+    console.log(`  widgets/${name}.png  ${w}x${h}`);
+  }
 }
 
 rmSync(TMP, { recursive: true, force: true });

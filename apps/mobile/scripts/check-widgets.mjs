@@ -234,6 +234,7 @@ function textIn(node, found = []) {
 const WIDGETS = [
   { file: resolve(ROOT, "app/widgets/TodaysPracticeWidget.tsx"), name: "TodaysPracticeWidget" },
   { file: resolve(ROOT, "app/widgets/StreakWidget.tsx"), name: "StreakWidget" },
+  { file: resolve(ROOT, "app/widgets/StreakWeekWidget.tsx"), name: "StreakWeekWidget" },
 ];
 
 /** Everything WidgetKit puts a layout through, including the empty cases. */
@@ -242,7 +243,7 @@ const PROP_CASES = [
   ["null-ish props", { situationLabel: null, oneLiner: null,
     oneLinerShort: null, tip: null, dateLabel: null, note: null, flameUri: null, plateUri: null,
     plateSmallUri: null, mascotUri: null, mascotSmallUri: null, streakCount: null,
-    accentColor: null, label: null }],
+    accentColor: null, label: null, line1: null, line2: null, week: null, pawsUri: null, status: null }],
   ["wrong types", { situationLabel: 3, oneLiner: {}, oneLinerShort: 0,
     tip: [], dateLabel: true, note: 0, flameUri: [], plateUri: 5, plateSmallUri: {}, mascotUri: 12,
     mascotSmallUri: {}, streakCount: "nine", accentColor: "#ff0", label: [] }],
@@ -255,7 +256,8 @@ const PROP_CASES = [
     plateSmallUri: "file:///g/widget-bg-cool-small.png",
     mascotUri: "file:///g/widget-mascot-cream.png",
     mascotSmallUri: "file:///g/widget-mascot-purple.png", streakCount: 12,
-    accentColor: "#F4D35E", label: "day streak" }],
+    accentColor: "#F4D35E", label: "day streak", line1: "days", line2: "in a row!",
+    week: "DDDMDTF", pawsUri: "file:///g/widget-mascot-peek-paws.png", status: "alive" }],
   ["full, short copy", { situationLabel: "Explaining Tech",
     oneLiner: "It's normal to feel nervous before speaking.",
     oneLinerShort: "It's normal to feel nervous\u2026",
@@ -265,7 +267,8 @@ const PROP_CASES = [
     plateSmallUri: "file:///g/widget-bg-cool-small.png",
     mascotUri: "file:///g/widget-mascot-cream.png",
     mascotSmallUri: "file:///g/widget-mascot-purple.png", streakCount: 0,
-    accentColor: "#A0A3FF", label: "day streak" }],
+    accentColor: "#A0A3FF", label: "day streak", line1: "days", line2: "streak lost",
+    week: "MMMMMMT", status: "broken" }],
 ];
 
 const ENVIRONMENTS = [
@@ -323,6 +326,8 @@ const sync = readFileSync(resolve(ROOT, "app/lib/widget-sync.ts"), "utf8");
 const named = [
   ...sync.matchAll(/: "((?:mascot|bg)-[\w-]+)"/g),
   ...sync.matchAll(/widgetArtUri\("([\w-]+)"\)/g),
+  // The per-state icons in STATE_PRESENTATION, resolved by name at runtime.
+  ...sync.matchAll(/icon: "([\w-]+)"/g),
 ].map(([, n]) => n);
 assert.ok(named.length >= 7,
   `expected every plate, character and icon in widget-sync, found ${named.length}`);

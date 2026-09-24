@@ -29,7 +29,13 @@ const SOURCES = {
   "bg-cool-small": require("../../assets/widgets/widget-bg-cool-small.png"),
   "bg-cool-medium": require("../../assets/widgets/widget-bg-cool-medium.png"),
   "bg-streak-cool": require("../../assets/widgets/widget-bg-streak-cool.png"),
+  "bg-streak-week": require("../../assets/widgets/widget-bg-streak-week.png"),
   flame: require("../../assets/widgets/widget-flame.png"),
+  // The week tile's character, as body + paws on one canvas — see
+  // StreakWeekWidget for why it is two images.
+  "mascot-peek": require("../../assets/widgets/widget-mascot-peek.png"),
+  "mascot-peek-paws": require("../../assets/widgets/widget-mascot-peek-paws.png"),
+  "flame-soft": require("../../assets/widgets/widget-flame-soft.png"),
   // One per streak state, baked from assets/images/*.svg by
   // scripts/mascots/bake-icons.mjs. PNG because a widget can render nothing
   // else — see the note at the top of this file.
