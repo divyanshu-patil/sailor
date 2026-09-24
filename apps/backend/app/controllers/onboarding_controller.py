@@ -6,21 +6,12 @@ values and bumps the same row, never a second one.
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.models.onboarding_model import OnboardingProgress
 from app.models.user_model import User
-from app.schemas.onboarding_schema import (
-    NicknameAvailabilityResponse,
-    OnboardingProgressUpdateRequest,
-)
-from app.utils.nickname import (
-    InvalidNickname,
-    normalize_nickname,
-    validate_nickname,
-)
+from app.schemas.onboarding_schema import OnboardingProgressUpdateRequest
 
 #: What a client that has never written progress is told. Kept in step with the
 #: mobile app's ONBOARDING_FLOW_VERSION; a mismatch is how a client knows the
@@ -92,38 +83,3 @@ def upsert_progress(
     db.commit()
     db.refresh(row)
     return row
-
-
-def check_nickname_available(
-    current_user: Optional[User], nickname: str, db: Session
-) -> NicknameAvailabilityResponse:
-    """Advisory availability check.
-
-    Public on purpose: the nickname is chosen during pre-auth onboarding, before
-    an account exists. `current_user` is only used to ignore the caller's own
-    row when they are signed in (fixing a conflict, or editing the profile);
-    a signed-out caller just checks whether the name is free.
-    """
-    try:
-        display = validate_nickname(nickname)
-    except InvalidNickname as exc:
-        return NicknameAvailabilityResponse(
-            nickname=nickname.strip(),
-            normalized=normalize_nickname(nickname),
-            available=False,
-            reason="invalid" if exc.code != "empty" else "empty",
-        )
-
-    normalized = normalize_nickname(display)
-    # The index is the real guard; this query exists only so the UI can tell the
-    # user before they commit. The 409 on the save is what decides.
-    query = db.query(User.id).filter(User.nickname_normalized == normalized)
-    if current_user is not None:
-        query = query.filter(User.id != current_user.id)
-    taken = query.first() is not None
-    return NicknameAvailabilityResponse(
-        nickname=display,
-        normalized=normalized,
-        available=not taken,
-        reason="taken" if taken else None,
-    )

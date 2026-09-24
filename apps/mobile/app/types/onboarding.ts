@@ -29,7 +29,8 @@ export type OnboardingStepId =
   | "referral"
   | "speaking_level"
   | "speaking_contexts"
-  | "improve_areas";
+  | "improve_areas"
+  | "thank_you";
 
 /**
  * The scope a pre-auth onboarding record is stored under.

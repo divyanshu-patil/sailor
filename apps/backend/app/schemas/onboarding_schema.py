@@ -29,14 +29,3 @@ class OnboardingProgressUpdateRequest(BaseModel):
     completed_steps: list[str] = Field(default_factory=list, max_length=64)
     data: dict[str, Any] = Field(default_factory=dict)
     completed_at: Optional[datetime] = None
-
-
-class NicknameAvailabilityResponse(BaseModel):
-    #: The display form after trimming/collapsing, so the client can show what
-    #: it would actually save.
-    nickname: str
-    normalized: str
-    available: bool
-    #: "taken" | "invalid" | None. Never a substitute for the 409 on the final
-    #: save — another device can claim the name in the gap.
-    reason: Optional[str] = None

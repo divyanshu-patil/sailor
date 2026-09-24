@@ -1,11 +1,12 @@
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { HandwrittenNote } from "@/components/ui/handwritten-note";
-import type { NicknameAvailabilityResult } from "@/hooks/use-nickname-availability";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import { validateNickname } from "@/utils/nickname";
 import MorphingAvatar from "../components/morphing-avatar";
 import OnboardingInput from "../components/onboarding-input";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 /**
  * Step 1 — the nickname.
@@ -21,12 +22,10 @@ import type { OnboardingController } from "../hooks/use-onboarding-controller";
  */
 export default function ProfileIdentityStep({
   controller,
-  availability,
   error,
   onChange,
 }: {
   controller: OnboardingController;
-  availability: NicknameAvailabilityResult;
   error: string | null;
   onChange: (text: string) => void;
 }) {
@@ -39,6 +38,7 @@ export default function ProfileIdentityStep({
     typeof controller.state?.data.nickname === "string"
       ? controller.state.data.nickname
       : "";
+  const validation = validateNickname(nickname);
 
   return (
     <View style={styles.body}>
@@ -80,7 +80,12 @@ export default function ProfileIdentityStep({
 
       <View style={styles.form}>
         <View style={styles.helloRow}>
-          <Text style={styles.helloLabel}>Hello,</Text>
+          <Animated.Text
+            style={styles.helloLabel}
+            layout={LinearTransition.springify()}
+          >
+            Hello,
+          </Animated.Text>
           <OnboardingInput
             value={nickname}
             onChangeText={onChange}
@@ -91,25 +96,9 @@ export default function ProfileIdentityStep({
         </View>
         <Text style={styles.helper}>You can always change this later.</Text>
 
-        {availability.status === "checking" ? (
-          <Text style={styles.statusMuted} accessibilityLiveRegion="polite">
-            Checking availability…
-          </Text>
-        ) : null}
-        {availability.message && availability.status !== "checking" ? (
-          <Text
-            style={[
-              styles.status,
-              availability.status === "available" && styles.statusOk,
-            ]}
-            accessibilityLiveRegion="polite"
-          >
-            {availability.message}
-          </Text>
-        ) : null}
-        {availability.status === "available" ? (
-          <Text style={[styles.status, styles.statusOk]}>
-            {availability.display} is available.
+        {nickname && !validation.valid ? (
+          <Text style={styles.statusError} accessibilityLiveRegion="polite">
+            {validation.message}
           </Text>
         ) : null}
         {error ? (
@@ -193,13 +182,6 @@ const styles = StyleSheet.create({
     color: PROFILE.muted,
     textAlign: "center",
   },
-  status: {
-    marginTop: 8,
-    fontFamily: profileFonts.medium,
-    fontSize: 13,
-    color: PROFILE.muted,
-    textAlign: "center",
-  },
   statusMuted: {
     marginTop: 8,
     fontFamily: profileFonts.body,
@@ -207,7 +189,6 @@ const styles = StyleSheet.create({
     color: PROFILE.muted,
     textAlign: "center",
   },
-  statusOk: { color: "#4C8C5B" },
   statusError: {
     marginTop: 8,
     fontFamily: profileFonts.medium,

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -6,21 +6,27 @@ import Animated, {
   withTiming,
   type EntryExitAnimationFunction,
 } from "react-native-reanimated";
+import { Circle, Path, Svg } from "react-native-svg";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
-import ProfileAvatar from "@/components/ui/profile-avatar";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { PROFILE, PROFILE_PASTELS } from "@/screens/profile/theme";
+import {
+  figureFor,
+  lerpFigure,
+  pathFromPoints,
+} from "@/lib/blob-shape-morph";
 
 /** The nickname pauses this long before the face morphs, so typing "sam"
  *  produces one hand-off rather than three. */
 const NAME_DEBOUNCE_MS = 260;
-const MORPH_IN_MS = 420;
-const MORPH_OUT_MS = 320;
+/** How long the sampled geometry takes to travel from one face to the next. */
+const MORPH_MS = 380;
 
 // The blur is the part that reads as a morph rather than a swap: the new face
 // resolves out of a haze while the old one dissolves into it. Android has no
-// animated filter, so it gets the scale/rotate hand-off only.
+// animated filter, so it gets the scale/rotate hand-off only. Used only at the
+// placeholder boundary — name-to-name travels by shape, not by this.
 const BLUR = Platform.OS === "ios";
 
 /** The new face springs up from small and tilted; the old one lifts away. */
@@ -34,20 +40,20 @@ const morphIn: EntryExitAnimationFunction = () => {
     },
     animations: {
       opacity: withTiming(1, {
-        duration: MORPH_IN_MS,
+        duration: 420,
         easing: Easing.out(Easing.cubic),
       }),
       transform: [
         { scale: withSpring(1, { damping: 11, stiffness: 150, mass: 0.7 }) },
         {
           rotate: withTiming("0deg", {
-            duration: MORPH_IN_MS,
+            duration: 420,
             easing: Easing.out(Easing.cubic),
           }),
         },
       ],
       ...(BLUR
-        ? { filter: [{ blur: withTiming(0, { duration: MORPH_IN_MS }) }] }
+        ? { filter: [{ blur: withTiming(0, { duration: 420 }) }] }
         : {}),
     },
   };
@@ -63,19 +69,78 @@ const morphOut: EntryExitAnimationFunction = () => {
     },
     animations: {
       opacity: withTiming(0, {
-        duration: MORPH_OUT_MS,
+        duration: 320,
         easing: Easing.in(Easing.cubic),
       }),
       transform: [
-        { scale: withTiming(1.18, { duration: MORPH_OUT_MS }) },
-        { rotate: withTiming("10deg", { duration: MORPH_OUT_MS }) },
+        { scale: withTiming(1.18, { duration: 320 }) },
+        { rotate: withTiming("10deg", { duration: 320 }) },
       ],
-      ...(BLUR
-        ? { filter: [{ blur: withTiming(6, { duration: MORPH_OUT_MS }) }] }
-        : {}),
+      ...(BLUR ? { filter: [{ blur: withTiming(6, { duration: 320 }) }] } : {}),
     },
   };
 };
+
+const ease = (t: number) => t * t * (3 - 2 * t);
+
+/**
+ * One generated face, morphing its *geometry* into the next.
+ *
+ * Where the old hand-off scaled and blurred two faces past each other, this
+ * samples each name's drawn paths to a shared point count and lerps them, so
+ * the silhouette itself travels — a sun's lobes retract into a round head, a
+ * triangle settles into a pebble, colours cross-fade alongside.
+ */
+function BlobMorph({ seed, size }: { seed: string; size: number }) {
+  const target = useMemo(() => figureFor(seed), [seed]);
+  const [shown, setShown] = useState(target);
+  const shownRef = useRef(shown);
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    shownRef.current = shown;
+  }, [shown]);
+
+  // Runs on a name change; the mount pass finds `from` already equal to the
+  // target, so a face never animates in — only into the next one.
+  useEffect(() => {
+    const from = shownRef.current;
+    if (from === target) return;
+    let start = 0;
+    const tick = (now: number) => {
+      if (!start) start = now;
+      const u = Math.min(1, (now - start) / MORPH_MS);
+      const frame = lerpFigure(from, target, ease(u));
+      shownRef.current = frame;
+      setShown(frame);
+      if (u < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, seed]);
+
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`${seed}'s avatar`}
+    >
+      {shown.petals.map((c, i) => (
+        <Circle key={`p${i}`} cx={c.cx} cy={c.cy} r={c.r} fill={shown.head} />
+      ))}
+      {shown.extras.map((pts, i) => (
+        <Path key={`x${i}`} d={pathFromPoints(pts)} fill={shown.head} />
+      ))}
+      <Path d={pathFromPoints(shown.body)} fill={shown.head} />
+      {shown.eyes.map((pts, i) => (
+        <Path key={`e${i}`} d={pathFromPoints(pts)} fill={shown.eye} />
+      ))}
+    </Svg>
+  );
+}
 
 interface MorphingAvatarProps {
   name: string;
@@ -84,17 +149,17 @@ interface MorphingAvatarProps {
 }
 
 /**
- * The onboarding avatar, animated across changes.
+ * The onboarding avatar.
  *
- * The pink circle is a fixed layer; only the character inside it morphs. Each
- * face is keyed by its seed, so when the nickname settles the old Blobatar
- * scales/tilts/blurs out while the new one springs in, clipped to the circle —
- * a physical hand-off rather than the hard swap `ProfileAvatar` would do.
+ * The pink circle is a fixed layer. The character inside it changes as the
+ * nickname settles: on the first face the placeholder hands off with a
+ * scale/tilt/blur, and every face after that morphs its shape into the next
+ * (`BlobMorph`). The debounce is what makes a typed nickname one hand-off
+ * rather than one per keystroke.
  */
 const MorphingAvatar = memo(function MorphingAvatar({
   name,
   size,
-  backgroundColor = PROFILE_PASTELS.pink,
 }: MorphingAvatarProps) {
   const seed = useDebouncedValue(name.trim(), NAME_DEBOUNCE_MS);
 
@@ -102,22 +167,17 @@ const MorphingAvatar = memo(function MorphingAvatar({
     <View
       style={[
         styles.clip,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor },
+        { width: size, height: size, borderRadius: size / 2 },
       ]}
     >
       <Animated.View
-        key={seed || "empty"}
+        key={seed ? "blob" : "empty"}
         entering={morphIn}
         exiting={morphOut}
         style={StyleSheet.absoluteFill}
       >
         {seed ? (
-          <ProfileAvatar
-            name={seed}
-            size={size}
-            backgroundColor="transparent"
-            accessibilityLabel={`${seed}'s avatar`}
-          />
+          <BlobMorph seed={seed} size={size} />
         ) : (
           <View
             accessible

@@ -2,8 +2,8 @@
  * Nickname rules, mirrored from the backend's `app/utils/nickname.py`.
  *
  * The client validates for instant feedback and to keep the Continue button
- * honest; the server re-validates and owns uniqueness. When these two drift the
- * screen must give way to the server, so keep them in step.
+ * honest; the server re-validates. When these two drift the screen must give
+ * way to the server, so keep them in step.
  */
 
 export const NICKNAME_MIN_LENGTH = 2;

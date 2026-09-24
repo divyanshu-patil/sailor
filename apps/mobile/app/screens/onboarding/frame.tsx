@@ -17,14 +17,13 @@ import { useSharedValue, withTiming } from "react-native-reanimated";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 import OrganicBlob from "@/components/ui/organic-blob";
-import { useNicknameAvailability } from "@/hooks/use-nickname-availability";
-import { isNicknameTakenError } from "@/services/onboarding.service";
 import {
   PROFILE,
   PROFILE_PASTELS,
   profileFonts,
 } from "@/screens/profile/theme";
 import type { OnboardingStepId } from "@/types/onboarding";
+import { validateNickname } from "@/utils/nickname";
 import OnboardingProgress from "./components/onboarding-progress";
 import {
   FIRST_STEP_ID,
@@ -39,9 +38,8 @@ import ProfileIdentityStep from "./steps/profile-identity";
 import ReferralStep from "./steps/referral";
 import SpeakingContextsStep from "./steps/speaking-contexts";
 import SpeakingLevelStep from "./steps/speaking-level";
+import ThankYouStep from "./steps/thank-you";
 
-/** Continue unlocks once the nickname is at least this many characters. */
-const MIN_NICKNAME_LENGTH = 2;
 /** Room for the floating Continue pill: its height, its padding and a gap. */
 const CONTINUE_CLEARANCE = 58 + 12 + 8;
 
@@ -113,23 +111,27 @@ export default function OnboardingFrame() {
 
   const data = controller.state?.data ?? {};
   const nickname = typeof data.nickname === "string" ? data.nickname : "";
-  const availability = useNicknameAvailability(nickname);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set the moment this mount hands off to Create Account. Only then does a
+  // completed record fall back to its last step, so backing out of that screen
+  // can still walk the flow. A record that was already complete when the user
+  // opens onboarding again (e.g. Get started a second time) is a fresh run and
+  // starts at the first step.
+  const [handedOff, setHandedOff] = useState(false);
 
-  // The persisted position, or — once the flow is completed — the last step it
-  // reached. Handing off to Create Account marks the flow completed and clears
-  // `currentStepId`; backing out of that screen lands here again, and this keeps
-  // the last step on screen so Back can still walk the whole flow. `reviewStep`
-  // is a local cursor for that walk-back; it never touches the stored record.
+  // The persisted position, or — after a hand-off that completed the flow — the
+  // last step it reached. `reviewStep` is a local cursor for walking back; it
+  // never touches the stored record.
   const controllerStep = controller.currentStepId;
   const completedSteps = controller.state?.completedSteps ?? [];
   const lastCompleted = ONBOARDING_STEPS.filter((s) =>
     completedSteps.includes(s.id),
   ).at(-1)?.id;
   const [reviewStep, setReviewStep] = useState<OnboardingStepId | null>(null);
-  const step = controllerStep ?? reviewStep ?? lastCompleted ?? FIRST_STEP_ID;
+  const step =
+    controllerStep ?? reviewStep ?? (handedOff ? lastCompleted : null) ?? FIRST_STEP_ID;
 
   const busy = submitting || controller.committing;
 
@@ -137,10 +139,7 @@ export default function OnboardingFrame() {
     if (busy) return false;
     switch (step) {
       case "profile_identity":
-        return (
-          nickname.trim().length >= MIN_NICKNAME_LENGTH &&
-          availability.status !== "invalid"
-        );
+        return validateNickname(nickname).valid;
       case "gender":
         return typeof data.gender === "string";
       case "referral":
@@ -157,12 +156,15 @@ export default function OnboardingFrame() {
           Array.isArray(data.improvementAreas) &&
           data.improvementAreas.length > 0
         );
+      case "thank_you":
+        return true;
       default:
         return false;
     }
   })();
 
   const handOff = () => {
+    setHandedOff(true);
     if (authenticated) {
       router.replace("/(profile-setup)" as Href);
     } else {
@@ -183,7 +185,7 @@ export default function OnboardingFrame() {
       let next: OnboardingStepId | null = null;
       switch (step) {
         case "profile_identity":
-          next = await controller.submitNickname(availability.display);
+          next = await controller.submitNickname(validateNickname(nickname).display);
           break;
         case "gender":
           next = await controller.submitGender(String(data.gender));
@@ -206,17 +208,15 @@ export default function OnboardingFrame() {
             (data.improvementAreas as string[]) ?? [],
           );
           break;
+        case "thank_you":
+          next = await controller.submitThankYou();
+          break;
       }
       // The commit already moved the persisted position, so the content below
       // swaps in place. Only the very end leaves the screen.
       if (!next) handOff();
-    } catch (e) {
-      if (isNicknameTakenError(e)) {
-        availability.recheck();
-        setError("Someone just took that nickname. Try another.");
-      } else {
-        setError("Couldn't save your answer. Check your connection and retry.");
-      }
+    } catch {
+      setError("Couldn't save your answer. Check your connection and retry.");
     } finally {
       setSubmitting(false);
     }
@@ -228,7 +228,6 @@ export default function OnboardingFrame() {
         return (
           <ProfileIdentityStep
             controller={controller}
-            availability={availability}
             error={error}
             onChange={(text) => {
               setError(null);
@@ -246,6 +245,8 @@ export default function OnboardingFrame() {
         return <SpeakingContextsStep controller={controller} />;
       case "improve_areas":
         return <ImproveAreasStep controller={controller} />;
+      case "thank_you":
+        return <ThankYouStep />;
     }
   })();
 

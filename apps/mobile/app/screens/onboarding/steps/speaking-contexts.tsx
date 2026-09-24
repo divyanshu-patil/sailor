@@ -12,6 +12,8 @@ interface ContextOption {
   label: string;
   icon: ComponentProps<typeof Ionicons>["name"];
   card: string;
+  /** The card tint's deeper shade — drives the selected border and badge. */
+  dark: string;
 }
 
 const OPTIONS: ContextOption[] = [
@@ -20,36 +22,42 @@ const OPTIONS: ContextOption[] = [
     label: "College / Classroom",
     icon: "school",
     card: PROFILE_PASTELS.purple,
+    dark: "#A98BD6",
   },
   {
     value: "work",
     label: "Work / Meetings",
     icon: "briefcase",
     card: PROFILE_PASTELS.blue,
+    dark: "#7FA6DE",
   },
   {
     value: "presentations",
     label: "Presentations",
     icon: "mic",
     card: PROFILE_PASTELS.yellow,
+    dark: "#E0B44A",
   },
   {
     value: "everyday",
     label: "Everyday Conversations",
     icon: "people",
     card: PROFILE_PASTELS.mint,
+    dark: "#7FC79A",
   },
   {
     value: "interviews",
     label: "Interviews",
     icon: "laptop",
     card: PROFILE_PASTELS.pink,
+    dark: "#E28AAC",
   },
   {
     value: "english",
     label: "Speaking English with Others",
     icon: "globe",
     card: PROFILE_PASTELS.purple,
+    dark: "#A98BD6",
   },
 ];
 
@@ -88,25 +96,25 @@ export default function SpeakingContextsStep({
               style={[
                 styles.card,
                 { backgroundColor: option.card },
-                active && styles.cardActive,
+                active && { borderColor: option.dark },
               ]}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: active }}
               accessibilityLabel={option.label}
             >
-              <View style={styles.badge}>
-                <Ionicons name={option.icon} size={22} color={PROFILE.ink} />
+              <View
+                style={[
+                  styles.badge,
+                  active && { backgroundColor: option.dark },
+                ]}
+              >
+                <Ionicons
+                  name={option.icon}
+                  size={22}
+                  color={active ? PROFILE.white : PROFILE.ink}
+                />
               </View>
               <Text style={styles.label}>{option.label}</Text>
-              <View style={[styles.checkbox, active && styles.checkboxActive]}>
-                {active ? (
-                  <Ionicons
-                    name="checkmark"
-                    size={18}
-                    color={PROFILE.white}
-                  />
-                ) : null}
-              </View>
             </PressableScale>
           );
         })}
@@ -147,9 +155,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
-  cardActive: {
-    borderColor: PROFILE.ink,
-  },
   badge: {
     width: 52,
     height: 52,
@@ -165,18 +170,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     letterSpacing: -0.3,
     color: PROFILE.ink,
-  },
-  checkbox: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#bebcbc",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxActive: {
-    backgroundColor: PROFILE.ink,
-    borderColor: PROFILE.ink,
   },
 });

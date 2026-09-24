@@ -18,13 +18,6 @@ interface ServerOnboardingProgress {
   updated_at: string | null;
 }
 
-export interface NicknameAvailability {
-  nickname: string;
-  normalized: string;
-  available: boolean;
-  reason: "taken" | "invalid" | "empty" | null;
-}
-
 function toState(
   userId: string,
   progress: ServerOnboardingProgress,
@@ -39,13 +32,6 @@ function toState(
     lastUpdatedAt: progress.updated_at ?? new Date().toISOString(),
     completedAt: progress.completed_at,
   };
-}
-
-/** True for the backend's 409 — the name was claimed between check and save. */
-export function isNicknameTakenError(error: unknown): boolean {
-  return (
-    (error as { response?: { status?: number } })?.response?.status === 409
-  );
 }
 
 export const onboardingService = {
@@ -86,22 +72,9 @@ export const onboardingService = {
     return toState(state.userId, response.data);
   },
 
-  /** Advisory only — the 409 from `claimNickname` is what decides. */
-  checkNicknameAvailability: async (
-    nickname: string,
-    signal?: AbortSignal,
-  ): Promise<NicknameAvailability> => {
-    const response = await apiClient.get<NicknameAvailability>(
-      "/api/v1/users/nickname-available",
-      { params: { nickname }, signal },
-    );
-    return response.data;
-  },
-
   /**
-   * Commits the nickname to the account, authoritatively. Throws a 409-shaped
-   * axios error when it is already taken; the caller maps that to the "taken"
-   * state rather than proceeding.
+   * Commits the nickname to the account. Nicknames are not unique, so this
+   * cannot fail with a conflict — only validation (422) or the network.
    */
   claimNickname: async (nickname: string): Promise<void> => {
     await userService.updateProfile({ nickname });

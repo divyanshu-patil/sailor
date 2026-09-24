@@ -57,6 +57,8 @@ export interface OnboardingController {
   submitImprovementAreas: (
     areas: string[],
   ) => Promise<OnboardingStepId | null>;
+  /** Advances past the thank-you screen. It has no answer of its own. */
+  submitThankYou: () => Promise<OnboardingStepId | null>;
   /**
    * Marks `stepId` as the screen in view — called on focus so the persisted
    * position (and the progress bar) follows the stack, back included.
@@ -125,10 +127,10 @@ async function handoffPendingOnboarding(
     try {
       await onboardingService.claimNickname(nickname);
     } catch {
-      // Taken (409) or the network failed. Either way the name is not safely
-      // on the account, so reopen the nickname step — prefilled with the other
-      // answers — and let the user confirm or change it. Continue retries the
-      // authoritative claim.
+      // Validation (422) or the network failed. Either way the name is not
+      // safely on the account, so reopen the nickname step — prefilled with the
+      // other answers — and let the user confirm or change it. Continue retries
+      // the claim.
       writeOnboardingProgress(
         {
           ...asUser,
@@ -158,8 +160,8 @@ async function handoffPendingOnboarding(
  * Owns the onboarding position: hydrates it, reconciles it with the server,
  * advances it, and syncs it. Runs in two modes:
  *
- *  - `authenticated: false` — pre-auth. Local only; the nickname is checked
- *    against the public availability endpoint but not claimed (no account yet).
+ *  - `authenticated: false` — pre-auth. Local only; the nickname is validated
+ *    client-side but not claimed (no account yet).
  *  - `authenticated: true` — the account exists. Claims the nickname, syncs
  *    progress, and absorbs any pre-auth record left behind on this device.
  *
@@ -372,6 +374,11 @@ export function useOnboardingController(
     [commitStep],
   );
 
+  const submitThankYou = useCallback(
+    () => commitStep("thank_you", {}),
+    [commitStep],
+  );
+
   const setCurrentStep = useCallback(
     (stepId: OnboardingStepId) => {
       const store = useOnboardingProgressStore.getState();
@@ -420,6 +427,7 @@ export function useOnboardingController(
     submitSpeakingLevel,
     submitSpeakingContexts,
     submitImprovementAreas,
+    submitThankYou,
     setCurrentStep,
     goBack,
     retrySync: () => void flushSync(),
