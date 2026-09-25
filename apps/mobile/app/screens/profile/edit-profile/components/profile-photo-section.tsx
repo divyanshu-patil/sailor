@@ -2,16 +2,11 @@ import React from "react";
 import { View } from "react-native";
 import { LayoutAnimationConfig } from "react-native-reanimated";
 import { RNHostView, Section, ZStack } from "@expo/ui/swift-ui";
-import {
-  frame,
-  listRowBackground,
-  padding,
-} from "@expo/ui/swift-ui/modifiers";
+import { frame, listRowBackground, padding } from "@expo/ui/swift-ui/modifiers";
 
 import MorphingAvatar from "@/screens/onboarding/components/morphing-avatar";
-import { PROFILE_PASTELS } from "@/screens/profile/theme";
 
-const AVATAR_SIZE = 112;
+const AVATAR_SIZE = 150;
 
 /**
  * The avatar row for Edit Profile — a `Section` in the form, so it scrolls with
@@ -39,7 +34,6 @@ const ProfilePhotoSection = ({ nickname }: { nickname: string }) => (
               width: AVATAR_SIZE,
               height: AVATAR_SIZE,
               borderRadius: AVATAR_SIZE / 2,
-              backgroundColor: PROFILE_PASTELS.pink,
               overflow: "hidden",
             }}
           >
