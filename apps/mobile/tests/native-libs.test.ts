@@ -228,21 +228,33 @@ describe("daily reminder", () => {
     expect(notifications.requestPermissionsAsync).toHaveBeenCalledOnce();
   });
 
-  it("schedules one daily notification at the chosen time", async () => {
+  it("schedules a month of dated reminders at the chosen time, each its own line", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // Noon: 07:30 has passed today, so the month starts tomorrow.
+    vi.setSystemTime(new Date(2026, 8, 20, 12));
     notifications.cancelScheduledNotificationAsync.mockRejectedValueOnce(new Error("none"));
     await expect(syncDailyReminder(true, "07:30")).resolves.toBe(true);
-    const request = notifications.scheduleNotificationAsync.mock.lastCall![0];
-    expect(request).toMatchObject({
-      identifier: "daily-practice-reminder",
-      content: { data: { url: "sailors://daily-practice" } },
-      trigger: { type: "daily", hour: 7, minute: 30 },
-    });
 
-    await syncDailyReminder(true, "whenever");
-    expect(notifications.scheduleNotificationAsync.mock.lastCall![0].trigger).toMatchObject({
-      hour: 18,
-      minute: 0,
+    // The old repeating reminder is cancelled along with the dated ones.
+    expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith("daily-practice-reminder");
+    const requests = notifications.scheduleNotificationAsync.mock.calls.map(([r]) => r);
+    expect(requests).toHaveLength(30);
+    expect(requests[0]).toMatchObject({
+      identifier: "daily-practice-reminder-0",
+      content: { data: { url: "sailors://daily-practice" } },
+      trigger: { type: "date", date: new Date(2026, 8, 21, 7, 30) },
     });
+    expect(requests[29].trigger.date).toEqual(new Date(2026, 9, 20, 7, 30));
+    // Consecutive evenings don't say the same thing.
+    expect(new Set(requests.slice(0, 7).map((r) => r.content.title)).size).toBe(7);
+
+    // An unreadable time falls back to 18:00 — still ahead at noon, so today.
+    notifications.scheduleNotificationAsync.mockClear();
+    await syncDailyReminder(true, "whenever");
+    expect(notifications.scheduleNotificationAsync.mock.calls[0][0].trigger.date).toEqual(
+      new Date(2026, 8, 20, 18, 0),
+    );
+    vi.useRealTimers();
   });
 
   it("does nothing when off, denied, or on web", async () => {
@@ -257,18 +269,17 @@ describe("daily reminder", () => {
   it("follows the preference store, ignoring unrelated writes", async () => {
     const stop = startReminderSync();
     await flush();
-    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(30);
 
     usePreferenceStore.getState().setPreferences({ emotionHapticsEnabled: false });
     await flush();
-    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(30);
 
     usePreferenceStore.getState().setPreferences({ practiceReminderTime: "06:15" });
     await flush();
-    expect(notifications.scheduleNotificationAsync.mock.lastCall![0].trigger).toMatchObject({
-      hour: 6,
-      minute: 15,
-    });
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(60);
+    const date: Date = notifications.scheduleNotificationAsync.mock.lastCall![0].trigger.date;
+    expect([date.getHours(), date.getMinutes()]).toEqual([6, 15]);
     stop();
   });
 });

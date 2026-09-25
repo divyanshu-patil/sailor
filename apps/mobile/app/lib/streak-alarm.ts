@@ -7,7 +7,7 @@ import { usePreferenceStore } from "@/store/preference-store";
 import { localDate, StreakState } from "@/types/daily";
 
 import { ensureNotificationPermission } from "./daily-reminder";
-import { STREAK_ALERTS } from "./notification-copy";
+import { STREAK_ALERTS, streakAlertFor } from "./notification-copy";
 
 /**
  * The "your streak is about to die" mechanism.
@@ -79,11 +79,12 @@ export async function syncStreakAlerts(
     STREAK_ALERTS.map(async (alert, i) => {
       const at = target.deadline.getTime() + alert.offset;
       if (at <= now) return;
+      const { title, body } = streakAlertFor(i, target.count, target.deadline);
       await Notifications.scheduleNotificationAsync({
         identifier: ID(i),
         content: {
-          title: alert.title(target.count),
-          body: alert.body(target.count),
+          title,
+          body,
           sound: true,
           data: { url: "sailors://daily-practice" },
           interruptionLevel: "timeSensitive",

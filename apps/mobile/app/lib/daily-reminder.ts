@@ -1,26 +1,33 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+import { useAppUserStore } from "@/store/app-user.store";
 import { usePreferenceStore } from "@/store/preference-store";
 
-import {
-  DAILY_REMINDER_TITLE,
-  pickDailyReminderBody,
-} from "./notification-copy";
+import { dailyReminderFor } from "./notification-copy";
 
 /**
  * The daily practice reminder.
  *
- * One local notification on a repeating daily trigger — no push, no server, no
- * scheduling of 30 individual notifications. iOS fires it whether or not the app
- * has run, which is the whole point of a habit reminder.
+ * Local notifications, no push and no server: iOS fires them whether or not the
+ * app has run, which is the whole point of a habit reminder. A month of them,
+ * one per date, rather than a single repeating trigger — a repeating trigger
+ * carries the content it was scheduled with, so it said the same line every
+ * evening until the app was opened again. Dated ones each get their own line
+ * (see notification-copy). Thirty plus the streak ladder's five stays well
+ * under iOS's 64 pending; every launch and every settings change reschedules
+ * the month from today.
  *
  * The toggle and the time picker already existed in Settings
  * (screens/settings/PracticeSection) and were writing preferences nothing acted
  * on. This is the missing half.
  */
 
-const IDENTIFIER = "daily-practice-reminder";
+/** The single repeating reminder earlier builds scheduled — cancelled so an
+ *  upgrade doesn't fire it alongside the dated ones. */
+const LEGACY_IDENTIFIER = "daily-practice-reminder";
+const DAYS_AHEAD = 30;
+const idFor = (i: number) => `${LEGACY_IDENTIFIER}-${i}`;
 
 /** Fires the reminder even while the app is foregrounded — otherwise a user who
  *  happens to have Sailors open at 18:00 silently loses that day's nudge. */
@@ -59,34 +66,46 @@ export async function syncDailyReminder(
 ): Promise<boolean> {
   if (Platform.OS === "web") return false;
 
-  try {
-    await Notifications.cancelScheduledNotificationAsync(IDENTIFIER);
-  } catch {
-    // Nothing was scheduled under that id. Expected on a first run.
-  }
+  // Nothing scheduled under an id is expected (a first run), so a miss is fine.
+  await Promise.all(
+    [LEGACY_IDENTIFIER, ...Array.from({ length: DAYS_AHEAD }, (_, i) => idFor(i))].map(
+      (id) => Notifications.cancelScheduledNotificationAsync(id).catch(() => {}),
+    ),
+  );
 
   if (!enabled) return false;
   if (!(await ensureNotificationPermission())) return false;
 
-  const [hour, minute] = time.split(":").map(Number);
+  const [h, m] = time.split(":").map(Number);
+  const hour = Number.isFinite(h) ? h! : 18;
+  const minute = Number.isFinite(m) ? m! : 0;
+  const nickname = useAppUserStore.getState().appUser?.nickname;
 
-  await Notifications.scheduleNotificationAsync({
-    identifier: IDENTIFIER,
-    content: {
-      title: DAILY_REMINDER_TITLE,
-      // Picked here rather than written here — see notification-copy. This runs
-      // on every launch, so the wording differs between reschedules instead of
-      // being the same sentence every evening forever.
-      body: pickDailyReminderBody(),
-      // Read by the notification tap handler in routes/_layout to deep-link.
-      data: { url: "sailors://daily-practice" },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: Number.isFinite(hour) ? hour : 18,
-      minute: Number.isFinite(minute) ? minute : 0,
-    },
-  });
+  // From today if its time is still ahead, otherwise from tomorrow.
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute);
+  if (first <= now) first.setDate(first.getDate() + 1);
+
+  await Promise.all(
+    Array.from({ length: DAYS_AHEAD }, (_, i) => {
+      const at = new Date(first);
+      at.setDate(first.getDate() + i);
+      const { title, body } = dailyReminderFor(at, nickname);
+      return Notifications.scheduleNotificationAsync({
+        identifier: idFor(i),
+        content: {
+          title,
+          body,
+          // Read by the notification tap handler in routes/_layout to deep-link.
+          data: { url: "sailors://daily-practice" },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: at,
+        },
+      });
+    }),
+  );
 
   return true;
 }

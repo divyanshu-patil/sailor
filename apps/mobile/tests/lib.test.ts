@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, apiErrorMessage, setupApiAuth } from "@/lib/api/client";
 import {
-  DAILY_REMINDER_BODIES,
-  DAILY_REMINDER_TITLE,
-  pickDailyReminderBody,
+  DAILY_REMINDERS,
+  dailyReminderFor,
+  pickForDay,
   STREAK_ALERTS,
+  streakAlertFor,
 } from "@/lib/notification-copy";
 import { mergeDays, runDates, shiftDate, weekPattern } from "@/lib/streak-days";
 import { reconcile, runReconcileSelfCheck } from "@/screens/onboarding/lib/reconcile";
@@ -103,17 +104,54 @@ describe("env", () => {
 });
 
 describe("notification copy", () => {
-  it("picks one of the reminder bodies", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99);
-    expect(pickDailyReminderBody()).toBe(DAILY_REMINDER_BODIES.at(-1));
-    expect(DAILY_REMINDER_TITLE).toBeTruthy();
+  const day = (i: number) => new Date(2026, 8, 1 + i, 18);
+
+  it("never repeats within a run of the pool, and a date keeps its line", () => {
+    const pool = ["a", "b", "c", "d", "e", "f", "g"];
+    // Any window of pool.length days that starts on a run boundary is a permutation.
+    const start = Math.ceil(Date.UTC(2026, 8, 1) / 86_400_000 / pool.length) * pool.length;
+    const first = new Date(start * 86_400_000);
+    const firstLocal = new Date(first.getUTCFullYear(), first.getUTCMonth(), first.getUTCDate());
+    const run = pool.map((_, i) => {
+      const d = new Date(firstLocal);
+      d.setDate(d.getDate() + i);
+      return pickForDay(pool, d);
+    });
+    expect(new Set(run).size).toBe(pool.length);
+    expect(pickForDay(pool, day(3))).toBe(pickForDay(pool, day(3)));
+    expect(pickForDay(pool, day(3), 7)).toBe(pickForDay(pool, day(3), 7));
   });
 
-  it("every streak alert writes a title and body for a count", () => {
-    for (const alert of STREAK_ALERTS) {
-      expect(alert.title(7)).toBeTruthy();
-      expect(alert.body(7)).toBeTruthy();
+  it("fills the nickname, and skips lines that need one when there isn't", () => {
+    const withName = Array.from({ length: DAILY_REMINDERS.length }, (_, i) =>
+      dailyReminderFor(day(i), "Div"),
+    );
+    expect(withName.some((l) => `${l.title} ${l.body}`.includes("Div"))).toBe(true);
+    for (let i = 0; i < DAILY_REMINDERS.length; i++) {
+      for (const name of [null, undefined, "  "]) {
+        const line = dailyReminderFor(day(i), name);
+        expect(`${line.title}${line.body}`).not.toMatch(/\{|\}|undefined/);
+      }
     }
+  });
+
+  it("keeps every line short enough for a lock screen", () => {
+    const lines = [...DAILY_REMINDERS, ...STREAK_ALERTS.flatMap((a) => a.lines)];
+    for (const line of lines) {
+      expect(line.title.length).toBeLessThanOrEqual(40);
+      expect(line.body.length).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it("puts the day count in every streak alert, rotating night to night", () => {
+    STREAK_ALERTS.forEach((_, i) => {
+      const nights = Array.from({ length: 4 }, (_, n) => streakAlertFor(i, 12, day(n)));
+      for (const line of nights) {
+        expect(`${line.title} ${line.body}`).toContain("12");
+        expect(`${line.title}${line.body}`).not.toMatch(/\{|\}|undefined/);
+      }
+      expect(new Set(nights.map((l) => l.title)).size).toBeGreaterThan(1);
+    });
   });
 });
 
