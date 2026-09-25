@@ -29,7 +29,6 @@ const SOURCES = {
   "bg-cool-small": require("../../assets/widgets/widget-bg-cool-small.png"),
   "bg-cool-medium": require("../../assets/widgets/widget-bg-cool-medium.png"),
   "bg-streak-cool": require("../../assets/widgets/widget-bg-streak-cool.png"),
-  "bg-streak-week": require("../../assets/widgets/widget-bg-streak-week.png"),
   flame: require("../../assets/widgets/widget-flame.png"),
   // The week tile's character, as body + paws on one canvas — see
   // StreakWeekWidget for why it is two images.

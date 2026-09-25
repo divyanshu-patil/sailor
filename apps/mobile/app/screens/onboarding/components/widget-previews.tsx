@@ -18,7 +18,6 @@ export const WIDGET_ART = {
   plateMedium: require("../../../../assets/widgets/widget-bg-cool-medium.png"),
   plateSmall: require("../../../../assets/widgets/widget-bg-cool-small.png"),
   plateStreak: require("../../../../assets/widgets/widget-bg-streak-cool.png"),
-  plateWeek: require("../../../../assets/widgets/widget-bg-streak-week.png"),
   mascotCream: require("../../../../assets/widgets/widget-mascot-cream.png"),
   mascotPurple: require("../../../../assets/widgets/widget-mascot-purple.png"),
   mascotGreen: require("../../../../assets/widgets/widget-mascot-green.png"),
@@ -314,6 +313,9 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
  * The medium streak-week widget, redrawn for the "Build your streak" step:
  * a count card, a Mon–Sun row, and the character gripping the row's top edge
  * — body under the card, paws over it, same two-image trick as the widget.
+ *
+ * No tile behind it: the pieces float on the step's own background, so the
+ * picture reads as the streak rather than as a square with a streak in it.
  */
 export const StreakWeekPreview = memo(function StreakWeekPreview({
   width,
@@ -325,7 +327,7 @@ export const StreakWeekPreview = memo(function StreakWeekPreview({
 }) {
   const s = width / 338;
   const height = width * 0.7;
-  const inset = 10 * s;
+  const inset = 0;
   const weekH = 76 * s;
   const cardTop = height - inset - weekH;
   const mascotW = 150 * s;
@@ -346,131 +348,121 @@ export const StreakWeekPreview = memo(function StreakWeekPreview({
   );
 
   return (
-    <View style={[styles.shadow, { width, height, borderRadius: 30 * s }]}>
+    <View style={{ width, height }}>
+      {mascot(WIDGET_ART.mascotPeek)}
+
       <View
         style={[
-          styles.tile,
-          { borderRadius: 30 * s, backgroundColor: "#F6F0E8" },
+          styles.card,
+          styles.floating,
+          {
+            left: inset,
+            top: inset,
+            width: width * 0.5,
+            height: cardTop - inset - 8 * s,
+            borderRadius: 20 * s,
+            padding: 14 * s,
+          },
         ]}
       >
-        <Image
-          source={WIDGET_ART.plateWeek}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-        />
-        {mascot(WIDGET_ART.mascotPeek)}
-
-        <View
-          style={[
-            styles.card,
-            {
-              left: inset,
-              top: inset,
-              width: width * 0.5,
-              height: cardTop - inset - 8 * s,
-              borderRadius: 20 * s,
-              padding: 14 * s,
-            },
-          ]}
-        >
-          <View style={styles.row}>
-            <Image
-              source={WIDGET_ART.flameSoft}
-              style={{ width: 24 * s, height: 24 * s }}
-              contentFit="contain"
-            />
-            <Text
-              style={[styles.title, { fontSize: 16 * s, marginLeft: 6 * s }]}
-            >
-              Your Streak
-            </Text>
-          </View>
-          <View style={styles.flex} />
-          <View style={styles.row}>
-            <Text
-              style={[styles.count, { fontSize: 60 * s, lineHeight: 64 * s }]}
-            >
-              {done + 1}
-            </Text>
-            <Text
-              style={[
-                styles.body,
-                { fontSize: 16 * s, lineHeight: 20 * s, marginLeft: 10 * s },
-              ]}
-            >
-              {"days\nin a row!"}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.keepGoing,
-            {
-              right: inset + 4 * s,
-              top: inset + 4 * s,
-              paddingHorizontal: 13 * s,
-              paddingVertical: 6 * s,
-            },
-          ]}
-        >
-          <Text style={[styles.keepGoingLabel, { fontSize: 13.5 * s }]}>
-            Keep going!
+        <View style={styles.row}>
+          <Image
+            source={WIDGET_ART.flameSoft}
+            style={{ width: 24 * s, height: 24 * s }}
+            contentFit="contain"
+          />
+          <Text
+            style={[styles.title, { fontSize: 16 * s, marginLeft: 6 * s }]}
+          >
+            Your Streak
           </Text>
         </View>
-
-        <View
-          style={[
-            styles.card,
-            styles.week,
-            {
-              left: inset,
-              right: inset,
-              top: cardTop,
-              height: weekH,
-              borderRadius: 20 * s,
-              paddingTop: 8 * s,
-              paddingHorizontal: 6 * s,
-            },
-          ]}
-        >
-          {DAYS.map((day, i) => {
-            const ticked = i < done;
-            return (
-              <View key={day} style={styles.day}>
-                <View
-                  style={[
-                    styles.dot,
-                    {
-                      width: 32 * s,
-                      height: 32 * s,
-                      backgroundColor: ticked ? "#F7DC8F" : "#EEF0F6",
-                    },
-                  ]}
-                >
-                  {ticked ? (
-                    <Ionicons
-                      name="checkmark-sharp"
-                      size={17 * s}
-                      color={PROFILE.ink}
-                    />
-                  ) : null}
-                </View>
-                <Text
-                  style={[
-                    styles.dayLabel,
-                    { fontSize: 12 * s, marginTop: 5 * s },
-                  ]}
-                >
-                  {day}
-                </Text>
-              </View>
-            );
-          })}
+        <View style={styles.flex} />
+        <View style={styles.row}>
+          <Text
+            style={[styles.count, { fontSize: 60 * s, lineHeight: 64 * s }]}
+          >
+            {done + 1}
+          </Text>
+          <Text
+            style={[
+              styles.body,
+              { fontSize: 16 * s, lineHeight: 20 * s, marginLeft: 10 * s },
+            ]}
+          >
+            {"days\nin a row!"}
+          </Text>
         </View>
-
-        {mascot(WIDGET_ART.mascotPeekPaws)}
       </View>
+
+      <View
+        style={[
+          styles.keepGoing,
+          {
+            right: inset + 4 * s,
+            top: inset + 4 * s,
+            paddingHorizontal: 13 * s,
+            paddingVertical: 6 * s,
+          },
+        ]}
+      >
+        <Text style={[styles.keepGoingLabel, { fontSize: 13.5 * s }]}>
+          Keep going!
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.card,
+          styles.floating,
+          styles.week,
+          {
+            left: inset,
+            right: inset,
+            top: cardTop,
+            height: weekH,
+            borderRadius: 20 * s,
+            paddingTop: 8 * s,
+            paddingHorizontal: 6 * s,
+          },
+        ]}
+      >
+        {DAYS.map((day, i) => {
+          const ticked = i < done;
+          return (
+            <View key={day} style={styles.day}>
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    width: 32 * s,
+                    height: 32 * s,
+                    backgroundColor: ticked ? "#F7DC8F" : "#EEF0F6",
+                  },
+                ]}
+              >
+                {ticked ? (
+                  <Ionicons
+                    name="checkmark-sharp"
+                    size={17 * s}
+                    color={PROFILE.ink}
+                  />
+                ) : null}
+              </View>
+              <Text
+                style={[
+                  styles.dayLabel,
+                  { fontSize: 12 * s, marginTop: 5 * s },
+                ]}
+              >
+                {day}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {mascot(WIDGET_ART.mascotPeekPaws)}
     </View>
   );
 });
@@ -546,6 +538,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+  },
+  /** A card straight on the page, with no tile under it, needs a softer,
+   *  wider shadow to lift off the cream. */
+  floating: {
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
   week: {
     flexDirection: "row",

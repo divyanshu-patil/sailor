@@ -41,7 +41,6 @@ const ART = {
   /** The medium week tile: body behind the day card, paws in front. */
   mascotWeek: "mascot-peek",
   mascotWeekPaws: "mascot-peek-paws",
-  plateWeek: "bg-streak-week",
 } as const;
 
 /**
@@ -420,7 +419,6 @@ function syncStreakWeekWidget(
     week: weekPattern(run, day),
     deepLink: STATE_PRESENTATION[status].link,
     flameUri: widgetArtUri("flame-soft") ?? "",
-    plateUri: widgetArtUri(ART.plateWeek) ?? "",
     mascotUri: widgetArtUri(ART.mascotWeek) ?? "",
     pawsUri: widgetArtUri(ART.mascotWeekPaws) ?? "",
   });
