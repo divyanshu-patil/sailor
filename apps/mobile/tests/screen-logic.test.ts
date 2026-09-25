@@ -34,9 +34,19 @@ import {
 } from "@/screens/presentation/generation/preview/components/script-text/config";
 import {
   assignImpactColors,
+  cardInk,
   getImpactTier,
-  IMPACT_PALETTES,
+  impactColor,
 } from "@/screens/presentation/script-practice/utils/colorAssignment";
+import {
+  hexToOklch,
+  oklchToHex,
+} from "@/screens/presentation/script-practice/utils/oklch";
+import { colord, extend } from "colord";
+import a11yPlugin from "colord/plugins/a11y";
+
+extend([a11yPlugin]);
+const contrast = (a: string, b: string) => colord(a).contrast(b);
 import { getCardsProgressInfoText } from "@/screens/presentation/script-practice/utils/getCardsProgressInfoText";
 import {
   formatDelivery,
@@ -82,7 +92,38 @@ describe("script practice", () => {
       { id: "abc", impact: 0.1 } as never,
     ]);
     expect(a.color).toBe(b.color);
-    expect(IMPACT_PALETTES[a.tier]).toContain(a.color);
+    expect(a.color).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  it("ramps colour with impact: more chroma, a little darker, text always legible", () => {
+    const tones = [0, 0.25, 0.5, 0.75, 1].map((i) => hexToOklch(impactColor(i)));
+    for (let i = 1; i < tones.length; i++) {
+      expect(tones[i]!.l).toBeLessThan(tones[i - 1]!.l);
+    }
+    expect(tones[4]!.c).toBeGreaterThan(tones[0]!.c * 2);
+    // Calm is cool (mint), the peak warm (coral).
+    expect(tones[0]!.h).toBeGreaterThan(140);
+    expect(tones[0]!.h).toBeLessThan(190);
+    expect(tones[4]!.h).toBeLessThan(40);
+    for (let i = 0; i <= 20; i++) {
+      const card = impactColor(i / 20, i);
+      expect(contrast(cardInk(card), card)).toBeGreaterThanOrEqual(3);
+    }
+    expect(impactColor(Number.NaN)).toBe(impactColor(0.5));
+    expect(impactColor(0.5, 3)).not.toBe(impactColor(0.5, 10));
+  });
+
+  it("converts OKLCH both ways and keeps colours in gamut", () => {
+    const back = hexToOklch(oklchToHex({ l: 0.7, c: 0.1, h: 200 }));
+    expect(back.l).toBeCloseTo(0.7, 2);
+    expect(back.c).toBeCloseTo(0.1, 2);
+    expect(back.h).toBeCloseTo(200, 0);
+    expect(hexToOklch("#fff").l).toBeCloseTo(1, 3);
+    expect(hexToOklch("#000000").l).toBeCloseTo(0, 3);
+    expect(oklchToHex({ l: 0, c: 0, h: 0 })).toBe("#000000");
+    expect(hexToOklch("#d94d8c").h).toBeGreaterThan(0);
+    // Far outside sRGB: chroma gives way, the result is still a real colour.
+    expect(oklchToHex({ l: 0.9, c: 0.4, h: 260 })).toMatch(/^#[0-9a-f]{6}$/);
   });
 
   it("labels progress, deliveries and colours", () => {

@@ -19,11 +19,12 @@ import {
   getVirtualDepth,
   MAX_ROTATION,
 } from "../utils/cardMath";
+import { cardInk } from "../utils/colorAssignment";
+import { hexToOklch, oklchToHex } from "../utils/oklch";
 import Lucide from "@react-native-vector-icons/lucide";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import { haptics } from "@/lib/haptics";
 import { fonts } from "@/constants/fonts";
-import { colord } from "colord";
 import React, { useEffect, useRef, useState } from "react";
 import type { DeliveryLike } from "@/types/presentation/card";
 import {
@@ -395,10 +396,11 @@ const Card = React.memo(
      * colour as the swipe carries it forward — clamped, so it never passes its
      * colour at the front or gets darker than one slot back.
      */
-    const shadedColor = React.useMemo(
-      () => colord(color).darken(0.08).toHex(),
-      [color],
-    );
+    // A perceptual step down in lightness, the same on every hue.
+    const shadedColor = React.useMemo(() => {
+      const tone = hexToOklch(color);
+      return oklchToHex({ ...tone, l: tone.l - 0.06 });
+    }, [color]);
     const shadeStyle = useAnimatedStyle(() => {
       const depth = index - currentIndexSV.value;
       const virtualDepth =
@@ -489,7 +491,7 @@ const Card = React.memo(
       };
     });
 
-    const inputTextColor = colord(color).darken(0.4).desaturate(0.3).toHex();
+    const inputTextColor = cardInk(color);
 
     /**
      * ----------------------------------------------------

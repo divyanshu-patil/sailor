@@ -1,6 +1,7 @@
 import { fonts } from "@/constants/fonts";
 import { parseInlineMarkdown } from "@/utils/parseInlineMarkdown";
 import { colord } from "colord";
+import { cardInk } from "@/screens/presentation/script-practice/utils/colorAssignment";
 import { StyleSheet, Text } from "react-native";
 
 interface ScriptLineProps {
@@ -14,7 +15,7 @@ export const ScriptLine = ({
   shouldHighlightBold,
 }: ScriptLineProps) => {
   const segments = parseInlineMarkdown(line);
-  const textColor = colord(color).darken(0.4).desaturate(0.3).toHex();
+  const textColor = cardInk(color);
   const bgHighlightColor = colord(color).lighten(0.15).toHex();
 
   return (
