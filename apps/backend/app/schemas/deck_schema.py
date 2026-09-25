@@ -1,6 +1,6 @@
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing import List, Literal
+from typing import Literal
 from datetime import datetime
 from typing import Optional
 
@@ -81,7 +81,7 @@ class CardResponse(BaseModel):
     color: str
     impact: float
     delivery: SpeakingStyle
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

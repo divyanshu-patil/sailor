@@ -1,5 +1,4 @@
 from datetime import datetime
-import enum
 
 from sqlalchemy import Index, Integer, String, ForeignKey, DateTime, false, func, select, Boolean, Enum as SAEnum, text
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -64,7 +63,7 @@ class Deck(Base):
     color: Mapped[str] = mapped_column(String, nullable=False)
 
     duration_mins: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    
+
     audience: Mapped[AudienceType] = mapped_column(
         SAEnum(
             AudienceType,

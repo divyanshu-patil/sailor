@@ -20,7 +20,7 @@ from app.schemas.preferences_schema import UserPreferencesCreate, UserPreference
 from app.services import quota, sources
 from app.services.ai import chat as chat_module
 from app.services.ai import prompts
-from app.services.ai.providers.base import ChatRequest, ImageInput, ProviderError, RateLimitedError
+from app.services.ai.providers.base import ImageInput, ProviderError, RateLimitedError
 from app.services.ai.rate_limit import AdaptiveLimiter
 from app.services.attachments import extract
 from app.services.realtime import deck_events, script_events

@@ -132,7 +132,9 @@ class TestOpenAI:
         assert "reasoning_effort" not in seen or seen["model"] == "gpt-4o"
 
     def test_empty_and_failures(self, monkeypatch):
-        empty = lambda **_: SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=None))])
+        def empty(**_):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=None))])
+
         with pytest.raises(ProviderError):
             self.provider(monkeypatch, empty).complete(PLAIN, "m")
 
@@ -201,10 +203,14 @@ class TestAnthropic:
         assert seen["messages"][-1]["content"][1]["source"]["data"] == "aW1n"
 
     def test_refusal_empty_and_failures(self, monkeypatch):
-        refuse = lambda **_: SimpleNamespace(stop_reason="refusal", content=[])
+        def refuse(**_):
+            return SimpleNamespace(stop_reason="refusal", content=[])
+
         with pytest.raises(ProviderError, match="declined"):
             self.provider(monkeypatch, refuse).complete(PLAIN, "c")
-        empty = lambda **_: SimpleNamespace(stop_reason="end_turn", content=[])
+        def empty(**_):
+            return SimpleNamespace(stop_reason="end_turn", content=[])
+
         with pytest.raises(ProviderError, match="empty"):
             self.provider(monkeypatch, empty).complete(PLAIN, "c")
 

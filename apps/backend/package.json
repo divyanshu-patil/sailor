@@ -11,6 +11,8 @@
     "celery:cards": "uv run celery -A app.core.celery_app worker --loglevel=info -Q cards -c 2",
     "celery:maintenance": "uv run celery -A app.core.celery_app worker --loglevel=info -Q maintenance -c 1",
     "quota": "uv run python -m scripts.quota",
-    "practice:regenerate": "sh scripts/regenerate-daily-content.sh"
+    "practice:regenerate": "sh scripts/regenerate-daily-content.sh",
+    "test": "uv run pytest --cov",
+    "lint": "uv run ruff check ."
   }
 }

@@ -315,7 +315,7 @@ def reference_links_block(links: str | None) -> str:
     if not links or not links.strip():
         return ""
     formatted = "\n".join(f"- {line}" for line in links.splitlines() if line.strip())
-    if not formatted:
+    if not formatted:  # pragma: no cover — strip() above guarantees a non-blank line
         return ""
     return (
         "\n\nREFERENCE LINKS the presenter supplied. Treat these as pointers to "

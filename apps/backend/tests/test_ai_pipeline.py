@@ -50,7 +50,9 @@ class TestCardParsing:
                 card_generator._extract_json_array(bad)
 
     def test_coerces_and_repairs_cards(self):
-        coerce = lambda item: card_generator._coerce_card(item, VALID)
+        def coerce(item):
+            return card_generator._coerce_card(item, VALID)
+
         assert coerce("not a dict") is None
         assert coerce({}) is None
         assert coerce({"description": "only a description here"})["title"] == "only a description here"
