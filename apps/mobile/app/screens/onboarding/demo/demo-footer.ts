@@ -21,6 +21,9 @@ export interface DemoFooter {
   enabled: boolean;
   /** A dial or a card has taken the screen; the footer steps aside. */
   hidden?: boolean;
+  /** A tone dial or the length/cards picker is open full screen: the header's
+   *  progress bar steps aside as well, so it doesn't sit on the dial. */
+  selecting?: boolean;
 }
 
 /** The demo's answers to the frame's footer and back button. */
@@ -57,9 +60,21 @@ export function footerFor(
     case "pick":
       return { primary: "Use this brief", enabled: state.selected, hidden };
     case "delivery":
-      return { primary: "Next", arrow: true, enabled: true, hidden };
+      return {
+        primary: "Next",
+        arrow: true,
+        enabled: true,
+        hidden,
+        selecting: state.focused,
+      };
     case "output":
-      return { primary: "Generate script", arrow: true, enabled: true, hidden };
+      return {
+        primary: "Generate script",
+        arrow: true,
+        enabled: true,
+        hidden,
+        selecting: state.focused,
+      };
     case "script":
       return state.scriptPhase === "completed"
         ? { primary: "Make my deck", arrow: true, enabled: true, hidden }

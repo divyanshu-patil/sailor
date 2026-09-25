@@ -248,6 +248,7 @@ function DemoStages({
     footer.primary,
     footer.enabled,
     footer.hidden,
+    footer.selecting,
     footer.arrow,
   ]);
 

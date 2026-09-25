@@ -91,15 +91,22 @@ describe("demo footer", () => {
     expect(footerFor("pick", { ...base, selected: true }).enabled).toBe(true);
   });
 
-  it("hides while a dial or card has the screen", () => {
+  it("hides, with the progress bar, while a dial or card has the screen", () => {
     expect(footerFor("delivery", { ...base, focused: true })).toMatchObject({
       primary: "Next",
       hidden: true,
+      selecting: true,
     });
+    expect(footerFor("output", { ...base, focused: true }).selecting).toBe(true);
     expect(footerFor("output", base)).toMatchObject({
       primary: "Generate script",
       enabled: true,
+      selecting: false,
     });
+    // The open deck hides the footer but keeps the progress bar.
+    expect(
+      footerFor("deck", { ...base, deckPhase: "completed", focused: true }).selecting,
+    ).toBeUndefined();
   });
 
   it("gives the loading screen the whole screen, then offers the next step", () => {

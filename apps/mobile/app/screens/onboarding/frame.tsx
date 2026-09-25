@@ -496,6 +496,16 @@ export default function OnboardingFrame() {
     footerShown.value = withTiming(footerHidden ? 0 : 1, { duration: 180 });
   }, [footerHidden, footerShown]);
   const footerFade = useAnimatedStyle(() => ({ opacity: footerShown.value }));
+  // A dial or the length/cards picker has the whole screen: the progress bar
+  // leaves with the footer. Only the bar — back stays, it's what closes it.
+  const progressHidden = inDemo && !!demoFooter.selecting;
+  const progressShown = useSharedValue(1);
+  useEffect(() => {
+    progressShown.set(withTiming(progressHidden ? 0 : 1, { duration: 180 }));
+  }, [progressHidden, progressShown]);
+  const progressFade = useAnimatedStyle(() => ({
+    opacity: progressShown.value,
+  }));
   // The label and the arrow fade on shared values, not layout entrances: an
   // entrance started while the screen is still attaching can stall at zero
   // opacity, which here meant a pill with no words on it.
@@ -561,9 +571,9 @@ export default function OnboardingFrame() {
         <Stack.Screen
           options={{
             headerTitle: () => (
-              <View style={{ width: width - 120 }}>
+              <Animated.View style={[{ width: width - 120 }, progressFade]}>
                 <OnboardingProgress progress={progressForStep(step)} />
-              </View>
+              </Animated.View>
             ),
           }}
         />
