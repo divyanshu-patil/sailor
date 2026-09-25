@@ -38,7 +38,7 @@ export const CreateAccountPanel = memo(function CreateAccountPanel() {
           styles.emailButton,
           pressed && styles.pressed,
         ]}
-        onPress={() => router.push("/(unauthenticated)/(signup)/signup")}
+        onPress={() => router.push("/(unauthenticated)/email-signup")}
       >
         <FontAwesome6
           name="envelope"

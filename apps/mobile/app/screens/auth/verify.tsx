@@ -56,8 +56,8 @@ const GUTTER = 24;
 // square sized for a target character is `characterSize / CHARACTER_RATIO`.
 const CHARACTER_RATIO = 0.45;
 
-const OTP_LENGTH = 6;
-const RESEND_SECONDS = 30;
+export const OTP_LENGTH = 6;
+export const RESEND_SECONDS = 30;
 
 type MascotPlacement = {
   character: number;
@@ -115,7 +115,7 @@ const CLOUD_PATH = [
   "Z",
 ].join(" ");
 
-function friendlyVerifyError(error: unknown): string {
+export function friendlyVerifyError(error: unknown): string {
   const code = isClerkAPIResponseError(error)
     ? error.errors?.[0]?.code
     : (error as { code?: string } | null | undefined)?.code;
@@ -166,14 +166,16 @@ const OtpCell = memo(function OtpCell({
  * and full-code paste/auto-fill all keep working while the presentation stays
  * custom. The input overlays the row invisibly and owns focus.
  */
-const OtpInput = memo(function OtpInput({
+export const OtpInput = memo(function OtpInput({
   code,
   onChangeText,
   editable,
+  autoFocus,
 }: {
   code: string;
   onChangeText: (text: string) => void;
   editable: boolean;
+  autoFocus?: boolean;
 }) {
   const inputRef = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
@@ -202,6 +204,7 @@ const OtpInput = memo(function OtpInput({
         textContentType="oneTimeCode"
         maxLength={OTP_LENGTH}
         editable={editable}
+        autoFocus={autoFocus}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={styles.otpHiddenInput}

@@ -100,14 +100,16 @@ interface LoginFieldProps {
   placeholder: string;
   secure?: boolean;
   keyboardType?: "default" | "email-address";
-  textContentType?: "emailAddress" | "password" | "username";
+  textContentType?: "emailAddress" | "password" | "newPassword";
+  autoFocus?: boolean;
+  onSubmitEditing?: () => void;
 }
 
 /**
  * A rounded, minimal auth field: leading icon, placeholder, optional password
  * visibility toggle. Presentational only — the caller owns the value.
  */
-const LoginField = memo(function LoginField({
+export const LoginField = memo(function LoginField({
   icon,
   value,
   onChangeText,
@@ -115,6 +117,8 @@ const LoginField = memo(function LoginField({
   secure = false,
   keyboardType = "default",
   textContentType,
+  autoFocus,
+  onSubmitEditing,
 }: LoginFieldProps) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secure);
@@ -130,6 +134,8 @@ const LoginField = memo(function LoginField({
         secureTextEntry={secure && hidden}
         keyboardType={keyboardType}
         textContentType={textContentType}
+        autoFocus={autoFocus}
+        onSubmitEditing={onSubmitEditing}
         autoCapitalize="none"
         autoCorrect={false}
         onFocus={() => setFocused(true)}

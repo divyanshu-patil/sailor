@@ -16,7 +16,20 @@ export default function UnauthenticatedLayout() {
         screenOptions={{
           headerShown: false,
         }}
-      />
+      >
+        {/* Email sign-up is a native sheet that fits its content, so it
+            resizes as its steps swap: email, password, code. */}
+        <Stack.Screen
+          name="email-signup"
+          options={{
+            presentation: "formSheet",
+            sheetAllowedDetents: "fitToContents",
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: "#FBF3EA" },
+          }}
+        />
+      </Stack>
     </View>
   );
 }

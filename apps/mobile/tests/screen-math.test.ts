@@ -28,7 +28,7 @@ import { api, apiClient } from "@/lib/api/client";
 import { BottomTabInset, Colors, Fonts, Spacing, useColors } from "@/constants/theme";
 import { useColorScheme as useScheme } from "@/hooks/use-color-scheme";
 import { defaultHeaderConfig } from "@/constants/header";
-import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/screens/auth/signup/types/types";
+import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/screens/auth/validation";
 import {
   DAILY_SPRING,
   dailyFonts,
