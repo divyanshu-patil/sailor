@@ -129,12 +129,18 @@ const NOTE_WIDTH = 96;
 // onboarding position, to use the empty space under the status bar. Tune this.
 const CA_TEXT_DROP = 20;
 
+// "Create an / Account" is two full-size lines where the base headline is one
+// big line over a small one, so it runs about this much taller. The subtext
+// drops by the difference, or its first line sits on "Account".
+const CA_SUBTEXT_GAP = 38;
+
 // Curved doodle arrows: `from` is the onboarding position, `to` is where the
 // arrow settles in the create-account state. All values are design units, so
 // edit either end freely.
 const ARROW_TOP = {
   from: { left: 112, top: 85 },
-  to: { left: 110, top: 116 },
+  // Lowered with its note, clear of Create Account's back button.
+  to: { left: 110, top: 136 },
   baseRotation: 0,
   targetRotation: 8,
 } as const;
@@ -480,7 +486,7 @@ export default function Base() {
     from?: string;
   }>();
 
-  const { screenMode, progress, startTransition } =
+  const { screenMode, settled, progress, startTransition, goBack } =
     useCreateAccountTransition();
 
   // Entering from login lands on this screen already morphed into the
@@ -593,6 +599,15 @@ export default function Base() {
     router.push("/(unauthenticated)/login");
   }, [router]);
 
+  // Create Account is pushed on top of whatever led here — onboarding's last
+  // step, or login — so back returns there. Reached with no history, it plays
+  // the morph in reverse to the front door instead.
+  const handleBack = useCallback(() => {
+    weight.tap();
+    if (router.canGoBack()) router.back();
+    else goBack();
+  }, [router, goBack]);
+
   // "Get started" always opens the onboarding flow. Create Account is only
   // reached by finishing the last onboarding step, so the two are never
   // collapsed into one another.
@@ -612,7 +627,8 @@ export default function Base() {
   const noteRight = useMemo(
     () => ({
       from: { left: DESIGN_WIDTH * scale - NOTE_WIDTH, top: 330 },
-      to: { left: 28, top: 130 },
+      // Below the back button Create Account shows in the top-left corner.
+      to: { left: 28, top: 152 },
     }),
     [scale],
   );
@@ -667,7 +683,27 @@ export default function Base() {
   );
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerTransparent: true, title: "" }} />
+      {/* The header only exists for Create Account's back button: shown once
+          the morph has settled, so the button arrives with the new state
+          rather than partway through it. Transparent, so nothing moves. */}
+      <Stack.Screen
+        options={{
+          headerShown: settled,
+          headerTransparent: true,
+          headerTitle: "",
+          headerShadowVisible: false,
+          headerBackVisible: false,
+        }}
+      />
+      {settled ? (
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.Button
+            icon="chevron.backward"
+            tintColor={INK}
+            onPress={handleBack}
+          />
+        </Stack.Toolbar>
+      ) : null}
 
       <StatusBar style="dark" />
 
@@ -730,7 +766,7 @@ export default function Base() {
         <MorphDescription
           progress={progress}
           baseText={BASE_DESCRIPTION}
-          createOffsetY={CA_TEXT_DROP * scale}
+          createOffsetY={CA_TEXT_DROP * scale + CA_SUBTEXT_GAP}
           style={styles.descriptionBlock}
         />
 
