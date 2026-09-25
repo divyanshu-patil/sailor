@@ -257,6 +257,9 @@ class FakeRedis:
     def get(self, key):
         return self.store.get(key)
 
+    def exists(self, key):
+        return int(key in self.store)
+
     def delete(self, *keys):
         for key in keys:
             self.store.pop(key, None)
@@ -308,3 +311,18 @@ def me(client, db):
 
     client.get("/api/v1/users/profile")
     return db.query(User).filter(User.clerk_user_id == "user_api").one()
+
+
+@pytest.fixture
+def task_db(db, monkeypatch):
+    """Point every task module's SessionLocal at the test session, so a task run
+    in-process sees (and writes) the test's own data."""
+    import importlib
+
+    for name in ("script_tasks", "card_tasks", "deck_tasks", "daily_tasks"):
+        module = importlib.import_module(f"app.tasks.{name}")
+        if hasattr(module, "SessionLocal"):
+            monkeypatch.setattr(module, "SessionLocal", lambda: db)
+    # Tasks close their session when they finish; this one belongs to the test.
+    monkeypatch.setattr(db, "close", lambda: None)
+    return db
