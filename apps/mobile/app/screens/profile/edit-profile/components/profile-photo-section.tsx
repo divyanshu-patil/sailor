@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { View } from "react-native";
 import { Image as ExpoImage } from "expo-image";
+import { LayoutAnimationConfig } from "react-native-reanimated";
 import {
   Button,
   Image,
   Menu,
   ProgressView,
+  RNHostView,
   Section,
   ZStack,
 } from "@expo/ui/swift-ui";
@@ -25,6 +28,8 @@ import {
 
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useProfilePhoto } from "@/hooks/use-profile-photo";
+import MorphingAvatar from "@/screens/onboarding/components/morphing-avatar";
+import { PROFILE_PASTELS } from "@/screens/profile/theme";
 
 const AVATAR_SIZE = 112;
 /** The pencil badge, overlapping the photo's bottom-right like every other
@@ -109,8 +114,12 @@ function useLocalAvatarPath(remoteUrl: string | null): string | null {
  * The only control is the pencil. With no photo it opens the picker; with one,
  * it is a menu, so replacing and removing are both reachable without putting a
  * second word of chrome on the screen.
+ *
+ * With no photo, the avatar is the Blobatar the nickname gave them in
+ * onboarding — the same morphing face, following the nickname field as it's
+ * edited, before anything is saved.
  */
-const ProfilePhotoSection = () => {
+const ProfilePhotoSection = ({ nickname }: { nickname: string }) => {
   const { imageUrl } = useProfileIdentity();
   const {
     pendingAsset,
@@ -161,11 +170,24 @@ const ProfilePhotoSection = () => {
               ]}
             />
           ) : (
-            <Image
-              systemName="person.crop.circle.fill"
-              size={AVATAR_SIZE}
-              color="#C7C7CC"
-            />
+            <RNHostView matchContents>
+              {/* The first face is simply there — only a change of nickname
+                  morphs. A layout entrance starting while the sheet presents
+                  can stall invisible. */}
+              <LayoutAnimationConfig skipEntering>
+                <View
+                  style={{
+                    width: AVATAR_SIZE,
+                    height: AVATAR_SIZE,
+                    borderRadius: AVATAR_SIZE / 2,
+                    backgroundColor: PROFILE_PASTELS.pink,
+                    overflow: "hidden",
+                  }}
+                >
+                  <MorphingAvatar name={nickname} size={AVATAR_SIZE} />
+                </View>
+              </LayoutAnimationConfig>
+            </RNHostView>
           )}
         </ZStack>
 

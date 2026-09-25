@@ -301,7 +301,8 @@ const ProfileScreen = () => {
               name={displayName}
               email={displayEmail}
               avatarUrl={avatarUrl}
-              avatarName={identity.name}
+              // The face the nickname gave them in onboarding.
+              avatarName={appUser?.nickname || profile?.nickname || ""}
               avatarLoading={!identity.isLoaded}
               // Same destination as the "Edit Profile" row below. The photo is
               // what people reach for first, so it should not be the one part

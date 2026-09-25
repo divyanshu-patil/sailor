@@ -144,6 +144,7 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
     externalLinked,
     email,
     nicknameState,
+    nicknameValue,
     handleNicknameChange,
     hasChanges,
     handleSave,
@@ -175,7 +176,7 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
           scrolled under it. */}
       <Host style={styles.formHost}>
         <Form modifiers={[scrollDismissesKeyboard("interactively")]}>
-          <ProfilePhotoSection />
+          <ProfilePhotoSection nickname={nicknameValue} />
 
           {/* Basic info */}
           <Section title="Basic Info">

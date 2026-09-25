@@ -69,6 +69,7 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     externalLinked,
     email: appUser.email,
     nicknameState,
+    nicknameValue,
     handleNicknameChange,
     hasChanges,
     handleSave,
