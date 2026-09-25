@@ -207,6 +207,7 @@ function InitialLayout() {
     Font.loadAsync({
       "Kalam-Light": require("@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf"),
       "Kalam-Regular": require("@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf"),
+      "Kalam-Bold": require("@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"),
     }).catch(() => {});
 
     const stopReminderSync = startReminderSync();
