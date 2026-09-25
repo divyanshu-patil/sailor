@@ -1,4 +1,5 @@
 
+from app.models.onboarding_model import OnboardingProgress
 from app.models.user_model import User
 from app.schemas.user_schema import UserProfileUpdateRequest
 from app.utils.nickname import (
@@ -9,12 +10,28 @@ from app.utils.nickname import (
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-def get_profile(current_user: User) -> User:
+def get_profile(current_user: User, db: Session) -> User:
     """
     Returns the current user's profile.
     FastAPI will serialize this through the response_model (UserProfileResponse)
     at the route layer, so no manual dict conversion is needed here.
     """
+    # Accounts that finished onboarding before the progress save started
+    # setting the flag have a completed record and a false flag. The first
+    # read puts that right, so the app's routing can trust the flag alone.
+    if not current_user.onboarding_completed:
+        finished = (
+            db.query(OnboardingProgress.id)
+            .filter(
+                OnboardingProgress.user_id == current_user.id,
+                OnboardingProgress.status == "completed",
+            )
+            .first()
+        )
+        if finished is not None:
+            current_user.onboarding_completed = True
+            db.commit()
+            db.refresh(current_user)
     return current_user
 
 def update_profile(current_user: User, payload: UserProfileUpdateRequest, db: Session) -> User:

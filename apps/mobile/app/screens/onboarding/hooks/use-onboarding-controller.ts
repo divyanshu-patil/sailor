@@ -154,8 +154,10 @@ async function handoffPendingOnboarding(
 
   writeOnboardingProgress(asUser, true);
   clearPending();
-  // Durable copy + the one-way flag the router reads.
+  // Durable copy + the one-way flag the router reads — locally, and on the
+  // account, so a reinstall or a second device doesn't run the flow again.
   void onboardingService.saveProgress(asUser).catch(() => {});
+  void onboardingService.markOnboardingComplete().catch(() => {});
   useOnboardingCompletionStore.getState().completeOnboarding(userId);
   return "committed";
 }

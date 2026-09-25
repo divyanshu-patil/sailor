@@ -180,6 +180,10 @@ describe("small stores", () => {
     expect(useOnboardingCompletionStore.getState().completedForUserId).toBe("u");
     completion.resetOnboardingCompletion();
     expect(useOnboardingCompletionStore.getState().completedForUserId).toBeNull();
+    // The server's answer is recorded per user, in memory only.
+    expect(useOnboardingCompletionStore.getState().checkedForUserId).toBeNull();
+    completion.markChecked("u");
+    expect(useOnboardingCompletionStore.getState().checkedForUserId).toBe("u");
 
     const pending = useOnboardingPendingStore.getState();
     pending.markCompleted();

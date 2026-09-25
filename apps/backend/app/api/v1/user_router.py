@@ -23,8 +23,11 @@ def get_user_health_check():
     summary="Get my profile",
     description="Returns the authenticated user's profile from the users table.",
 )
-def get_my_profile(current_user: User = Depends(get_current_user)):
-    return user_controller.get_profile(current_user)
+def get_my_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return user_controller.get_profile(current_user, db)
 
 @router.patch(
     "/profile",

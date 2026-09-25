@@ -121,6 +121,9 @@ function InitialLayout() {
   const onboardingCompletedForUserId = useOnboardingCompletionStore(
     (s) => s.completedForUserId,
   );
+  const onboardingCheckedForUserId = useOnboardingCompletionStore(
+    (s) => s.checkedForUserId,
+  );
   const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
   const profileSetupCompletedForUserId = useProfileSetupStore(
     (s) => s.completedForUserId,
@@ -150,19 +153,27 @@ function InitialLayout() {
   // keeps reading the local stores, which are on disk before the first frame.
   useOnboardingGate(userId);
 
+  // Completion is per Clerk user, so a different account on the same device
+  // still runs onboarding and profile setup once.
+  const hasCompletedOnboarding =
+    !!userId && onboardingCompletedForUserId === userId;
+
+  // Signed in, but not finished on this device: the account's own flag decides
+  // whether that means onboarding, so the splash holds until the server has
+  // answered (or the gate has given up waiting).
+  const onboardingKnown =
+    !isSignedIn || hasCompletedOnboarding || onboardingCheckedForUserId === userId;
+
   // Everything the first frame needs: the persisted stores, a decision about
-  // who is signed in, and the home screen's own fonts and images.
+  // who is signed in and whether they still owe onboarding, and the home
+  // screen's own fonts and images.
   const canRender =
     isOnboardingCompletionHydrated &&
     isOnboardingPendingHydrated &&
     isProfileSetupHydrated &&
     authReady &&
+    onboardingKnown &&
     assetsReady;
-
-  // Completion is per Clerk user, so a different account on the same device
-  // still runs onboarding and profile setup once.
-  const hasCompletedOnboarding =
-    !!userId && onboardingCompletedForUserId === userId;
   const hasCompletedProfileSetup =
     !!userId && profileSetupCompletedForUserId === userId;
 

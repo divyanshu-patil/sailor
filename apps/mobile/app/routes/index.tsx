@@ -31,6 +31,9 @@ export default function Index() {
   const onboardingCompletedForUserId = useOnboardingCompletionStore(
     (s) => s.completedForUserId,
   );
+  const onboardingCheckedForUserId = useOnboardingCompletionStore(
+    (s) => s.checkedForUserId,
+  );
   const isOnboardingPendingHydrated = useOnboardingPendingStore(
     (s) => s._hasHydrated,
   );
@@ -78,6 +81,16 @@ export default function Index() {
       return;
     }
     if (hasNavigated.current) return;
+    // Just signed in on a device that never finished onboarding for this
+    // account: wait for the account's own answer before sending them through
+    // a flow they may have completed somewhere else.
+    if (
+      isSignedIn &&
+      !hasCompletedOnboarding &&
+      onboardingCheckedForUserId !== userId
+    ) {
+      return;
+    }
 
     hasNavigated.current = true;
 
@@ -105,6 +118,7 @@ export default function Index() {
     userId,
     hasCompletedOnboarding,
     hasCompletedProfileSetup,
+    onboardingCheckedForUserId,
     router,
   ]);
 

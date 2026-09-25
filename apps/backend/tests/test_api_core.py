@@ -137,6 +137,42 @@ class TestOnboarding:
         assert back.json()["status"] == "completed"
         assert client.get("/api/v1/users/onboarding").json()["status"] == "completed"
 
+    def test_finishing_the_flow_marks_the_account(self, client):
+        # The pre-sign-up flow reaches the server only as a completed record;
+        # the flag the app routes on has to follow it.
+        payload = {
+            "flow_version": "2026-09",
+            "status": "completed",
+            "current_step_id": None,
+            "completed_steps": ["profile_identity"],
+            "data": {},
+        }
+        assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is False
+        client.put("/api/v1/users/onboarding", json=payload)
+        assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is True
+        # A stale in-progress replay keeps both the record and the flag done.
+        client.put("/api/v1/users/onboarding", json={**payload, "status": "in_progress"})
+        assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is True
+
+    def test_profile_backfills_the_flag_from_a_finished_record(self, client, me, db):
+        from app.models.onboarding_model import OnboardingProgress
+
+        db.add(
+            OnboardingProgress(
+                user_id=me.id,
+                flow_version="2026-09",
+                status="completed",
+                current_step_id=None,
+                completed_steps=[],
+                data={},
+            )
+        )
+        db.commit()
+        assert me.onboarding_completed is False
+        assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is True
+        db.refresh(me)
+        assert me.onboarding_completed is True
+
     def test_rejects_an_unknown_status(self, client):
         response = client.put(
             "/api/v1/users/onboarding",
