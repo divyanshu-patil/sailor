@@ -6,7 +6,6 @@ import {
   clearOnboardingProgress,
   useOnboardingProgressStore,
 } from "@/store/onboarding-progress.store";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { PENDING_SCOPE } from "@/types/onboarding";
 
 /**
@@ -24,7 +23,6 @@ export async function clearAppStorage() {
   try {
     await useAppUserStore.persist.clearStorage();
     await useOnboardingCompletionStore.persist.clearStorage();
-    await useProfileSetupStore.persist.clearStorage();
     await useOnboardingPendingStore.persist.clearStorage();
     // Not zustand/persist stores: they key per scope and clear themselves.
     useOnboardingProgressStore.getState().clearAll();
@@ -36,7 +34,6 @@ export async function clearAppStorage() {
       _hasHydrated: true, // keep true so UI doesn't re-show a loading spinner
     });
     useOnboardingCompletionStore.getState().resetOnboardingCompletion();
-    useProfileSetupStore.getState().resetProfileSetup();
     useOnboardingPendingStore.getState().reset();
 
     console.log("App storage cleared");

@@ -314,7 +314,7 @@ export default function OnboardingFrame() {
   const handOff = () => {
     setHandedOff(true);
     if (authenticated) {
-      router.replace("/(profile-setup)" as Href);
+      router.replace("/(authenticated)" as Href);
     } else {
       router.push({
         pathname: "/(unauthenticated)",

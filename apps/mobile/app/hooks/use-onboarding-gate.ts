@@ -3,14 +3,13 @@ import { useAuth } from "@clerk/expo";
 
 import { userService } from "@/services/user.service";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 
 /** How long a slow profile read may hold the routing decision. Past this the
  *  local flags decide, as they would offline. */
 const ANSWER_TIMEOUT_MS = 4000;
 
 /**
- * Whether this account has finished onboarding and the profile wizard.
+ * Whether this account has finished onboarding.
  *
  * The answer is the ACCOUNT's, not the device's. Held only in MMKV, these flags
  * ran onboarding again on every fresh install and on every second device, and
@@ -36,9 +35,6 @@ const ANSWER_TIMEOUT_MS = 4000;
 export function useOnboardingGate(userId: string | null | undefined): void {
   const completeOnboarding = useOnboardingCompletionStore(
     (s) => s.completeOnboarding,
-  );
-  const completeProfileSetup = useProfileSetupStore(
-    (s) => s.completeProfileSetup,
   );
   const markChecked = useOnboardingCompletionStore((s) => s.markChecked);
   // Only a session Clerk has actually loaded can put a token on the request.
@@ -69,7 +65,6 @@ export function useOnboardingGate(userId: string | null | undefined): void {
       .then((profile) => {
         if (cancelled) return;
         if (profile.onboarding_completed) completeOnboarding(userId);
-        if (profile.profile_setup_completed) completeProfileSetup(userId);
       })
       .catch(() => {
         // Offline, or the profile row does not exist yet. The local flags
@@ -81,5 +76,5 @@ export function useOnboardingGate(userId: string | null | undefined): void {
       });
 
     return stop;
-  }, [userId, canAsk, completeOnboarding, completeProfileSetup, markChecked]);
+  }, [userId, canAsk, completeOnboarding, markChecked]);
 }

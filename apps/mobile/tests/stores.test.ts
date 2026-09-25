@@ -29,7 +29,6 @@ import {
 } from "@/store/onboarding-progress.store";
 import { defaultPreferences, usePreferenceStore } from "@/store/preference-store";
 import { useProIntroStore } from "@/store/pro-intro.store";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useScriptStore } from "@/store/script-store";
 import {
   useIsPro,
@@ -71,7 +70,6 @@ describe.each([
   ["app-user", "@/store/app-user.store", "useAppUserStore"],
   ["onboarding-completion", "@/store/onboarding-completion.store", "useOnboardingCompletionStore"],
   ["onboarding-pending", "@/store/onboarding-pending.store", "useOnboardingPendingStore"],
-  ["profile-setup", "@/store/profile-setup.store", "useProfileSetupStore"],
 ])("%s store hydration", (_name, path, exportName) => {
   afterEach(() => vi.doUnmock("@/store/mmkv.storage"));
 
@@ -192,12 +190,6 @@ describe("small stores", () => {
     expect(useOnboardingPendingStore.getState().createAccountRequested).toBe(false);
     pending.reset();
     expect(useOnboardingPendingStore.getState().completed).toBe(false);
-
-    const setup = useProfileSetupStore.getState();
-    setup.completeProfileSetup("u");
-    expect(useProfileSetupStore.getState().completedForUserId).toBe("u");
-    setup.resetProfileSetup();
-    expect(useProfileSetupStore.getState().completedForUserId).toBeNull();
   });
 
   it("script store", () => {

@@ -21,7 +21,6 @@ export interface UpdateProfilePayload {
   /** One-way on the server: sending false is ignored, so there is no way for a
    *  stale client to put an account back through a flow it has finished. */
   onboarding_completed?: boolean;
-  profile_setup_completed?: boolean;
 }
 
 export type UserService = typeof userService;

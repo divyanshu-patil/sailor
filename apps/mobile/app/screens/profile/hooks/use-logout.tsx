@@ -7,7 +7,6 @@ import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { useOnboardingProgressStore } from "@/store/onboarding-progress.store";
 import { usePreferenceStore } from "@/store/preference-store";
 import { useProIntroStore } from "@/store/pro-intro.store";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useScriptStore } from "@/store/script-store";
 
 import { haptics } from "@/lib/haptics";
@@ -22,7 +21,6 @@ function clearAccountState() {
   useDailyStore.getState().reset();
   usePreferenceStore.getState().resetPreferences();
   useOnboardingCompletionStore.getState().resetOnboardingCompletion();
-  useProfileSetupStore.getState().resetProfileSetup();
   useOnboardingPendingStore.getState().reset();
   useOnboardingProgressStore.getState().clearAll();
   useScriptStore.getState().reset();

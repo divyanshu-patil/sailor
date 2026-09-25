@@ -12,7 +12,6 @@ import {
   Newsreader_600SemiBold_Italic,
 } from "@expo-google-fonts/newsreader";
 import { useAuthGate } from "@/hooks/use-auth-gate";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { useAppUserStore } from "@/store/app-user.store";
@@ -21,10 +20,6 @@ export default function Index() {
   const router = useRouter();
   // const isAuthenticated = useAppUserStore((s) => s.isAuthenticated);
   const isHydrated = useAppUserStore((s) => s._hasHydrated);
-  const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
-  const profileSetupCompletedForUserId = useProfileSetupStore(
-    (s) => s.completedForUserId,
-  );
   const isOnboardingCompletionHydrated = useOnboardingCompletionStore(
     (s) => s._hasHydrated,
   );
@@ -43,8 +38,6 @@ export default function Index() {
 
   const hasCompletedOnboarding =
     !!userId && onboardingCompletedForUserId === userId;
-  const hasCompletedProfileSetup =
-    !!userId && profileSetupCompletedForUserId === userId;
 
   // Only the faces the app actually names in constants/fonts.ts. The full
   // Amarna and Newsreader families were being parsed here — about thirty-five
@@ -73,7 +66,6 @@ export default function Index() {
     // single launch.
     if (
       !isHydrated ||
-      !isProfileSetupHydrated ||
       !isOnboardingCompletionHydrated ||
       !isOnboardingPendingHydrated ||
       !authReady
@@ -95,11 +87,9 @@ export default function Index() {
     hasNavigated.current = true;
 
     if (isSignedIn) {
-      // Verified. Onboarding runs first, then the optional profile wizard.
+      // Verified. Onboarding runs first, then the app.
       if (!hasCompletedOnboarding) {
         router.replace("/(onboarding)" as Href);
-      } else if (!hasCompletedProfileSetup) {
-        router.replace("/(profile-setup)" as Href);
       } else {
         router.replace("/(authenticated)");
       }
@@ -110,14 +100,12 @@ export default function Index() {
     }
   }, [
     isHydrated,
-    isProfileSetupHydrated,
     isOnboardingCompletionHydrated,
     isOnboardingPendingHydrated,
     isSignedIn,
     authReady,
     userId,
     hasCompletedOnboarding,
-    hasCompletedProfileSetup,
     onboardingCheckedForUserId,
     router,
   ]);

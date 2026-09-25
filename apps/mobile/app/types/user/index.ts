@@ -41,6 +41,5 @@ export interface UserProfile {
   /** Server-side completion flags. The account, not the device, is what has
    *  been onboarded — so a reinstall or a second phone does not repeat it. */
   onboarding_completed?: boolean;
-  profile_setup_completed?: boolean;
   created_at: string;
 }

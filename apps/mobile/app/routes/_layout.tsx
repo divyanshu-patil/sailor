@@ -13,7 +13,6 @@ import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
 import MascotPreloader from "@/components/ui/mascot-preloader";
@@ -124,10 +123,6 @@ function InitialLayout() {
   const onboardingCheckedForUserId = useOnboardingCompletionStore(
     (s) => s.checkedForUserId,
   );
-  const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
-  const profileSetupCompletedForUserId = useProfileSetupStore(
-    (s) => s.completedForUserId,
-  );
   const { ready: authReady, isSignedIn, userId } = useAuthGate();
   const assetsReady = useAppBootstrap();
   // Nobody signed in on this device, by the look of the disk: the front door
@@ -154,7 +149,7 @@ function InitialLayout() {
   useOnboardingGate(userId);
 
   // Completion is per Clerk user, so a different account on the same device
-  // still runs onboarding and profile setup once.
+  // still runs onboarding once.
   const hasCompletedOnboarding =
     !!userId && onboardingCompletedForUserId === userId;
 
@@ -170,12 +165,9 @@ function InitialLayout() {
   const canRender =
     isOnboardingCompletionHydrated &&
     isOnboardingPendingHydrated &&
-    isProfileSetupHydrated &&
     authReady &&
     onboardingKnown &&
     assetsReady;
-  const hasCompletedProfileSetup =
-    !!userId && profileSetupCompletedForUserId === userId;
 
   // Per account, not per launch: preferences are the server's, logout clears
   // the local copy, and a sign-in partway through a launch has to read them
@@ -269,15 +261,7 @@ function InitialLayout() {
         <Stack.Screen name="(onboarding)" options={{ title: "Onboarding" }} />
       </Stack.Protected>
 
-      <Stack.Protected
-        guard={isSignedIn && hasCompletedOnboarding && !hasCompletedProfileSetup}
-      >
-        <Stack.Screen name="(profile-setup)" />
-      </Stack.Protected>
-
-      <Stack.Protected
-        guard={isSignedIn && hasCompletedOnboarding && hasCompletedProfileSetup}
-      >
+      <Stack.Protected guard={isSignedIn && hasCompletedOnboarding}>
         <Stack.Screen name="(authenticated)" options={{ title: "Sailors" }} />
       </Stack.Protected>
     </Stack>

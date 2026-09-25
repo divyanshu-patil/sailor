@@ -21,8 +21,7 @@ export interface UseProfilePhotoReturn {
 }
 
 /**
- * The shared "pick a photo and give it to Clerk" logic, used by both the
- * optional profile wizard and Edit Profile so neither re-implements it.
+ * The "pick a photo and give it to Clerk" logic behind Edit Profile.
  *
  * Clerk is the owner of the image: `user.setProfileImage` replaces it, `null`
  * removes it, and `user.reload()` refreshes `imageUrl`/`hasImage` so every
