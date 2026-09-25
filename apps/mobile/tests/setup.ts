@@ -1,4 +1,12 @@
+import { createRequire } from "node:module";
 import { vi } from "vitest";
+
+// Metro turns `require("./art.png")` into an asset reference; Node would try to
+// parse the PNG as JavaScript. The file's path is a fine stand-in.
+const nodeRequire = createRequire(import.meta.url);
+nodeRequire.extensions[".png"] = (module, filename) => {
+  module.exports = filename;
+};
 
 // React Native's build-time flag. True, as in a dev build; tests that need the
 // release path set it to false and re-import.
@@ -27,6 +35,11 @@ vi.mock("react-native-mmkv", () => {
         contains: (key: string) => data.has(key),
         getAllKeys: () => [...data.keys()],
         clearAll: () => data.clear(),
+        get byteSize() {
+          let bytes = 0;
+          for (const [key, value] of data) bytes += key.length + value.length;
+          return bytes;
+        },
       };
     },
   };
@@ -36,7 +49,14 @@ vi.mock("react-native-mmkv", () => {
 vi.mock("react-native", () => ({
   Platform: {
     OS: "ios",
-    select: (spec: Record<string, unknown>) => spec.ios ?? spec.default,
+    // Like the real one: the current platform's entry, else `default`.
+    select(spec: Record<string, unknown>) {
+      return this.OS in spec ? spec[this.OS] : spec.default;
+    },
   },
-  useColorScheme: () => "light",
+  useColorScheme: vi.fn(() => "light"),
+  AppState: { addEventListener: vi.fn(() => ({ remove: vi.fn() })) },
+  Dimensions: { get: () => ({ width: 390, height: 844 }) },
+  Linking: { openURL: vi.fn() },
+  Pressable: "Pressable",
 }));

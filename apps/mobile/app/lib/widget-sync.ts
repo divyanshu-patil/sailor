@@ -139,6 +139,8 @@ function noteFor(
   salt: number = 0,
 ): string {
   const day = Number(date.slice(8, 10));
+  // Every caller passes a real local date; the fallback is for a malformed one.
+  /* v8 ignore next */
   const base = Number.isFinite(day) ? day : 0;
   // Positive modulo: a negative salt would index off the front of the array.
   return pool[(((base + salt) % pool.length) + pool.length) % pool.length];
@@ -166,6 +168,8 @@ function trim(sentence: string, limit: number): string {
 
 function firstSentenceOf(body: string): string {
   if (typeof body !== "string") return "";
+  // `split` always returns at least one piece; the fallback only satisfies types.
+  /* v8 ignore next */
   return body.trim().split(/(?<=[.!?])\s/)[0] ?? body.trim();
 }
 

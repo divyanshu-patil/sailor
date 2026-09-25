@@ -119,10 +119,13 @@ const periodFromIso = (iso: string | null | undefined): string | null => {
   const match = /^P(\d+)([DWMY])$/.exec(iso);
   if (!match) return null;
   const [, count, unit] = match;
+  // The regex only admits D/W/M/Y, so neither `null` fallback below can run.
   if (count === "1") {
+    /* v8 ignore next */
     return { D: "Daily", W: "Weekly", M: "Monthly", Y: "Annual" }[unit] ?? null;
   }
   const noun = { D: "day", W: "week", M: "month", Y: "year" }[unit];
+  /* v8 ignore next */
   return noun ? `Every ${count} ${noun}s` : null;
 };
 
