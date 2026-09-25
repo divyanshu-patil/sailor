@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +15,7 @@ import { useHeaderHeight } from "expo-router/react-navigation";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
-  FadeOutLeft,
+  type EntryExitAnimationFunction,
   interpolateColor,
   LayoutAnimationConfig,
   LinearTransition,
@@ -152,20 +152,30 @@ function OnboardingBackdrop() {
   );
 }
 
+/** How far a page travels as it fades in or out. */
+const PAGE_SHIFT = 36;
+
 /**
- * A step page fading in from the right. A shared value rather than a layout
- * entrance, for the same reason as the footer's fades: a layout entrance that
- * starts while the screen is still attaching can stall at zero opacity, and
- * here that was a whole step left blank.
+ * A step page fading in from the side it's coming from: the right going
+ * forward, the left going back. A shared value rather than a layout entrance,
+ * for the same reason as the footer's fades: a layout entrance that starts
+ * while the screen is still attaching can stall at zero opacity, and here that
+ * was a whole step left blank.
  */
-function PageEntrance({ children }: { children: ReactNode }) {
+function PageEntrance({
+  direction,
+  children,
+}: {
+  direction: 1 | -1;
+  children: ReactNode;
+}) {
   const shown = useSharedValue(0);
   useEffect(() => {
     shown.set(withTiming(1, { duration: 280 }));
   }, [shown]);
   const style = useAnimatedStyle(() => ({
     opacity: shown.value,
-    transform: [{ translateX: (1 - shown.value) * 36 }],
+    transform: [{ translateX: (1 - shown.value) * direction * PAGE_SHIFT }],
   }));
   return <Animated.View style={[styles.flex, style]}>{children}</Animated.View>;
 }
@@ -228,6 +238,37 @@ export default function OnboardingFrame() {
     completedSteps.includes(s.id),
   ).at(-1)?.id;
   const [reviewStep, setReviewStep] = useState<OnboardingStepId | null>(null);
+
+  // Which way the flow is moving: forward fades the old page out to the left
+  // and the new one in from the right, back the other way round. Set where the
+  // move is asked for, before the step changes — the leaving page's exit is
+  // fixed by its last render, which comes before the move, so it reads the
+  // shared value when the exit starts instead.
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const exitDirection = useSharedValue<1 | -1>(1);
+  const heading = (next: 1 | -1) => {
+    setDirection(next);
+    exitDirection.set(next);
+  };
+  const pageExit = useMemo<EntryExitAnimationFunction>(
+    () => () => {
+      "worklet";
+      return {
+        initialValues: { opacity: 1, transform: [{ translateX: 0 }] },
+        animations: {
+          opacity: withTiming(0, { duration: 160 }),
+          transform: [
+            {
+              translateX: withTiming(-exitDirection.value * PAGE_SHIFT, {
+                duration: 160,
+              }),
+            },
+          ],
+        },
+      };
+    },
+    [exitDirection],
+  );
   const step =
     controllerStep ??
     reviewStep ??
@@ -287,6 +328,7 @@ export default function OnboardingFrame() {
 
   /** The demo is over — a script and a deck made — and the flow moves on. */
   const finishDemo = async (demo: { id: string; title: string }) => {
+    heading(1);
     setReviewStep(null);
     setSubmitting(true);
     setError(null);
@@ -320,6 +362,7 @@ export default function OnboardingFrame() {
    *  (rather than the secondary) was tapped. */
   const handleContinue = async (accept = false) => {
     if (!canContinue) return;
+    heading(1);
     // Leaving review mode: the commit below owns the position again.
     setReviewStep(null);
     setSubmitting(true);
@@ -520,6 +563,7 @@ export default function OnboardingFrame() {
   const handleBack = () => {
     // Inside the demo, back walks the demo's own stages first.
     if (inDemo && demoActions.current?.back()) return;
+    heading(-1);
     if (index <= 0) {
       router.back();
     } else if (controllerStep) {
@@ -567,15 +611,15 @@ export default function OnboardingFrame() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={styles.content}>
-            {/* One page per step, keyed so the outgoing page fades out to the
-              left while the incoming one fades in from the right, the chrome
-              around them never moving. */}
+            {/* One page per step, keyed so the outgoing page fades out while
+              the incoming one fades in — both toward where the flow is going,
+              the chrome around them never moving. */}
             <Animated.View
               key={step}
-              exiting={FadeOutLeft.duration(160)}
+              exiting={pageExit}
               style={[styles.page, { top: headerHeight }]}
             >
-              <PageEntrance>
+              <PageEntrance direction={direction}>
               {inDemo ? (
                 <DemoFlow
                   contexts={
