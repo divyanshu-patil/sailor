@@ -4,6 +4,7 @@ import { onboardingService } from "@/services/onboarding.service";
 import { userService } from "@/services/user.service";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
+import { useProIntroStore } from "@/store/pro-intro.store";
 import {
   clearOnboardingProgress,
   readOnboardingProgress,
@@ -159,6 +160,8 @@ async function handoffPendingOnboarding(
   void onboardingService.saveProgress(asUser).catch(() => {});
   void onboardingService.markOnboardingComplete().catch(() => {});
   useOnboardingCompletionStore.getState().completeOnboarding(userId);
+  // The account just finished onboarding: the Pro screen is owed.
+  useProIntroStore.getState().markPending();
   return "committed";
 }
 
@@ -319,6 +322,7 @@ export function useOnboardingController(
           useOnboardingCompletionStore
             .getState()
             .completeOnboarding(current.userId);
+          useProIntroStore.getState().markPending();
           void onboardingService.markOnboardingComplete().catch(() => {});
           void flushSync();
         } else {

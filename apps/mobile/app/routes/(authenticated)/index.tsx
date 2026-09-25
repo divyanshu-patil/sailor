@@ -9,14 +9,14 @@ import { useIsPro, useSubscriptionStore } from "@/store/subscription.store";
 const ENTITLEMENT_WAIT_MS = 3000;
 
 /**
- * The way into the app. Straight home — except right after a sign-in, when
- * someone without Pro sees what it includes first.
+ * The way into the app. Straight home — except right after an account finishes
+ * onboarding, when someone without Pro sees what it includes first.
  */
 const Home = () => {
   const owed = useProIntroStore((s) => s.pending);
   const isPro = useIsPro();
   const { userId } = useAuth();
-  // Right after a sign-in the entitlement in hand is still the previous
+  // Right after signing up the entitlement in hand can still be the previous
   // customer's — the anonymous one, or whoever signed out — until RevenueCat's
   // logIn lands. Deciding on that skipped the screen for a new account on any
   // device whose store account had bought Pro before.
