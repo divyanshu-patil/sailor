@@ -177,8 +177,13 @@ function InitialLayout() {
   const hasCompletedProfileSetup =
     !!userId && profileSetupCompletedForUserId === userId;
 
+  // Per account, not per launch: preferences are the server's, logout clears
+  // the local copy, and a sign-in partway through a launch has to read them
+  // back — once per launch, the read ran signed out and failed.
   useEffect(() => {
-    syncPreferencesOnce();
+    if (userId) syncPreferencesOnce();
+  }, [userId]);
+  useEffect(() => {
     syncAppearanceOptionsOnce();
   }, []);
 
