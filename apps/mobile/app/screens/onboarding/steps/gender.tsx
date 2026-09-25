@@ -4,7 +4,11 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { SelectionMark, Stagger } from "../components/choice-motion";
+import {
+  SelectionMark,
+  selectedBorder,
+  Stagger,
+} from "../components/choice-motion";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
@@ -94,7 +98,7 @@ export default function GenderStep({
                 style={[
                   styles.card,
                   { backgroundColor: option.background },
-                  active && { borderColor: option.accent },
+                  active && { borderColor: selectedBorder(option.background) },
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}

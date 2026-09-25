@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import Ionicons from "@react-native-vector-icons/ionicons";
+import { colord } from "colord";
 
 import { PROFILE } from "@/screens/profile/theme";
 
@@ -85,6 +86,10 @@ export function HeadingIn({ children }: { children: ReactNode }) {
     </Animated.View>
   );
 }
+
+/** A selected option's border: its own card colour, deepened enough to read
+ *  against the card — not the mascot's, which is often another hue. */
+export const selectedBorder = (card: string) => colord(card).darken(0.2).toHex();
 
 /**
  * The mark's place on a pill-shaped card of this height: on the straight top

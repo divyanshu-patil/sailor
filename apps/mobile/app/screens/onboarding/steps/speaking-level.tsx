@@ -3,7 +3,12 @@ import { StyleSheet, Text, View } from "react-native";
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { pillMark, SelectionMark, Stagger } from "../components/choice-motion";
+import {
+  pillMark,
+  SelectionMark,
+  selectedBorder,
+  Stagger,
+} from "../components/choice-motion";
 import SquareMascot, { type SquareEyes } from "../components/square-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
@@ -94,7 +99,7 @@ export default function SpeakingLevelStep({
                 style={[
                   styles.card,
                   { backgroundColor: option.card },
-                  active && { borderColor: option.accent },
+                  active && { borderColor: selectedBorder(option.card) },
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}

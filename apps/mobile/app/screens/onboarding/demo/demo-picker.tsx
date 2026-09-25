@@ -13,20 +13,23 @@ import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
 import type { DemoOption } from "@/services/onboarding-demo.service";
 import { MOOD_OPTIONS } from "@/types/settings/preferences";
-import { SelectionMark, Stagger } from "../components/choice-motion";
+import {
+  SelectionMark,
+  selectedBorder,
+  Stagger,
+} from "../components/choice-motion";
 
 /**
  * One tint per brief, in order — never per context, which gave two briefs from
  * the same context the same card. Deeper than the page's cream so each card
- * stands off it (the peach it replaced nearly vanished into it); `accent` is
- * the selected border.
+ * stands off it (the peach it replaced nearly vanished into it).
  */
 const BRIEF_TINTS = [
-  { card: "#FAD9E4", badge: "#F2AFC6", accent: "#E0668F" },
-  { card: "#D9E6FA", badge: "#AEC8F0", accent: "#5B86D6" },
-  { card: "#D6EEDF", badge: "#A5DAB9", accent: "#3FA06E" },
-  { card: "#E6DCF8", badge: "#C6B0EE", accent: "#8A63D2" },
-  { card: "#F9ECC2", badge: "#EDD083", accent: "#C99A1E" },
+  { card: "#FAD9E4", badge: "#F2AFC6" },
+  { card: "#D9E6FA", badge: "#AEC8F0" },
+  { card: "#D6EEDF", badge: "#A5DAB9" },
+  { card: "#E6DCF8", badge: "#C6B0EE" },
+  { card: "#F9ECC2", badge: "#EDD083" },
 ];
 
 const CONTEXT_ICON: Record<
@@ -120,7 +123,7 @@ export default function DemoPicker({
               style={[
                 styles.card,
                 { backgroundColor: tint.card },
-                active && { borderColor: tint.accent },
+                active && { borderColor: selectedBorder(tint.card) },
               ]}
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}
