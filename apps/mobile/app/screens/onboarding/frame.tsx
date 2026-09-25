@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -14,12 +15,6 @@ import { useHeaderHeight } from "expo-router/react-navigation";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInLeft,
-  FadeOut,
-  FadeOutDown,
-  FadeInRight,
   FadeOutLeft,
   FadeOutRight,
   interpolateColor,
@@ -156,6 +151,43 @@ function OnboardingBackdrop() {
       />
     </View>
   );
+}
+
+/**
+ * A step page sliding in from the side it came from. A shared value rather
+ * than a layout entrance, for the same reason as the footer's fades: a layout
+ * entrance that starts while the screen is still attaching can stall at zero
+ * opacity, and here that was a whole step left blank.
+ */
+function PageEntrance({
+  direction,
+  children,
+}: {
+  direction: number;
+  children: ReactNode;
+}) {
+  const shown = useSharedValue(0);
+  useEffect(() => {
+    shown.set(withTiming(1, { duration: 280 }));
+  }, [shown]);
+  const style = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    transform: [{ translateX: (1 - shown.value) * direction * 36 }],
+  }));
+  return <Animated.View style={[styles.flex, style]}>{children}</Animated.View>;
+}
+
+/** The secondary pill rising in under the primary, on a shared value. */
+function RiseIn({ children }: { children: ReactNode }) {
+  const shown = useSharedValue(0);
+  useEffect(() => {
+    shown.set(withTiming(1, { duration: 240 }));
+  }, [shown]);
+  const style = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    transform: [{ translateY: (1 - shown.value) * 14 }],
+  }));
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 /**
@@ -464,6 +496,20 @@ export default function OnboardingFrame() {
     footerShown.value = withTiming(footerHidden ? 0 : 1, { duration: 180 });
   }, [footerHidden, footerShown]);
   const footerFade = useAnimatedStyle(() => ({ opacity: footerShown.value }));
+  // The label and the arrow fade on shared values, not layout entrances: an
+  // entrance started while the screen is still attaching can stall at zero
+  // opacity, which here meant a pill with no words on it.
+  const labelShown = useSharedValue(1);
+  useEffect(() => {
+    labelShown.set(0);
+    labelShown.set(withTiming(1, { duration: 200 }));
+  }, [primaryLabel, labelShown]);
+  const labelFade = useAnimatedStyle(() => ({ opacity: labelShown.value }));
+  const arrowShown = useSharedValue(choice?.arrow ? 1 : 0);
+  useEffect(() => {
+    arrowShown.set(withTiming(choice?.arrow ? 1 : 0, { duration: 200 }));
+  }, [choice?.arrow, arrowShown]);
+  const arrowFade = useAnimatedStyle(() => ({ opacity: arrowShown.value }));
   const continueInk = useAnimatedStyle(() => ({
     color: interpolateColor(
       enabled.value,
@@ -532,16 +578,12 @@ export default function OnboardingFrame() {
               chrome around them never moving. */}
             <Animated.View
               key={step}
-              entering={(direction > 0 ? FadeInRight : FadeInLeft)
-                .duration(280)
-                .withInitialValues({
-                  transform: [{ translateX: direction * 36 }],
-                })}
               exiting={(direction > 0 ? FadeOutLeft : FadeOutRight).duration(
                 160,
               )}
               style={[styles.page, { top: headerHeight }]}
             >
+              <PageEntrance direction={direction}>
               {inDemo ? (
                 <DemoFlow
                   contexts={
@@ -576,6 +618,7 @@ export default function OnboardingFrame() {
                   {content}
                 </ScrollView>
               )}
+              </PageEntrance>
             </Animated.View>
           </View>
 
@@ -611,33 +654,25 @@ export default function OnboardingFrame() {
                   <ActivityIndicator color={PROFILE.white} />
                 ) : (
                   <Animated.Text
-                    key={primaryLabel}
-                    entering={FadeIn.duration(200)}
-                    style={[styles.continueLabel, continueInk]}
+                    style={[styles.continueLabel, continueInk, labelFade]}
                   >
                     {primaryLabel}
                   </Animated.Text>
                 )}
-                {choice?.arrow ? (
-                  <Animated.View
-                    entering={FadeIn.duration(200)}
-                    exiting={FadeOut.duration(120)}
-                    style={styles.continueArrow}
-                  >
-                    <Ionicons
-                      name="arrow-forward"
-                      size={22}
-                      color={PROFILE.white}
-                    />
-                  </Animated.View>
-                ) : null}
+                <Animated.View
+                  pointerEvents="none"
+                  style={[styles.continueArrow, arrowFade]}
+                >
+                  <Ionicons
+                    name="arrow-forward"
+                    size={22}
+                    color={PROFILE.white}
+                  />
+                </Animated.View>
               </PressableScale>
             </Animated.View>
             {secondary ? (
-              <Animated.View
-                entering={FadeInDown.duration(240)}
-                exiting={FadeOutDown.duration(160)}
-              >
+              <RiseIn key={step}>
                 <PressableScale
                   onPress={() => {
                     setPressed("secondary");
@@ -651,16 +686,10 @@ export default function OnboardingFrame() {
                   {slow && pressed === "secondary" ? (
                     <ActivityIndicator color={PROFILE.ink} />
                   ) : (
-                    <Animated.Text
-                      key={secondary}
-                      entering={FadeIn.duration(200)}
-                      style={styles.secondaryLabel}
-                    >
-                      {secondary}
-                    </Animated.Text>
+                    <Text style={styles.secondaryLabel}>{secondary}</Text>
                   )}
                 </PressableScale>
-              </Animated.View>
+              </RiseIn>
             ) : null}
           </Animated.View>
         </KeyboardAvoidingView>
