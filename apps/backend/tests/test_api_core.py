@@ -152,7 +152,7 @@ class TestOnboarding:
         client.put("/api/v1/users/onboarding", json={**payload, "status": "in_progress"})
         assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is True
 
-    def test_profile_backfills_the_flag_from_a_finished_record(self, client, me, db):
+    def test_profile_reports_the_flag_not_the_record(self, client, me, db):
         from app.models.onboarding_model import OnboardingProgress
 
         db.add(
@@ -166,10 +166,11 @@ class TestOnboarding:
             )
         )
         db.commit()
-        assert me.onboarding_completed is False
-        assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is True
+        # A finished record doesn't override a false flag: the account goes
+        # through onboarding again.
+        assert client.get("/api/v1/users/profile").json()["onboarding_completed"] is False
         db.refresh(me)
-        assert me.onboarding_completed is True
+        assert me.onboarding_completed is False
 
     def test_rejects_an_unknown_status(self, client):
         response = client.put(
