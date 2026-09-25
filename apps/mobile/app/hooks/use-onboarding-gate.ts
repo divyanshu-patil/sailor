@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useAuth } from "@clerk/expo";
 
 import { userService } from "@/services/user.service";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
@@ -40,6 +41,12 @@ export function useOnboardingGate(userId: string | null | undefined): void {
     (s) => s.completeProfileSetup,
   );
   const markChecked = useOnboardingCompletionStore((s) => s.markChecked);
+  // Only a session Clerk has actually loaded can put a token on the request.
+  // The router may already be acting on the session remembered on disk, and a
+  // profile read made then went out anonymously, got a 401, and sent an
+  // account that had finished onboarding straight back into it.
+  const { isLoaded, isSignedIn } = useAuth();
+  const canAsk = isLoaded && !!isSignedIn;
 
   useEffect(() => {
     if (!userId) return;
@@ -48,8 +55,14 @@ export function useOnboardingGate(userId: string | null | undefined): void {
     const settle = () => {
       if (!cancelled) markChecked(userId);
     };
-    // A read that hangs must not hold the app on the splash.
+    // A read that hangs, or a Clerk that never loads (offline), must not hold
+    // the app on the splash.
     const timer = setTimeout(settle, ANSWER_TIMEOUT_MS);
+    const stop = () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    if (!canAsk) return stop;
 
     userService
       .getProfile()
@@ -67,9 +80,6 @@ export function useOnboardingGate(userId: string | null | undefined): void {
         settle();
       });
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [userId, completeOnboarding, completeProfileSetup, markChecked]);
+    return stop;
+  }, [userId, canAsk, completeOnboarding, completeProfileSetup, markChecked]);
 }
