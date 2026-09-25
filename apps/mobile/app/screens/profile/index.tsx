@@ -232,7 +232,6 @@ const ProfileScreen = () => {
 
   const displayName = appUser?.nickname || profile?.nickname || "Your profile";
   const displayEmail = identity.email || appUser?.email || profile?.email || "";
-  const avatarUrl = identity.imageUrl;
 
   // The store's own name for the product, so switching monthly to yearly
   // changes the card the moment the new customer info lands. The generic
@@ -300,7 +299,6 @@ const ProfileScreen = () => {
             <ProfileHero
               name={displayName}
               email={displayEmail}
-              avatarUrl={avatarUrl}
               // The face the nickname gave them in onboarding.
               avatarName={appUser?.nickname || profile?.nickname || ""}
               avatarLoading={!identity.isLoaded}

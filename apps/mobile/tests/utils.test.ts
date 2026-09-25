@@ -15,7 +15,6 @@ import {
   validateNickname,
 } from "@/utils/nickname";
 import { parseBlocks, parseInlineMarkdown } from "@/utils/parseInlineMarkdown";
-import { isOAuthImage } from "@/utils/oauth-image";
 
 describe("debounce", () => {
   beforeEach(() => vi.useFakeTimers());
@@ -223,23 +222,5 @@ describe("parseBlocks", () => {
 
   it("returns nothing for blank input", () => {
     expect(parseBlocks("\n\n")).toEqual([]);
-  });
-});
-
-describe("isOAuthImage", () => {
-  const clerk = (src: string) =>
-    `https://img.clerk.com/${btoa(JSON.stringify({ type: "proxy", src }))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "")}`;
-
-  it("tells a copied sign-in photo from an upload", () => {
-    expect(isOAuthImage(clerk("https://images.clerk.dev/oauth_google/img_1"))).toBe(true);
-    expect(isOAuthImage(clerk("https://images.clerk.dev/uploaded/img_2"))).toBe(false);
-  });
-
-  it("trusts a linked account's own image, and shrugs at anything unreadable", () => {
-    expect(isOAuthImage("https://x/y", ["https://x/y"])).toBe(true);
-    expect(isOAuthImage("https://img.clerk.com/%%%")).toBe(false);
   });
 });

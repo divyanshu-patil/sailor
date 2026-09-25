@@ -20,10 +20,12 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { rowLabelModifiers } from "./components/constants";
 import ProfilePhotoSection from "./components/profile-photo-section";
+import { SpeakingProfileSection } from "./components/speaking-profile-section";
 import { useEditProfileForm } from "./hooks/use-edit-profile-form";
 import { useUser } from "@/hooks/use-user";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
+import { NICKNAME_MAX_LENGTH } from "@/utils/nickname";
 
 /**
  * A profile built from Clerk alone, for when the backend row cannot be read.
@@ -146,6 +148,10 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
     nicknameState,
     nicknameValue,
     handleNicknameChange,
+    profession,
+    setProfession,
+    experienceLevel,
+    setExperienceLevel,
     hasChanges,
     handleSave,
     appearanceColor,
@@ -179,13 +185,25 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
           <ProfilePhotoSection nickname={nicknameValue} />
 
           {/* Basic info */}
-          <Section title="Basic Info">
+          <Section
+            title="Basic Info"
+            footer={
+              <Text
+                modifiers={[
+                  foregroundStyle({ type: "hierarchical", style: "secondary" }),
+                ]}
+              >
+                Your avatar comes from your nickname. Change it to get a new
+                one.
+              </Text>
+            }
+          >
             <FieldRow label="Nickname">
               <TextField
                 text={nicknameState}
                 onTextChange={handleNicknameChange}
                 placeholder="nickname"
-                maxLength={10}
+                maxLength={NICKNAME_MAX_LENGTH}
                 modifiers={[
                   textInputAutocapitalization("never"),
                   textContentType("nickname"),
@@ -195,6 +213,13 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
               />
             </FieldRow>
           </Section>
+
+          <SpeakingProfileSection
+            profession={profession}
+            experienceLevel={experienceLevel}
+            onProfessionChange={setProfession}
+            onExperienceLevelChange={setExperienceLevel}
+          />
 
           {/* Contact */}
           <Section

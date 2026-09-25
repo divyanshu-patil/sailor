@@ -3,20 +3,13 @@ import { Stack, useRouter } from "expo-router";
 import { Host, Form, Alert, Button, Text } from "@expo/ui/swift-ui";
 
 import { usePreferences } from "@/hooks";
-import {
-  defaultPreferences,
-  usePreferenceStore,
-} from "@/store/preference-store";
+import { usePreferenceStore } from "@/store/preference-store";
 import { syncPreferences } from "@/services/preferences-sync.service";
 import { syncAppearanceOptionsOnce } from "@/services/appearance-sync.service";
-import { AppearanceSection } from "./AppearanceSection";
 import { PracticeSection } from "./PracticeSection";
-import { StreakWidgetSection } from "./StreakWidgetSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
-import { SpeakingProfileSection } from "./SpeakingProfileSection";
 import { CacheSection } from "./CacheSection";
 import { SubscriptionSection } from "./SubscriptionSection";
-import { LegalSection } from "./LegalSection";
 import { VersionSection } from "./VersionSection";
 import { AccountSecuritySection } from "./AccountSecuritySection";
 import { SentryTestSection } from "./SentryTestSection";
@@ -29,8 +22,6 @@ const SettingsScreen = () => {
   const [alertMessage, setAlertMessage] = useState("");
 
   const preferences = usePreferenceStore((state) => state.preferences);
-  const setPreference = usePreferenceStore((state) => state.setPreference);
-  const appearance = preferences?.appearance ?? defaultPreferences.appearance;
 
   const { updatePreference } = usePreferences({
     onError: () => {
@@ -56,13 +47,9 @@ const SettingsScreen = () => {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Settings" }} />
+      <Stack.Screen options={{ title: "Preferences" }} />
       <Host style={{ flex: 1 }}>
         <Form>
-          <AppearanceSection
-            selectedAppearance={appearance}
-            onSelect={(app) => updatePreference("appearance", app)}
-          />
           <PracticeSection
             emotionHapticsEnabled={preferences?.emotionHapticsEnabled ?? true}
             practiceRemindersEnabled={
@@ -71,21 +58,11 @@ const SettingsScreen = () => {
             practiceReminderTime={preferences?.practiceReminderTime ?? "18:00"}
             onUpdate={updatePreference}
           />
-          {/* Local-only, so it goes straight to the store rather than through
-              updatePreference — there is no server field to keep in step, and
-              the store subscription in lib/widget-sync's caller pushes it to
-              the widget. */}
-          <StreakWidgetSection
-            selectedColor={preferences.streakWidgetColor}
-            onSelect={(hex) => setPreference("streakWidgetColor", hex)}
-          />
           <DefaultMoodSection
             selectedMood={preferences?.defaultMood ?? "confident"}
             onUpdate={updatePreference}
           />
-          <SpeakingProfileSection />
           <SubscriptionSection onMessage={showAlert} />
-          <LegalSection />
           <CacheSection onCleared={handleCacheCleared} />
           <VersionSection />
           <AccountSecuritySection

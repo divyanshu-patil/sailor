@@ -31,7 +31,7 @@ const ITEMS: MenuItem[] = [
     icon: "person-outline",
     iconBgColor: PROFILE_PASTELS.blue,
     label: "Account Information",
-    caption: "Name, nickname & speaking profile",
+    caption: "Nickname, avatar & speaking profile",
     pathname: "/(authenticated)/(tabs)/(profile)/edit-profile",
   },
   {
@@ -39,7 +39,7 @@ const ITEMS: MenuItem[] = [
     icon: "options-outline",
     iconBgColor: PROFILE_PASTELS.yellow,
     label: "Preferences",
-    caption: "Notifications, appearance & defaults",
+    caption: "Practice reminders & defaults",
     pathname: "/(authenticated)/(tabs)/(profile)/settings",
   },
   {

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { useNativeState } from "@expo/ui/swift-ui";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
+import type { ExperienceLevel } from "@/types/user";
 import { usePreferenceStore } from "@/hooks";
 import { colord } from "colord";
 
@@ -41,21 +42,42 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     setNicknameValue(text);
   }, []);
 
+  // The speaking profile saves with the rest of the form, not on each pick.
+  const [profession, setProfession] = useState(appUser.profession);
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
+    appUser.experienceLevel,
+  );
+
   const hasChanges = useMemo(() => {
-    return nicknameValue.trim() !== appUser.nickname;
-  }, [appUser, nicknameValue]);
+    return (
+      nicknameValue.trim() !== appUser.nickname ||
+      profession !== appUser.profession ||
+      experienceLevel !== appUser.experienceLevel
+    );
+  }, [appUser, nicknameValue, profession, experienceLevel]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await updateAppUserProfile({ nickname: nicknameValue.trim() });
+      await updateAppUserProfile({
+        nickname: nicknameValue.trim(),
+        profession,
+        experienceLevel,
+      });
       router.back();
     } catch {
       showError("Something went wrong saving your profile. Try again.");
     } finally {
       setIsSaving(false);
     }
-  }, [nicknameValue, updateAppUserProfile, router, showError]);
+  }, [
+    nicknameValue,
+    profession,
+    experienceLevel,
+    updateAppUserProfile,
+    router,
+    showError,
+  ]);
 
   const { hex } = usePreferenceStore((state) => state.preferences.appearance);
   const appearanceColor = useMemo(
@@ -71,6 +93,10 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     nicknameState,
     nicknameValue,
     handleNicknameChange,
+    profession,
+    setProfession,
+    experienceLevel,
+    setExperienceLevel,
     hasChanges,
     handleSave,
     errorVisible,
