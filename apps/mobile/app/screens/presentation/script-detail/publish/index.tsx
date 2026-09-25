@@ -126,7 +126,7 @@ export default function PublishSheetScreen() {
       creator: {
         id: 0,
         // Same fallback order the API uses for the byline: nickname, then name.
-        name: appUser?.nickname || appUser?.fullName || "You",
+        name: appUser?.nickname || "You",
       },
     }),
     [id, deck, descriptionText, tags, category, appUser],

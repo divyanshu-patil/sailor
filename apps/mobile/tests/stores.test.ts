@@ -104,7 +104,6 @@ describe("app-user store", () => {
     id: "1",
     clerkUserId: "c",
     email: "e",
-    fullName: "F",
     nickname: "n",
     experienceLevel: "beginner" as const,
     profession: null,
@@ -123,7 +122,6 @@ describe("app-user store", () => {
     vi.mocked(userService.updateProfile).mockResolvedValueOnce({
       id: "1",
       clerk_user_id: "c",
-      full_name: "Full",
       nickname: "nick",
       experience_level: "advanced",
       profession: "tech",
@@ -131,14 +129,12 @@ describe("app-user store", () => {
       role: "admin",
     } as never);
     await useAppUserStore.getState().updateAppUserProfile({
-      fullName: "Full",
       nickname: "nick",
       experienceLevel: "advanced",
       profession: "tech",
       email: "e2",
     });
     expect(userService.updateProfile).toHaveBeenCalledWith({
-      full_name: "Full",
       nickname: "nick",
       experience_level: "advanced",
       profession: "tech",

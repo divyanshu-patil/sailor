@@ -33,41 +33,29 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     setErrorVisible(true);
   }, []);
 
-  const nameState = useNativeState(appUser.fullName);
   const nicknameState = useNativeState(appUser.nickname);
 
-  const [nameValue, setNameValue] = useState(appUser.fullName);
   const [nicknameValue, setNicknameValue] = useState(appUser.nickname);
-
-  const handleNameChange = useCallback((text: string) => {
-    setNameValue(text);
-  }, []);
 
   const handleNicknameChange = useCallback((text: string) => {
     setNicknameValue(text);
   }, []);
 
   const hasChanges = useMemo(() => {
-    return (
-      nameValue.trim() !== appUser.fullName ||
-      nicknameValue.trim() !== appUser.nickname
-    );
-  }, [appUser, nameValue, nicknameValue]);
+    return nicknameValue.trim() !== appUser.nickname;
+  }, [appUser, nicknameValue]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await updateAppUserProfile({
-        fullName: nameValue.trim(),
-        nickname: nicknameValue.trim(),
-      });
+      await updateAppUserProfile({ nickname: nicknameValue.trim() });
       router.back();
     } catch {
       showError("Something went wrong saving your profile. Try again.");
     } finally {
       setIsSaving(false);
     }
-  }, [nameValue, nicknameValue, updateAppUserProfile, router, showError]);
+  }, [nicknameValue, updateAppUserProfile, router, showError]);
 
   const { hex } = usePreferenceStore((state) => state.preferences.appearance);
   const appearanceColor = useMemo(
@@ -80,9 +68,7 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     isSaving,
     externalLinked,
     email: appUser.email,
-    nameState,
     nicknameState,
-    handleNameChange,
     handleNicknameChange,
     hasChanges,
     handleSave,

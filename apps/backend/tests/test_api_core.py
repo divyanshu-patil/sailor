@@ -61,7 +61,6 @@ class TestProfile:
         updated = client.patch(
             "/api/v1/users/profile",
             json={
-                "full_name": "Div Patil",
                 "nickname": "Div",
                 "experience_level": "advanced",
                 "profession": "tech",
@@ -71,7 +70,6 @@ class TestProfile:
         )
         assert updated.status_code == 200
         body = updated.json()
-        assert body["full_name"] == "Div Patil"
         assert body["nickname"] == "Div"
         assert body["profession"] == "tech"
 

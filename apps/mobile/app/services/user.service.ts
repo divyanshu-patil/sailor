@@ -5,7 +5,6 @@ export * from "@/types/user";
 // Max length constraints for profile fields
 export const MAX_LENGTH = {
   nickname: 30,
-  fullName: 100,
 } as const;
 
 // Helper to truncate string to max length
@@ -16,7 +15,6 @@ export function truncateField(value: string | null | undefined, maxLength: numbe
 
 export interface UpdateProfilePayload {
   email?: string;
-  full_name?: string;
   nickname?: string;
   experience_level?: ExperienceLevel;
   profession?: Profession | null;
@@ -39,7 +37,6 @@ export const userService = {
       return {
         ...profile,
         nickname: truncateField(profile.nickname, MAX_LENGTH.nickname),
-        full_name: truncateField(profile.full_name, MAX_LENGTH.fullName),
       };
     } catch (e: any) {
       console.log("profile error", e.response?.data, e.response?.status);

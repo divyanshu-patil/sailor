@@ -13,7 +13,6 @@ export interface AppUserProfile {
   id: string; // DB primary key
   clerkUserId: string; // Clerk's `sub` claim
   email: string;
-  fullName: string;
   nickname: string;
   experienceLevel: ExperienceLevel;
   profession: Profession | null;
@@ -26,7 +25,6 @@ export interface AppUserProfile {
 // separate from AppUserProfile since not every field is editable (id,
 // clerkUserId, role aren't sent up here).
 export interface ProfileUpdateInput {
-  fullName?: string;
   nickname?: string;
   experienceLevel?: ExperienceLevel;
   profession?: Profession | null;
@@ -73,7 +71,6 @@ export const useAppUserStore = create<AppUserStore>()(
 
         try {
           const payload: Parameters<typeof userService.updateProfile>[0] = {};
-          if (input.fullName !== undefined) payload.full_name = input.fullName;
           if (input.nickname !== undefined) payload.nickname = input.nickname;
           if (input.experienceLevel !== undefined)
             payload.experience_level = input.experienceLevel;
@@ -90,7 +87,6 @@ export const useAppUserStore = create<AppUserStore>()(
                 ...state.appUser,
                 id: updated.id,
                 clerkUserId: updated.clerk_user_id,
-                fullName: updated.full_name,
                 nickname: updated.nickname,
                 experienceLevel: updated.experience_level,
                 profession: updated.profession,

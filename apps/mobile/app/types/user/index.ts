@@ -33,7 +33,6 @@ export interface UserProfile {
   id: string;
   clerk_user_id: string;
   email: string;
-  full_name: string;
   nickname: string;
   experience_level: ExperienceLevel;
   profession: Profession | null;

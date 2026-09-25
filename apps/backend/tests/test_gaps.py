@@ -144,7 +144,8 @@ class TestScriptEndpoints:
 
 
 def test_profile_update_without_a_nickname(client):
-    assert client.patch("/api/v1/users/profile", json={"full_name": "Only Name"}).json()["full_name"] == "Only Name"
+    body = client.patch("/api/v1/users/profile", json={"profession": "tech"}).json()
+    assert body["profession"] == "tech"
 
 
 def test_completing_onboarding_without_a_timestamp_stamps_one(client):

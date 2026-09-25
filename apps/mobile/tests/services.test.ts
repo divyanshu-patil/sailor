@@ -82,10 +82,8 @@ describe("appearance / preferences / user", () => {
   it("profile is truncated to the field limits", async () => {
     const profile = await passesThrough("get", () => userService.getProfile(), {
       nickname: "n".repeat(50),
-      full_name: null,
     });
     expect(profile.nickname).toHaveLength(MAX_LENGTH.nickname);
-    expect(profile.full_name).toBe("");
     expect(truncateField(undefined, 3)).toBe("");
     expect(truncateField("abcdef", 3)).toBe("abc");
   });

@@ -33,7 +33,6 @@ import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
  * state where there is genuinely nothing to show.
  */
 function identityOnlyProfile(identity: {
-  displayName: string;
   email: string | null;
   isLoaded: boolean;
 }): AppUserProfile | null {
@@ -42,7 +41,6 @@ function identityOnlyProfile(identity: {
     id: "identity-only",
     clerkUserId: "",
     email: identity.email ?? "",
-    fullName: identity.displayName,
     nickname: "",
     experienceLevel: "beginner",
     profession: null,
@@ -53,15 +51,12 @@ function identityOnlyProfile(identity: {
 
 function toAppUserProfile(
   profile: any,
-  fallback: { fullName?: string; email?: string | null },
+  fallback: { email?: string | null },
 ): AppUserProfile {
   return {
     id: profile.id,
     clerkUserId: profile.clerk_user_id,
     email: profile.email || fallback.email || "",
-    // The backend row starts with no name; fall back to the name from Clerk so
-    // Edit Profile shows the same identity the Profile screen does.
-    fullName: profile.full_name || fallback.fullName || "",
     nickname: profile.nickname,
     experienceLevel: profile.experience_level,
     profession: profile.profession,
@@ -98,14 +93,12 @@ export default function EditProfileScreen() {
     if (profile) {
       setAppUser(
         toAppUserProfile(profile, {
-          fullName: identity.displayName,
           email: identity.email || appUser?.email,
         }),
       );
     }
   }, [
     profile,
-    identity.displayName,
     identity.email,
     appUser?.email,
     setAppUser,
@@ -150,9 +143,7 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
     isSaving,
     externalLinked,
     email,
-    nameState,
     nicknameState,
-    handleNameChange,
     handleNicknameChange,
     hasChanges,
     handleSave,
@@ -188,18 +179,6 @@ function EditProfileForm({ appUser }: { appUser: AppUserProfile }) {
 
           {/* Basic info */}
           <Section title="Basic Info">
-            <FieldRow label="Name">
-              <TextField
-                text={nameState}
-                onTextChange={handleNameChange}
-                placeholder="Your name"
-                modifiers={[
-                  textInputAutocapitalization("words"),
-                  textContentType("name"),
-                  submitLabel("next"),
-                ]}
-              />
-            </FieldRow>
             <FieldRow label="Nickname">
               <TextField
                 text={nicknameState}

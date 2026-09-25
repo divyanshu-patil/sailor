@@ -125,7 +125,7 @@ class PublicDeckCreator(BaseModel):
 
         if isinstance(user, dict):
             return user
-        name = getattr(user, "nickname", None) or getattr(user, "full_name", None) or "Anonymous"
+        name = getattr(user, "nickname", None) or "Anonymous"
         return {"id": user.id, "name": name}
 
 
