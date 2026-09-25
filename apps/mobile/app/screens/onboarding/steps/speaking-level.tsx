@@ -3,9 +3,12 @@ import { StyleSheet, Text, View } from "react-native";
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { SelectionMark, Stagger } from "../components/choice-motion";
+import { pillMark, SelectionMark, Stagger } from "../components/choice-motion";
 import SquareMascot, { type SquareEyes } from "../components/square-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+/** The pills' height; the check mark sits by it (see `pillMark`). */
+const CARD_HEIGHT = 116;
 
 interface LevelOption {
   /** Persisted value. */
@@ -91,7 +94,7 @@ export default function SpeakingLevelStep({
                 style={[
                   styles.card,
                   { backgroundColor: option.card },
-                  active && styles.cardActive,
+                  active && { borderColor: option.accent },
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
@@ -109,7 +112,7 @@ export default function SpeakingLevelStep({
                   <Text style={styles.title}>{option.title}</Text>
                   <Text style={styles.description}>{option.description}</Text>
                 </View>
-                <SelectionMark active={active} />
+                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
               </PressableScale>
             </Stagger>
           );
@@ -144,16 +147,15 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 116,
+    minHeight: CARD_HEIGHT,
     marginBottom: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 22,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
     overflow: "hidden",
   },
-  cardActive: { borderColor: PROFILE.ink },
   mascotWrap: {
     width: 78,
     alignItems: "center",

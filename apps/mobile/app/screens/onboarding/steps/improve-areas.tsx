@@ -5,8 +5,11 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { SelectionMark, Stagger } from "../components/choice-motion";
+import { pillMark, SelectionMark, Stagger } from "../components/choice-motion";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+/** The pills' height; the check mark sits by it (see `pillMark`). */
+const CARD_HEIGHT = 85;
 
 interface ImproveOption {
   /** Persisted value. */
@@ -137,7 +140,7 @@ export default function ImproveAreasStep({
                   <Text style={styles.title}>{option.title}</Text>
                   <Text style={styles.description}>{option.subtitle}</Text>
                 </View>
-                <SelectionMark active={active} />
+                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
               </PressableScale>
             </Stagger>
           );
@@ -172,10 +175,10 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 85,
+    minHeight: CARD_HEIGHT,
     marginBottom: 12,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
   },

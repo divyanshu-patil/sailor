@@ -5,9 +5,12 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import PressableScale from "@/components/ui/animated/PressableScale";
 import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import { SelectionMark, Stagger } from "../components/choice-motion";
+import { pillMark, SelectionMark, Stagger } from "../components/choice-motion";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+/** The pills' height; the check mark sits by it (see `pillMark`). */
+const CARD_HEIGHT = 92;
 
 interface ReferralOption {
   /** Persisted value. */
@@ -117,7 +120,7 @@ export default function ReferralStep({
                 style={[
                   styles.card,
                   { backgroundColor: option.card },
-                  active && styles.cardActive,
+                  active && { borderColor: option.accent },
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
@@ -135,7 +138,7 @@ export default function ReferralStep({
                     size={90}
                   />
                 </View>
-                <SelectionMark active={active} />
+                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
               </PressableScale>
             </Stagger>
           );
@@ -186,16 +189,15 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 92,
+    minHeight: CARD_HEIGHT,
     marginBottom: 14,
     paddingLeft: 14,
     paddingRight: 86,
-    borderRadius: 22,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
     overflow: "hidden",
   },
-  cardActive: { borderColor: PROFILE.ink },
   badge: {
     width: 54,
     height: 54,

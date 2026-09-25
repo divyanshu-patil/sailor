@@ -16,7 +16,6 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   FadeOutLeft,
-  FadeOutRight,
   interpolateColor,
   LayoutAnimationConfig,
   LinearTransition,
@@ -154,25 +153,19 @@ function OnboardingBackdrop() {
 }
 
 /**
- * A step page sliding in from the side it came from. A shared value rather
- * than a layout entrance, for the same reason as the footer's fades: a layout
- * entrance that starts while the screen is still attaching can stall at zero
- * opacity, and here that was a whole step left blank.
+ * A step page fading in from the right. A shared value rather than a layout
+ * entrance, for the same reason as the footer's fades: a layout entrance that
+ * starts while the screen is still attaching can stall at zero opacity, and
+ * here that was a whole step left blank.
  */
-function PageEntrance({
-  direction,
-  children,
-}: {
-  direction: number;
-  children: ReactNode;
-}) {
+function PageEntrance({ children }: { children: ReactNode }) {
   const shown = useSharedValue(0);
   useEffect(() => {
     shown.set(withTiming(1, { duration: 280 }));
   }, [shown]);
   const style = useAnimatedStyle(() => ({
     opacity: shown.value,
-    transform: [{ translateX: (1 - shown.value) * direction * 36 }],
+    transform: [{ translateX: (1 - shown.value) * 36 }],
   }));
   return <Animated.View style={[styles.flex, style]}>{children}</Animated.View>;
 }
@@ -465,15 +458,6 @@ export default function OnboardingFrame() {
   })();
 
   const index = stepIndex(step);
-  // Which way the flow just moved, so a step slides in from the side it came
-  // from. Previous-value-in-state rather than a ref: the entering/exiting pair
-  // has to be chosen in the same render that swaps the page's key.
-  const [nav, setNav] = useState({ index, direction: 1 });
-  if (nav.index !== index) {
-    setNav({ index, direction: index > nav.index ? 1 : -1 });
-  }
-  const direction =
-    index === nav.index ? nav.direction : index > nav.index ? 1 : -1;
 
   // Continue eases between ink and track instead of snapping, so answering a
   // question visibly "wakes" the button.
@@ -583,17 +567,15 @@ export default function OnboardingFrame() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={styles.content}>
-            {/* One page per step, keyed so the outgoing page plays its exit
-              while the incoming one enters — a short slide and fade, the
-              chrome around them never moving. */}
+            {/* One page per step, keyed so the outgoing page fades out to the
+              left while the incoming one fades in from the right, the chrome
+              around them never moving. */}
             <Animated.View
               key={step}
-              exiting={(direction > 0 ? FadeOutLeft : FadeOutRight).duration(
-                160,
-              )}
+              exiting={FadeOutLeft.duration(160)}
               style={[styles.page, { top: headerHeight }]}
             >
-              <PageEntrance direction={direction}>
+              <PageEntrance>
               {inDemo ? (
                 <DemoFlow
                   contexts={

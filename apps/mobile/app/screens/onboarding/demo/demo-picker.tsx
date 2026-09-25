@@ -15,15 +15,19 @@ import type { DemoOption } from "@/services/onboarding-demo.service";
 import { MOOD_OPTIONS } from "@/types/settings/preferences";
 import { SelectionMark, Stagger } from "../components/choice-motion";
 
-/** One tint per speaking context — the same pastels the onboarding cards use. */
-export const CONTEXT_TINT: Record<string, { card: string; badge: string }> = {
-  college: { card: "#F0E9FB", badge: "#D3BDF0" },
-  work: { card: "#E6F0FC", badge: "#BBD4F4" },
-  presentations: { card: "#FDF3D9", badge: "#F5DA92" },
-  everyday: { card: "#E7F5EC", badge: "#B7E3C8" },
-  interviews: { card: "#FBE4EC", badge: "#F5BACE" },
-  english: { card: "#FDEFE3", badge: "#F6C9A6" },
-};
+/**
+ * One tint per brief, in order — never per context, which gave two briefs from
+ * the same context the same card. Deeper than the page's cream so each card
+ * stands off it (the peach it replaced nearly vanished into it); `accent` is
+ * the selected border.
+ */
+const BRIEF_TINTS = [
+  { card: "#FAD9E4", badge: "#F2AFC6", accent: "#E0668F" },
+  { card: "#D9E6FA", badge: "#AEC8F0", accent: "#5B86D6" },
+  { card: "#D6EEDF", badge: "#A5DAB9", accent: "#3FA06E" },
+  { card: "#E6DCF8", badge: "#C6B0EE", accent: "#8A63D2" },
+  { card: "#F9ECC2", badge: "#EDD083", accent: "#C99A1E" },
+];
 
 const CONTEXT_ICON: Record<
   string,
@@ -107,7 +111,7 @@ export default function DemoPicker({
     <View style={styles.list}>
       {options.map((option, i) => {
         const active = option.id === selectedId;
-        const tint = CONTEXT_TINT[option.context] ?? CONTEXT_TINT.everyday;
+        const tint = BRIEF_TINTS[i % BRIEF_TINTS.length];
         return (
           <Stagger key={option.id} index={i}>
             <PressableScale
@@ -116,7 +120,7 @@ export default function DemoPicker({
               style={[
                 styles.card,
                 { backgroundColor: tint.card },
-                active && styles.cardActive,
+                active && { borderColor: tint.accent },
               ]}
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}
@@ -181,9 +185,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 2,
     borderColor: "transparent",
-  },
-  cardActive: {
-    borderColor: PROFILE.ink,
   },
   skeleton: {
     height: 132,

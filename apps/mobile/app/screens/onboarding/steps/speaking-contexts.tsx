@@ -9,8 +9,11 @@ import {
   PROFILE_PASTELS,
   profileFonts,
 } from "@/screens/profile/theme";
-import { SelectionMark, Stagger } from "../components/choice-motion";
+import { pillMark, SelectionMark, Stagger } from "../components/choice-motion";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+/** The pills' height; the check mark sits by it (see `pillMark`). */
+const CARD_HEIGHT = 76;
 
 interface ContextOption {
   /** Persisted value. */
@@ -122,7 +125,7 @@ export default function SpeakingContextsStep({
                   />
                 </View>
                 <Text style={styles.label}>{option.label}</Text>
-                <SelectionMark active={active} />
+                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
               </PressableScale>
             </Stagger>
           );
@@ -157,10 +160,10 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 76,
+    minHeight: CARD_HEIGHT,
     marginBottom: 12,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
   },

@@ -18,9 +18,13 @@ import { PROFILE } from "@/screens/profile/theme";
 export const SelectionMark = memo(function SelectionMark({
   active,
   color = PROFILE.ink,
+  style: placement,
 }: {
   active: boolean;
   color?: string;
+  /** Where it sits, when the card's top-right corner isn't square enough to
+   *  hold it — see `pillMark`. */
+  style?: ViewStyle;
 }) {
   const progress = useSharedValue(active ? 1 : 0);
 
@@ -41,7 +45,7 @@ export const SelectionMark = memo(function SelectionMark({
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.mark, { backgroundColor: color }, style]}
+      style={[styles.mark, { backgroundColor: color }, placement, style]}
     >
       <Ionicons name="checkmark" size={15} color={PROFILE.white} />
     </Animated.View>
@@ -81,6 +85,16 @@ export function HeadingIn({ children }: { children: ReactNode }) {
     </Animated.View>
   );
 }
+
+/**
+ * The mark's place on a pill-shaped card of this height: on the straight top
+ * edge, just short of where the rounded end begins — the corner it sits in on
+ * a square card is curved away on a pill.
+ */
+export const pillMark = (height: number): ViewStyle => ({
+  top: 8,
+  right: height / 2 - 10,
+});
 
 const styles = StyleSheet.create({
   mark: {

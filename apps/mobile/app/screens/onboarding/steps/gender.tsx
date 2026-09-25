@@ -94,7 +94,7 @@ export default function GenderStep({
                 style={[
                   styles.card,
                   { backgroundColor: option.background },
-                  active && styles.cardActive,
+                  active && { borderColor: option.accent },
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  cardActive: { borderColor: PROFILE.ink },
   cardText: { maxWidth: "64%" },
   cardTitle: {
     fontFamily: profileFonts.display,
