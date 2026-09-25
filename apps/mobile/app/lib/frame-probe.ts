@@ -42,6 +42,9 @@ export function startFrameProbe(label: string, durationMs = 2500) {
 async function finish(label: string) {
   running = false;
   const sorted = [...frames].sort((a, b) => a - b);
+  // `?? 0` is for an empty run, which can't happen — the first tick always
+  // records a frame — but keeps the report well-formed if that ever changes.
+  /* v8 ignore next */
   const at = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0;
   // 60fps budget. A delta over one budget means at least one frame never made it.
   const BUDGET = 16.7;
@@ -53,6 +56,7 @@ async function finish(label: string) {
     p50: at(0.5),
     p95: at(0.95),
     p99: at(0.99),
+    /* v8 ignore next */
     max: sorted[sorted.length - 1] ?? 0,
     droppedFrames: frames.reduce((n, d) => n + Math.max(0, Math.round(d / BUDGET) - 1), 0),
     stalls: frames

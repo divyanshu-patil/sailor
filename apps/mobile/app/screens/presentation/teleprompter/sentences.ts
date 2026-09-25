@@ -41,6 +41,8 @@ export function splitSentences(text: string): string[] {
     if (next !== undefined && !/\s/.test(next)) continue;
 
     const piece = text.slice(start, end + 1).trim();
+    // Never empty — it holds the terminator — but cheap to keep honest.
+    /* v8 ignore next */
     if (piece) out.push(piece);
     start = end + 1;
     i = end;
@@ -56,6 +58,8 @@ export function demo() {
   const eq = (got: string[], want: string[], label: string) => {
     const a = JSON.stringify(got);
     const b = JSON.stringify(want);
+    // The self-check's failure path — reached only if splitSentences breaks.
+    /* v8 ignore next */
     if (a !== b) throw new Error(`${label}\n  got  ${a}\n  want ${b}`);
   };
 
@@ -79,6 +83,7 @@ export function demo() {
   // whitespace that separated them.
   const sample = "Every year, 400 million people. Too late — that is the cost!";
   const rejoined = splitSentences(sample).join(" ");
+  /* v8 ignore next 3 */
   if (rejoined !== sample) {
     throw new Error(`lossy split\n  got  ${rejoined}\n  want ${sample}`);
   }
@@ -89,6 +94,7 @@ export function demo() {
 // Node only. React Native ships a `process` shim with no `argv` at all, and
 // indexing it there throws before the module has finished loading — which
 // took the whole screen down with it.
+/* v8 ignore next 3 — a command-line entry point, never reached from the app */
 if (typeof process !== "undefined" && process.argv?.[1]?.endsWith("sentences.ts")) {
   demo();
 }
