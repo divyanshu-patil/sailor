@@ -1,13 +1,31 @@
 import { DotLottie, type Dotlottie } from "@lottiefiles/dotlottie-react-native";
 import LottieView from "lottie-react-native";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { Image, StyleProp, ViewStyle } from "react-native";
 import Animated, {
+  Easing,
   Extrapolation,
   interpolate,
   useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+
+/**
+ * How a mascot arrives once its animation has loaded: it grows in from a
+ * little smaller than itself, easing out, as the fade finishes a touch sooner.
+ * Until then it isn't drawn at all — an empty slot that fills in beats a
+ * frame of nothing and then a pop.
+ */
+const APPEAR = {
+  fromScale: 0.72,
+  scaleMs: 560,
+  fadeMs: 280,
+  /** A load event that never comes shows the mascot anyway, after this. */
+  fallbackMs: 2500,
+};
 
 /**
  * A Lottie mascot wrapped in a Reanimated view.
@@ -45,6 +63,8 @@ export interface AnimatedMascotProps {
   stateMachineValue?: boolean;
   /** Stops playback while the screen is off-screen. */
   paused?: boolean;
+  /** Holds the entrance this long after loading, to stagger a group. */
+  appearDelay?: number;
   /** TEMP profiling hook. */
   onLoaded?: () => void;
 }
@@ -63,12 +83,34 @@ export default memo(function AnimatedMascot({
   stateMachineInput,
   stateMachineValue = true,
   paused = false,
+  appearDelay = 0,
   onLoaded,
 }: AnimatedMascotProps) {
   const dotLottieRef = useRef<Dotlottie>(null);
   const lottieRef = useRef<LottieView>(null);
   const usesStateMachine = Boolean(stateMachineId && stateMachineInput);
   const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
+
+  // 0 until the animation has loaded, then eased to 1 once.
+  const appear = useSharedValue(0);
+  const appeared = useRef(false);
+  const reveal = useCallback(() => {
+    if (appeared.current) return;
+    appeared.current = true;
+    appear.set(
+      withDelay(
+        appearDelay,
+        withTiming(1, {
+          duration: APPEAR.scaleMs,
+          easing: Easing.out(Easing.back(1.15)),
+        }),
+      ),
+    );
+  }, [appear, appearDelay]);
+  useEffect(() => {
+    const timer = setTimeout(reveal, APPEAR.fallbackMs);
+    return () => clearTimeout(timer);
+  }, [reveal]);
 
   // Resolve the bundled `.lottie` asset to a file URI for lottie-ios.
   // Deliberately `Image.resolveAssetSource`, not the expo-asset `localUri`:
@@ -125,11 +167,15 @@ export default memo(function AnimatedMascot({
       [0, 1],
       Extrapolation.CLAMP,
     );
+    const grow = APPEAR.fromScale + (1 - APPEAR.fromScale) * appear.value;
     return {
+      // The fade runs ahead of the scale, so the mascot is fully there while
+      // it is still settling to size.
+      opacity: Math.min(1, (appear.value * APPEAR.scaleMs) / APPEAR.fadeMs),
       transform: [
         { translateX: targetDx * p },
         { translateY: targetDy * p },
-        { scale: 1 + (targetScale - 1) * p },
+        { scale: (1 + (targetScale - 1) * p) * grow },
       ],
     };
   });
@@ -155,13 +201,17 @@ export default memo(function AnimatedMascot({
               stateMachineInput as string,
               stateMachineValue,
             );
+            reveal();
           }}
         />
       ) : (
         <LottieView
           ref={lottieRef}
           source={lottieSource}
-          onAnimationLoaded={onLoaded}
+          onAnimationLoaded={() => {
+            reveal();
+            onLoaded?.();
+          }}
           autoPlay
           loop
           style={lottieStyle}

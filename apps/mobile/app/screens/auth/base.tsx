@@ -278,12 +278,14 @@ const MascotWorld = memo(function MascotWorld({
         { width: DESIGN_WIDTH * scale, height: CLUSTER_HEIGHT * scale },
       ]}
     >
-      {blobPositions.map((blob) => (
+      {blobPositions.map((blob, i) => (
         <AnimatedMascot
           key={blob.key}
           source={blob.source}
           size={blob.size}
           zIndex={blob.zIndex}
+          // A short cascade after the one in the middle, not six at once.
+          appearDelay={120 + i * 55}
           progress={progress}
           targetScale={blob.targetScale}
           targetDx={blob.targetDx}
