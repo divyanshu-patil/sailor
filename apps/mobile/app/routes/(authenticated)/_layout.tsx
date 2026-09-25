@@ -26,6 +26,16 @@ export default function AuthenticatedLayout() {
             and any system UI read — and the fallback is the raw segment, which
             is how "(tabs)" ended up on screen. */}
         <Stack.Screen name="(tabs)" options={{ title: "Sailors" }} />
+        {/* Shown once, right after a sign-in, to anyone without Pro. Entered
+            by replace, so there is nothing behind it to swipe back to. */}
+        <Stack.Screen
+          name="sailors-pro"
+          options={{
+            title: "Sailors Pro",
+            animation: "fade",
+            gestureEnabled: false,
+          }}
+        />
         <Stack.Screen name="(script)" options={{ title: "Scripts" }} />
         {/* Sibling of (tabs), not a child: pushing Discover covers the tab bar,
             which is what keeps its floating bottom search toolbar from landing

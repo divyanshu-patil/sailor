@@ -28,6 +28,7 @@ import {
   writeOnboardingProgress,
 } from "@/store/onboarding-progress.store";
 import { defaultPreferences, usePreferenceStore } from "@/store/preference-store";
+import { useProIntroStore } from "@/store/pro-intro.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { useScriptStore } from "@/store/script-store";
 import {
@@ -418,5 +419,15 @@ describe("subscription store", () => {
     useSubscriptionStore.setState({ isPro: true, isReady: true });
     const Probe = () => `${useIsPro()}-${useSubscriptionReady()}`;
     expect(renderToString(createElement(Probe))).toBe("false-false");
+  });
+});
+
+describe("pro intro", () => {
+  it("is owed after a sign-in and spent once shown", () => {
+    expect(useProIntroStore.getState().pending).toBe(false);
+    useProIntroStore.getState().markPending();
+    expect(useProIntroStore.getState().pending).toBe(true);
+    useProIntroStore.getState().consume();
+    expect(useProIntroStore.getState().pending).toBe(false);
   });
 });

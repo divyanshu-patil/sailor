@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { ENV } from "@/lib/config/env";
 import { ClerkProvider, useAuth } from "@clerk/expo";
@@ -16,6 +16,9 @@ import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
+import MascotPreloader from "@/components/ui/mascot-preloader";
+import { useAppUserStore } from "@/store/app-user.store";
+import { useProIntroStore } from "@/store/pro-intro.store";
 import * as Sentry from "@sentry/react-native";
 import * as Notifications from "expo-notifications";
 import { startReminderSync } from "@/lib/daily-reminder";
@@ -124,6 +127,22 @@ function InitialLayout() {
   );
   const { ready: authReady, isSignedIn, userId } = useAuthGate();
   const assetsReady = useAppBootstrap();
+  // Nobody signed in on this device, by the look of the disk: the front door
+  // is next, and its mascots are the slowest thing on it.
+  const likelySignedOut = !useAppUserStore((s) => s.appUser?.clerkUserId);
+
+  // Signing in during this launch owes the Sailors Pro screen. Caught here, as
+  // the answer flipping from signed-out to signed-in, rather than at each of
+  // the four places a sign-in can finish (password, email code, Apple,
+  // Google): one watcher covers them all, and whichever gets added next.
+  const wasSignedIn = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!authReady) return;
+    if (wasSignedIn.current === false && isSignedIn) {
+      useProIntroStore.getState().markPending();
+    }
+    wasSignedIn.current = isSignedIn;
+  }, [authReady, isSignedIn]);
 
   // Reconciles the local completion flags with the server's, so a reinstall or
   // a second device does not repeat a flow this account has already finished.
@@ -201,9 +220,13 @@ function InitialLayout() {
   // `authReady` rather than Clerk's `isLoaded`: offline, that never flips, and
   // this early return was the blank white screen on launch. See useAuthGate.
   if (!canRender) {
-    // `null`, not a white view: the splash screen is still up, and drawing a
-    // blank page over it is what produced the white flash between the two.
-    return null;
+    // Nothing visible, not a white view: the splash screen is still up, and
+    // drawing a blank page over it is what produced the white flash between
+    // the two. For a signed-out launch, the front door's mascots start
+    // decoding here, under the splash, so they're already in lottie-ios's
+    // cache when the screen that shows them mounts — instead of that screen
+    // waiting on its own decode.
+    return likelySignedOut ? <MascotPreloader /> : null;
   }
 
   return (
