@@ -6,6 +6,7 @@ import Animated, {
   FadeInLeft,
   FadeInRight,
   FadeOut,
+  LayoutAnimationConfig,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -88,7 +89,13 @@ export default function DemoFlow(props: DemoFlowProps) {
   return (
     <GestureHandlerRootView style={styles.fill}>
       <PresentationFormProvider>
-        <DemoStages {...props} />
+        {/* The first stage arrives with the onboarding page's own slide-in;
+            a second entrance of its own inside that one, started in the same
+            commit, could stall at zero opacity and leave the step blank. Later
+            stages still animate in. */}
+        <LayoutAnimationConfig skipEntering>
+          <DemoStages {...props} />
+        </LayoutAnimationConfig>
       </PresentationFormProvider>
     </GestureHandlerRootView>
   );
