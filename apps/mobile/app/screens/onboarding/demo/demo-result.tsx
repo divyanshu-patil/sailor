@@ -130,7 +130,10 @@ export function DemoScript({
   return (
     <ScrollView
       style={styles.fill}
-      contentContainerStyle={[styles.scroll, { paddingBottom: bottomInset + 24 }]}
+      contentContainerStyle={[
+        styles.scroll,
+        { paddingBottom: bottomInset + 24 },
+      ]}
       scrollEnabled={done}
       showsVerticalScrollIndicator={false}
     >
@@ -191,7 +194,10 @@ export function DemoDeck({
   return (
     <ScrollView
       style={styles.fill}
-      contentContainerStyle={[styles.scroll, { paddingBottom: bottomInset + 24 }]}
+      contentContainerStyle={[
+        styles.scroll,
+        { paddingBottom: bottomInset + 24 },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <StatusText labels={labels} accentColor={colors.rust} />
@@ -220,7 +226,7 @@ export function DemoDeck({
             style={styles.hintRow}
           >
             <View style={styles.hintArrow}>
-              <CurlArrow width={34} rotate="200deg" flip />
+              <CurlArrow width={34} rotate="80deg" flip />
             </View>
             <Text style={styles.hint}>Tap your deck to open it</Text>
           </Animated.View>
@@ -373,7 +379,9 @@ export function DemoDeckViewer({
                 impact={card.impact}
                 index={index}
                 currentIndexSV={currentIndexSV}
-                zIndex={depth === -1 ? VISIBLE_COUNT + 1 : VISIBLE_COUNT - depth}
+                zIndex={
+                  depth === -1 ? VISIBLE_COUNT + 1 : VISIBLE_COUNT - depth
+                }
                 drag={{ translateX, translateY, swipeDirection }}
                 prevDrag={{
                   translateX: prevCardX,
@@ -405,7 +413,9 @@ export function DemoDeckViewer({
       <View style={[styles.viewerFoot, { paddingBottom: bottomInset }]}>
         <Host
           matchContents
-          modifiers={[animation(Animation.spring({ bounce: 0.25 }), currentIndex)]}
+          modifiers={[
+            animation(Animation.spring({ bounce: 0.25 }), currentIndex),
+          ]}
         >
           <SwiftUIText
             modifiers={[

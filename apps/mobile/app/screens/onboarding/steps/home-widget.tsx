@@ -32,7 +32,7 @@ export default function HomeWidgetStep() {
           {"Quick access\nto your practice\nright from\nyour home screen!"}
         </Text>
         <View style={styles.noteArrow}>
-          <CurlArrow width={46} rotate="-30deg" />
+          <CurlArrow width={46} rotate="-100deg" flip />
         </View>
       </Animated.View>
 
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   noteRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    marginTop: 4,
+    marginTop: 2,
     marginLeft: 8,
   },
   note: {
@@ -95,7 +95,6 @@ const styles = StyleSheet.create({
   },
   noteArrow: {
     marginLeft: 14,
-    marginBottom: -8,
   },
   medium: {
     alignSelf: "center",

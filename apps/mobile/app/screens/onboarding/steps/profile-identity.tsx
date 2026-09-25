@@ -47,8 +47,12 @@ export default function ProfileIdentityStep({
         Let’s make this a little more personal.
       </Text>
 
-      <View style={styles.avatarArea}>
-        <View
+      <Animated.View
+        layout={LinearTransition.springify()}
+        style={styles.avatarArea}
+      >
+        <Animated.View
+          layout={LinearTransition.springify()}
           style={{
             width: avatarSize + 48,
             height: avatarSize + 24,
@@ -64,7 +68,7 @@ export default function ProfileIdentityStep({
           </View>
 
           <MorphingAvatar name={nickname} size={avatarSize} />
-        </View>
+        </Animated.View>
 
         <HandwrittenNote
           lines={["Nice", "to meet", "you!"]}
@@ -76,7 +80,7 @@ export default function ProfileIdentityStep({
           arrowY={0}
           style={{ top: 50, right: -40 }}
         />
-      </View>
+      </Animated.View>
 
       <View style={styles.form}>
         <View style={styles.helloRow}>

@@ -22,7 +22,7 @@ export default function BuildStreakStep() {
       >
         <Text style={styles.note}>{"Consistency\nbuilds confidence!"}</Text>
         <View style={styles.noteArrow}>
-          <CurlArrow width={44} rotate="-30deg" />
+          <CurlArrow width={44} rotate="-100deg" flip />
         </View>
       </Animated.View>
 
