@@ -2,6 +2,7 @@ import { StyleSheet, TextInput, useWindowDimensions } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
+  interpolateColor,
   measure,
   SharedValue,
   useAnimatedRef,
@@ -13,7 +14,11 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 import { ScriptLine } from "../../script-text/ScriptLine";
-import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
+import {
+  getNormalCardTransform,
+  getVirtualDepth,
+  MAX_ROTATION,
+} from "../utils/cardMath";
 import Lucide from "@react-native-vector-icons/lucide";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import { haptics } from "@/lib/haptics";
@@ -383,6 +388,39 @@ const Card = React.memo(
 
     /**
      * ----------------------------------------------------
+     * DEPTH SHADE
+     * ----------------------------------------------------
+     *
+     * A card behind the front one is a little darker, and comes up to its own
+     * colour as the swipe carries it forward — clamped, so it never passes its
+     * colour at the front or gets darker than one slot back.
+     */
+    const shadedColor = React.useMemo(
+      () => colord(color).darken(0.08).toHex(),
+      [color],
+    );
+    const shadeStyle = useAnimatedStyle(() => {
+      const depth = index - currentIndexSV.value;
+      const virtualDepth =
+        depth < 0
+          ? 0
+          : getVirtualDepth({
+              currIndex: depth,
+              dragTranslateX: drag.translateX.value,
+              prevCardTranslateX: prevDrag?.translateX.value,
+              returnStartX: RETURN_START_X,
+            });
+      return {
+        backgroundColor: interpolateColor(
+          Math.min(1, Math.max(0, virtualDepth)),
+          [0, 1],
+          [color, shadedColor],
+        ),
+      };
+    });
+
+    /**
+     * ----------------------------------------------------
      * WHOLE FRONT CARD FLIP
      * ----------------------------------------------------
      *
@@ -527,9 +565,7 @@ const Card = React.memo(
               collapsable={false}
               style={[
                 styles.cardFace,
-                {
-                  backgroundColor: color,
-                },
+                shadeStyle,
                 frontCardStyle,
               ]}
             >
@@ -601,9 +637,7 @@ const Card = React.memo(
               collapsable={false}
               style={[
                 styles.cardFace,
-                {
-                  backgroundColor: color,
-                },
+                shadeStyle,
                 backCardStyle,
               ]}
             >

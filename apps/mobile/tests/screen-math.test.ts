@@ -74,6 +74,7 @@ import {
   getCascadeProgress,
   getDragProgress,
   getNormalCardTransform,
+  getVirtualDepth,
   getPrevCardReturnProgress,
   getRotation,
 } from "@/screens/presentation/script-practice/utils/cardMath";
@@ -277,5 +278,15 @@ describe("surfaces and constants", () => {
     expect(AnimatedPressable).toBeTruthy();
     expect(AnimatedHost).toEqual({ animated: "Host" });
     expect(apiBarrel).toMatchObject({ api, apiClient });
+  });
+});
+
+describe("getVirtualDepth", () => {
+  it("slides the card behind toward the front as the front one leaves", () => {
+    const at = (dragTranslateX: number, prevCardTranslateX?: number) =>
+      getVirtualDepth({ currIndex: 1, dragTranslateX, prevCardTranslateX, returnStartX: 585 });
+    expect(at(0)).toBe(1);
+    expect(at(125)).toBe(0.5);
+    expect(at(-125, 292.5)).toBe(1.5);
   });
 });
