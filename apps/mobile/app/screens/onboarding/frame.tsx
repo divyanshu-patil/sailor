@@ -190,7 +190,6 @@ export default function OnboardingFrame() {
   // whether it's live, and what a tap on it does.
   const [demoFooter, setDemoFooter] = useState<DemoFooter>({
     primary: "Use this brief",
-    secondary: "Skip the demo",
     enabled: false,
   });
   const demoActions = useRef<DemoActions | null>(null);
@@ -261,15 +260,15 @@ export default function OnboardingFrame() {
   }, [busy]);
   const slow = busy && slowFlag;
 
-  /** The demo is over — made, or skipped — and the flow moves on. */
-  const finishDemo = async (demo: { id: string; title: string } | null) => {
+  /** The demo is over — a script and a deck made — and the flow moves on. */
+  const finishDemo = async (demo: { id: string; title: string }) => {
     setReviewStep(null);
     setSubmitting(true);
     setError(null);
     try {
       const next = await controller.submitStep("script_demo", {
-        demoId: demo?.id ?? null,
-        demoTitle: demo?.title ?? null,
+        demoId: demo.id,
+        demoTitle: demo.title,
       });
       if (!next) handOff();
     } catch {
@@ -386,7 +385,9 @@ export default function OnboardingFrame() {
 
   const inDemo = step === "script_demo";
   const choice = inDemo ? demoFooter : CHOICES[step];
-  const ask = !!choice?.secondary;
+  // The demo has no second option — there is no way around it.
+  const secondary = inDemo ? undefined : CHOICES[step]?.secondary;
+  const ask = !!secondary;
   const primaryLabel = choice?.primary ?? "Continue";
 
   const content = ((): ReactNode => {
@@ -632,35 +633,30 @@ export default function OnboardingFrame() {
                 ) : null}
               </PressableScale>
             </Animated.View>
-            {choice?.secondary ? (
+            {secondary ? (
               <Animated.View
                 entering={FadeInDown.duration(240)}
                 exiting={FadeOutDown.duration(160)}
               >
                 <PressableScale
                   onPress={() => {
-                    if (inDemo) {
-                      setPressed("secondary");
-                      demoActions.current?.secondary();
-                      return;
-                    }
                     setPressed("secondary");
                     void handleContinue(false);
                   }}
                   disabled={busy}
                   style={styles.secondary}
                   accessibilityRole="button"
-                  accessibilityLabel={choice.secondary}
+                  accessibilityLabel={secondary}
                 >
                   {slow && pressed === "secondary" ? (
                     <ActivityIndicator color={PROFILE.ink} />
                   ) : (
                     <Animated.Text
-                      key={choice.secondary}
+                      key={secondary}
                       entering={FadeIn.duration(200)}
                       style={styles.secondaryLabel}
                     >
-                      {choice.secondary}
+                      {secondary}
                     </Animated.Text>
                   )}
                 </PressableScale>

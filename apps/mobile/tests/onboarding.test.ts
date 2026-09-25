@@ -82,10 +82,9 @@ describe("demo footer", () => {
     expect(SCRIPT_HOLD_MS).toBeGreaterThan(DECK_HOLD_MS);
   });
 
-  it("gates the brief on a selection and offers a skip", () => {
+  it("gates the brief on a selection, with no way to skip", () => {
     expect(footerFor("pick", base)).toEqual({
       primary: "Use this brief",
-      secondary: "Skip the demo",
       enabled: false,
       hidden: false,
     });
@@ -103,16 +102,21 @@ describe("demo footer", () => {
     });
   });
 
-  it("waits on the results", () => {
-    expect(footerFor("script", base)).toMatchObject({ enabled: false });
+  it("gives the loading screen the whole screen, then offers the next step", () => {
+    expect(footerFor("script", base)).toMatchObject({ enabled: false, hidden: true });
     expect(
       footerFor("script", { ...base, scriptPhase: "completed" }),
-    ).toMatchObject({ primary: "Make my deck", enabled: true });
-    expect(footerFor("deck", base)).toMatchObject({ enabled: false });
+    ).toMatchObject({ primary: "Make my deck", enabled: true, hidden: false });
+    expect(footerFor("deck", base)).toMatchObject({ enabled: false, hidden: true });
     expect(footerFor("deck", { ...base, deckPhase: "completed" })).toMatchObject({
       primary: "Continue",
       enabled: true,
+      hidden: false,
     });
+    // The deck opened to its cards takes the screen too.
+    expect(
+      footerFor("deck", { ...base, deckPhase: "completed", focused: true }).hidden,
+    ).toBe(true);
   });
 });
 

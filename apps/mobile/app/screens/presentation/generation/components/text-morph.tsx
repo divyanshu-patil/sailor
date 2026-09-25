@@ -221,6 +221,16 @@ function MorphChar({
       progress.value = withTiming(1, {
         duration: ANIMATION_CONFIG.duration.morph,
       });
+      // A character that was on its way out and is wanted again — the text
+      // changed a second time inside the 180ms exit — keeps its component
+      // (same key), so nothing else would undo the exit: it stayed at
+      // whatever opacity the fade-out had reached, usually 0. That was the
+      // missing letters. For a character that never left, these are no-ops.
+      opacity.value = withTiming(1, {
+        duration: ANIMATION_CONFIG.duration.mountFade,
+      });
+      translateY.value = withSpring(0, ANIMATION_CONFIG.spring);
+      exitBlur.value = 0;
     }
   }, [
     entry.x,
@@ -233,6 +243,7 @@ function MorphChar({
     x,
     y,
     progress,
+    exitBlur,
   ]);
 
   useEffect(() => {
@@ -283,14 +294,24 @@ function MorphChar({
         duration: ANIMATION_CONFIG.caseChange.duration,
       });
 
+      let landed = false;
       const timeout = setTimeout(() => {
+        landed = true;
         setDisplayLabel(nextLabel);
         caseFadeOpacity.value = withTiming(1, {
           duration: ANIMATION_CONFIG.caseChange.duration,
         });
       }, ANIMATION_CONFIG.caseChange.duration);
 
-      return () => clearTimeout(timeout);
+      return () => {
+        clearTimeout(timeout);
+        // Interrupted halfway (the text moved on, or the letter started
+        // leaving): land the new glyph now instead of leaving it faded out.
+        if (!landed) {
+          setDisplayLabel(nextLabel);
+          caseFadeOpacity.value = 1;
+        }
+      };
     }
 
     setDisplayLabel(nextLabel);

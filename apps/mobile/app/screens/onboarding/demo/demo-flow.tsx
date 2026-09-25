@@ -6,8 +6,12 @@ import Animated, {
   FadeInLeft,
   FadeInRight,
   FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 
+import BlobBackground from "@/screens/presentation/generation/components/background";
 import {
   PresentationFormProvider,
   usePresentationForm,
@@ -21,7 +25,7 @@ import {
   onboardingDemoService,
 } from "@/services/onboarding-demo.service";
 import { AUDIENCE_OPTIONS } from "@/types/presentation";
-import { ASK_CLEARANCE, CONTINUE_CLEARANCE } from "../config/footer";
+import { CONTINUE_CLEARANCE } from "../config/footer";
 import {
   DECK_HOLD_MS,
   DEMO_STAGES,
@@ -32,7 +36,12 @@ import {
   SCRIPT_HOLD_MS,
 } from "./demo-footer";
 import DemoPicker from "./demo-picker";
-import { DemoDeck, type DemoPhase, DemoScript } from "./demo-result";
+import {
+  DemoDeck,
+  DemoDeckViewer,
+  type DemoPhase,
+  DemoScript,
+} from "./demo-result";
 
 export type { DemoActions, DemoFooter, DemoStage } from "./demo-footer";
 
@@ -62,8 +71,8 @@ interface DemoFlowProps {
   safeBottom: number;
   actionsRef: RefObject<DemoActions | null>;
   onFooterChange: (footer: DemoFooter) => void;
-  /** The demo is over: the made demo, or null when skipped. */
-  onFinish: (demo: DemoDetail | null) => void;
+  /** The demo is over, with the script and deck it made. */
+  onFinish: (demo: DemoDetail) => void;
 }
 
 /**
@@ -185,6 +194,19 @@ function DemoStages({
     setFocused(false);
   };
 
+  // The finished deck opens in place. `focused` is what already moves the
+  // footer out of the way for the dials, so the open deck reuses it.
+  const deckOpen = stage === "deck" && focused && deckPhase === "completed";
+  const openDeck = () => setFocused(true);
+  const closeDeck = () => setFocused(false);
+  // The page steps back while its deck is open, leaving the backdrop — the
+  // opened cards sit on the same ground rather than on a sheet.
+  const pageShown = useSharedValue(1);
+  useEffect(() => {
+    pageShown.value = withTiming(deckOpen ? 0 : 1, { duration: 200 });
+  }, [deckOpen, pageShown]);
+  const pageFade = useAnimatedStyle(() => ({ opacity: pageShown.value }));
+
   const select = (option: DemoOption) => {
     // A different brief is a different script; the old one mustn't show.
     if (option.id !== selected?.id) setDemo(null);
@@ -217,7 +239,6 @@ function DemoStages({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     footer.primary,
-    footer.secondary,
     footer.enabled,
     footer.hidden,
     footer.arrow,
@@ -231,12 +252,14 @@ function DemoStages({
         else if (stage === "output") goTo("script");
         else if (stage === "script" && scriptPhase === "completed")
           goTo("deck");
-        else if (stage === "deck" && deckPhase === "completed") onFinish(demo);
-      },
-      secondary: () => {
-        if (stage === "pick") onFinish(null);
+        else if (stage === "deck" && deckPhase === "completed" && demo)
+          onFinish(demo);
       },
       back: () => {
+        if (deckOpen) {
+          closeDeck();
+          return true;
+        }
         if (closeCard.current) {
           closeCard.current();
           return true;
@@ -252,8 +275,14 @@ function DemoStages({
   });
 
   const copy = COPY[stage];
-  const clearance =
-    (footer.secondary ? ASK_CLEARANCE : CONTINUE_CLEARANCE) + safeBottom;
+  const clearance = CONTINUE_CLEARANCE + safeBottom;
+  // The script and the deck are made on the preview screen's blob backdrop,
+  // edge to edge: one backdrop for both, so moving from one to the other only
+  // moves the content, and it drifts only while something is being made.
+  const onBlobs = stage === "script" || stage === "deck";
+  const making =
+    (stage === "script" && scriptPhase === "generating") ||
+    (stage === "deck" && deckPhase === "generating");
 
   const onContentLayout = (e: LayoutChangeEvent) =>
     setContentTop(e.nativeEvent.layout.y);
@@ -305,13 +334,29 @@ function DemoStages({
         );
       case "deck":
         return demo ? (
-          <DemoDeck demo={demo} phase={deckPhase} bottomInset={clearance} />
+          <DemoDeck
+            demo={demo}
+            phase={deckPhase}
+            bottomInset={clearance}
+            onOpen={openDeck}
+          />
         ) : null;
     }
   })();
 
   return (
     <View style={styles.fill}>
+      {onBlobs ? (
+        <Animated.View
+          entering={FadeIn.duration(420)}
+          exiting={FadeOut.duration(220)}
+          pointerEvents="none"
+          // Up under the header too: this view starts below it.
+          style={[styles.edge, { top: -headerHeight }]}
+        >
+          <BlobBackground animate={making} />
+        </Animated.View>
+      ) : null}
       {copy ? (
         <Animated.View
           key={`copy-${stage}`}
@@ -335,9 +380,19 @@ function DemoStages({
           exiting={FadeOut.duration(140)}
           style={StyleSheet.absoluteFill}
         >
-          {body}
+          <Animated.View style={[styles.fill, pageFade]}>{body}</Animated.View>
         </Animated.View>
       </View>
+      {deckOpen && demo ? (
+        <View style={[styles.edge, { top: -headerHeight }]}>
+          <DemoDeckViewer
+            demo={demo}
+            topInset={headerHeight}
+            bottomInset={safeBottom}
+            onClose={closeDeck}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -345,6 +400,12 @@ function DemoStages({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
+  },
+  edge: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   copy: {
     paddingHorizontal: 28,
