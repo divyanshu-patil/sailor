@@ -71,7 +71,7 @@ export default defineConfig({
         "app/screens/daily-practice/*.ts",
         "app/screens/home/theme.ts",
         "app/screens/streak-restore/theme.ts",
-        "app/routes/**/header-constant.ts",
+        "app/constants/header.ts",
         "app/components/ui/animated/AnimatedComponents.ts",
         "app/constants/theme.ts",
         "app/hooks/use-color-scheme.ts",

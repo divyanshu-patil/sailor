@@ -27,7 +27,7 @@ import * as apiBarrel from "@/lib/api";
 import { api, apiClient } from "@/lib/api/client";
 import { BottomTabInset, Colors, Fonts, Spacing, useColors } from "@/constants/theme";
 import { useColorScheme as useScheme } from "@/hooks/use-color-scheme";
-import { defaultHeaderConfig } from "@/routes/(authenticated)/(tabs)/header-constant";
+import { defaultHeaderConfig } from "@/constants/header";
 import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/screens/auth/signup/types/types";
 import {
   DAILY_SPRING,

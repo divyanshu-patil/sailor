@@ -1,6 +1,6 @@
 import React from "react";
 import { Stack } from "expo-router";
-import { defaultHeaderConfig } from "../header-constant";
+import { defaultHeaderConfig } from "@/constants/header";
 
 const Layout = () => {
   return (
