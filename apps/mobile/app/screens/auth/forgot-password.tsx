@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 56,
-    borderRadius: 16,
+    borderRadius: 999,
     borderWidth: 1.5,
     borderColor: BORDER,
     backgroundColor: FIELD_BG,

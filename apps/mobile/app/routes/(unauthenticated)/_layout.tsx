@@ -25,7 +25,6 @@ export default function UnauthenticatedLayout() {
             presentation: "formSheet",
             sheetAllowedDetents: "fitToContents",
             sheetGrabberVisible: true,
-            sheetCornerRadius: 32,
             contentStyle: { backgroundColor: "#FBF3EA" },
           }}
         />

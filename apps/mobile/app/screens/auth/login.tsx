@@ -548,15 +548,9 @@ export default function Page() {
               </Text>
               <Pressable
                 hitSlop={8}
-                onPress={() =>
-                  // Re-enter the onboarding screen already morphed into its
-                  // create-account state, and remember we came from login so
-                  // its back button returns here.
-                  router.push({
-                    pathname: "/(unauthenticated)",
-                    params: { createAccount: "1", from: "login" },
-                  })
-                }
+                // Signing up starts where "Get started" does: onboarding first,
+                // Create Account at the end of it.
+                onPress={() => router.push("/(onboarding)")}
               >
                 <Text style={styles.signupLink}>Sign up</Text>
               </Pressable>
@@ -639,7 +633,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 50,
-    borderRadius: 16,
+    borderRadius: 999,
     borderWidth: 1.5,
     borderColor: BORDER,
     backgroundColor: FIELD_BG,
