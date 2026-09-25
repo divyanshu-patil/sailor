@@ -98,7 +98,8 @@ export async function syncStreakAlerts(
 }
 
 /**
- * Re-read the streak from the server.
+ * Re-read the streak from the server — on every foreground (below) and on
+ * signing in (the root layout).
  *
  * The deadline is derived entirely from `lastCompletedDate`, so a cached
  * streak that is a day stale schedules the alarms for the wrong night — and
@@ -112,7 +113,7 @@ export async function syncStreakAlerts(
  */
 let refreshing = false;
 
-async function refreshStreak(): Promise<void> {
+export async function refreshStreak(): Promise<void> {
   if (refreshing) return;
   // A simulated streak is the dev section's whole point; a read here would
   // answer about the real one and wipe the state someone is looking at.

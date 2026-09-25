@@ -20,7 +20,7 @@ import { useAppUserStore } from "@/store/app-user.store";
 import * as Sentry from "@sentry/react-native";
 import * as Notifications from "expo-notifications";
 import { startReminderSync } from "@/lib/daily-reminder";
-import { startStreakAlertSync } from "@/lib/streak-alarm";
+import { refreshStreak, startStreakAlertSync } from "@/lib/streak-alarm";
 import { startHapticsSync } from "@/lib/haptics";
 import { primeWidgetAssets } from "@/lib/widget-assets";
 import * as Font from "expo-font";
@@ -155,12 +155,18 @@ function InitialLayout() {
     onboardingKnown &&
     assetsReady;
 
-  // Per account, not per launch: preferences are the server's, logout clears
-  // the local copy, and a sign-in partway through a launch has to read them
-  // back — once per launch, the read ran signed out and failed.
+  // Per account, not per launch: preferences and the streak are the server's,
+  // logout clears the local copies, and a sign-in partway through a launch has
+  // to read them back — as does a launch that's already signed in, where home
+  // would otherwise show the streak from before. Keyed on Clerk's own session
+  // rather than the one remembered on disk, because only it can put a token on
+  // the requests.
+  const { isLoaded: clerkLoaded, userId: clerkUserId } = useAuth();
   useEffect(() => {
-    if (userId) syncPreferencesOnce();
-  }, [userId]);
+    if (!clerkLoaded || !clerkUserId) return;
+    syncPreferencesOnce();
+    void refreshStreak();
+  }, [clerkLoaded, clerkUserId]);
   useEffect(() => {
     syncAppearanceOptionsOnce();
   }, []);
