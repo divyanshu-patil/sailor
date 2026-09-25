@@ -33,7 +33,6 @@ export interface UserProfile {
   id: string;
   clerk_user_id: string;
   email: string;
-  full_name: string;
   nickname: string;
   experience_level: ExperienceLevel;
   profession: Profession | null;
@@ -42,6 +41,5 @@ export interface UserProfile {
   /** Server-side completion flags. The account, not the device, is what has
    *  been onboarded — so a reinstall or a second phone does not repeat it. */
   onboarding_completed?: boolean;
-  profile_setup_completed?: boolean;
   created_at: string;
 }

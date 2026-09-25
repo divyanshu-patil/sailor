@@ -1,20 +1,17 @@
-from unittest.mock import Base
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.middlewares.logging_middleware import LoggingMiddleware
 from app.api.v1 import user_router, appearance_router
-from app.api.v1 import onboarding_router
+from app.api.v1 import onboarding_router, onboarding_demo_router
 from app.api.v1 import webhook_router
-from app.db.database import engine
-from app.db.base import Base
 from app.api.v1 import deck_router, preferences_router
 from app.api.v1 import card_router, script_router, audio_router, attachment_router
 from app.api.v1 import daily_router, admin_router
 from app.core.s3_client import ensure_bucket
 
 import app.models
-from app.models.preferences_model import UserPreferences
+from app.models.preferences_model import UserPreferences  # noqa: F401 — app.models doesn't import it
 
 # NO create_all() here — Alembic owns the schema.
 #
@@ -58,6 +55,7 @@ async def startup_event():
 # All routes are prefixed with /api/v1 for versioning
 app.include_router(user_router.router, prefix="/api/v1")
 app.include_router(onboarding_router.router, prefix="/api/v1")
+app.include_router(onboarding_demo_router.router, prefix="/api/v1")
 app.include_router(appearance_router.router, prefix="/api/v1/appearance")
 app.include_router(deck_router.router, prefix="/api/v1")
 app.include_router(preferences_router.router, prefix="/api/v1/users")

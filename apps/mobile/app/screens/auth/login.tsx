@@ -100,14 +100,16 @@ interface LoginFieldProps {
   placeholder: string;
   secure?: boolean;
   keyboardType?: "default" | "email-address";
-  textContentType?: "emailAddress" | "password" | "username";
+  textContentType?: "emailAddress" | "password" | "newPassword";
+  autoFocus?: boolean;
+  onSubmitEditing?: () => void;
 }
 
 /**
  * A rounded, minimal auth field: leading icon, placeholder, optional password
  * visibility toggle. Presentational only — the caller owns the value.
  */
-const LoginField = memo(function LoginField({
+export const LoginField = memo(function LoginField({
   icon,
   value,
   onChangeText,
@@ -115,6 +117,8 @@ const LoginField = memo(function LoginField({
   secure = false,
   keyboardType = "default",
   textContentType,
+  autoFocus,
+  onSubmitEditing,
 }: LoginFieldProps) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secure);
@@ -130,6 +134,8 @@ const LoginField = memo(function LoginField({
         secureTextEntry={secure && hidden}
         keyboardType={keyboardType}
         textContentType={textContentType}
+        autoFocus={autoFocus}
+        onSubmitEditing={onSubmitEditing}
         autoCapitalize="none"
         autoCorrect={false}
         onFocus={() => setFocused(true)}
@@ -542,15 +548,9 @@ export default function Page() {
               </Text>
               <Pressable
                 hitSlop={8}
-                onPress={() =>
-                  // Re-enter the onboarding screen already morphed into its
-                  // create-account state, and remember we came from login so
-                  // its back button returns here.
-                  router.push({
-                    pathname: "/(unauthenticated)",
-                    params: { createAccount: "1", from: "login" },
-                  })
-                }
+                // Signing up starts where "Get started" does: onboarding first,
+                // Create Account at the end of it.
+                onPress={() => router.push("/(onboarding)")}
               >
                 <Text style={styles.signupLink}>Sign up</Text>
               </Pressable>
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 50,
-    borderRadius: 16,
+    borderRadius: 999,
     borderWidth: 1.5,
     borderColor: BORDER,
     backgroundColor: FIELD_BG,

@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DateTime,
@@ -72,7 +72,7 @@ class Card(Base):
         ),
         nullable=False,
     )
-    
+
     # whenever card is updated by user version will increase by 1. This is used for optimistic concurrency control.
     version: Mapped[int] = mapped_column(
         Integer,

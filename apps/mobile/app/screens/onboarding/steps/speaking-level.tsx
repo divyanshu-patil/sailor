@@ -1,9 +1,19 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import {
+  pillMark,
+  SelectionMark,
+  selectedBorder,
+  Stagger,
+} from "../components/choice-motion";
 import SquareMascot, { type SquareEyes } from "../components/square-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+/** The pills' height; the check mark sits by it (see `pillMark`). */
+const CARD_HEIGHT = 116;
 
 interface LevelOption {
   /** Persisted value. */
@@ -77,36 +87,39 @@ export default function SpeakingLevelStep({
       <Text style={styles.subtitle}>There’s no right or wrong answer.</Text>
 
       <View style={styles.options}>
-        {OPTIONS.map((option) => {
+        {OPTIONS.map((option, i) => {
           const active = selected === option.value;
           return (
-            <PressableScale
-              key={option.value}
-              onPress={() =>
-                controller.setDraft({ speakingLevel: option.value })
-              }
-              style={[
-                styles.card,
-                { backgroundColor: option.card },
-                active && styles.cardActive,
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={`${option.title}. ${option.description}`}
-            >
-              <View style={styles.mascotWrap}>
-                <SquareMascot
-                  color={option.blob}
-                  accent={option.accent}
-                  eyes={option.eyes}
-                  size={78}
-                />
-              </View>
-              <View style={styles.textWrap}>
-                <Text style={styles.title}>{option.title}</Text>
-                <Text style={styles.description}>{option.description}</Text>
-              </View>
-            </PressableScale>
+            <Stagger key={option.value} index={i}>
+              <PressableScale
+                haptic={haptics.select}
+                onPress={() =>
+                  controller.setDraft({ speakingLevel: option.value })
+                }
+                style={[
+                  styles.card,
+                  { backgroundColor: option.card },
+                  active && { borderColor: selectedBorder(option.card) },
+                ]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`${option.title}. ${option.description}`}
+              >
+                <View style={styles.mascotWrap}>
+                  <SquareMascot
+                    color={option.blob}
+                    accent={option.accent}
+                    eyes={option.eyes}
+                    size={78}
+                  />
+                </View>
+                <View style={styles.textWrap}>
+                  <Text style={styles.title}>{option.title}</Text>
+                  <Text style={styles.description}>{option.description}</Text>
+                </View>
+                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
+              </PressableScale>
+            </Stagger>
           );
         })}
       </View>
@@ -139,16 +152,15 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 116,
+    minHeight: CARD_HEIGHT,
     marginBottom: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 22,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
     overflow: "hidden",
   },
-  cardActive: { borderColor: PROFILE.ink },
   mascotWrap: {
     width: 78,
     alignItems: "center",

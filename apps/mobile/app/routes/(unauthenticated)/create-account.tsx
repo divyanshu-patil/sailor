@@ -27,7 +27,7 @@ export default function CreateAccount() {
 
         <Pressable
           style={styles.emailButton}
-          onPress={() => router.push("/(unauthenticated)/(signup)/signup")}
+          onPress={() => router.push("/(unauthenticated)/email-signup")}
         >
           <FontAwesome6
             name="envelope"

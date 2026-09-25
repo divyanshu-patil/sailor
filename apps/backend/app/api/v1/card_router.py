@@ -6,7 +6,6 @@ from app.controllers import card_controller
 from app.db.database import get_db
 from app.models.user_model import User
 from app.schemas.card_schema import (
-    CardCreateParams,
     CardGenerationStatusResponse,
     CardResponse,
     CardUpdateParams,

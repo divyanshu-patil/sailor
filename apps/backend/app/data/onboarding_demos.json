@@ -1,0 +1,1240 @@
+[
+  {
+    "id": "college-photosynthesis",
+    "context": "college",
+    "label": "Explain a science topic",
+    "brief": "A short class presentation explaining how photosynthesis turns sunlight into food, with one everyday example that makes it stick.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "students",
+    "mood": "confident",
+    "profession": "student",
+    "title": "Solar Powered Sugar",
+    "script": "## [HOOK] · ~25s\nImagine a world where you don't have to go to the dining hall or pack a lunch because you can just **stand in the sun** and feel your stomach fill up. No cooking, no shopping, no chewing. Just light. That's exactly what every blade of grass and towering oak tree does every single second.\n\n## [PROBLEM] · ~25s\nPlants can't just eat soil. Dirt is mostly minerals and decayed matter, not energy. If a plant couldn't manufacture its own fuel, it would wither in days. Without this one specific process, the entire food chain collapses. No plants mean no herbivores, which means **zero** food for us.\n\n## [CORE MESSAGE] · ~35s\nHere's how it works. Plants use a pigment called chlorophyll to catch sunlight, which acts like a spark. They take in carbon dioxide from the air and water from the roots. Then, they use that solar energy to break those molecules apart and rebuild them into **glucose**. That's a simple sugar that serves as the plant's primary food source.\n\n> *(pause)*\n\n## [PROOF/STORY] · ~25s\nThink of it like a solar-powered kitchen. The sunlight is the **stove**, the water and air are the raw ingredients, and the glucose is the finished meal. When you eat a crisp apple or a piece of celery, you're literally eating stored sunlight that the plant cooked up weeks ago. *(slow down here)* It's bottled energy.\n\n## [WHAT TO DO] · ~25s\nNext time you're walking across campus, look at the leaves. Don't just see green; see **factories**. Try to spot which plants are getting the most light and realize they're working the hardest to build sugar. Start thinking of every green space as a massive, silent power plant fueling the planet.\n\n## [CLOSING LINE] · ~15s\nWe don't have the luxury of standing in the sun to get full. But we get to eat the results of that process every day. Remember, every bite you take started as **pure light**.\n\n## [QUESTIONS] · ~10s\nI'm sure some of you have thoughts on how this works in the dark.\n\n> **Ask the room:** \"Who wants to take a crack at that?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Solar Powered Sugar",
+      "description": "A short class presentation explaining how photosynthesis turns sunlight into food, with one everyday example that makes it stick.",
+      "color": "#F4D35E",
+      "cards": [
+        {
+          "position": 1,
+          "title": "Sunlight as Food",
+          "description": "Open with a vivid hypothetical about eating light to introduce the concept of plant energy.",
+          "keywords": [
+            "dining hall",
+            "stand in the sun",
+            "no chewing",
+            "blade of grass"
+          ],
+          "impact": 0.7,
+          "delivery": "storytelling",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 2,
+          "title": "The Soil Fallacy",
+          "description": "Explain why dirt isn't food and emphasize the catastrophic risk of the food chain collapsing.",
+          "keywords": [
+            "minerals",
+            "decayed matter",
+            "wither",
+            "zero food"
+          ],
+          "impact": 0.6,
+          "delivery": "serious",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 3,
+          "title": "The Glucose Recipe",
+          "description": "Break down the technical process of turning CO2, water, and light into simple sugars.",
+          "keywords": [
+            "carbon dioxide",
+            "water",
+            "glucose",
+            "solar-powered kitchen"
+          ],
+          "impact": 0.85,
+          "delivery": "explaining",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 4,
+          "title": "Bottled Energy",
+          "description": "Connect the science to everyday food and shift the perspective of campus greenery to factories.",
+          "keywords": [
+            "crisp apple",
+            "stored sunlight",
+            "bottled energy",
+            "see factories"
+          ],
+          "impact": 0.75,
+          "delivery": "thought_provoking",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 5,
+          "title": "Pure Light Closing",
+          "description": "Summarize the planet's power system and deliver the final emotional punch about the origin of food.",
+          "keywords": [
+            "silent power plant",
+            "no luxury",
+            "every bite",
+            "pure light"
+          ],
+          "impact": 0.9,
+          "delivery": "inspirational",
+          "color": "#F8B4B3"
+        },
+        {
+          "position": 6,
+          "title": "Interactive Inquiry",
+          "description": "Transition to a Q&A by challenging the audience to think about photosynthesis in the dark.",
+          "keywords": [
+            "in the dark",
+            "take a crack",
+            "ask the room"
+          ],
+          "impact": 0.5,
+          "delivery": "interactive",
+          "color": "#C9E4DE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "college-research-pitch",
+    "context": "college",
+    "label": "Pitch your research project",
+    "brief": "Pitch my final-year research project on how sleep affects exam performance to my professors: the question, the method, and why it matters.",
+    "durationMinutes": 3,
+    "cardCount": 8,
+    "audience": "general",
+    "mood": "confident",
+    "profession": "student",
+    "title": "Sleep And Scores",
+    "script": "## [HOOK] · ~25s\nImagine a student who's spent **forty hours** a week in the library. They've memorized every page and mastered every formula. But the night before the final, they pull an all-nighter to cram one last chapter. They walk into that hall feeling focused, but their brain is actually operating at the level of someone who's **legally drunk**.\n\n## [PROBLEM] · ~25s\nWe've treated the all-nighter as a rite of passage for years. But the cost isn't just a few yawns in the back row. When we starve the brain of sleep, we don't just get tired; we lose the ability to **retrieve** information. A student can know the answer, but they simply can't find it under pressure.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~50s\nMy research proves that sleep isn't just rest; it's where the actual learning happens. First, I'm looking at how sleep stabilizes memories. Think of it like hitting the **save button** on a document; if you pull the plug too early, the data is gone. Then, I'm measuring the impact on executive function. This is the part of the brain that handles complex problem-solving and critical thinking. If that's offline, a student can't apply what they know to a new question. Finally, I'm tracking the precise tipping point where losing a few hours of sleep leads to a **measurable drop** in GPA.\n\n## [PROOF/STORY] · ~40s\nLook at the difference between two students. One sleeps six hours; the other sleeps three. On a simple multiple-choice test, they might look the same. But give them an essay that requires synthesis and logic, and the gap widens. The sleep-deprived student starts looping. They write the same sentence three times because their brain has lost the **thread**. *(slow down here)* It's not a lack of knowledge. It's a failure of the hardware.\n\n## [WHAT TO DO] · ~25s\nI need your approval to track **fifty students** over the next two finals cycles. I'll use wearable sleep trackers and correlate that data with their raw scores. It's a tight loop of data that moves us past the anecdote and into **hard evidence** about how we study.\n\n## [CLOSING LINE] · ~15s\nWe can't keep letting students walk into exams with brains that are essentially **blacked out**. It's time to stop praising the all-nighter and start prioritizing the save button.\n\n## [QUESTIONS] · ~10s\nI'm ready to walk through the specific tracking metrics if you're curious.\n\n> **Ask the room:** \"Who here actually feels they performed their best after an all-nighter?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Sleep And Scores",
+      "description": "Pitch my final-year research project on how sleep affects exam performance to my professors: the question, the method, and why it matters.",
+      "color": "#FFC88A",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Drunk Student",
+          "description": "Contrast a hardworking student's effort with the cognitive impairment caused by an all-nighter.",
+          "keywords": [
+            "forty hours",
+            "all-nighter",
+            "legally drunk"
+          ],
+          "impact": 0.7,
+          "delivery": "storytelling",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 2,
+          "title": "The Retrieval Gap",
+          "description": "Explain that sleep deprivation blocks the ability to access known information under pressure.",
+          "keywords": [
+            "rite of passage",
+            "retrieve information",
+            "under pressure"
+          ],
+          "impact": 0.6,
+          "delivery": "serious",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 3,
+          "title": "The Save Button",
+          "description": "Introduce the core research on sleep's role in stabilizing memories and executive function.",
+          "keywords": [
+            "save button",
+            "stabilizes memories",
+            "executive function"
+          ],
+          "impact": 0.85,
+          "delivery": "explaining",
+          "color": "#FFCBA4"
+        },
+        {
+          "position": 4,
+          "title": "GPA Tipping Point",
+          "description": "Detail the link between complex problem-solving failure and measurable drops in academic performance.",
+          "keywords": [
+            "critical thinking",
+            "tipping point",
+            "measurable drop in GPA"
+          ],
+          "impact": 0.75,
+          "delivery": "analytical",
+          "color": "#AED9E0"
+        },
+        {
+          "position": 5,
+          "title": "Looping and Logic",
+          "description": "Compare students to show how sleep loss destroys the ability to synthesize logic in essays.",
+          "keywords": [
+            "six vs three hours",
+            "synthesis and logic",
+            "lost the thread"
+          ],
+          "impact": 0.8,
+          "delivery": "dramatic",
+          "color": "#FFE8B6"
+        },
+        {
+          "position": 6,
+          "title": "The Research Ask",
+          "description": "Request approval for a study of fifty students using wearables to provide hard evidence.",
+          "keywords": [
+            "fifty students",
+            "wearable sleep trackers",
+            "hard evidence"
+          ],
+          "impact": 0.9,
+          "delivery": "professional",
+          "color": "#F6A0A3"
+        },
+        {
+          "position": 7,
+          "title": "Blacked Out Brains",
+          "description": "Deliver a strong closing call to prioritize sleep over the culture of the all-nighter.",
+          "keywords": [
+            "blacked out",
+            "prioritizing the save button",
+            "tracking metrics"
+          ],
+          "impact": 0.8,
+          "delivery": "persuasive",
+          "color": "#FFD3B0"
+        },
+        {
+          "position": 8,
+          "title": "Audience Interaction",
+          "description": "Engage the room by asking for personal experiences with all-nighter performance.",
+          "keywords": [
+            "Ask the room",
+            "performed their best",
+            "pause for responses"
+          ],
+          "impact": 0.5,
+          "delivery": "interactive",
+          "color": "#C9E4DE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "work-quarterly-update",
+    "context": "work",
+    "label": "Give a team update",
+    "brief": "A quick quarterly team update: what we shipped, one number that moved, the blocker we need help with, and what's next.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "business",
+    "mood": "confident",
+    "profession": "business",
+    "title": "Quarterly Velocity Update",
+    "script": "## [HOOK] · ~25s\nWe didn't just hit the target this quarter. We **broke** it. While the rest of the organization was bracing for a plateau, we pushed the release cycle from fourteen days down to **six**. That's not a marginal gain. It's a complete shift in how we deliver value to the customer.\n\n## [PROBLEM] · ~25s\nBut speed is dangerous if you're moving in the wrong direction. Last month, we saw a **twelve percent** spike in critical bugs because our QA process couldn't keep up with the dev pace. That's lost revenue and frustrated users. We can't afford to trade stability for a faster clock.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~35s\nHere's the reality. We've proven we can build fast, so now we focus on building **right**. First, we're automating the regression suite to catch errors before they ship. Then, we're shifting our focus toward the API integration project. Finally, we're tightening the feedback loop between sales and engineering so we stop building features that nobody actually uses.\n\n## [PROOF/STORY] · ~25s\nLook at the Delta project. We shipped the core module in **three weeks** instead of two months. The client didn't just sign the renewal; they doubled their seat count because they saw the feature they asked for actually appearing in the product in **real-time**. *(slow down here)* That's the power of this pace.\n\n## [WHAT TO DO] · ~25s\nI need your help with the legal bottleneck. Our contract approvals are taking **ten days**, which kills our momentum. If you've got a direct line to the legal leads, I need you to push for a streamlined sign-off for low-risk updates. Let's get that approval window down to **forty-eight hours**.\n\n## [CLOSING LINE] · ~15s\nWe've already proven we can break the target on speed. Now, we're going to break the record for **reliability**. Let's keep that momentum moving into the next quarter.\n\n## [QUESTIONS] · ~10s\nI'm sure you've got thoughts on the legal bottleneck or the API shift.\n\n> **Ask the room:** \"Who's seen this friction elsewhere?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Quarterly Velocity Update",
+      "description": "A quick quarterly team update: what we shipped, one number that moved, the blocker we need help with, and what's next.",
+      "color": "#F78199",
+      "cards": [
+        {
+          "position": 1,
+          "title": "Breaking the Target",
+          "description": "Open with the major win of slashing the release cycle and shifting value delivery.",
+          "keywords": [
+            "broke the target",
+            "14 days to 6",
+            "marginal gain",
+            "deliver value"
+          ],
+          "impact": 0.85,
+          "delivery": "energetic",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 2,
+          "title": "The Cost of Speed",
+          "description": "Contrast the speed success with the dangerous spike in bugs and loss of stability.",
+          "keywords": [
+            "12% spike",
+            "critical bugs",
+            "QA process",
+            "lost revenue"
+          ],
+          "impact": 0.7,
+          "delivery": "serious",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 3,
+          "title": "Building it Right",
+          "description": "Outline the three-pronged strategy for quality: automation, API focus, and feedback loops.",
+          "keywords": [
+            "regression suite",
+            "API integration",
+            "sales and engineering",
+            "building right"
+          ],
+          "impact": 0.8,
+          "delivery": "explaining",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 4,
+          "title": "Delta Project Success",
+          "description": "Use the Delta project as evidence of how rapid delivery drives client growth.",
+          "keywords": [
+            "Delta project",
+            "3 weeks vs 2 months",
+            "doubled seat count",
+            "real-time"
+          ],
+          "impact": 0.75,
+          "delivery": "storytelling",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 5,
+          "title": "Legal Bottleneck",
+          "description": "Call for action to reduce contract approval times from ten days to forty-eight hours.",
+          "keywords": [
+            "legal bottleneck",
+            "10 days",
+            "low-risk updates",
+            "48 hours"
+          ],
+          "impact": 0.6,
+          "delivery": "urgent",
+          "color": "#C9E4DE"
+        },
+        {
+          "position": 6,
+          "title": "Reliability & Feedback",
+          "description": "Close with a vision for reliability and open the floor for specific friction points.",
+          "keywords": [
+            "record for reliability",
+            "next quarter",
+            "legal bottleneck",
+            "who's seen friction"
+          ],
+          "impact": 0.9,
+          "delivery": "interactive",
+          "color": "#F8B4B3"
+        }
+      ]
+    }
+  },
+  {
+    "id": "work-new-idea",
+    "context": "work",
+    "label": "Propose a new idea",
+    "brief": "Propose replacing our weekly status meeting with a written update: the problem, the proposal, and a two-week trial to test it.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "executives",
+    "mood": "calm",
+    "profession": "business",
+    "title": "Ending Status Meetings",
+    "script": "## [HOOK] · ~~25s\nYour calendar is a **wall** of back-to-back blocks. You spend four hours a week in status meetings just to hear that things are on track. Most of that time is spent waiting for the one update that actually matters to you, while the rest of the room listens to things they don't need to know.\n\n## [PROBLEM] · ~~25s\nIt's a hidden tax on our **productivity**. When six executives sit in a room for an hour, we aren't spending one hour. We're spending six. That's a massive operational cost for information that could've been read in **three minutes** via an email or a shared doc before the day even started.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~~35s\nWe need to move the update to a written format. First, we shift the reporting to a concise, asynchronous document where every lead lists only their blockers and wins. Then, we use the meeting time exclusively for **decision-making**. If there's nothing to decide, we don't meet. We stop reporting for the sake of reporting and start using our synchronous time for actual **strategy**.\n\n## [PROOF/STORY] · ~~25s\nI saw this work with a regional ops team last year. They killed their weekly sync and moved to a bulleted Friday update. They didn't lose a single beat on delivery. In fact, their output **increased** because the leads spent less time preparing slide decks and more time actually running their departments. *(slow down here)*\n\n## [WHAT TO DO] · ~~25s\nLet's test this for **two weeks**. Starting Monday, we cancel the status call. Instead, everyone submits a three-bullet update by Thursday afternoon. If we hit a wall or miss a critical update, we go back to the old way. But if it works, we just bought back **four hours** of our week.\n\n## [CLOSING LINE] · ~~15s\nStop staring at that wall of calendar blocks. Let's trade the performance of a status meeting for the **clarity** of a written page. It's a small shift that gives us our time back.\n\n## [QUESTIONS] · ~~10s\nI'm curious if anyone sees a specific risk in this trial.\n\n> **Ask the room:** \"Who's worried about what we might miss?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Ending Status Meetings",
+      "description": "Propose replacing our weekly status meeting with a written update: the problem, the proposal, and a two-week trial to test it.",
+      "color": "#EFC1FF",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Calendar Wall",
+          "description": "Paint a picture of the frustration caused by bloated calendars and irrelevant status updates.",
+          "keywords": [
+            "wall of blocks",
+            "four hours",
+            "status meetings",
+            "hidden tax"
+          ],
+          "impact": 0.6,
+          "delivery": "storytelling",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 2,
+          "title": "The Productivity Tax",
+          "description": "Highlight the massive operational cost of synchronous reporting versus quick asynchronous reading.",
+          "keywords": [
+            "six executives",
+            "operational cost",
+            "three minutes",
+            "asynchronous document"
+          ],
+          "impact": 0.7,
+          "delivery": "analytical",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 3,
+          "title": "Decision-Driven Meetings",
+          "description": "Pivot the purpose of meetings from reporting status to executing strategy and making decisions.",
+          "keywords": [
+            "decision-making",
+            "actual strategy",
+            "regional ops team",
+            "bulleted Friday update"
+          ],
+          "impact": 0.85,
+          "delivery": "confident",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 4,
+          "title": "The Two-Week Trial",
+          "description": "Present the evidence of increased output and the specific plan for a short-term test.",
+          "keywords": [
+            "output increased",
+            "two weeks",
+            "cancel status call",
+            "three-bullet update"
+          ],
+          "impact": 0.75,
+          "delivery": "step_by_step",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 5,
+          "title": "Buying Back Time",
+          "description": "Close with the emotional benefit of clarity and a call to stop the performance of meetings.",
+          "keywords": [
+            "four hours back",
+            "performance vs clarity",
+            "small shift",
+            "specific risk"
+          ],
+          "impact": 0.9,
+          "delivery": "inspirational",
+          "color": "#F8B4B3"
+        },
+        {
+          "position": 6,
+          "title": "Addressing the Risks",
+          "description": "Open the floor to the audience to voice concerns regarding the transition to async updates.",
+          "keywords": [
+            "ask the room",
+            "worried",
+            "what we miss",
+            "pause"
+          ],
+          "impact": 0.5,
+          "delivery": "interactive",
+          "color": "#C9E4DE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "presentations-product-demo",
+    "context": "presentations",
+    "label": "Open a product demo",
+    "brief": "Open a product demo for an app that turns voice memos into to-do lists: hook the room, show the problem, and set up the demo.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "general",
+    "mood": "energetic",
+    "profession": "tech",
+    "title": "Voice To Action",
+    "script": "## [HOOK] · ~25s\nImagine you're driving home and a **brilliant** idea hits you. You record a quick voice memo. It's thirty seconds of rambling, excitement, and maybe a bit of traffic noise. You feel great. You've captured it. But then that recording just sits there. It's a digital graveyard where good ideas go to **die**.\n\n## [PROBLEM] · ~25s\nThe cost isn't just a lost idea. It's the **mental tax** of knowing you have a list of recordings you're too exhausted to listen to. When you finally open that app, you don't see a plan. You see a wall of audio files. Most of us just **give up**.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~35s\nWe don't need more ways to record our thoughts. We need a way to make those thoughts **useful**. That means stripping away the \"ums\" and the tangents to find the actual task. It means turning a rambling sentence into a clear, dated action item. And finally, it means pushing that task directly into your calendar so it **actually happens**.\n\n## [PROOF/STORY] · ~25s\nI tried this last week with a chaotic five-minute brain dump while walking the dog. Usually, that's a chore to transcribe. But the system tore through it. It ignored the dog barking and the side-tracks. It gave me **four clean tasks** and a deadline. *(speed up)* It took two seconds.\n\n## [WHAT TO DO] · ~25s\nStop treating your voice memos like a diary. Start treating them like a **command center**. I want you to think of the last thing you recorded that you never actually did. Keep that specific task in your head while I show you how we're going to **fix it**.\n\n## [CLOSING LINE] · ~15s\nNo more digital graveyards. No more wasted brilliance. Let's stop recording things we'll never hear and start building a list that **actually moves**. Here is how it works.\n\n## [QUESTIONS] · ~10s\nI'll take your questions once we've seen the magic in action.\n\n> **Ask the room:** \"Who here has more than ten unlistened-to voice memos on their phone right now?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Voice To Action",
+      "description": "Open a product demo for an app that turns voice memos into to-do lists: hook the room, show the problem, and set up the demo.",
+      "color": "#A0A3FF",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Digital Graveyard",
+          "description": "Paint a picture of the excitement of capturing an idea versus the reality of it being forgotten.",
+          "keywords": [
+            "driving home",
+            "voice memo",
+            "rambling",
+            "digital graveyard"
+          ],
+          "impact": 0.7,
+          "delivery": "storytelling",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 2,
+          "title": "The Mental Tax",
+          "description": "Explain the psychological burden of unorganized audio files and the tendency to eventually give up.",
+          "keywords": [
+            "mental tax",
+            "exhausted",
+            "wall of audio",
+            "give up"
+          ],
+          "impact": 0.6,
+          "delivery": "serious",
+          "color": "#C9E4DE"
+        },
+        {
+          "position": 3,
+          "title": "Making Thoughts Useful",
+          "description": "Define the core solution: transforming rambling audio into dated, calendar-integrated action items.",
+          "keywords": [
+            "stripping ums",
+            "action item",
+            "calendar",
+            "actually happens"
+          ],
+          "impact": 0.9,
+          "delivery": "confident",
+          "color": "#F8B4B3"
+        },
+        {
+          "position": 4,
+          "title": "Real World Proof",
+          "description": "Share a personal anecdote about a dog-walking brain dump being converted into tasks instantly.",
+          "keywords": [
+            "five-minute dump",
+            "dog barking",
+            "four clean tasks",
+            "two seconds"
+          ],
+          "impact": 0.75,
+          "delivery": "energetic",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 5,
+          "title": "From Diary to Command",
+          "description": "Shift the audience's mindset and transition into the demonstration of the fix.",
+          "keywords": [
+            "command center",
+            "specific task",
+            "wasted brilliance",
+            "how it works"
+          ],
+          "impact": 0.85,
+          "delivery": "motivational",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 6,
+          "title": "Audience Pulse Check",
+          "description": "Engage the room with a relatable question about their own accumulated voice memos.",
+          "keywords": [
+            "ask the room",
+            "ten unlistened-to",
+            "phone",
+            "pause"
+          ],
+          "impact": 0.65,
+          "delivery": "interactive",
+          "color": "#B8E0D2"
+        }
+      ]
+    }
+  },
+  {
+    "id": "presentations-habits-talk",
+    "context": "presentations",
+    "label": "Start a conference talk",
+    "brief": "The opening of a talk on why small daily habits beat big resolutions, with a personal story as the hook.",
+    "durationMinutes": 3,
+    "cardCount": 8,
+    "audience": "general",
+    "mood": "reflective",
+    "profession": "creative",
+    "title": "Small Wins Habit",
+    "script": "## [HOOK] · ~25s\nThree years ago, I spent an entire Sunday planning the **perfect** version of my life. I bought a new planner, cleared my desk, and wrote down ten massive goals that would change everything. By Tuesday afternoon, I'd missed every single one of them. I wasn't lazy. I was just **exhausted** by my own expectations.\n\n## [PROBLEM] · ~25s\nWe've been taught that growth requires a giant leap. We wait for January first or a sudden burst of inspiration to overhaul our entire existence. But that's how we end up in a cycle of **shame**. When you set a mountain-sized goal and fail, you don't just lose the habit. You lose your **confidence** in your own word.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~50s\nI've started wondering if the secret isn't the leap, but the tiny, almost invisible step. It's the idea that a **one percent** shift is more sustainable than a hundred percent overhaul. Instead of trying to write a book, you just commit to one honest sentence a day. Instead of a grueling gym regime, you just put on your running shoes. When the requirement is that small, it's almost impossible to fail. That's where the magic happens. You stop fighting your own resistance and start building a **momentum** that actually lasts because it doesn't ask you to be a different person overnight.\n\n## [PROOF/STORY] · ~40s\nThink of it like sketching. If I try to paint a masterpiece in one go, I'll probably freeze up and ruin the canvas. *(slow down here)* But if I just draw one light line, then another, then a circle, the image eventually **emerges**. I tried this with reading. I stopped aiming for a book a week and aimed for **one page** a night. I ended up reading more in six months than I had in six years.\n\n## [WHAT TO DO] · ~25s\nPick one thing you've been failing at. Now, shrink it. Shrink it until it feels **ridiculous**. If you want to meditate, do it for thirty seconds. If you want to clean the house, pick up **three things**. Do that one tiny thing tomorrow morning. Don't add anything else. Just prove to yourself that you can show up.\n\n## [CLOSING LINE] · ~15s\nWe don't need more grand plans or fancy planners to change our lives. We just need to stop staring at the mountain and start focusing on the **single step**. Forget the big resolution. Just find your one percent.\n\n## [QUESTIONS] · ~10s\nI'm curious if any of you have a small win that actually stuck. What's the tiniest habit that changed your day?\n\n> **Ask the room:** \"What's one tiny habit you've actually managed to keep?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Small Wins Habit",
+      "description": "The opening of a talk on why small daily habits beat big resolutions, with a personal story as the hook.",
+      "color": "#ACCCC0",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Perfect Sunday",
+          "description": "Share the personal story of planning a perfect life and failing by Tuesday afternoon.",
+          "keywords": [
+            "ten massive goals",
+            "new planner",
+            "exhausted by expectations"
+          ],
+          "impact": 0.6,
+          "delivery": "storytelling",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 2,
+          "title": "The Leap Trap",
+          "description": "Discuss how the pressure for giant leaps leads to a cycle of shame and lost confidence.",
+          "keywords": [
+            "January first",
+            "cycle of shame",
+            "mountain-sized goal"
+          ],
+          "impact": 0.5,
+          "delivery": "serious",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 3,
+          "title": "The One Percent",
+          "description": "Introduce the core concept of sustainable, tiny shifts over total overhauls.",
+          "keywords": [
+            "invisible step",
+            "one honest sentence",
+            "running shoes"
+          ],
+          "impact": 0.9,
+          "delivery": "explaining",
+          "color": "#F6A0A3"
+        },
+        {
+          "position": 4,
+          "title": "Building Momentum",
+          "description": "Explain how low requirements reduce resistance and introduce the sketching analogy.",
+          "keywords": [
+            "impossible to fail",
+            "momentum",
+            "painting a masterpiece"
+          ],
+          "impact": 0.4,
+          "delivery": "confident",
+          "color": "#C9E4DE"
+        },
+        {
+          "position": 5,
+          "title": "The Reading Win",
+          "description": "Illustrate the sketching concept with the personal success of reading one page nightly.",
+          "keywords": [
+            "one light line",
+            "one page a night",
+            "six months vs six years"
+          ],
+          "impact": 0.7,
+          "delivery": "reflective",
+          "color": "#FFE8B6"
+        },
+        {
+          "position": 6,
+          "title": "Shrink the Goal",
+          "description": "Instruct the audience to make their goals ridiculously small to ensure they show up.",
+          "keywords": [
+            "ridiculous",
+            "thirty seconds",
+            "pick up three things"
+          ],
+          "impact": 0.85,
+          "delivery": "step_by_step",
+          "color": "#FFCBA4"
+        },
+        {
+          "position": 7,
+          "title": "Focus on Steps",
+          "description": "Summarize the need to abandon grand plans in favor of the single, small step.",
+          "keywords": [
+            "staring at the mountain",
+            "single step",
+            "find your one percent"
+          ],
+          "impact": 0.8,
+          "delivery": "conclusion",
+          "color": "#FFD3B0"
+        },
+        {
+          "position": 8,
+          "title": "Audience Wins",
+          "description": "Engage the room by asking for their own small habits that actually stuck.",
+          "keywords": [
+            "small win",
+            "tiniest habit",
+            "ask the room"
+          ],
+          "impact": 0.6,
+          "delivery": "interactive",
+          "color": "#AED9E0"
+        }
+      ]
+    }
+  },
+  {
+    "id": "everyday-wedding-toast",
+    "context": "everyday",
+    "label": "Give a wedding toast",
+    "brief": "A warm toast at my best friend's wedding: how we met, one funny story, and a wish for the couple.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "general",
+    "mood": "playful",
+    "profession": "other",
+    "title": "The Perfect Match",
+    "script": "## [HOOK] · ~~25s\nTwenty years ago, I met a kid who thought he could convince me that a **half-eaten** ham sandwich was a delicacy. He didn't just lie; he sold it with a level of confidence that should've been illegal. I bought it, of course. That's how it started. Just me, a bad sandwich, and a lifelong friendship.\n\n## [PROBLEM] · ~~25s\nNow, we've all seen the versions of this guy who try to play it cool. The polished, put-together version standing here today. But I've spent two decades seeing the **chaos** behind the curtain. The guy who once tried to fix a leaky sink with duct tape and a prayer, nearly flooding an entire apartment complex.\n\n## [CORE MESSAGE] · ~~35s\nBut then he met her. Suddenly, the duct tape vanished and he actually started reading the manuals. He didn't change who he was, but he found someone who makes him want to be the **best** version of that chaos. She brings the calm to his storm, and he brings a spark to her life that makes everything a bit more colorful.\n\n> *(pause)*\n\n## [PROOF/STORY] · ~~25s\nI remember the first time he told me about her. He didn't use the usual lines. He just looked at me, completely dazed, and admitted he'd finally found someone **smarter** than him. *(wry smile)* For those of us who know him, that was the first real sign that this was the one.\n\n## [WHAT TO DO] · ~~25s\nSo, I'm asking everyone to stand up. Grab your glasses and make sure they're full. We're not just celebrating a wedding today. We're celebrating the fact that someone actually agreed to manage this man's **shenanigans** for the rest of eternity. Let's give them the welcome they deserve.\n\n## [CLOSING LINE] · ~~15s\nTo the happy couple. May your life together be full of love, laughter, and absolutely **zero** ham sandwiches. To the bride and groom. *(raise glass)* Cheers!\n\n## [QUESTIONS] · ~~10s\nI'm sure some of you have your own horror stories about the groom you'd like to share during the reception.\n\n> **Ask the room:** \"Who's got the best one?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "The Perfect Match",
+      "description": "A warm toast at my best friend's wedding: how we met, one funny story, and a wish for the couple.",
+      "color": "#F4D35E",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Sandwich Story",
+          "description": "Open with the funny story about the ham sandwich to establish the groom's lifelong confidence.",
+          "keywords": [
+            "half-eaten ham sandwich",
+            "illegal confidence",
+            "lifelong friendship"
+          ],
+          "impact": 0.7,
+          "delivery": "storytelling",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 2,
+          "title": "Behind the Curtain",
+          "description": "Contrast the groom's polished public image with his history of chaotic home repairs.",
+          "keywords": [
+            "chaos",
+            "leaky sink",
+            "duct tape and a prayer"
+          ],
+          "impact": 0.5,
+          "delivery": "humorous",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 3,
+          "title": "The Perfect Balance",
+          "description": "Explain how the partner brings calm to the groom's storm and improves him.",
+          "keywords": [
+            "best version",
+            "calm to his storm",
+            "more colorful"
+          ],
+          "impact": 0.85,
+          "delivery": "reflective",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 4,
+          "title": "The Admission",
+          "description": "Recount the moment the groom admitted he found someone smarter than himself.",
+          "keywords": [
+            "completely dazed",
+            "someone smarter",
+            "the first real sign"
+          ],
+          "impact": 0.6,
+          "delivery": "confident",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 5,
+          "title": "The Grand Toast",
+          "description": "Call the guests to stand and offer a final toast referencing the sandwich joke.",
+          "keywords": [
+            "manage shenanigans",
+            "zero ham sandwiches",
+            "Cheers!"
+          ],
+          "impact": 0.9,
+          "delivery": "conclusion",
+          "color": "#F8B4B3"
+        },
+        {
+          "position": 6,
+          "title": "Crowd Engagement",
+          "description": "Open the floor for other guests to share their own funny stories about the groom.",
+          "keywords": [
+            "horror stories",
+            "Who's got the best one?",
+            "pause for responses"
+          ],
+          "impact": 0.4,
+          "delivery": "interactive",
+          "color": "#C9E4DE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "everyday-introduce-yourself",
+    "context": "everyday",
+    "label": "Introduce yourself",
+    "brief": "Introduce myself at a community meetup: who I am, what I'm into, and what I'd love to learn from the people here.",
+    "durationMinutes": 1,
+    "cardCount": 5,
+    "audience": "general",
+    "mood": "calm",
+    "profession": "other",
+    "title": "Shared Curiosity",
+    "script": "## [HOOK] · ~25s\nImagine spending your entire weekend taking apart a broken toaster just to see if you can make it work again. *(slow down here)* That's how I've spent most of my adult life. I'm the person who can't look at a gadget or a process without wondering **why** it was built that way.\n\n> *(pause)*\n\n## [PROBLEM] · ~25s\nThe problem is that curiosity usually happens in a vacuum. You spend hours in your own head or staring at a screen, and you hit a wall. When you're the only person in the room interested in a niche topic, your growth **stops** the moment you run out of your own ideas.\n\n## [CORE MESSAGE] · ~30s\nThat's why I'm here. I'm driven by a love for building things from scratch and a bit of an obsession with how systems fit together. But more than that, I'm looking for the perspective I don't have. I want to find the gaps in my thinking and fill them with the weird, specific expertise you all carry.\n\n> *(pause)*\n\n## [PROOF/STORY] · ~25s\nLast year, I tried to automate my entire garden using a few cheap sensors and a lot of hope. It failed **miserably** because I didn't understand basic soil chemistry. A ten-minute conversation with one gardener saved me six months of guessing. That's the kind of shortcut I'm looking for here.\n\n## [WHAT TO DO] · ~25s\nSo, here's the plan. If you've mastered something that seems boring to you but looks like magic to everyone else, please tell me about it. Find me during the break and give me the **one-sentence** version of what you're obsessed with right now. I'll likely have a question.\n\n## [CLOSING LINE] · ~15s\nI'm still that person who wants to take the toaster apart, but this time, I'd rather do it with a room full of people who actually know how the **wiring** works.\n\n## [QUESTIONS] · ~10s\nI'd love to hear from you now. Who wants to start?\n\n> **Ask the room:** \"What's the one thing you're an expert in that nobody ever asks you about?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Shared Curiosity",
+      "description": "Introduce myself at a community meetup: who I am, what I'm into, and what I'd love to learn from the people here.",
+      "color": "#FFC88A",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Toaster Hook",
+          "description": "Introduce your lifelong obsession with dismantling things to understand their inner workings and the limits of solo curiosity.",
+          "keywords": [
+            "broken toaster",
+            "wondering why",
+            "curiosity in a vacuum"
+          ],
+          "impact": 0.7,
+          "delivery": "storytelling",
+          "color": "#FCE8A6"
+        },
+        {
+          "position": 2,
+          "title": "The Growth Wall",
+          "description": "Explain the frustration of hitting a mental wall when working in isolation and your drive for systemic building.",
+          "keywords": [
+            "hit a wall",
+            "niche topic",
+            "building from scratch",
+            "systems fit together"
+          ],
+          "impact": 0.5,
+          "delivery": "explaining",
+          "color": "#C9E4DE"
+        },
+        {
+          "position": 3,
+          "title": "Garden Failure Lesson",
+          "description": "Contrast the desire for external perspective with a story about a failed automated garden and a gardener's help.",
+          "keywords": [
+            "gaps in thinking",
+            "automated garden",
+            "failed miserably",
+            "soil chemistry"
+          ],
+          "impact": 0.85,
+          "delivery": "humorous",
+          "color": "#FCC9A6"
+        },
+        {
+          "position": 4,
+          "title": "The Call to Action",
+          "description": "Request that experts share their 'boring' magic and conclude with the metaphor of collaborative wiring.",
+          "keywords": [
+            "boring to you",
+            "one-sentence version",
+            "the break",
+            "how the wiring works"
+          ],
+          "impact": 0.9,
+          "delivery": "persuasive",
+          "color": "#F7A7A6"
+        },
+        {
+          "position": 5,
+          "title": "Opening the Floor",
+          "description": "Transition to an interactive session by asking the audience about their hidden areas of expertise.",
+          "keywords": [
+            "who wants to start",
+            "expert in",
+            "nobody ever asks"
+          ],
+          "impact": 0.6,
+          "delivery": "interactive",
+          "color": "#B5E2EE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "interviews-about-yourself",
+    "context": "interviews",
+    "label": "Tell me about yourself",
+    "brief": "Answer 'Tell me about yourself' in a product designer interview: my background, one project I'm proud of, and why this role.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "business",
+    "mood": "confident",
+    "profession": "creative",
+    "title": "The Designer's Pitch",
+    "script": "## [HOOK] · ~25s\nMost designers spend this part of the interview reciting a **resume**. They list the years, the tools, and the titles. But a resume is just a ledger of where I've been. What actually matters is the **value** I've left behind at every single one of those stops.\n\n## [PROBLEM] · ~25s\nThe danger in design is falling in love with the **pixel** instead of the problem. I've seen teams spend six months polishing a feature that users didn't even want. That's not design. That's an **expensive** hobby. It wastes runway and kills momentum when the market is moving faster than your sprint cycle.\n\n## [CORE MESSAGE] · ~35s\nI approach product work as a bridge between user pain and business growth. First, I strip away the assumptions to find the actual **friction** point. Once that's clear, I build a lean solution that solves the core need without adding bloat. Finally, I measure the result against the **bottom line**. It's a cycle of evidence, execution, and refinement.\n\n## [PROOF/STORY] · ~25s\nAt my last firm, we had a checkout flow where **twenty percent** of users dropped off at the final screen. *(slow down here)* I didn't redesign the page. I removed two unnecessary form fields and clarified the pricing. We saw conversion jump by **five percent** in one week. Simple. Direct. Profitable.\n\n> *(pause)*\n\n## [WHAT TO DO] · ~25s\nThat's why I'm here. Your current product has a massive opportunity to scale its onboarding, and I've already identified **three specific** areas where we can cut friction. I want to apply that same ruthless prioritization to your roadmap starting on day one.\n\n## [CLOSING LINE] · ~15s\nI'm not here to just make things look better. I'm here to make them **work** better. Let's stop reciting the resume and start talking about how we move your **metrics**.\n\n## [QUESTIONS] · ~10s\nI've given you the highlight reel, but I'm sure you've got some specific gaps you want me to fill.\n\n> **Ask the room:** \"Where should we start?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "The Designer's Pitch",
+      "description": "Answer 'Tell me about yourself' in a product designer interview: my background, one project I'm proud of, and why this role.",
+      "color": "#F78199",
+      "cards": [
+        {
+          "position": 1,
+          "title": "Value Over Resume",
+          "description": "Challenge the standard interview approach by prioritizing tangible value over a list of titles and tools.",
+          "keywords": [
+            "resume ledger",
+            "reciting years",
+            "value left behind",
+            "pixel vs problem"
+          ],
+          "impact": 0.6,
+          "delivery": "confident",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 2,
+          "title": "The Expensive Hobby",
+          "description": "Warn against over-polishing unwanted features and define product work as a bridge to business growth.",
+          "keywords": [
+            "expensive hobby",
+            "waste runway",
+            "user pain",
+            "business growth",
+            "friction point"
+          ],
+          "impact": 0.7,
+          "delivery": "serious",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 3,
+          "title": "Lean Execution Cycle",
+          "description": "Detail the process of lean solutions and evidence-based measurement, introducing the checkout flow example.",
+          "keywords": [
+            "no bloat",
+            "bottom line",
+            "evidence and refinement",
+            "20% drop off"
+          ],
+          "impact": 0.65,
+          "delivery": "explaining",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 4,
+          "title": "Proof in Numbers",
+          "description": "Demonstrate impact through a specific conversion win and pivot to the current company's onboarding needs.",
+          "keywords": [
+            "form fields",
+            "5% jump",
+            "profitable",
+            "onboarding scale",
+            "three specific areas"
+          ],
+          "impact": 0.85,
+          "delivery": "emphasis",
+          "color": "#F8B4B3"
+        },
+        {
+          "position": 5,
+          "title": "Metrics Over Aesthetics",
+          "description": "Commit to ruthless prioritization and shift the conversation from visual design to moving business metrics.",
+          "keywords": [
+            "ruthless prioritization",
+            "work better",
+            "move metrics",
+            "highlight reel",
+            "fill gaps"
+          ],
+          "impact": 0.8,
+          "delivery": "persuasive",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 6,
+          "title": "Open the Floor",
+          "description": "Transition the presentation into an interactive dialogue by inviting specific questions from the room.",
+          "keywords": [
+            "Ask the room",
+            "Where should we start?",
+            "pause for response"
+          ],
+          "impact": 0.5,
+          "delivery": "interactive",
+          "color": "#C9E4DE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "interviews-challenge-story",
+    "context": "interviews",
+    "label": "A challenge you overcame",
+    "brief": "Answer 'Tell me about a challenge you overcame' with a clear story: the situation, what I did, and the result.",
+    "durationMinutes": 2,
+    "cardCount": 6,
+    "audience": "business",
+    "mood": "calm",
+    "profession": "tech",
+    "title": "Ownership Over Blame",
+    "script": "## [HOOK] · ~~25s\nWe've all been in that meeting. The one where a **critical bug** hits production on a Friday afternoon, and the first thing everyone does is point fingers. People don't look for the fix. They look for the person to blame so they can protect their own reputation before the weekend starts.\n\n## [PROBLEM] · ~~25s\nI lived this three years ago when a deployment wiped a client's database. The cost wasn't just the **four hours** of downtime. It was the trust. My team stopped communicating because they were terrified of being the one to take the fall. We weren't solving problems. We were managing optics.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~~35s\nThe only way out of that cycle is a culture of absolute ownership. It starts by decoupling the error from the person. You focus on the **systemic failure** that allowed the mistake to happen rather than the hand that clicked the button. Once you remove the fear of punishment, you get the truth. And the truth is the only thing that lets you build a permanent fix.\n\n## [PROOF/STORY] · ~~25s\nI stopped the finger-pointing by owning the failure myself, even though I didn't write the code. *(slow down here)* I led a blameless post-mortem where we mapped every single point of failure. We didn't find a scapegoat. We found a **gap in our staging environment** and patched it within forty-eight hours.\n\n## [WHAT TO DO] · ~~25s\nNext time a project hits a wall, don't ask who messed up. Ask what **safety net** was missing. Change the question from \"who did this\" to \"how did the system allow this.\" It's a small shift in phrasing, but it changes how your best engineers behave when things go wrong.\n\n## [CLOSING LINE] · ~~15s\nStop looking for the person to blame. Start looking for the gap in the process. That's how you move from a culture of fear to a culture of **performance**.\n\n> *(pause)*\n\n## [QUESTIONS] · ~~10s\nI'm curious if any of you have tried this approach in your own teams.\n\n> **Ask the room:** \"Has a blameless culture actually worked for you?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Ownership Over Blame",
+      "description": "Answer 'Tell me about a challenge you overcame' with a clear story: the situation, what I did, and the result.",
+      "color": "#EFC1FF",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Friday Bug",
+          "description": "Paint a relatable picture of the blame game that happens during a production crisis.",
+          "keywords": [
+            "critical bug",
+            "Friday afternoon",
+            "point fingers",
+            "protect reputation"
+          ],
+          "impact": 0.6,
+          "delivery": "storytelling",
+          "color": "#B8E0D2"
+        },
+        {
+          "position": 2,
+          "title": "Cost of Fear",
+          "description": "Discuss how a database wipe destroyed team trust and shifted focus from fixing to optics.",
+          "keywords": [
+            "four hours downtime",
+            "managing optics",
+            "terrified",
+            "absolute ownership"
+          ],
+          "impact": 0.7,
+          "delivery": "serious",
+          "color": "#C2E7F0"
+        },
+        {
+          "position": 3,
+          "title": "Systemic Failure",
+          "description": "Explain that decoupling errors from people reveals the truth necessary for permanent fixes.",
+          "keywords": [
+            "systemic failure",
+            "remove fear",
+            "permanent fix",
+            "owning failure"
+          ],
+          "impact": 0.9,
+          "delivery": "explaining",
+          "color": "#F8B4B3"
+        },
+        {
+          "position": 4,
+          "title": "The Blameless Fix",
+          "description": "Share the success of a blameless post-mortem that identified a staging environment gap.",
+          "keywords": [
+            "blameless post-mortem",
+            "staging environment",
+            "safety net",
+            "how did the system allow"
+          ],
+          "impact": 0.8,
+          "delivery": "confident",
+          "color": "#FFE5A0"
+        },
+        {
+          "position": 5,
+          "title": "Fear vs Performance",
+          "description": "Deliver the final call to action to prioritize process gaps over personal blame.",
+          "keywords": [
+            "gap in process",
+            "culture of performance",
+            "culture of fear"
+          ],
+          "impact": 0.85,
+          "delivery": "conclusion",
+          "color": "#FFC8A2"
+        },
+        {
+          "position": 6,
+          "title": "Audience Engagement",
+          "description": "Open the floor to the audience to share their own experiences with blameless culture.",
+          "keywords": [
+            "tried this approach",
+            "ask the room",
+            "worked for you"
+          ],
+          "impact": 0.5,
+          "delivery": "interactive",
+          "color": "#C9E4DE"
+        }
+      ]
+    }
+  },
+  {
+    "id": "english-hometown",
+    "context": "english",
+    "label": "Talk about your hometown",
+    "brief": "Describe my hometown to new friends in simple, natural English: where it is, what it's famous for, and my favourite place there.",
+    "durationMinutes": 1,
+    "cardCount": 5,
+    "audience": "general",
+    "mood": "playful",
+    "profession": "other",
+    "title": "My Hidden Gem",
+    "script": "## [HOOK] · ~~25s\nImagine a place where the streets smell like **roasted coffee** and the hills are so steep you'll actually feel your calves burning just walking to the store. It's a tiny dot on the map tucked away in the mountains, but it's got a personality that's way too big for its zip code.\n\n## [PROBLEM] · ~~25s\nMost people just drive right past us on the highway. They miss out on the **best** sourdough in the state and a community that actually knows their neighbors' names. If you stick to the tourist maps, you're basically seeing a cardboard cutout of the real town.\n\n> *(pause)*\n\n## [CORE MESSAGE] · ~~30s\nYou've gotta see the old clock tower first because it's the town's heartbeat. Then you need to hit the riverside market where the locals haggle over handmade quilts. Finally, you have to visit the hidden bookstore under the bridge. It's the only place I know where the books are **cheaper** than the coffee.\n\n## [PROOF/STORY] · ~~25s\nLast summer, I took a friend there who hated \"small towns.\" Within two hours, he was sitting on a curb eating a giant cinnamon roll and asking if he could **move** there. *(wry smile)* He didn't move, obviously, but the cinnamon roll won him over.\n\n## [WHAT TO DO] · ~~25s\nIf you're free this weekend, I'm driving up there. Pack a bag, leave the fancy shoes at home, and come with me. I'll show you the shortcut to the river that takes **ten minutes** instead of an hour. You just have to say yes.\n\n## [CLOSING LINE] · ~~15s\nSo, forget the highway and the tourist maps. Come see the steep hills and the roasted coffee for yourself. I promise those **burning calves** are totally worth the view.\n\n## [QUESTIONS] · ~~10s\nI'm sure you've got questions about the food or the hiking trails. What's on your mind?\n\n> **Ask the room:** \"Who's coming with me?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "My Hidden Gem",
+      "description": "Describe my hometown to new friends in simple, natural English: where it is, what it's famous for, and my favourite place there.",
+      "color": "#A0A3FF",
+      "cards": [
+        {
+          "position": 1,
+          "title": "Sensory Town Intro",
+          "description": "Paint a vivid picture of the mountain town's unique atmosphere and overlooked status.",
+          "keywords": [
+            "roasted coffee",
+            "burning calves",
+            "tiny dot",
+            "drive right past"
+          ],
+          "impact": 0.6,
+          "delivery": "storytelling",
+          "color": "#B5E2EE"
+        },
+        {
+          "position": 2,
+          "title": "Beyond Tourist Maps",
+          "description": "Contrast the fake tourist experience with the authentic local culture and key landmarks.",
+          "keywords": [
+            "best sourdough",
+            "cardboard cutout",
+            "clock tower",
+            "riverside market"
+          ],
+          "impact": 0.5,
+          "delivery": "explaining",
+          "color": "#C9E4DE"
+        },
+        {
+          "position": 3,
+          "title": "Hidden Gems & Proof",
+          "description": "Highlight the quirky bookstore and share the story of the skeptical friend's conversion.",
+          "keywords": [
+            "bookstore under bridge",
+            "small town hater",
+            "cinnamon roll",
+            "move there"
+          ],
+          "impact": 0.7,
+          "delivery": "humorous",
+          "color": "#FCE8A6"
+        },
+        {
+          "position": 4,
+          "title": "The Invitation",
+          "description": "Call the audience to join a trip this weekend and reject the standard highways.",
+          "keywords": [
+            "pack a bag",
+            "ten minute shortcut",
+            "say yes",
+            "forget highway"
+          ],
+          "impact": 0.85,
+          "delivery": "persuasive",
+          "color": "#FCC9A6"
+        },
+        {
+          "position": 5,
+          "title": "Closing & Engagement",
+          "description": "Tie back to the sensory hook and open the floor for questions and commitments.",
+          "keywords": [
+            "worth the view",
+            "hiking trails",
+            "who's coming",
+            "pause for responses"
+          ],
+          "impact": 0.9,
+          "delivery": "interactive",
+          "color": "#F7A7A6"
+        }
+      ]
+    }
+  },
+  {
+    "id": "english-small-talk",
+    "context": "english",
+    "label": "Monday small talk",
+    "brief": "Everyday small talk in English: greeting a coworker on Monday, asking about their weekend, and sharing a little about mine.",
+    "durationMinutes": 1,
+    "cardCount": 5,
+    "audience": "general",
+    "mood": "calm",
+    "profession": "other",
+    "title": "Monday Morning Rituals",
+    "script": "## [HOOK] · ~25s\nImagine it's Monday morning. You're at the coffee machine. A coworker walks in, and for three seconds, you both just **stare** at each other. You know you should say something, but the words feel heavy. You don't want to be awkward, but you don't want to force a conversation that feels fake.\n\n> *(pause)*\n\n## [PROBLEM] · ~25s\nMost of us treat small talk like a chore. We stick to the same boring scripts and end up sounding like robots. When you just say \"fine\" and move on, you're missing a chance to actually **connect**. That silence isn't just awkward; it's a wall that keeps your colleagues at a distance.\n\n## [CORE MESSAGE] · ~30s\nThe secret is to move from a closed question to an open one. Instead of asking if their weekend was good, ask what the **highlight** of their weekend was. Once they answer, share a tiny, specific detail about your own time off. Maybe you tried a new bakery or finally finished a book. It's about trading facts for feelings.\n\n> *(pause)*\n\n## [PROOF/STORY] · ~25s\nI used to be the \"fine\" person. Then I started asking people about their Sunday traditions. One coworker mentioned he spends every Sunday morning baking sourdough. Now, we don't just talk about the weather. We talk about **crust and crumb**. A five-second shift turned a stranger into a friend.\n\n## [WHAT TO DO] · ~25s\nTomorrow, try one specific change. When you see that coworker, don't ask \"how are you.\" Ask them for **one good thing** that happened over the break. Listen to the answer, find one detail to follow up on, and then share one small win from your own weekend. Keep it light. Keep it brief.\n\n## [CLOSING LINE] · ~15s\nNext time you're standing by that coffee machine, don't let the silence win. Stop staring and start asking. Turn those three seconds of awkwardness into a **real conversation**.\n\n> *(slow down here)*\n\n## [QUESTIONS] · ~10s\nI'm curious if you have a go-to question that always works.\n\n> **Ask the room:** \"What's your best icebreaker for a Monday morning?\"\n> *(pause for responses)*",
+    "deck": {
+      "title": "Monday Morning Rituals",
+      "description": "Everyday small talk in English: greeting a coworker on Monday, asking about their weekend, and sharing a little about mine.",
+      "color": "#ACCCC0",
+      "cards": [
+        {
+          "position": 1,
+          "title": "The Coffee Machine Stare",
+          "description": "Paint the picture of Monday morning awkwardness and the robotic nature of typical small talk.",
+          "keywords": [
+            "coffee machine",
+            "three seconds",
+            "heavy words",
+            "boring scripts",
+            "robots"
+          ],
+          "impact": 0.6,
+          "delivery": "storytelling",
+          "color": "#C9E4DE"
+        },
+        {
+          "position": 2,
+          "title": "Breaking the Wall",
+          "description": "Explain how 'fine' prevents connection and introduce the shift toward open-ended highlight questions.",
+          "keywords": [
+            "missing connection",
+            "the wall",
+            "closed vs open",
+            "the highlight"
+          ],
+          "impact": 0.85,
+          "delivery": "explaining",
+          "color": "#FCC9A6"
+        },
+        {
+          "position": 3,
+          "title": "Facts for Feelings",
+          "description": "Share the sourdough story to demonstrate how a tiny shift in questioning builds real friendships.",
+          "keywords": [
+            "bakery/book",
+            "facts for feelings",
+            "Sunday traditions",
+            "crust and crumb"
+          ],
+          "impact": 0.7,
+          "delivery": "friendly",
+          "color": "#B5E2EE"
+        },
+        {
+          "position": 4,
+          "title": "The Tomorrow Challenge",
+          "description": "Give the audience a concrete actionable step to replace 'how are you' with 'one good thing'.",
+          "keywords": [
+            "one good thing",
+            "follow up",
+            "small win",
+            "keep it light"
+          ],
+          "impact": 0.9,
+          "delivery": "step_by_step",
+          "color": "#F7A7A6"
+        },
+        {
+          "position": 5,
+          "title": "From Silence to Conversation",
+          "description": "Close with a powerful call to action and transition into an interactive audience icebreaker.",
+          "keywords": [
+            "don't let silence win",
+            "real conversation",
+            "go-to question",
+            "best icebreaker"
+          ],
+          "impact": 0.8,
+          "delivery": "interactive",
+          "color": "#FCE8A6"
+        }
+      ]
+    }
+  }
+]

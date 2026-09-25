@@ -179,7 +179,7 @@ def generate_day(day: date) -> list[dict]:
 
     content = chat([{"role": "system", "content": system}, {"role": "user", "content": user}])
     items = json.loads(_extract_json_array(content))
-    if not isinstance(items, list):
+    if not isinstance(items, list):  # pragma: no cover — the extractor only returns [...]
         raise ValueError("Model output was not a list")
 
     units: list[dict] = []

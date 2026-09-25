@@ -38,6 +38,9 @@ interface SubscriptionStore {
    *  status pill, so a forced re-read after a plan change is visible rather
    *  than the old plan sitting there looking current. */
   isRefreshing: boolean;
+  /** The Clerk user RevenueCat last logged in as — once its answer is in, so
+   *  `isPro` is theirs rather than whoever held the SDK before them. */
+  loggedInAs: string | null;
 
   offering: PurchasesOffering | null;
   isLoadingOffering: boolean;
@@ -63,6 +66,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   isPro: false,
   isReady: false,
   isRefreshing: false,
+  loggedInAs: null,
   offering: null,
   isLoadingOffering: false,
   isPurchasing: false,

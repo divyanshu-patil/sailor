@@ -2,7 +2,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.config.settings import settings
-import app.models
+import app.models  # noqa: F401 — registers every model before a task touches one
 
 celery_app = Celery(
     "sailors",

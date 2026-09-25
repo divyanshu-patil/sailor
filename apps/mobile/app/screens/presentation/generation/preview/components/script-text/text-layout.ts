@@ -76,6 +76,8 @@ function wrapStyledWords(
     }
   }
 
+  // Only ever called with at least one word, so `current` is never empty here.
+  /* v8 ignore next */
   if (current.length > 0) lines.push(current);
   return lines;
 }

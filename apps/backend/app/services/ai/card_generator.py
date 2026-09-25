@@ -110,7 +110,7 @@ def _script_digest(script: str) -> str:
             lines.append(block)
             continue
         first = _SENTENCE_SPLIT_PATTERN.split(block)[0].strip()
-        if first:
+        if first:  # pragma: no branch — block is stripped and non-empty, so first is too
             lines.append(first)
 
     digest = "\n".join(lines)

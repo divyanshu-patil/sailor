@@ -59,17 +59,14 @@ const ProfileScreen = () => {
     emailRef.current = appUser?.email;
   }, [appUser?.email]);
 
-  // Only re-run when a genuinely NEW fetch result comes in. Clerk identity is
-  // the fallback for the fields the backend row may not have yet — a consumer
-  // backend row starts with `full_name` null, and the name the user signed up
-  // with lives in Clerk.
+  // Only re-run when a genuinely NEW fetch result comes in. Clerk's verified
+  // email is the fallback while the backend row doesn't carry one yet.
   useEffect(() => {
     if (profile) {
       setAppUser({
         id: profile.id,
         clerkUserId: profile.clerk_user_id,
         email: profile.email || identity.email || emailRef.current || "",
-        fullName: profile.full_name || identity.displayName || "",
         nickname: profile.nickname,
         experienceLevel: profile.experience_level,
         profession: profile.profession,
@@ -77,7 +74,7 @@ const ProfileScreen = () => {
         role: profile.role as "user" | "admin" | "dev",
       });
     }
-  }, [profile, identity.displayName, identity.email, setAppUser]);
+  }, [profile, identity.email, setAppUser]);
 
   // appUser null means: cache was just cleared, or we've (re)mounted after
   // that clear. `data` in useUser can still be holding the pre-clear
@@ -233,14 +230,8 @@ const ProfileScreen = () => {
     );
   }
 
-  const displayName =
-    appUser?.nickname ||
-    appUser?.fullName ||
-    identity.displayName ||
-    profile?.full_name ||
-    "Your profile";
+  const displayName = appUser?.nickname || profile?.nickname || "Your profile";
   const displayEmail = identity.email || appUser?.email || profile?.email || "";
-  const avatarUrl = identity.imageUrl;
 
   // The store's own name for the product, so switching monthly to yearly
   // changes the card the moment the new customer info lands. The generic
@@ -308,8 +299,8 @@ const ProfileScreen = () => {
             <ProfileHero
               name={displayName}
               email={displayEmail}
-              avatarUrl={avatarUrl}
-              avatarName={identity.name}
+              // The face the nickname gave them in onboarding.
+              avatarName={appUser?.nickname || profile?.nickname || ""}
               avatarLoading={!identity.isLoaded}
               // Same destination as the "Edit Profile" row below. The photo is
               // what people reach for first, so it should not be the one part

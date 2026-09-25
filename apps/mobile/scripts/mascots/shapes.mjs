@@ -393,29 +393,10 @@ const PLATES = {
   },
 };
 
-/** The week tile. Most of it is under two cards, so the shapes sit where the
- *  tile shows: around the cards' corners, the gap above the week card, and a
- *  lilac patch behind the character so the peach dome doesn't melt into the
- *  peach ground. */
-PLATES.streakWeek = {
-  w: 338,
-  h: 158,
-  shapes: [
-    { at: [-0.02, -0.04], r: 0.13, color: 1 },
-    { at: [0.6, -0.06], r: 0.1, color: 0 },
-    { at: [0.84, 0.44], r: 0.15, color: 3 },
-    { at: [1.03, -0.02], r: 0.12, color: 2 },
-    { at: [-0.02, 1.04], r: 0.12, color: 2 },
-    { at: [1.02, 1.04], r: 0.1, color: 1 },
-  ],
-  curls: [{ at: [0.54, 0.3], r: 0.035, turns: 1.4, rotate: 0.9, color: 4 }],
-};
-
 /** Five pastels: four fills and the curl's stroke. */
 const PLATE_COLOURS = {
   practice: ["#C7DBFB", "#FFE4B5", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
   streak: ["#CFE0FB", "#D6EFD8", "#DFD2FA", "#FBD3E4", "#A9C4F5"],
-  streakWeek: ["#FADFC4", "#F8E9B4", "#F6D4DA", "#E6DDF6", "#EFAE95"],
 };
 
 const PLATE_BASE = "#FBFCFF";
@@ -454,8 +435,6 @@ export const widgetPlates = () => [
     svg: plate({ layout: PLATES.practiceMedium, colours: PLATE_COLOURS.practice, base: PLATE_BASE, seed: 20260921 }) },
   { name: "widget-bg-streak-cool", layout: PLATES.streak,
     svg: plate({ layout: PLATES.streak, colours: PLATE_COLOURS.streak, base: PLATE_BASE, seed: 20260923 }) },
-  { name: "widget-bg-streak-week", layout: PLATES.streakWeek,
-    svg: plate({ layout: PLATES.streakWeek, colours: PLATE_COLOURS.streakWeek, base: "#F4EFE8", seed: 20260925 }) },
 ];
 
 /* --------------------------------------------------------------- the flame */

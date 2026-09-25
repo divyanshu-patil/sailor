@@ -7,7 +7,7 @@ import { usePreferenceStore } from "@/store/preference-store";
 import { localDate, StreakState } from "@/types/daily";
 
 import { ensureNotificationPermission } from "./daily-reminder";
-import { STREAK_ALERTS } from "./notification-copy";
+import { STREAK_ALERTS, streakAlertFor } from "./notification-copy";
 
 /**
  * The "your streak is about to die" mechanism.
@@ -79,11 +79,12 @@ export async function syncStreakAlerts(
     STREAK_ALERTS.map(async (alert, i) => {
       const at = target.deadline.getTime() + alert.offset;
       if (at <= now) return;
+      const { title, body } = streakAlertFor(i, target.count, target.deadline);
       await Notifications.scheduleNotificationAsync({
         identifier: ID(i),
         content: {
-          title: alert.title(target.count),
-          body: alert.body(target.count),
+          title,
+          body,
           sound: true,
           data: { url: "sailors://daily-practice" },
           interruptionLevel: "timeSensitive",
@@ -98,7 +99,8 @@ export async function syncStreakAlerts(
 }
 
 /**
- * Re-read the streak from the server.
+ * Re-read the streak from the server — on every foreground (below) and on
+ * signing in (the root layout).
  *
  * The deadline is derived entirely from `lastCompletedDate`, so a cached
  * streak that is a day stale schedules the alarms for the wrong night — and
@@ -112,7 +114,7 @@ export async function syncStreakAlerts(
  */
 let refreshing = false;
 
-async function refreshStreak(): Promise<void> {
+export async function refreshStreak(): Promise<void> {
   if (refreshing) return;
   // A simulated streak is the dev section's whole point; a read here would
   // answer about the real one and wipe the state someone is looking at.

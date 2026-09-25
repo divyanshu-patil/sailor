@@ -7,7 +7,7 @@ from app.models.card_model import Card
 from app.models.deck_model import Deck
 from app.models.user_model import User
 from app.controllers.deck_controller import revoke_task
-from app.schemas.card_schema import CardCreateParams, CardResponse, CardUpdateParams
+from app.schemas.card_schema import CardResponse, CardUpdateParams
 from app.services.quota import consume_generation
 from app.services.ai.card_generator import CardGenerationError, split_script_into_segments
 from app.services.cards.impact_colors import assign_colors_by_impact

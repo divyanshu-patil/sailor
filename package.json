@@ -15,7 +15,8 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "practice:regenerate": "pnpm --filter=@sailors/backend practice:regenerate"
+    "practice:regenerate": "pnpm --filter=@sailors/backend practice:regenerate",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "prettier": "^3.1.1",

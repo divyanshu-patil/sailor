@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { useNativeState } from "@expo/ui/swift-ui";
 import { AppUserProfile, useAppUserStore } from "@/store/app-user.store";
+import type { ExperienceLevel } from "@/types/user";
 import { usePreferenceStore } from "@/hooks";
 import { colord } from "colord";
 
@@ -33,33 +34,35 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     setErrorVisible(true);
   }, []);
 
-  const nameState = useNativeState(appUser.fullName);
   const nicknameState = useNativeState(appUser.nickname);
 
-  const [nameValue, setNameValue] = useState(appUser.fullName);
   const [nicknameValue, setNicknameValue] = useState(appUser.nickname);
-
-  const handleNameChange = useCallback((text: string) => {
-    setNameValue(text);
-  }, []);
 
   const handleNicknameChange = useCallback((text: string) => {
     setNicknameValue(text);
   }, []);
 
+  // The speaking profile saves with the rest of the form, not on each pick.
+  const [profession, setProfession] = useState(appUser.profession);
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
+    appUser.experienceLevel,
+  );
+
   const hasChanges = useMemo(() => {
     return (
-      nameValue.trim() !== appUser.fullName ||
-      nicknameValue.trim() !== appUser.nickname
+      nicknameValue.trim() !== appUser.nickname ||
+      profession !== appUser.profession ||
+      experienceLevel !== appUser.experienceLevel
     );
-  }, [appUser, nameValue, nicknameValue]);
+  }, [appUser, nicknameValue, profession, experienceLevel]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       await updateAppUserProfile({
-        fullName: nameValue.trim(),
         nickname: nicknameValue.trim(),
+        profession,
+        experienceLevel,
       });
       router.back();
     } catch {
@@ -67,7 +70,14 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     } finally {
       setIsSaving(false);
     }
-  }, [nameValue, nicknameValue, updateAppUserProfile, router, showError]);
+  }, [
+    nicknameValue,
+    profession,
+    experienceLevel,
+    updateAppUserProfile,
+    router,
+    showError,
+  ]);
 
   const { hex } = usePreferenceStore((state) => state.preferences.appearance);
   const appearanceColor = useMemo(
@@ -80,10 +90,13 @@ export function useEditProfileForm(appUser: AppUserProfile) {
     isSaving,
     externalLinked,
     email: appUser.email,
-    nameState,
     nicknameState,
-    handleNameChange,
+    nicknameValue,
     handleNicknameChange,
+    profession,
+    setProfession,
+    experienceLevel,
+    setExperienceLevel,
     hasChanges,
     handleSave,
     errorVisible,

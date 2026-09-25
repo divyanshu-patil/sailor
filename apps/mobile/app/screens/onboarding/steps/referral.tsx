@@ -3,9 +3,19 @@ import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
+import { haptics } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
+import {
+  pillMark,
+  SelectionMark,
+  selectedBorder,
+  Stagger,
+} from "../components/choice-motion";
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
+
+/** The pills' height; the check mark sits by it (see `pillMark`). */
+const CARD_HEIGHT = 92;
 
 interface ReferralOption {
   /** Persisted value. */
@@ -105,34 +115,37 @@ export default function ReferralStep({
       </Text>
 
       <View style={styles.options}>
-        {OPTIONS.map((option) => {
+        {OPTIONS.map((option, i) => {
           const active = selected === option.value;
           return (
-            <PressableScale
-              key={option.value}
-              onPress={() => controller.setDraft({ referral: option.value })}
-              style={[
-                styles.card,
-                { backgroundColor: option.card },
-                active && styles.cardActive,
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={option.label}
-            >
-              <View style={[styles.badge, { backgroundColor: option.badge }]}>
-                <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
-              </View>
-              <Text style={styles.label}>{option.label}</Text>
-              <View style={styles.mascot}>
-                <BlobMascot
-                  color={option.blob}
-                  accent={option.accent}
-                  eyes={option.eyes}
-                  size={90}
-                />
-              </View>
-            </PressableScale>
+            <Stagger key={option.value} index={i}>
+              <PressableScale
+                haptic={haptics.select}
+                onPress={() => controller.setDraft({ referral: option.value })}
+                style={[
+                  styles.card,
+                  { backgroundColor: option.card },
+                  active && { borderColor: selectedBorder(option.card) },
+                ]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={option.label}
+              >
+                <View style={[styles.badge, { backgroundColor: option.badge }]}>
+                  <Ionicons name={option.icon} size={25} color={PROFILE.ink} />
+                </View>
+                <Text style={styles.label}>{option.label}</Text>
+                <View style={styles.mascot}>
+                  <BlobMascot
+                    color={option.blob}
+                    accent={option.accent}
+                    eyes={option.eyes}
+                    size={90}
+                  />
+                </View>
+                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
+              </PressableScale>
+            </Stagger>
           );
         })}
       </View>
@@ -181,16 +194,15 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 92,
+    minHeight: CARD_HEIGHT,
     marginBottom: 14,
     paddingLeft: 14,
     paddingRight: 86,
-    borderRadius: 22,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
     overflow: "hidden",
   },
-  cardActive: { borderColor: PROFILE.ink },
   badge: {
     width: 54,
     height: 54,

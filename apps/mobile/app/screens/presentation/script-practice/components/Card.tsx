@@ -2,6 +2,7 @@ import { StyleSheet, TextInput, useWindowDimensions } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
+  interpolateColor,
   measure,
   SharedValue,
   useAnimatedRef,
@@ -13,12 +14,17 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 import { ScriptLine } from "../../script-text/ScriptLine";
-import { getNormalCardTransform, MAX_ROTATION } from "../utils/cardMath";
+import {
+  getNormalCardTransform,
+  getVirtualDepth,
+  MAX_ROTATION,
+} from "../utils/cardMath";
+import { cardInk } from "../utils/colorAssignment";
+import { hexToOklch, oklchToHex } from "../utils/oklch";
 import Lucide from "@react-native-vector-icons/lucide";
 import { AnimatedPressable } from "@/components/ui/animated/AnimatedComponents";
 import { haptics } from "@/lib/haptics";
 import { fonts } from "@/constants/fonts";
-import { colord } from "colord";
 import React, { useEffect, useRef, useState } from "react";
 import type { DeliveryLike } from "@/types/presentation/card";
 import {
@@ -383,6 +389,40 @@ const Card = React.memo(
 
     /**
      * ----------------------------------------------------
+     * DEPTH SHADE
+     * ----------------------------------------------------
+     *
+     * A card behind the front one is a little darker, and comes up to its own
+     * colour as the swipe carries it forward — clamped, so it never passes its
+     * colour at the front or gets darker than one slot back.
+     */
+    // A perceptual step down in lightness, the same on every hue.
+    const shadedColor = React.useMemo(() => {
+      const tone = hexToOklch(color);
+      return oklchToHex({ ...tone, l: tone.l - 0.06 });
+    }, [color]);
+    const shadeStyle = useAnimatedStyle(() => {
+      const depth = index - currentIndexSV.value;
+      const virtualDepth =
+        depth < 0
+          ? 0
+          : getVirtualDepth({
+              currIndex: depth,
+              dragTranslateX: drag.translateX.value,
+              prevCardTranslateX: prevDrag?.translateX.value,
+              returnStartX: RETURN_START_X,
+            });
+      return {
+        backgroundColor: interpolateColor(
+          Math.min(1, Math.max(0, virtualDepth)),
+          [0, 1],
+          [color, shadedColor],
+        ),
+      };
+    });
+
+    /**
+     * ----------------------------------------------------
      * WHOLE FRONT CARD FLIP
      * ----------------------------------------------------
      *
@@ -451,7 +491,7 @@ const Card = React.memo(
       };
     });
 
-    const inputTextColor = colord(color).darken(0.4).desaturate(0.3).toHex();
+    const inputTextColor = cardInk(color);
 
     /**
      * ----------------------------------------------------
@@ -527,9 +567,7 @@ const Card = React.memo(
               collapsable={false}
               style={[
                 styles.cardFace,
-                {
-                  backgroundColor: color,
-                },
+                shadeStyle,
                 frontCardStyle,
               ]}
             >
@@ -601,9 +639,7 @@ const Card = React.memo(
               collapsable={false}
               style={[
                 styles.cardFace,
-                {
-                  backgroundColor: color,
-                },
+                shadeStyle,
                 backCardStyle,
               ]}
             >

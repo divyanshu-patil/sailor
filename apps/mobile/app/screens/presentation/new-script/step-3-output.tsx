@@ -335,7 +335,7 @@ export default function StepOutput({
               <Text style={[styles.title, { color: DURATION.ink }]}>
                 {DURATION.title}
               </Text>
-              <Fade open={open} style={styles.centre}>
+              <Fade open={open} style={[styles.centre, styles.optical]}>
                 <View style={styles.minutes}>
                   <Text style={[styles.figure, { color: DURATION.figure }]}>
                     {form.durationMinutes}
@@ -514,7 +514,10 @@ const Figure = memo(
     });
 
     return (
-      <Animated.View style={[styles.centre, style]} pointerEvents="none">
+      <Animated.View
+        style={[styles.centre, styles.optical, style]}
+        pointerEvents="none"
+      >
         <Text style={[styles.figure, { color: colour }]}>{value}</Text>
       </Animated.View>
     );
@@ -557,6 +560,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  /** Digits have no descenders, but the line keeps room for them below, so a
+   *  centred number reads high. Starting the box lower centres the glyphs. */
+  optical: { top: 18 },
   figure: {
     fontSize: 96,
     lineHeight: 108,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, UploadFile
 from app.controllers.audio_controller import (
     get_audio_playback_url,
     remove_audio_for_deck,

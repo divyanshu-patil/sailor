@@ -30,3 +30,51 @@ dependencies = [
     "uvicorn>=0.48.0",
     "boto3>=1.43.102",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.9",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+# Several packages under app/ have no __init__.py; without this, a module no
+# test imports is silently left out of the total instead of counted as 0%.
+include_namespace_packages = true
+fail_under = 100
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+# Correctness, not style: pyflakes, pycodestyle errors/warnings and bugbear.
+# Formatting (line length, import order) is left to the formatter.
+select = ["E", "F", "W", "B"]
+ignore = [
+    "E501",  # line length is the formatter's business
+    "E712",  # `== False` is how SQLAlchemy filters are written
+    "B904",  # the app raises HTTPExceptions from except blocks on purpose; chaining
+             # would only add the internal cause to tracebacks, not change behaviour
+    "B905",  # zip() over lists built to the same length
+]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI's dependency injection is Depends() in argument defaults, by design.
+"app/api/**" = ["B008"]
+"app/auth/**" = ["B008"]
+# Imports follow a module-level constant the schema imports depend on.
+"app/schemas/script_schema.py" = ["E402"]
+"tests/**" = ["B008"]

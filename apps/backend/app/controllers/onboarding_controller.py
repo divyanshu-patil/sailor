@@ -60,6 +60,7 @@ def upsert_progress(
     # replaying an in_progress write must not put an account back through a flow
     # it has already finished.
     if row.status == "completed" and payload.status != "completed":
+        current_user.onboarding_completed = True
         db.commit()
         db.refresh(row)
         return row
@@ -79,6 +80,11 @@ def upsert_progress(
     # behind would make the record claim two contradictory things.
     if row.status != "completed":
         row.completed_at = None
+    # `users.onboarding_completed` is what the app routes on. A flow finished
+    # before sign-up reaches the server only as this completed record, so the
+    # flag has to follow it here — or a reinstall shows onboarding again.
+    if row.status == "completed":
+        current_user.onboarding_completed = True
 
     db.commit()
     db.refresh(row)

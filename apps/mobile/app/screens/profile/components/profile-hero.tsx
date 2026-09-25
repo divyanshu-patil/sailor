@@ -11,11 +11,9 @@ const AVATAR_SIZE = 132;
 interface ProfileHeroProps {
   name: string;
   email: string;
-  /** Real image URL from Clerk, or null for the generated fallback. */
-  avatarUrl: string | null;
-  /** Deterministic seed for the fallback avatar. Defaults to `name`. */
+  /** Seed for the Blobatar — the nickname. Defaults to `name`. */
   avatarName?: string;
-  /** Holds off the fallback avatar until Clerk's identity is available. */
+  /** Holds off the avatar until the identity is available. */
   avatarLoading?: boolean;
   /** Tapping the photo opens Edit Profile — the same affordance as the row
    *  below it, because the picture is the thing people reach for. */
@@ -23,14 +21,12 @@ interface ProfileHeroProps {
 }
 
 /**
- * The identity block: the large pastel avatar (real photo when Clerk has one,
- * a name-seeded Blobatar otherwise), the user's name and email. Purely
- * presentational — the screen owns the data.
+ * The identity block: the large pastel avatar (the nickname's Blobatar), the
+ * nickname and email. Purely presentational — the screen owns the data.
  */
 const ProfileHero = memo(function ProfileHero({
   name,
   email,
-  avatarUrl,
   avatarName,
   avatarLoading,
   onAvatarPress,
@@ -42,10 +38,9 @@ const ProfileHero = memo(function ProfileHero({
         onPress={onAvatarPress}
         disabled={!onAvatarPress}
         accessibilityRole="button"
-        accessibilityLabel="Edit your profile photo"
+        accessibilityLabel="Edit your profile"
       >
         <GlassAvatar
-          imageUrl={avatarUrl}
           name={avatarName ?? name}
           size={AVATAR_SIZE}
           loading={avatarLoading}

@@ -8,7 +8,6 @@ import {
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useUser } from "@clerk/expo";
 
 import { BottomTabInset } from "@/constants/theme";
 import { haptics } from "@/lib/haptics";
@@ -77,7 +76,6 @@ const HomeScreen = () => {
   const insets = useSafeAreaInsets();
 
   const appUser = useAppUserStore((s) => s.appUser);
-  const { user } = useUser();
 
   // Straight from the cache, not through `useDailyPractice`: home reflects
   // whatever the practice screen last saw and never fires the daily fetch
@@ -97,7 +95,7 @@ const HomeScreen = () => {
 
   const greeting = useMemo(() => pickGreeting(), []);
   const name = capitalise(
-    appUser?.nickname?.trim() || user?.firstName?.trim() || "there",
+    appUser?.nickname?.trim() || "there",
   );
 
   /** Every card is an entrance into a flow, so they all get the same press. */

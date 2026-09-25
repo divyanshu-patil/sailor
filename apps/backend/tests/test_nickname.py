@@ -34,7 +34,13 @@ class NormalizeTests(unittest.TestCase):
 
 class ValidateTests(unittest.TestCase):
     def test_returns_the_display_form(self):
-        self.assertEqual(validate_nickname("  Alex   More  "), "Alex More")
+        self.assertEqual(validate_nickname("  Alex  "), "Alex")
+
+    def test_spaces_are_rejected(self):
+        for raw in ("Al ex", "A\tB"):
+            with self.assertRaises(InvalidNickname) as ctx:
+                validate_nickname(raw)
+            self.assertEqual(ctx.exception.code, "invalid_chars")
 
     def test_empty_is_rejected(self):
         for raw in (None, "", "   "):
@@ -49,11 +55,12 @@ class ValidateTests(unittest.TestCase):
 
     def test_too_long_is_rejected(self):
         with self.assertRaises(InvalidNickname) as ctx:
-            validate_nickname("a" * 31)
+            validate_nickname("a" * 8)
         self.assertEqual(ctx.exception.code, "too_long")
 
     def test_invalid_characters_are_rejected(self):
-        for raw in ("<script>", "a@b", "emoji😀", "slash/name"):
+        # Seven characters or fewer, so the length check doesn't answer first.
+        for raw in ("<b>", "a@b", "emo😀", "sl/ash"):
             with self.assertRaises(InvalidNickname) as ctx:
                 validate_nickname(raw)
             self.assertIn(ctx.exception.code, ("invalid_chars", "control_chars"))
@@ -67,9 +74,9 @@ class ValidateTests(unittest.TestCase):
     def test_unicode_and_separators_are_accepted(self):
         self.assertEqual(validate_nickname("José"), "José")
         self.assertEqual(validate_nickname("小明"), "小明")
-        self.assertEqual(validate_nickname("Jean-Luc"), "Jean-Luc")
+        self.assertEqual(validate_nickname("Jo-Ann"), "Jo-Ann")
         self.assertEqual(validate_nickname("O'Neill"), "O'Neill")
-        self.assertEqual(validate_nickname("Ana_Maria"), "Ana_Maria")
+        self.assertEqual(validate_nickname("Ana_Mia"), "Ana_Mia")
 
 
 if __name__ == "__main__":

@@ -83,6 +83,33 @@ export const getCascadedStackRotation = (virtualDepth: number) => {
 };
 
 /**
+ * Where a stacked card is right now, as a continuous depth: its slot, shifted
+ * by the swipe in progress — 1 sliding toward 0 as the card in front is dragged
+ * away, and back out as a previous card returns.
+ */
+export const getVirtualDepth = ({
+  currIndex,
+  dragTranslateX,
+  prevCardTranslateX,
+  returnStartX,
+}: {
+  currIndex: number;
+  dragTranslateX: number;
+  prevCardTranslateX: number | undefined;
+  returnStartX: number;
+}) => {
+  "worklet";
+  const prevCardReturnProgress =
+    prevCardTranslateX !== undefined
+      ? getPrevCardReturnProgress(prevCardTranslateX, returnStartX)
+      : 0;
+  return (
+    currIndex +
+    getCascadeProgress(getDragProgress(dragTranslateX), prevCardReturnProgress)
+  );
+};
+
+/**
  * Full transform values for the "normal" (non-previous) card position,
  * given the gesture/cascade state. Returns translateX, translateY, and
  * rotate (all pre-intro-offset; caller adds introOffset/scale separately).
@@ -102,17 +129,12 @@ export const getNormalCardTransform = ({
   const dragProgress = getDragProgress(dragTranslateX);
   const arcY = getArcY(dragProgress);
 
-  const prevCardReturnProgress =
-    prevCardTranslateX !== undefined
-      ? getPrevCardReturnProgress(prevCardTranslateX, returnStartX)
-      : 0;
-
-  const cascadeProgress = getCascadeProgress(
-    dragProgress,
-    prevCardReturnProgress,
-  );
-
-  const virtualDepth = currIndex + cascadeProgress;
+  const virtualDepth = getVirtualDepth({
+    currIndex,
+    dragTranslateX,
+    prevCardTranslateX,
+    returnStartX,
+  });
   const stackRotation = getCascadedStackRotation(virtualDepth);
 
   const isFrontCardDraggingRight = currIndex === 0 && dragProgress >= 0;

@@ -98,7 +98,6 @@ class User(Base):
         nullable=False,
     )
 
-    full_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     nickname: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
 
     # The canonical, case-folded, whitespace-collapsed form of `nickname`.

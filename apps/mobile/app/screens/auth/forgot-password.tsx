@@ -32,7 +32,7 @@ import { MASCOTS, BLOB_CREAM_MASCOT } from "@/constants/mascots";
 import {
   EMAIL_REGEX,
   MIN_PASSWORD_LENGTH,
-} from "@/screens/auth/signup/types/types";
+} from "@/screens/auth/validation";
 import { MorphArrow } from "@/screens/auth/components/morph-arrow";
 import { useTransitionSettled } from "@/screens/auth/use-transition-settled";
 
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 56,
-    borderRadius: 16,
+    borderRadius: 999,
     borderWidth: 1.5,
     borderColor: BORDER,
     backgroundColor: FIELD_BG,

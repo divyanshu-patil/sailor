@@ -13,13 +13,14 @@ import { useAuthGate } from "@/hooks/use-auth-gate";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
-import { useProfileSetupStore } from "@/store/profile-setup.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
+import MascotPreloader from "@/components/ui/mascot-preloader";
+import { useAppUserStore } from "@/store/app-user.store";
 import * as Sentry from "@sentry/react-native";
 import * as Notifications from "expo-notifications";
 import { startReminderSync } from "@/lib/daily-reminder";
-import { startStreakAlertSync } from "@/lib/streak-alarm";
+import { refreshStreak, startStreakAlertSync } from "@/lib/streak-alarm";
 import { startHapticsSync } from "@/lib/haptics";
 import { primeWidgetAssets } from "@/lib/widget-assets";
 import * as Font from "expo-font";
@@ -118,12 +119,14 @@ function InitialLayout() {
   const onboardingCompletedForUserId = useOnboardingCompletionStore(
     (s) => s.completedForUserId,
   );
-  const isProfileSetupHydrated = useProfileSetupStore((s) => s._hasHydrated);
-  const profileSetupCompletedForUserId = useProfileSetupStore(
-    (s) => s.completedForUserId,
+  const onboardingCheckedForUserId = useOnboardingCompletionStore(
+    (s) => s.checkedForUserId,
   );
   const { ready: authReady, isSignedIn, userId } = useAuthGate();
   const assetsReady = useAppBootstrap();
+  // Nobody signed in on this device, by the look of the disk: the front door
+  // is next, and its mascots are the slowest thing on it.
+  const likelySignedOut = !useAppUserStore((s) => s.appUser?.clerkUserId);
 
   // Reconciles the local completion flags with the server's, so a reinstall or
   // a second device does not repeat a flow this account has already finished.
@@ -131,24 +134,40 @@ function InitialLayout() {
   // keeps reading the local stores, which are on disk before the first frame.
   useOnboardingGate(userId);
 
+  // Completion is per Clerk user, so a different account on the same device
+  // still runs onboarding once.
+  const hasCompletedOnboarding =
+    !!userId && onboardingCompletedForUserId === userId;
+
+  // Signed in, but not finished on this device: the account's own flag decides
+  // whether that means onboarding, so the splash holds until the server has
+  // answered (or the gate has given up waiting).
+  const onboardingKnown =
+    !isSignedIn || hasCompletedOnboarding || onboardingCheckedForUserId === userId;
+
   // Everything the first frame needs: the persisted stores, a decision about
-  // who is signed in, and the home screen's own fonts and images.
+  // who is signed in and whether they still owe onboarding, and the home
+  // screen's own fonts and images.
   const canRender =
     isOnboardingCompletionHydrated &&
     isOnboardingPendingHydrated &&
-    isProfileSetupHydrated &&
     authReady &&
+    onboardingKnown &&
     assetsReady;
 
-  // Completion is per Clerk user, so a different account on the same device
-  // still runs onboarding and profile setup once.
-  const hasCompletedOnboarding =
-    !!userId && onboardingCompletedForUserId === userId;
-  const hasCompletedProfileSetup =
-    !!userId && profileSetupCompletedForUserId === userId;
-
+  // Per account, not per launch: preferences and the streak are the server's,
+  // logout clears the local copies, and a sign-in partway through a launch has
+  // to read them back — as does a launch that's already signed in, where home
+  // would otherwise show the streak from before. Keyed on Clerk's own session
+  // rather than the one remembered on disk, because only it can put a token on
+  // the requests.
+  const { isLoaded: clerkLoaded, userId: clerkUserId } = useAuth();
   useEffect(() => {
+    if (!clerkLoaded || !clerkUserId) return;
     syncPreferencesOnce();
+    void refreshStreak();
+  }, [clerkLoaded, clerkUserId]);
+  useEffect(() => {
     syncAppearanceOptionsOnce();
   }, []);
 
@@ -180,6 +199,7 @@ function InitialLayout() {
     Font.loadAsync({
       "Kalam-Light": require("@expo-google-fonts/kalam/300Light/Kalam_300Light.ttf"),
       "Kalam-Regular": require("@expo-google-fonts/kalam/400Regular/Kalam_400Regular.ttf"),
+      "Kalam-Bold": require("@expo-google-fonts/kalam/700Bold/Kalam_700Bold.ttf"),
     }).catch(() => {});
 
     const stopReminderSync = startReminderSync();
@@ -201,9 +221,13 @@ function InitialLayout() {
   // `authReady` rather than Clerk's `isLoaded`: offline, that never flips, and
   // this early return was the blank white screen on launch. See useAuthGate.
   if (!canRender) {
-    // `null`, not a white view: the splash screen is still up, and drawing a
-    // blank page over it is what produced the white flash between the two.
-    return null;
+    // Nothing visible, not a white view: the splash screen is still up, and
+    // drawing a blank page over it is what produced the white flash between
+    // the two. For a signed-out launch, the front door's mascots start
+    // decoding here, under the splash, so they're already in lottie-ios's
+    // cache when the screen that shows them mounts — instead of that screen
+    // waiting on its own decode.
+    return likelySignedOut ? <MascotPreloader /> : null;
   }
 
   return (
@@ -230,15 +254,7 @@ function InitialLayout() {
         <Stack.Screen name="(onboarding)" options={{ title: "Onboarding" }} />
       </Stack.Protected>
 
-      <Stack.Protected
-        guard={isSignedIn && hasCompletedOnboarding && !hasCompletedProfileSetup}
-      >
-        <Stack.Screen name="(profile-setup)" />
-      </Stack.Protected>
-
-      <Stack.Protected
-        guard={isSignedIn && hasCompletedOnboarding && hasCompletedProfileSetup}
-      >
+      <Stack.Protected guard={isSignedIn && hasCompletedOnboarding}>
         <Stack.Screen name="(authenticated)" options={{ title: "Sailors" }} />
       </Stack.Protected>
     </Stack>

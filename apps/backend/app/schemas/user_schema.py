@@ -12,7 +12,6 @@ class UserProfileResponse(BaseModel):
     id: int
     clerk_user_id: str
     email: EmailStr
-    full_name: Optional[str] = None
     nickname: Optional[str] = None
     experience_level: Optional[ExperienceLevel] = None
     profession: Optional[Profession] = None
@@ -44,7 +43,6 @@ class UserProfileResponse(BaseModel):
 
 class UserProfileUpdateRequest(BaseModel):
     """All fields optional — PATCH is a partial update."""
-    full_name: Optional[str] = Field(default=None, max_length=100)
     nickname: Optional[str] = Field(default=None, max_length=30)
     experience_level: Optional[ExperienceLevel] = None
     profession: Optional[Profession] = None

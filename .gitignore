@@ -44,3 +44,7 @@ __pycache__/
 **/*.pyc
 *.pyo
 .DS_Store
+# test coverage output
+.coverage
+htmlcov/
+coverage/

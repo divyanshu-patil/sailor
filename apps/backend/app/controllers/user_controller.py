@@ -9,12 +9,15 @@ from app.utils.nickname import (
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-def get_profile(current_user: User) -> User:
+def get_profile(current_user: User, db: Session) -> User:
     """
     Returns the current user's profile.
     FastAPI will serialize this through the response_model (UserProfileResponse)
     at the route layer, so no manual dict conversion is needed here.
     """
+    # The flag alone decides whether onboarding shows — it is never derived
+    # from the progress record here, so a flag set back to false (a reset, or
+    # by hand) sends the account through onboarding again.
     return current_user
 
 def update_profile(current_user: User, payload: UserProfileUpdateRequest, db: Session) -> User:

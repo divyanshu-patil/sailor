@@ -88,6 +88,8 @@ export function useRevenueCatBootstrap() {
           ? await logoutPurchases()
           : null;
       if (info) applyCustomerInfo(info);
+      // Said even when the logIn failed: the answer is as good as it will get.
+      useSubscriptionStore.setState({ loggedInAs: userId ?? null });
     })();
   }, [userId, isLoaded, applyCustomerInfo]);
 }

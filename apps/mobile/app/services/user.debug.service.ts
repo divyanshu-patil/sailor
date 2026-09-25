@@ -7,7 +7,6 @@ let mockProfile: UserProfile = {
   id: "debug-user-1",
   clerk_user_id: "clerk_debug_1",
   email: "debug@example.com",
-  full_name: "Div Patil",
   nickname: "div",
   experience_level: "intermediate",
   profession: "finance_consulting",
@@ -36,7 +35,6 @@ export const userService = {
     const profile = {
       ...mockProfile,
       nickname: truncateField(mockProfile.nickname, MAX_LENGTH.nickname),
-      full_name: truncateField(mockProfile.full_name, MAX_LENGTH.fullName),
     };
     return delay(profile);
   },
@@ -51,7 +49,6 @@ export const userService = {
     const sanitizedPayload = {
       ...payload,
       nickname: truncateField(payload.nickname, MAX_LENGTH.nickname),
-      full_name: truncateField(payload.full_name, MAX_LENGTH.fullName),
     };
     mockProfile = { ...mockProfile, ...sanitizedPayload };
     console.log("[debug] updateProfile", mockProfile);

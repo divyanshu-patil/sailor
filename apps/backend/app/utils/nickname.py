@@ -12,16 +12,16 @@ owns the uniqueness check. A client-side "available" is a hint, never a promise.
 import re
 import unicodedata
 
-#: A single character is not a name anyone can tell apart from another, and 30
-#: is what the `users.nickname` column has always allowed -- keeping the bound
-#: here means validation and storage agree.
+#: A single character is not a name anyone can tell apart from another, and 7
+#: is short enough to sit in a greeting and on a widget. The `users.nickname`
+#: column still allows 30, so names saved before the limit keep loading.
 NICKNAME_MIN_LENGTH = 2
-NICKNAME_MAX_LENGTH = 30
+NICKNAME_MAX_LENGTH = 7
 
 #: Letters and digits from any script, plus the few separators people actually
 #: put in a display name. Deliberately permissive rather than ASCII-only: the
 #: product is not English-only, and rejecting "José" or "小明" would be a bug.
-_ALLOWED = re.compile(r"^[\w.\-' ]+$", re.UNICODE)
+_ALLOWED = re.compile(r"^[\w.\-']+$", re.UNICODE)
 #: Word character that is not an underscore -- i.e. a letter or a digit. A name
 #: of only punctuation ("...") is allowed by the pattern above and is not a name.
 _HAS_ALNUM = re.compile(r"[^\W_]", re.UNICODE)
@@ -65,6 +65,8 @@ def validate_nickname(raw: str | None) -> str:
     value = collapse_whitespace(raw)
     if not value:
         raise InvalidNickname("empty", "Please choose a nickname.")
+    if any(ch.isspace() for ch in value):
+        raise InvalidNickname("invalid_chars", "Nicknames can't have spaces.")
     if len(value) < NICKNAME_MIN_LENGTH:
         raise InvalidNickname(
             "too_short", f"Nicknames need at least {NICKNAME_MIN_LENGTH} characters."
@@ -78,7 +80,7 @@ def validate_nickname(raw: str | None) -> str:
     if not _ALLOWED.match(value):
         raise InvalidNickname(
             "invalid_chars",
-            "Use only letters, numbers, spaces, and . ' - _ in your nickname.",
+            "Use only letters, numbers, and . ' - _ in your nickname.",
         )
     if not _HAS_ALNUM.search(value):
         raise InvalidNickname("invalid_chars", "That nickname needs a letter or number.")

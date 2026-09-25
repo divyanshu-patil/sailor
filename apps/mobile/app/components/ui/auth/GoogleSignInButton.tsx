@@ -1,6 +1,9 @@
+import { useState } from "react";
+import { useAuth } from "@clerk/expo";
 import { useSignInWithGoogle } from "@clerk/expo/google";
 import { useRouter } from "expo-router";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ImageSourcePropType,
@@ -44,6 +47,20 @@ import { haptics } from "@/lib/haptics";
  *   4. Requires a development build — native sign-in does not work in Expo Go
  */
 
+/**
+ * A connection that dropped mid-flow — typically Google's token exchange going
+ * out on a pooled connection that died while the sign-in sheet was up (iOS
+ * reports it as NSURLErrorNetworkConnectionLost, -1005). It happens most on a
+ * second sign-in a few minutes after the first, and a fresh attempt succeeds.
+ */
+const isDroppedConnection = (err: any) =>
+  /network connection was lost|timed out|-1005|-1001/i.test(
+    `${err?.message ?? ""} ${err?.code ?? ""}`,
+  );
+
+const isCancelled = (err: any) =>
+  err?.code === "SIGN_IN_CANCELLED" || err?.code === "-5";
+
 interface GoogleSignInButtonProps {
   onSignInComplete?: () => void;
   showDivider?: boolean;
@@ -72,17 +89,33 @@ export function GoogleSignInButton({
   height = 46,
 }: GoogleSignInButtonProps) {
   const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
+  const { isLoaded } = useAuth();
   const router = useRouter();
+  const [busy, setBusy] = useState(false);
 
   // Native Google sign-in via Clerk is supported on iOS and Android only.
   if (Platform.OS !== "ios" && Platform.OS !== "android") {
     return null;
   }
 
-  const handleGoogleSignIn = async () => {
+  // One retry for a dropped connection: the failure is the network's, not the
+  // person's, so they shouldn't have to start over by hand.
+  const authenticate = async () => {
     try {
-      const { createdSessionId, setActive } =
-        await startGoogleAuthenticationFlow();
+      return await startGoogleAuthenticationFlow();
+    } catch (err) {
+      if (!isDroppedConnection(err)) throw err;
+      return await startGoogleAuthenticationFlow();
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    // Clerk answers "no session" without a word while it's still loading —
+    // the tap that seemed to do nothing. The button waits for it instead.
+    if (busy || !isLoaded) return;
+    setBusy(true);
+    try {
+      const { createdSessionId, setActive } = await authenticate();
       if (createdSessionId && setActive) {
         haptics.successBig();
         await setActive({ session: createdSessionId });
@@ -93,12 +126,16 @@ export function GoogleSignInButton({
         }
       }
     } catch (err: any) {
-      if (err.code === "SIGN_IN_CANCELLED" || err.code === "-5") return;
+      if (isCancelled(err)) return;
       haptics.error();
       Alert.alert(
-        "Error",
-        err.message || "An error occurred during Google sign-in",
+        "Couldn't sign in with Google",
+        isDroppedConnection(err)
+          ? "The connection dropped. Check your internet and try again."
+          : err.message || "Something went wrong. Please try again.",
       );
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -114,18 +151,30 @@ export function GoogleSignInButton({
         ]}
         onPress={handleGoogleSignIn}
         activeOpacity={0.85}
+        disabled={busy || !isLoaded}
+        accessibilityState={{ busy: busy || !isLoaded }}
       >
-        {logoSource ? (
-          <Image source={logoSource} style={styles.logo} resizeMode="contain" />
-        ) : null}
-        <Text
-          style={[
-            styles.googleButtonText,
-            isWhite && styles.googleButtonTextDark,
-          ]}
-        >
-          {label}
-        </Text>
+        {busy || !isLoaded ? (
+          <ActivityIndicator color={isWhite ? "#3C4043" : "#FFFFFF"} />
+        ) : (
+          <>
+            {logoSource ? (
+              <Image
+                source={logoSource}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            ) : null}
+            <Text
+              style={[
+                styles.googleButtonText,
+                isWhite && styles.googleButtonTextDark,
+              ]}
+            >
+              {label}
+            </Text>
+          </>
+        )}
       </TouchableOpacity>
 
       {showDivider && (

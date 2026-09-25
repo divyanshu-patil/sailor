@@ -4,6 +4,7 @@ import { onboardingService } from "@/services/onboarding.service";
 import { userService } from "@/services/user.service";
 import { useOnboardingCompletionStore } from "@/store/onboarding-completion.store";
 import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
+import { useProIntroStore } from "@/store/pro-intro.store";
 import {
   clearOnboardingProgress,
   readOnboardingProgress,
@@ -54,11 +55,15 @@ export interface OnboardingController {
     contexts: string[],
   ) => Promise<OnboardingStepId | null>;
   /** Records the skills the user wants to improve and advances. */
-  submitImprovementAreas: (
-    areas: string[],
-  ) => Promise<OnboardingStepId | null>;
+  submitImprovementAreas: (areas: string[]) => Promise<OnboardingStepId | null>;
   /** Advances past the thank-you screen. It has no answer of its own. */
   submitThankYou: () => Promise<OnboardingStepId | null>;
+  /** Commits a step with no bespoke work of its own — the prompts and
+   *  permission asks happen in the frame, this only stores the outcome. */
+  submitStep: (
+    stepId: OnboardingStepId,
+    data: Partial<OnboardingData>,
+  ) => Promise<OnboardingStepId | null>;
   /**
    * Marks `stepId` as the screen in view — called on focus so the persisted
    * position (and the progress bar) follows the stack, back included.
@@ -150,9 +155,13 @@ async function handoffPendingOnboarding(
 
   writeOnboardingProgress(asUser, true);
   clearPending();
-  // Durable copy + the one-way flag the router reads.
+  // Durable copy + the one-way flag the router reads — locally, and on the
+  // account, so a reinstall or a second device doesn't run the flow again.
   void onboardingService.saveProgress(asUser).catch(() => {});
+  void onboardingService.markOnboardingComplete().catch(() => {});
   useOnboardingCompletionStore.getState().completeOnboarding(userId);
+  // The account just finished onboarding: the Pro screen is owed.
+  useProIntroStore.getState().markPending();
   return "committed";
 }
 
@@ -179,6 +188,11 @@ export function useOnboardingController(
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Local first: synchronous, so the right step renders before any request.
+  // A plain effect, not a layout one: hydrating before paint mounts the first
+  // page before the native screen is attached, and its entrance animations
+  // then stall at zero opacity — a blank step until something re-renders it.
+  // The frame this saves is invisible anyway (the placeholder is the same
+  // colour as the page).
   useEffect(() => {
     if (!scope) return;
     useOnboardingProgressStore.getState().hydrate(scope);
@@ -308,6 +322,7 @@ export function useOnboardingController(
           useOnboardingCompletionStore
             .getState()
             .completeOnboarding(current.userId);
+          useProIntroStore.getState().markPending();
           void onboardingService.markOnboardingComplete().catch(() => {});
           void flushSync();
         } else {
@@ -428,6 +443,7 @@ export function useOnboardingController(
     submitSpeakingContexts,
     submitImprovementAreas,
     submitThankYou,
+    submitStep: commitStep,
     setCurrentStep,
     goBack,
     retrySync: () => void flushSync(),

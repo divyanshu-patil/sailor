@@ -34,6 +34,8 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
   const row = await db.getFirstAsync<{ user_version: number }>(
     "PRAGMA user_version",
   );
+  // PRAGMA user_version always returns a row; the fallback satisfies types.
+  /* v8 ignore next */
   const current = row?.user_version ?? 0;
 
   if (current >= MIGRATIONS.length) return;

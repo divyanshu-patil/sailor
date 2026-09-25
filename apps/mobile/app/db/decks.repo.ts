@@ -358,6 +358,8 @@ export async function searchDecks(
 
   return rows.map((row) => ({
     ...toDeckItem(row),
+    // The query only ever produces ranks 1-4; the fallback satisfies types.
+    /* v8 ignore next */
     matchType: MATCH_TYPE_BY_RANK[row.match_rank] ?? "title",
   }));
 }

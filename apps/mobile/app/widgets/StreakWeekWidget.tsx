@@ -9,7 +9,6 @@ import {
   lineLimit,
   minimumScaleFactor,
   offset,
-  opacity,
   padding,
   resizable,
   shadow,
@@ -32,7 +31,6 @@ export interface StreakWeekProps {
   deepLink?: string;
   /** `file://` paths inside the App Group — see lib/widget-assets.ts. */
   flameUri?: string;
-  plateUri?: string;
   mascotUri?: string;
   pawsUri?: string;
 }
@@ -40,8 +38,9 @@ export interface StreakWeekProps {
 /**
  * The streak with its week, systemMedium only.
  *
- * Two white cards on a warm tile: the count top left, the week along the
- * bottom, and the character peeking up from behind the week card. The
+ * A soft gradient tile with the count written straight onto it, top left, and
+ * one white card along the bottom for the week, the character peeking up from
+ * behind it. The
  * character is two PNGs on one canvas drawn at the same frame and offset — the
  * body under the card, the paws over it — which is how it grips the edge
  * without a widget having any way to mask one image with another.
@@ -60,6 +59,8 @@ function StreakWeek(props: StreakWeekProps, environment: WidgetEnvironment) {
   const c = isDark
     ? {
         tile: "#141319",
+        tileFrom: "#1D1B24",
+        tileTo: "#121117",
         card: "#211F27",
         ink: "#F4F2EE",
         inkSoft: "#A29EAB",
@@ -76,6 +77,8 @@ function StreakWeek(props: StreakWeekProps, environment: WidgetEnvironment) {
       }
     : {
         tile: "#F4EFE8",
+        tileFrom: "#FFFDF9",
+        tileTo: "#F3EADF",
         card: "#FFFDFA",
         ink: "#1E1C24",
         inkSoft: "#8A8590",
@@ -136,9 +139,6 @@ function StreakWeek(props: StreakWeekProps, environment: WidgetEnvironment) {
   const rawFlame = props.flameUri;
   const flameUri =
     typeof rawFlame === "string" && rawFlame.length > 0 ? rawFlame : "";
-  const rawPlate = props.plateUri;
-  const plateUri =
-    typeof rawPlate === "string" && rawPlate.length > 0 ? rawPlate : "";
   const rawMascot = props.mascotUri;
   const mascotUri =
     typeof rawMascot === "string" && rawMascot.length > 0 ? rawMascot : "";
@@ -249,25 +249,18 @@ function StreakWeek(props: StreakWeekProps, environment: WidgetEnvironment) {
       alignment="topLeading"
       modifiers={[
         frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: "topLeading" }),
-        background(c.tile),
+        // Light from the top left, warming towards the character.
+        background({
+          type: "linearGradient",
+          colors: [c.tileFrom, c.tileTo],
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: 1, y: 1 },
+        }),
         containerBackground(c.tile, "widget"),
         clipped(),
         widgetURL(link),
       ]}
     >
-      {/* Baked at the tile's own 2.14:1, so stretching it edge to edge never
-          smears a shape. Faint in dark mode: the pastels only as tints. */}
-      {plateUri ? (
-        <Image
-          uiImage={plateUri}
-          modifiers={[
-            resizable(),
-            frame({ maxWidth: Infinity, maxHeight: Infinity }),
-            opacity(isDark ? 0.14 : 1),
-          ]}
-        />
-      ) : null}
-
       {mascotUri ? character(mascotUri) : null}
 
       <VStack
@@ -281,11 +274,10 @@ function StreakWeek(props: StreakWeekProps, environment: WidgetEnvironment) {
           <VStack
             alignment="leading"
             spacing={0}
+            // Straight on the tile — no card of its own behind the count.
             modifiers={[
-              padding({ leading: 12, trailing: 16, top: 9, bottom: 2 }),
+              padding({ leading: 10, trailing: 16, top: 8, bottom: 2 }),
               frame({ maxHeight: Infinity, alignment: "topLeading" }),
-              background(c.card, shapes.roundedRectangle({ cornerRadius: 16 })),
-              cardShadow,
             ]}
           >
             <HStack spacing={5}>
