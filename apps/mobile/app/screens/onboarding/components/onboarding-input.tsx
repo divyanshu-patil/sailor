@@ -1,6 +1,7 @@
 import { StyleSheet, TextInput, type TextInputProps } from "react-native";
 
 import { profileFonts, PROFILE } from "@/screens/profile/theme";
+import { NICKNAME_MAX_LENGTH } from "@/utils/nickname";
 import Animated, { LinearTransition } from "react-native-reanimated";
 
 interface OnboardingInputProps {
@@ -35,7 +36,9 @@ export default function OnboardingInput({
     <Animated.View style={styles.pill} layout={LinearTransition.springify()}>
       <TextInput
         value={value}
-        onChangeText={onChangeText}
+        // Nicknames have no spaces; dropping them as they're typed beats an
+        // error for a key the field could simply ignore.
+        onChangeText={(text) => onChangeText(text.replace(/\s/gu, ""))}
         placeholder={placeholder}
         placeholderTextColor={FIELD_GREEN}
         autoFocus={autoFocus}
@@ -44,7 +47,7 @@ export default function OnboardingInput({
         onSubmitEditing={onSubmitEditing}
         autoCapitalize="words"
         autoCorrect={false}
-        maxLength={40}
+        maxLength={NICKNAME_MAX_LENGTH}
         accessibilityLabel={accessibilityLabel ?? placeholder}
         // Hug the text so the pill stays compact and grows as the name is typed.
         style={[

@@ -144,10 +144,10 @@ describe("nickname rules", () => {
   });
 
   it("accepts a good nickname", () => {
-    expect(validateNickname("  Div  P. ")).toEqual({
+    expect(validateNickname("  Div.P ")).toEqual({
       valid: true,
-      display: "Div P.",
-      normalized: "div p.",
+      display: "Div.P",
+      normalized: "div.p",
     });
   });
 
@@ -155,6 +155,7 @@ describe("nickname rules", () => {
     ["", "empty"],
     ["   ", "empty"],
     ["a", "too_short"],
+    ["Div P", "invalid_chars"],
     ["x".repeat(NICKNAME_MAX_LENGTH + 1), "too_long"],
     ["hi!", "invalid_chars"],
     ["--", "invalid_chars"],

@@ -7,7 +7,8 @@
  */
 
 export const NICKNAME_MIN_LENGTH = 2;
-export const NICKNAME_MAX_LENGTH = 30;
+/** Short enough to sit in a greeting and on a widget. */
+export const NICKNAME_MAX_LENGTH = 7;
 
 export type NicknameValidationCode =
   | "empty"
@@ -25,7 +26,7 @@ export interface NicknameValidation {
   normalized: string;
 }
 
-const ALLOWED = /^[\w.\-' ]+$/u;
+const ALLOWED = /^[\w.\-']+$/u;
 const HAS_ALNUM = /[^\W_]/u;
 
 export function collapseWhitespace(raw: string): string {
@@ -45,6 +46,9 @@ export function validateNickname(raw: string): NicknameValidation {
   ): NicknameValidation => ({ valid: false, code, message, display, normalized });
 
   if (!display) return fail("empty", "Please choose a nickname.");
+  if (/\s/u.test(display)) {
+    return fail("invalid_chars", "Nicknames can't have spaces.");
+  }
   if (display.length < NICKNAME_MIN_LENGTH) {
     return fail("too_short", `Nicknames need at least ${NICKNAME_MIN_LENGTH} characters.`);
   }
@@ -54,7 +58,7 @@ export function validateNickname(raw: string): NicknameValidation {
   if (!ALLOWED.test(display) || !HAS_ALNUM.test(display)) {
     return fail(
       "invalid_chars",
-      "Use letters, numbers, spaces, and . ' - _ only.",
+      "Use letters, numbers, and . ' - _ only.",
     );
   }
   return { valid: true, display, normalized };

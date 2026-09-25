@@ -88,7 +88,7 @@ class TestProfile:
         assert cleared["onboarding_completed"] is True
 
     def test_too_long_fields_are_rejected(self, client):
-        assert client.patch("/api/v1/users/profile", json={"nickname": "x" * 31}).status_code == 422
+        assert client.patch("/api/v1/users/profile", json={"nickname": "x" * 8}).status_code == 422
 
 
 class TestPreferences:
