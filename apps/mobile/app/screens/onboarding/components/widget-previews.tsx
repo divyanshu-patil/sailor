@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import Svg, { Path } from "react-native-svg";
 
@@ -314,8 +315,8 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
  * a count card, a Mon–Sun row, and the character gripping the row's top edge
  * — body under the card, paws over it, same two-image trick as the widget.
  *
- * No tile behind it: the pieces float on the step's own background, so the
- * picture reads as the streak rather than as a square with a streak in it.
+ * The tile is the widget's own soft gradient, and the count sits straight on
+ * it — only the week has a card.
  */
 export const StreakWeekPreview = memo(function StreakWeekPreview({
   width,
@@ -327,7 +328,7 @@ export const StreakWeekPreview = memo(function StreakWeekPreview({
 }) {
   const s = width / 338;
   const height = width * 0.7;
-  const inset = 0;
+  const inset = 10 * s;
   const weekH = 76 * s;
   const cardTop = height - inset - weekH;
   const mascotW = 150 * s;
@@ -348,20 +349,24 @@ export const StreakWeekPreview = memo(function StreakWeekPreview({
   );
 
   return (
-    <View style={{ width, height }}>
+    <View style={[styles.shadow, { width, height, borderRadius: 30 * s }]}>
+      <LinearGradient
+        colors={["#FFFDF9", "#F3EADF"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.tile, { borderRadius: 30 * s }]}
+      >
       {mascot(WIDGET_ART.mascotPeek)}
 
       <View
         style={[
-          styles.card,
-          styles.floating,
+          styles.countBlock,
           {
             left: inset,
             top: inset,
             width: width * 0.5,
             height: cardTop - inset - 8 * s,
-            borderRadius: 20 * s,
-            padding: 14 * s,
+            padding: 12 * s,
           },
         ]}
       >
@@ -414,7 +419,6 @@ export const StreakWeekPreview = memo(function StreakWeekPreview({
       <View
         style={[
           styles.card,
-          styles.floating,
           styles.week,
           {
             left: inset,
@@ -463,6 +467,7 @@ export const StreakWeekPreview = memo(function StreakWeekPreview({
       </View>
 
       {mascot(WIDGET_ART.mascotPeekPaws)}
+      </LinearGradient>
     </View>
   );
 });
@@ -539,12 +544,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
-  /** A card straight on the page, with no tile under it, needs a softer,
-   *  wider shadow to lift off the cream. */
-  floating: {
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
+  /** The streak count's block: no card, just its place on the tile. */
+  countBlock: {
+    position: "absolute",
   },
   week: {
     flexDirection: "row",
