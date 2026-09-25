@@ -1,6 +1,7 @@
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
+import LottieView from "lottie-react-native";
 
 import Ionicons from "@react-native-vector-icons/ionicons";
 
@@ -11,13 +12,18 @@ import StepTitle from "../components/step-title";
 
 const PINK = "#F28DB2";
 
+const NOTIFICATION = require("@/assets/animations/notification_animation.json");
+/** The animation's own canvas, 1080 × 560. */
+const NOTIFICATION_ASPECT = 560 / 1080;
+
 /**
  * Step 8 — the notification ask. Placed after the thank-you so it lands once
  * the user has already invested in the flow, and framed around the streak
  * rather than "notifications" so the system prompt that follows has a reason.
  *
  * The frame swaps its Continue for Allow / Not now on this step — see
- * `frame.tsx`. The phone's notification is a slot, filled later.
+ * `frame.tsx`. The notification arriving on the lock screen loops in the
+ * phone's slot.
  */
 export default function NotificationsStep({
   madeTitle,
@@ -33,12 +39,27 @@ export default function NotificationsStep({
   const phoneWidth = Math.min(column * 0.54, 240);
   const phoneHeight = phoneWidth * 1.42;
   const side = (column - phoneWidth) / 2;
+  // The slot spans the phone's screen, less its bezel and side padding (see
+  // PhoneFrame); the animation fills that width at its own aspect.
+  const scale = phoneWidth / 230;
+  const bezel = Math.max(5, phoneWidth * 0.026);
+  const notificationWidth = phoneWidth - bezel * 2 - 18 * scale;
 
   return (
     <View style={styles.body}>
       <View style={[styles.hero, { height: phoneHeight }]}>
         <Animated.View entering={FadeInDown.springify().damping(70)}>
-          <PhoneFrame width={phoneWidth} />
+          <PhoneFrame width={phoneWidth}>
+            <LottieView
+              source={NOTIFICATION}
+              autoPlay
+              loop
+              style={{
+                width: notificationWidth,
+                height: notificationWidth * NOTIFICATION_ASPECT,
+              }}
+            />
+          </PhoneFrame>
         </Animated.View>
 
         <Animated.View
