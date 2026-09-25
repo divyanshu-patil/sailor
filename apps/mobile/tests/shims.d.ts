@@ -23,3 +23,16 @@ declare module "react-native-reanimated/lib/module/interpolation.js" {
 declare module "react-native-reanimated/lib/module/Easing.js" {
   export { Easing } from "react-native-reanimated";
 }
+
+// node's built-in SQLite, which backs the expo-sqlite fake in db.test.ts.
+declare module "node:sqlite" {
+  export class DatabaseSync {
+    constructor(path: string);
+    exec(sql: string): void;
+    prepare(sql: string): {
+      get(...params: unknown[]): unknown;
+      all(...params: unknown[]): unknown[];
+      run(...params: unknown[]): { changes: number | bigint };
+    };
+  }
+}
