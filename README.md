@@ -1,45 +1,44 @@
+<a id="top"></a>
+
 <div align="center">
 
-<img src="apps/mobile/assets/Sailors-icon.png" width="116" alt="Sailors app icon" />
+<img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:FBF3EA,55:E8B9A6,100:B75C5C&text=Sailors&fontColor=1C1A18&fontSize=78&fontAlignY=38&desc=become%20a%20better%20public%20speaker%2C%20one%20talk%20at%20a%20time&descAlignY=60&descSize=18&animation=fadeIn" alt="Sailors: become a better public speaker, one talk at a time" width="100%" />
 
-# Sailors
+<img src="apps/mobile/assets/Sailors-icon.png" width="104" alt="Sailors app icon" />
 
-### Write the talk. Practise the talk. Deliver the talk.
+<a href="#what-sailors-does">
+  <img src="https://readme-typing-svg.demolab.com?font=Krona+One&size=22&duration=2200&pause=900&color=B75C5C&center=true&vCenter=true&width=460&lines=Write+the+talk.;Practise+the+talk.;Deliver+the+talk.;Become+a+better+speaker." alt="Write the talk. Practise the talk. Deliver the talk. Become a better speaker." />
+</a>
 
-**An open-source public-speaking coach for iPhone.** Sailors turns a rough idea into a
-speaker-ready script, drills you on it a few minutes a day, and reads it back to you when
-you are standing in front of the room.
+<p>
+  <b>Sailors makes you better at public speaking.</b> It is an open-source coach for iPhone
+  that turns a rough idea into a speaker-ready script, drills you on it a few minutes a day,
+  and reads it back to you when you are standing in front of the room.
+</p>
 
 <p>
   <img alt="Platform: iOS 17+" src="https://img.shields.io/badge/platform-iOS%2017%2B-000000?style=for-the-badge&logo=apple&logoColor=white" />
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2E7D5B?style=for-the-badge" />
   <img alt="Expo SDK 57" src="https://img.shields.io/badge/Expo%20SDK-57-000020?style=for-the-badge&logo=expo&logoColor=white" />
+  <img alt="React Native 0.86" src="https://img.shields.io/badge/React%20Native-0.86-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <br />
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2E7D5B?style=for-the-badge" />
   <img alt="Built for RevenueCat Shipaton 2026" src="https://img.shields.io/badge/RevenueCat-Shipaton%202026-F2545B?style=for-the-badge&logo=revenuecat&logoColor=white" />
+  <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-B75C5C?style=for-the-badge" /></a>
+  <a href="https://github.com/divyanshu-patil/sailor/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/divyanshu-patil/sailor?style=for-the-badge&color=1C1A18" /></a>
 </p>
 
-**[Features](#what-sailors-does)** · **[The MVP](#the-mvp)** · **[Plans](#plans)** ·
-**[Sponsors](#sponsors--partners)** · **[Team](#the-team)** · **[Contributing](CONTRIBUTING.md)**
+<p>
+  <a href="#what-sailors-does"><kbd>&nbsp;Features&nbsp;</kbd></a>&nbsp;
+  <a href="#the-mvp"><kbd>&nbsp;The MVP&nbsp;</kbd></a>&nbsp;
+  <a href="#plans"><kbd>&nbsp;Plans&nbsp;</kbd></a>&nbsp;
+  <a href="#under-the-hood"><kbd>&nbsp;Stack&nbsp;</kbd></a>&nbsp;
+  <a href="#sponsors--partners"><kbd>&nbsp;Sponsors&nbsp;</kbd></a>&nbsp;
+  <a href="#the-team"><kbd>&nbsp;Team&nbsp;</kbd></a>&nbsp;
+  <a href="CONTRIBUTING.md"><kbd>&nbsp;Contributing&nbsp;</kbd></a>
+</p>
 
 </div>
-
-<br />
-
-<!--
-  ┌──────────────────────────────────────────────────────────────────────────┐
-  │  BANNER — placeholder. Replace with the real artwork when it is ready.   │
-  │                                                                          │
-  │  Size:      2400 × 1260 px  (2× of 1200 × 630, so it stays crisp on a    │
-  │             Retina display and downscales cleanly)                       │
-  │  Safe area: keep text inside the middle 2000 × 900 px — GitHub crops     │
-  │             the edges on narrow screens                                  │
-  │  Format:    PNG or WebP, under 1 MB                                      │
-  │  Save to:   apps/mobile/assets/banner.png, then swap the src below       │
-  │                                                                          │
-  │  The same image at 1280 × 640 also works as the repository social        │
-  │  preview: Settings → General → Social preview.                           │
-  └──────────────────────────────────────────────────────────────────────────┘
--->
-<img src="https://placehold.co/2400x1260/FBF3EA/1C1A18/png?text=Sailors" alt="Sailors — write, practise, deliver" width="100%" />
 
 <br />
 
@@ -49,140 +48,338 @@ Almost every career has a moment that turns on five minutes of talking. A pitch.
 standup that suddenly matters. A wedding toast. Most people prepare for those five minutes
 by writing something the night before, reading it twice, and hoping.
 
-The tools that exist each solve a third of the problem. A chatbot will write you a script,
-then leave you alone with it. A teleprompter will scroll text at you, but it does not care
-whether you have ever said the words out loud. A course will teach you theory on a Tuesday
-that you cannot recall on the Friday you need it.
+The tools that exist each solve a third of the problem:
 
-**Nobody owns the loop.** Writing, rehearsing and delivering are the same job, and they
-belong in the same place — the phone that is already in your pocket when you walk up to
-speak.
+<table>
+  <tr>
+    <td align="center" width="33%">🤖<br /><b>A chatbot</b><br /><sub>writes you a script, then leaves you alone with it</sub></td>
+    <td align="center" width="33%">📜<br /><b>A teleprompter</b><br /><sub>scrolls text at you, but doesn't care whether you've ever said the words out loud</sub></td>
+    <td align="center" width="33%">🎓<br /><b>A course</b><br /><sub>teaches theory on a Tuesday you can't recall on the Friday you need it</sub></td>
+  </tr>
+</table>
+
+> [!IMPORTANT]
+> **Nobody owns the loop.** Writing, rehearsing and delivering are the same job, and they
+> belong in the same place: the phone that is already in your pocket when you walk up to
+> speak.
 
 That is Sailors. One app that takes you from "I have to talk about this on Thursday" to
 standing up and doing it, with the reps in between that actually make the difference.
+
+And the goal is bigger than Thursday. Every script, every daily rep and every run on the
+teleprompter is practice at the same skill, so the next talk is easier than this one.
+**Sailors exists to make people better public speakers**, not just to get them through one
+speech.
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="25%"><h3>✍️</h3><b>Generate</b><br /><sub>a presentation script from one sentence</sub></td>
+    <td align="center">→</td>
+    <td align="center" width="25%"><h3>🃏</h3><b>Practise</b><br /><sub>on colour-coded cards you can feel</sub></td>
+    <td align="center">→</td>
+    <td align="center" width="25%"><h3>🔁</h3><b>Learn the patterns</b><br /><sub>a 2-minute framework talk a day</sub></td>
+    <td align="center">→</td>
+    <td align="center" width="25%"><h3>🎤</h3><b>Deliver</b><br /><sub>from the teleprompter</sub></td>
+  </tr>
+</table>
+</div>
 
 <br />
 
 ## What Sailors does
 
-### 1. Create a script
+The heart of Sailors is two steps: **generate a presentation script, then practise it on
+cards that are colour-coded and haptic, so it's easy to remember.** Around that core,
+**daily practice** teaches the patterns behind good talks in two minutes a day, so you get
+better at speaking itself and not just at one speech.
+
+### ✍️ 1. Generate a presentation script
 
 Describe the talk in a sentence. Attach the brief, the PDF, the deck you were handed.
 Set how long you have, who is listening, and the mood you want to strike.
 
 Sailors writes the whole thing:
 
-- **A structured script**, not a wall of text — beats marked `[HOOK]`, `[CORE MESSAGE]`
+- **A structured script**, not a wall of text: beats marked `[HOOK]`, `[CORE MESSAGE]`
   and so on, with the phrases that carry weight stressed, and pauses written in where a
   room needs a second to catch up.
-- **A deck of practice cards** generated alongside it, one idea per card, each with its
-  keywords, a delivery style, and how hard it is meant to land.
+- **A deck of practice cards** generated alongside it, one idea per card. That deck is
+  step two.
 - **Written for you specifically.** You tell Sailors your profession and how much speaking
-  experience you have, once. Every script after that is pitched at that person — the same
+  experience you have, once. Every script after that is pitched at that person: the same
   brief produces a different talk for a first-time founder than for a staff engineer.
 
-### 2. Practise daily to get better at speaking
+### 🃏 2. Practise it on colour-coded, haptic cards
 
-A script is for one talk. This is the part that changes how you speak in every room.
+Reading a script over and over is how most people rehearse, and it's why the words vanish
+the moment they stand up. Sailors breaks the script into cards, **one idea per card**, each
+with its keywords and a delivery style, and swiping through them is the rehearsal.
 
-Every day Sailors gives you one short rep — two minutes, not twenty — built around a
-**named framework**: PREP, STAR, SCQA and a growing library of others. Not "be more
-confident", but a repeatable structure with a real topic to practise it on, a mood, a
-situation, and one tip that makes it stick.
+Every card also carries **how hard it is meant to land**, and you get that two ways at once:
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h4>🎨 You see it</h4>
+      The card's colour runs from calm to peak. The harder the line should hit, the more
+      vivid the card, so the shape of the talk is visible at a glance.
+      <br /><br />
+      <img alt="Calm" src="https://img.shields.io/badge/calm-C3ECD9?style=for-the-badge" />
+      <img alt="" src="https://img.shields.io/badge/%20-A7DEFE?style=for-the-badge" />
+      <img alt="" src="https://img.shields.io/badge/%20-CABEFF?style=for-the-badge" />
+      <img alt="" src="https://img.shields.io/badge/%20-F39ECE?style=for-the-badge" />
+      <img alt="Peak" src="https://img.shields.io/badge/peak-FE8B83?style=for-the-badge" />
+    </td>
+    <td width="50%" valign="top">
+      <h4>📳 You feel it</h4>
+      Five impact tiers, each with its own haptic, played as the card arrives. A quiet
+      line is a soft tap; the emotional core or the call to action hits hard. You learn
+      where the talk peaks through your hand, not just your eyes.
+    </td>
+  </tr>
+</table>
+
+Colour and touch give your memory two more hooks than the words alone, so you remember
+the rhythm of the talk and not just its sentences. And it stays honest: a deck of quiet
+lines looks quiet and feels quiet, with no fake "climax" card forced into every deck.
+
+When you're ready, **record yourself** against the deck and play the take back.
+
+<details>
+<summary><sub>How the colours are chosen</sub></summary>
+<br />
+
+Colours are generated in OKLCH, a colour space where equal steps look equally different,
+so a stronger line is always a visibly more vivid card. Following colour-emotion research
+(saturation drives arousal, brightness drives pleasantness), impact is carried mostly by
+chroma. Lightness only eases down a little, so every card stays a bright, pleasant pastel.
+The hue travels from mint through sky and the brand lavender to pink and coral, taking the
+long way round the wheel so it never passes the dull yellow-sand that disappears into the
+cream page.
+
+</details>
+
+---
+
+**Around the core:** the pieces that turn one rehearsed talk into a speaking habit.
+
+### 🔁 3. Daily practice: learn the patterns behind good talks
+
+A script gets you through one talk. But most speaking isn't a prepared talk. It's a
+question in a meeting, an answer in an interview, "so, what do you do?". There's no script
+for those. What helps is a **pattern** you can pour any content into, and that's what daily
+practice trains.
+
+Every day is one **two-minute talk built on a named public-speaking framework**:
+
+<table>
+  <tr>
+    <td align="center" width="33%" valign="top">
+      <h3>🧭</h3><b>1. See the shape</b><br />
+      <sub>The framework's steps, a one-line hint for each, and the situations it's for</sub>
+    </td>
+    <td align="center" width="33%" valign="top">
+      <h3>🎤</h3><b>2. Say it out loud</b><br />
+      <sub>A short talk applying it to a real topic, read line by line on a teleprompter reel</sub>
+    </td>
+    <td align="center" width="33%" valign="top">
+      <h3>💡</h3><b>3. Take one tip</b><br />
+      <sub>A delivery cue for today's framework, and your streak ticks up</sub>
+    </td>
+  </tr>
+</table>
+
+> **PREP** &nbsp;·&nbsp; Point → Reason → Example → Point
+>
+> *Answer first, then justify it. The fastest way to sound decisive when someone puts you on
+> the spot.*
+
+#### Why it works
+
+- **Patterns, not pep talks.** "Be more confident" can't be practised. "Answer first, then
+  one reason, one example, and the point again" can, and after a few reps it's how you
+  answer without thinking.
+- **One shape, many rooms.** Each framework comes back in a different situation from the
+  ones it suits: PREP in an interview one time, a conference Q&A the next. You learn *when*
+  to reach for a pattern, not just what it is.
+- **Spaced, not crammed.** 22 frameworks rotate, so each one returns every 22 days instead
+  of being drilled once and forgotten.
+- **Small enough to do every day.** Two minutes fits a coffee queue, and the streak brings
+  you back tomorrow.
+- **It feeds the core.** Once you know the shapes, you can see them in the scripts Sailors
+  writes, and when a Q&A pulls you off-script, you have a structure ready.
+
+<details>
+<summary><b>All 22 frameworks in the rotation</b></summary>
+<br />
+
+| Framework | The pattern | Reach for it in |
+| :-- | :-- | :-- |
+| **PREP** | Point → Reason → Example → Point | Interviews, Business, Conferences |
+| **STAR** | Situation → Task → Action → Result | Interviews, Business |
+| **So What / Now What** | What → So What → Now What | Business, Technical explanations, Conferences |
+| **SCQA** | Situation → Complication → Question → Answer | Business, Technical explanations, Academic |
+| **PAS** | Problem → Agitate → Solution | Sales, Product demos, Business |
+| **4Ps** | Problem → Pain → Proof → Promise | Sales, Business |
+| **AIDA** | Attention → Interest → Desire → Action | Product demos, Sales, Conferences |
+| **Golden Circle** | Why → How → What | Leadership talks, Conferences, Social |
+| **Monroe's Sequence** | Attention → Need → Satisfaction → Visualization → Action | Conferences, Leadership talks, Sales |
+| **ABT** | And → But → Therefore | Business, Technical explanations, Networking |
+| **Story Spine** | Once upon a time → Every day → Until one day → Because of that → Until finally | Product demos, Social, Conferences |
+| **Before-After-Bridge** | Before → After → Bridge | Product demos, Social, Sales |
+| **Claim-Evidence-Meaning** | Claim → Evidence → Meaning | Technical explanations, Academic, Business |
+| **Rule of Three** | First → Second → Third | Teaching, Technical explanations, Conferences |
+| **Contrast** | What most people think → But the reality → So what we do instead | Conferences, Social, Leadership talks |
+| **Teach-Demo-Explain** | Teach → Demonstrate → Explain | Product demos, Teaching, Technical explanations |
+| **Pyramid Principle** | Conclusion → Supporting reasons → Detail beneath each reason | Business, Academic, Technical explanations |
+| **Feynman** | Say it in plain words → Use an everyday analogy → Strip every term a non-expert wouldn't know | Technical explanations, Teaching, Academic |
+| **Elevator Pitch** | For [who] → [product] is a [category] → that [benefit] → unlike [alternative] | Networking, Sales, Interviews |
+| **Hook-Story-Offer** | Hook → Story → Offer | Social, Sales, Networking |
+| **7 Ps** | Purpose → Preparation → Plan → Practice → Presentation → Participation → Performance | Preparing any talk, Teaching |
+| **10 / 30 / 2-Minute** | The 10-second version → The 30-second version → The 2-minute version | Networking, Interviews, Technical explanations |
+
+</details>
 
 Keep the chain going and you get a **streak**: on the home screen, on an iOS
 **home-screen widget**, and in a reminder at the time you choose. Miss a day and life
-happens, so there is one **streak restore** a month — offered on the day the streak
-breaks and not after, because a streak you can undo at any time was never a streak. The
-app warns you before it expires, on time, even if it is closed.
+happens, so there is one **streak restore** a month, offered on the day the streak breaks
+and not after, because a streak you can undo at any time was never a streak. The app warns
+you before it expires, on time, even if it is closed.
 
-### 3. Teleprompter
+### 🎤 4. Teleprompter
 
 The moment itself. Your script, full screen, scrolling at a pace you control.
 
-- **Autoscroll from 0.25× to 3×**, changed from the toolbar mid-sentence, with the current
-  speed always shown on the button.
-- **Hold the middle to pause** — the "wait, they asked a question" gesture — and **hold
-  either edge to run at double speed** while your thumb is down. The same hold language as
-  the apps everyone already uses.
-- **Drag back to re-read** a line; the scroll carries on from where you left it rather
-  than racing to catch up.
-- **A stopwatch** on the button, so you know whether you are running long while you are
-  still able to do something about it.
+| Gesture | What it does |
+| :-- | :-- |
+| <kbd>0.25×</kbd> … <kbd>3×</kbd> | Autoscroll speed, changed from the toolbar mid-sentence, with the current speed always shown on the button |
+| <kbd>Hold</kbd> the middle | Pause: the "wait, they asked a question" gesture |
+| <kbd>Hold</kbd> either edge | Run at double speed while your thumb is down, the same hold language as the apps everyone already uses |
+| <kbd>Drag</kbd> back | Re-read a line; the scroll carries on from where you left it rather than racing to catch up |
+| ⏱️ Stopwatch | On the button, so you know whether you are running long while you can still do something about it |
 
-### 4. Public decks
+### 🌍 5. Public decks
 
 Speaking is learned by watching other people do it. Publish a deck and it appears in
 **Discover**, where anyone can read the script, practise the cards, and save it. Browse
 what other people are working on, take the structure that works, and make it yours.
 
-<br />
+<div align="right"><a href="#top"><sub>↑ back to top</sub></a></div>
 
 ## Also in the app
 
-|  | |
-| :-- | :-- |
-| 🎙️ **Record your takes** | Record yourself against a deck and play it back. One take per deck, kept on the device and synced for you alone. |
-| ✈️ **Works without signal** | Scripts, decks, cards and streaks are cached on the device and render before the network is asked anything. Backstage wifi is a myth; the app assumes so. |
-| 🧩 **Native, not a web page** | Built with SwiftUI components, real native navigation, and system materials — it behaves the way an iPhone app is supposed to. |
-| 🔔 **Reminders that know the deadline** | The streak alarm is scheduled against the exact minute your streak dies, rescheduled whenever you practise or open the app, and cancelled the moment you are safe. |
-| 🎨 **A mascot with feelings** | The character reacts to what you are doing — celebrating, waiting, sulking when a streak breaks. |
-| 📳 **Haptics you can feel the shape of** | Every detent, commit and celebration has its own texture, fired on the UI thread so it lands with the frame rather than a beat behind it. One switch in Settings turns the lot off. |
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h4>🎙️ Record your takes</h4>
+      Record yourself against a deck and play it back. One take per deck, kept on the
+      device and synced for you alone.
+    </td>
+    <td width="50%" valign="top">
+      <h4>✈️ Works without signal</h4>
+      Scripts, decks, cards and streaks are cached on the device and render before the
+      network is asked anything. Backstage wifi is a myth; the app assumes so.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h4>🧩 Native, not a web page</h4>
+      Built with SwiftUI components, real native navigation, and system materials. It
+      behaves the way an iPhone app is supposed to.
+    </td>
+    <td valign="top">
+      <h4>🔔 Reminders that know the deadline</h4>
+      The streak alarm is scheduled against the exact minute your streak dies,
+      rescheduled whenever you practise or open the app, and cancelled the moment you
+      are safe.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h4>🎨 A mascot with feelings</h4>
+      The character reacts to what you are doing: celebrating, waiting, sulking when a
+      streak breaks.
+    </td>
+    <td valign="top">
+      <h4>📳 Haptics you can feel the shape of</h4>
+      Every detent, commit and celebration has its own texture, fired on the UI thread so
+      it lands with the frame rather than a beat behind it. One switch in Settings turns
+      the lot off.
+    </td>
+  </tr>
+</table>
 
 <br />
 
 ## The MVP
 
-Version 1 is a complete loop, not a demo. Everything below is built and running.
+Version 1 is a complete loop, not a demo. The core is **generate a script, then practise it
+on colour-coded, haptic cards**; everything else builds on it. Everything marked shipped is
+built and running.
 
 | Area | Status |
-| :-- | :-- |
-| AI script generation, with attachments, duration, audience and mood | ✅ Shipped |
-| Practice card decks generated per script | ✅ Shipped |
-| Daily framework practice, streaks, restore, reminders | ✅ Shipped |
-| iOS home-screen widget — per-state art, copy and tap target | ✅ Shipped |
-| Teleprompter with speed control and hold gestures | ✅ Shipped |
-| Discover — publish, browse, save, practise public decks | ✅ Shipped |
-| Audio recording and playback per deck | ✅ Shipped |
-| Subscriptions, paywall and plan management | ✅ Shipped |
-| Offline-first cache across the app | ✅ Shipped |
-| Delivery feedback — pace, filler words, clarity from your recording | 🚧 Next |
-| Android | 🗓️ Planned |
+| :-- | :--: |
+| **Core:** AI presentation-script generation, with attachments, duration, audience and mood | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| **Core:** practice card decks per script, colour-coded and haptic by impact | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| **Core:** record yourself against a deck and play it back | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| Daily practice: two-minute talks across 22 public-speaking frameworks, with streaks, restore and reminders | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| iOS home-screen widget: per-state art, copy and tap target | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| Teleprompter with speed control and hold gestures | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| Discover: publish, browse, save, practise public decks | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| Subscriptions, paywall and plan management | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| Offline-first cache across the app | ![Shipped](https://img.shields.io/badge/shipped-2E7D5B?style=flat-square) |
+| Delivery feedback: pace, filler words, clarity from your recording | ![Next](https://img.shields.io/badge/next-E8A33D?style=flat-square) |
+| Android | ![Planned](https://img.shields.io/badge/planned-8A8580?style=flat-square) |
 
 > [!NOTE]
 > **Sailors is iOS only.** It is built against iOS 17 and up, and leans on native
 > components, widgets and system materials that have no Android equivalent today. An
 > Android version is on the roadmap, not in this release.
 
-<br />
+<div align="right"><a href="#top"><sub>↑ back to top</sub></a></div>
 
 ## Plans
 
-Sailors is a paid app. There is no free tier and no credits to ration — one subscription
+Sailors is a paid app. There is no free tier and no credits to ration: one subscription
 opens the whole product, and nothing inside it is metered.
 
-| | Without a plan | **Wave** · **Voyager** |
-| :-- | :--: | :--: |
-| Browse public decks in Discover | ✅ | ✅ |
-| Create scripts, decks and practice cards | — | Unlimited |
-| Rewrite a script, regenerate its cards | — | Unlimited |
-| Daily practice, streaks and the home-screen widget | — | Unlimited |
-| Teleprompter | — | Unlimited |
-| Record and play back your takes | — | Unlimited |
-| Publish your own decks | — | Unlimited |
+<table>
+  <thead>
+    <tr>
+      <th align="left"></th>
+      <th align="center">Without a plan</th>
+      <th align="center">🌊 <b>Wave</b><br /><sub>billed monthly</sub></th>
+      <th align="center">🧭 <b>Voyager</b><br /><sub>billed annually</sub></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Browse public decks in Discover</td><td align="center">✅</td><td align="center">✅</td><td align="center">✅</td></tr>
+    <tr><td>Create scripts, decks and practice cards</td><td align="center">—</td><td align="center">Unlimited</td><td align="center">Unlimited</td></tr>
+    <tr><td>Rewrite a script, regenerate its cards</td><td align="center">—</td><td align="center">Unlimited</td><td align="center">Unlimited</td></tr>
+    <tr><td>Daily practice, streaks and the home-screen widget</td><td align="center">—</td><td align="center">Unlimited</td><td align="center">Unlimited</td></tr>
+    <tr><td>Teleprompter</td><td align="center">—</td><td align="center">Unlimited</td><td align="center">Unlimited</td></tr>
+    <tr><td>Record and play back your takes</td><td align="center">—</td><td align="center">Unlimited</td><td align="center">Unlimited</td></tr>
+    <tr><td>Publish your own decks</td><td align="center">—</td><td align="center">Unlimited</td><td align="center">Unlimited</td></tr>
+  </tbody>
+</table>
 
-**Wave** bills monthly and **Voyager** annually. Same product either way — the only
-difference is how often you pay for it.
+Same product either way; the only difference is how often you pay for it.
 
-**Why there is no free tier.** Every script, every deck of cards and every rewrite is real
-model work, paid for on the first tap. A free tier would mean the people who show up to
-practise subsidising the people who never intended to speak. So the trade is honest in the
-other direction: nothing is rationed once you are in. Write ten drafts of the same talk if
-that is what it takes.
+<details>
+<summary><b>Why there is no free tier</b></summary>
+<br />
+
+Every script, every deck of cards and every rewrite is real model work, paid for on the
+first tap. A free tier would mean the people who show up to practise subsidising the people
+who never intended to speak. So the trade is honest in the other direction: nothing is
+rationed once you are in. Write ten drafts of the same talk if that is what it takes.
 
 **Public decks are the open door.** Discover needs no plan: download the app, sign in, and
 read everything the community has published. The library is genuinely free, rather than the
 tool being crippled until you pay.
+
+</details>
 
 Billing runs through [RevenueCat](https://www.revenuecat.com/), so plans, prices and the
 paywall are configured without shipping an app update.
@@ -191,7 +388,7 @@ paywall are configured without shipping an app update.
 
 ## Under the hood
 
-A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+The short version. The full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 <table>
   <tr>
@@ -216,7 +413,7 @@ A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)
   </tr>
   <tr>
     <td><b>Object storage</b></td>
-    <td><img src="https://cdn.simpleicons.org/amazons3/569A31" width="20" align="middle" />&nbsp;AWS S3&nbsp;&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
+    <td><img src="https://github.com/aws.png?size=64" width="20" align="middle" />&nbsp;AWS S3&nbsp;&nbsp;&nbsp;&nbsp;recordings, briefs and attachments</td>
   </tr>
   <tr>
     <td><b>Identity &amp; billing</b></td>
@@ -232,26 +429,38 @@ A short version — the full setup lives in **[CONTRIBUTING.md](CONTRIBUTING.md)
   </tr>
 </table>
 
-> [!NOTE]
-> **Script generation is tested on [Ollama](https://ollama.com/)** — it is the default
+> [!TIP]
+> **Script generation is tested on [Ollama](https://ollama.com/).** It is the default
 > provider (`AI_PROVIDER=ollama`), so the whole pipeline runs against a model on your own
 > machine: brief in, structured script and practice cards out, no API key and no bill. The
-> hosted providers are the same code path behind a different adapter — swap
-> `AI_PROVIDER` and the pipeline does not notice.
+> hosted providers are the same code path behind a different adapter: swap `AI_PROVIDER`
+> and the pipeline does not notice.
 
-**Three things worth knowing about the shape of it**
+<details open>
+<summary><b>Three things worth knowing about the shape of it</b></summary>
+<br />
 
 - **Offline-first, including the launch.** Scripts, decks and cards live in an on-device
   SQLite database; preferences, streaks and session state in MMKV. Every screen renders
-  from them on the first frame and the network refreshes it afterwards — and the app
-  starts from disk when it cannot reach its auth provider at all, rather than waiting on
-  a round trip it may never get. Backstage wifi is a myth, so the app never assumes any.
+  from them on the first frame and the network refreshes it afterwards. The app even
+  starts from disk when it cannot reach its auth provider at all, rather than waiting on a
+  round trip it may never get.
 - **Generation never blocks a request.** Scripts and cards are Celery jobs on their own
   queues, and the daily practice content is generated days ahead of being needed.
 - **One monorepo.** The iPhone app in `apps/mobile`, the FastAPI service in
   `apps/backend`, wired together with Turborepo.
 
-<br />
+```
+sailor/
+├── apps/
+│   ├── mobile/    Expo + React Native iPhone app
+│   └── backend/   FastAPI service, Celery workers, Alembic migrations
+└── docs/
+```
+
+</details>
+
+<div align="right"><a href="#top"><sub>↑ back to top</sub></a></div>
 
 ## Sponsors & partners
 
@@ -285,7 +494,7 @@ is in every screen you can see.
 </td>
 <td align="center">
   <a href="https://mobbin.com/"><img src="https://github.com/mobbin.png?size=160" width="72" alt="Mobbin" /><br /><b>Mobbin</b></a><br />
-  <sub>UI reference — the patterns we studied before designing each screen</sub>
+  <sub>UI reference: the patterns we studied before designing each screen</sub>
 </td>
 </tr>
 </table>
@@ -294,14 +503,15 @@ is in every screen you can see.
 
 ## The mascot
 
-Sailors has a character, and it does real work — it reacts to the state you are in rather
+Sailors has a character, and it does real work: it reacts to the state you are in rather
 than decorating the screen.
 
 Every mascot animation is authored in **[Blooby](https://blooby-editor.vercel.app/)**, which
 is the primary and preferred source for new mascot art in this project. Build the states
-there, export as Lottie / dotLottie, and drop the file in — one file can carry a whole
+there, export as Lottie / dotLottie, and drop the file in. One file can carry a whole
 screen's worth of states.
 
+> [!TIP]
 > Contributing a new mascot pose or animation? Start in
 > [Blooby](https://blooby-editor.vercel.app/), not in a drawing tool. See
 > [CONTRIBUTING.md](CONTRIBUTING.md#mascots-and-animation).
@@ -329,12 +539,14 @@ Sailors is built by two people.
 
 ## Contributing
 
-Sailors is open source and contributions are welcome — from a typo to a whole screen.
+Sailors is open source and contributions are welcome, from a typo to a whole screen.
 Everything a developer needs (prerequisites, environment variables, running the app and the
 API, the architecture, the conventions we hold to and how to open a good pull request)
 lives in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
-<br />
+<p>
+  <a href="CONTRIBUTING.md"><img alt="Read the contributing guide" src="https://img.shields.io/badge/Read%20the%20guide-CONTRIBUTING.md-B75C5C?style=for-the-badge&logo=github&logoColor=white" /></a>
+</p>
 
 ## License
 
@@ -345,4 +557,8 @@ Use it, fork it, ship it, sell it. Just keep the notice.
 <div align="center">
 <br />
 <sub>Built with a lot of talking to ourselves.</sub>
+<br /><br />
+<a href="#top"><sub>↑ back to top</sub></a>
 </div>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:B75C5C,45:E8B9A6,100:FBF3EA" alt="" width="100%" />
