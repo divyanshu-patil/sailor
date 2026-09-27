@@ -7,10 +7,9 @@ import { AUTH_PRELOAD } from "@/constants/mascots";
 export default function UnauthenticatedLayout() {
   return (
     <View style={{ flex: 1 }}>
-      {/* Warms lottie-ios's shared animation cache for the whole auth flow.
-          Mounted here rather than at the root so it lives exactly as long as
-          the flow does: it goes away by itself once sign-in swaps this
-          navigator out. */}
+      {/* Loads every auth-flow mascot into lib/dotlottie's cache up front.
+          A no-op when the root layout already started them under the splash;
+          this covers arriving here later, e.g. after signing out. */}
       <MascotPreloader sources={AUTH_PRELOAD} />
 
       <Stack

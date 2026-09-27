@@ -225,7 +225,7 @@ const HomeScreen = () => {
             mascot={
               broken
                 ? undefined
-                : { size: 104, left: 4, bottom: -34, first: false }
+                : { size: 74, left: 4, bottom: -14, first: false }
             }
             // Declared per state, so losing the pill to a broken streak does
             // not collapse the card to one row with the mascot stranded behind

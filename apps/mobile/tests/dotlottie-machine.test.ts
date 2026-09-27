@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { settle, withDefaults, type Machine } from "@/lib/dotlottie-machine";
+import {
+  bridge,
+  settle,
+  withDefaults,
+  type Machine,
+} from "@/lib/dotlottie-machine";
 
 // The shapes of two real Blooby files: `home-screen-buttons` (a boolean whose
 // default pulls the initial state away) and `home` (a string over three states).
@@ -110,5 +115,23 @@ describe("dotLottie machine", () => {
     const still = settle(home, "hiii", withDefaults(home));
     expect(still.state.name).toBe("hiii");
     expect(still.tween).toBe(0);
+  });
+});
+
+describe("bridge", () => {
+  // watching.lottie: `watching` 0-126, `observe` 135-226, a 300ms tween at 30fps.
+  const watching: [number, number] = [0, 126];
+  const observe: [number, number] = [135, 226];
+
+  it("plays the gap forwards into the next segment and backwards out of it", () => {
+    expect(bridge(watching, observe, 0.3, 30)).toEqual({ from: 126, to: 135 });
+    expect(bridge(observe, watching, 0.3, 30)).toEqual({ from: 135, to: 126 });
+  });
+
+  it("cuts when there is no tween or the segments aren't neighbours", () => {
+    expect(bridge(watching, observe, 0, 30)).toBeNull();
+    // home.lottie: `streak-expired` 0-120 to `hiii` 258-471 skips `expiring`.
+    expect(bridge([0, 120], [258, 471], 0.3, 30)).toBeNull();
+    expect(bridge([258, 471], [0, 120], 0.3, 30)).toBeNull();
   });
 });

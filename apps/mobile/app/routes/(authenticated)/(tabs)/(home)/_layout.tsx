@@ -14,14 +14,6 @@ const Layout = () => {
       {/* No header: the orange hero is the header, and it runs edge to edge
           behind the status bar. The screen pads itself past the safe area. */}
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      {/* TEMP: mascot state machine harness. */}
-      <Stack.Screen
-        name="mascot-lab"
-        options={{
-          headerTitle: "Mascot",
-          headerBackButtonDisplayMode: "minimal",
-        }}
-      />
       <Stack.Screen
         name="screen-2"
         options={{
