@@ -8,9 +8,11 @@ import {
   useSharedValue,
   type SharedValue,
 } from "react-native-reanimated";
+import { scheduleOnUI } from "react-native-worklets";
 
 import { loadDotLottie, peekDotLottie, type DotLottie } from "@/lib/dotlottie";
 import {
+  bridge,
   settle,
   withDefaults,
   type Inputs,
@@ -32,8 +34,9 @@ import {
  * States: `inputs` go through `lib/dotlottie-machine`, which follows the file's
  * transitions. The first state is settled from the inputs directly, so a
  * mascot never flashes the file's default pose before the one asked for.
- * Every change of state is a cut, never animated — including the file's
- * `Tweened` transitions, whose durations are ignored on purpose.
+ * A `Tweened` transition between neighbouring segments plays the frames
+ * Blooby baked between them (forwards, or backwards when going back); any
+ * other change of state is a cut. See `bridge` in `lib/dotlottie-machine`.
  */
 interface SkiaMascotProps {
   source: number;
@@ -121,6 +124,10 @@ function Player({
   const end = useSharedValue(end0);
   const loops = useSharedValue(loops0);
   const frame = useSharedValue(start0);
+  // While a tween plays: 1 forwards, -1 backwards, 0 not tweening. It ends on
+  // `bridgeTo`, and the segment takes over from there.
+  const bridgeDir = useSharedValue(0);
+  const bridgeTo = useSharedValue(0);
 
   useEffect(() => {
     if (!machine) return;
@@ -130,17 +137,57 @@ function Player({
       withDefaults(machine, JSON.parse(inputsKey)),
     );
     if (step.state === current.current) return;
+    const prev = segmentOf(lottie, current.current);
     current.current = step.state;
     const [s, e] = segmentOf(lottie, step.state);
-    start.set(s);
-    end.set(e);
-    loops.set(loopOverride ?? step.state.loop ?? true);
-    frame.set(s);
-  }, [inputsKey, machine, lottie, loopOverride, frame, start, end, loops]);
+    const l = loopOverride ?? step.state.loop ?? true;
+    const b = bridge(prev, [s, e], step.tween, fps);
+    // One hop to the UI thread, so the clock never sees half a switch.
+    scheduleOnUI(() => {
+      "worklet";
+      start.set(s);
+      end.set(e);
+      loops.set(l);
+      if (b) {
+        frame.set(b.from);
+        bridgeTo.set(b.to);
+        bridgeDir.set(b.to > b.from ? 1 : -1);
+      } else {
+        bridgeDir.set(0);
+        frame.set(s);
+      }
+    });
+  }, [
+    inputsKey,
+    machine,
+    lottie,
+    loopOverride,
+    fps,
+    frame,
+    start,
+    end,
+    loops,
+    bridgeDir,
+    bridgeTo,
+  ]);
 
   const tick = useFrameCallback(({ timeSincePreviousFrame }) => {
     "worklet";
-    const next = frame.get() + ((timeSincePreviousFrame ?? 0) / 1000) * fps;
+    const step = ((timeSincePreviousFrame ?? 0) / 1000) * fps;
+    const dir = bridgeDir.get();
+    if (dir !== 0) {
+      const at = frame.get() + dir * step;
+      if (dir * (at - bridgeTo.get()) < 0) {
+        frame.set(at);
+        return;
+      }
+      bridgeDir.set(0);
+      // Forwards lands on the segment's first frame. Backwards lands on its
+      // last, which for a loop is the pose it starts from; a one-shot holds it.
+      frame.set(dir > 0 || loops.get() ? start.get() : end.get() - 0.001);
+      return;
+    }
+    const next = frame.get() + step;
     const span = end.get() - start.get();
     if (next < end.get()) frame.set(next);
     else if (loops.get() && span > 0)

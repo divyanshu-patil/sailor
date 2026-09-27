@@ -98,3 +98,33 @@ export function settle(machine: Machine, from: string, inputs: Inputs): Step {
   }
   return { state, tween };
 }
+
+/**
+ * How to play a `Tweened` transition from one segment to another.
+ *
+ * Blooby bakes each tween into the timeline: the frames between two adjacent
+ * segments are the morph from the first state's pose into the second's (9
+ * frames, the file's 300ms at 30fps). So going to the next segment plays that
+ * gap forwards, and going back to the previous one plays it backwards; both
+ * end on a pose the looping segment starts from.
+ *
+ * Returns the frames to play, `from` → `to`, or null for a cut: no tween, or
+ * the segments aren't neighbours (a gap much longer than the tween belongs to
+ * some other pair of states).
+ */
+export function bridge(
+  prev: [number, number],
+  next: [number, number],
+  tweenSeconds: number,
+  fps: number,
+): { from: number; to: number } | null {
+  if (tweenSeconds <= 0) return null;
+  // A frame of slack for rounding in the export.
+  const longest = Math.ceil(tweenSeconds * fps) + 1;
+  const forward = next[0] - prev[1];
+  if (forward > 0 && forward <= longest) return { from: prev[1], to: next[0] };
+  const backward = prev[0] - next[1];
+  if (backward > 0 && backward <= longest)
+    return { from: prev[0], to: next[1] };
+  return null;
+}

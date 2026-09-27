@@ -7,8 +7,8 @@ import source from "@/assets/animations/watching.lottie";
 /**
  * The new-script mascot, drawn by `SkiaMascot` from the .lottie's own state
  * machine: `watching` idles, and the boolean `isTyping` input switches it to
- * `observe` and back. The file declares a 300ms tween for that switch;
- * `SkiaMascot` cuts between states instead, like every other mascot.
+ * `observe` and back, playing the 300ms tween Blooby baked between the two
+ * segments (backwards on the way back).
  *
  * `isTyping` is an address into the .lottie and must match the machine's
  * `inputs[].name`.
