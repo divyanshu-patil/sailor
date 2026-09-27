@@ -65,10 +65,26 @@ const BASE_DESCRIPTION =
 // the default pose, true the wave. Laid out full-width, its edge mascots are
 // cropped by the canvas the way the screen edge crops them. `top` puts the
 // centre mascot's stand (canvas y≈976) on the ground's crest (y=320).
+/** The centre mascot's stand, as a fraction of the cast canvas's height. */
+const STAND_Y = 976 / 1299;
+/** The cast's size in the create-account pose. */
+const CREATE_ACCOUNT_SCALE = 0.65;
 const SCENE = {
   top: -50,
-  // Rides up with the ground (its crest rises ~90) into the create-account pose.
-  motion: { scale: 1, dx: 0, dy: -90 },
+  // Rides up with the ground (its crest rises ~90) into the create-account
+  // pose, shrinking as it goes to make room for the panel. The scale is about
+  // the canvas centre, which would lift the feet off the crest, so `dy` gives
+  // back the stand's pull toward the centre.
+  motion: {
+    scale: CREATE_ACCOUNT_SCALE,
+    dx: 0,
+    dy:
+      -90 +
+      (STAND_Y - 0.5) *
+        DESIGN_WIDTH *
+        ONBOARDING_MASCOTS.aspect *
+        (1 - CREATE_ACCOUNT_SCALE),
+  },
   range: [0, 0.72] as [number, number],
 };
 
