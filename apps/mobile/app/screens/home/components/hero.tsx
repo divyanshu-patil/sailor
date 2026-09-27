@@ -65,6 +65,23 @@ const MASCOT_BODY_X = 0.458;
 const MASCOT_FEET_Y = 0.736;
 
 /**
+ * The `expired` pose is two characters, not one: a pink friend holding an
+ * hourglass stands left of the main mascot, from canvas x 0.05 to 0.61. Placing
+ * it by the main body like the other poses pushed the friend half off the left
+ * edge once the restore button took the right half. So this pose is placed by
+ * the pair's left edge instead, and drawn a little smaller so both fit beside
+ * the button (the pair's legs end at ~0.48w, the button starts at 0.5w).
+ */
+const BROKEN = {
+  /** Canvas x where the pink friend's left hand starts. */
+  pairLeftX: 0.05,
+  /** The pair's left edge, as a fraction of the hero's width. */
+  inset: 0.04,
+  /** Canvas size relative to the other poses. */
+  scale: 0.85,
+};
+
+/**
  * [COMMENT LATER]
  * The cartoon restore button, floated on the cloud beside the sad mascot.
  *
@@ -165,13 +182,13 @@ const CloudScene = memo(function CloudScene({
   const cloudWidth = width + overhang * 2;
   // The file's body is ~29% of its canvas, so a canvas as wide as the hero
   // keeps the body around a third of it — the subject, still framed by clouds.
-  const canvas = width;
-  // Broken: nudged off centre so the restore button has the right half of the
-  // cloud to sit on. Measured from the body's centre, not the canvas's.
-  const mascotLeft =
-    width / 2 -
-    canvas * MASCOT_BODY_X +
-    (status === "broken" ? -width * 0.2 : 0);
+  const broken = status === "broken";
+  const canvas = broken ? width * BROKEN.scale : width;
+  // Centred on the main body, except the two-character broken pose, which
+  // sits against the left edge so the restore button has the right half.
+  const mascotLeft = broken
+    ? width * BROKEN.inset - canvas * BROKEN.pairLeftX
+    : width / 2.25 - canvas * MASCOT_BODY_X;
 
   return (
     <View
@@ -337,8 +354,7 @@ export const HomeHero = memo(function HomeHero({
       {broken ? (
         <RestoreStreakButton
           onPress={onRestorePress}
-          // Below and right of the mascot: its body is centred at 0.3w and
-          // ~0.29w wide, so its right edge lands near 0.45w — 0.5w clears it.
+          // Right of the mascot pair, whose legs end near 0.48w (see BROKEN).
           style={{ left: width * 0.5, bottom: body * 0.1 }}
         />
       ) : null}
@@ -412,5 +428,5 @@ const styles = StyleSheet.create({
 
   scene: { position: "absolute", left: 0, right: 0, bottom: 0 },
   cloudLayer: { position: "absolute" },
-  mascot: { position: "absolute" },
+  mascot: { position: "absolute", zIndex: 99 },
 });
