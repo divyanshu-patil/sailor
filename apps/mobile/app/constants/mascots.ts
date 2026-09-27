@@ -13,10 +13,10 @@ export type MascotKey = keyof typeof MASCOTS;
 // the old blob-cream-temp file, but without the patterned backdrop baked into it.
 export const BLOB_CREAM_MASCOT = require("@/assets/animations/mascots/auth/blob-cream.lottie");
 
-// The Blooby mascots. Most play through `components/ui/skia-mascot` (Skia,
-// driven by the file's own state machine); the auth cast and forgot password
-// still go through `animated-mascot`. Input names are addresses into the
-// .lottie, so they live next to the file.
+// The Blooby mascots. All play through `components/ui/skia-mascot` (Skia,
+// driven by the file's own state machine); the auth screens reach it through
+// `animated-mascot`, which adds their entrance and transition motion. Input
+// names are addresses into the .lottie, so they live next to the file.
 
 /** Cheer. Daily practice complete, and the end of a practice deck. */
 export const CELEBRATION_MASCOT = {
@@ -96,8 +96,13 @@ export const FORGOT_PASSWORD_MASCOT = {
   input: "isSent",
 } as const;
 
-/** The auth flow's lottie-ios mascots, decoded up front by `MascotPreloader`. */
-export const AUTH_PRELOAD = Object.values(MASCOTS);
+/** Every auth-flow mascot, loaded up front by `MascotPreloader`. */
+export const AUTH_PRELOAD = [
+  ONBOARDING_MASCOTS.source,
+  ...Object.values(MASCOTS),
+  BLOB_CREAM_MASCOT,
+  FORGOT_PASSWORD_MASCOT.source,
+];
 
 /**
  * Home's two mascot files — the hero and the cards' — loaded as soon as the

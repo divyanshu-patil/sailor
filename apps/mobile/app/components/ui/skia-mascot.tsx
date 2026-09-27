@@ -46,6 +46,8 @@ interface SkiaMascotProps {
   progress?: SharedValue<number>;
   /** Called once the animation is ready to draw. */
   onLoad?: () => void;
+  /** Stops the clock, on top of the automatic stop while out of focus. */
+  paused?: boolean;
   /** Width in points. */
   width: number;
   /** Defaults to square. Pass it for a non-square canvas. */
@@ -92,6 +94,7 @@ function Player({
   inputs,
   loop: loopOverride,
   progress,
+  paused = false,
   width,
   height,
 }: SkiaMascotProps & { lottie: DotLottie; height: number }) {
@@ -149,8 +152,8 @@ function Player({
   // screen under a push, advances nothing and redraws nothing.
   const focused = useIsFocused();
   useEffect(() => {
-    tick.setActive(focused && !progress);
-  }, [focused, tick, progress]);
+    tick.setActive(focused && !paused && !progress);
+  }, [focused, paused, tick, progress]);
 
   useAnimatedReaction(
     () => progress?.get(),

@@ -227,7 +227,7 @@ function InitialLayout() {
     // Nothing visible, not a white view: the splash screen is still up, and
     // drawing a blank page over it is what produced the white flash between
     // the two. For a signed-out launch, the front door's mascots start
-    // decoding here, under the splash, so they're already in lottie-ios's
+    // loading here, under the splash, so they're already in lib/dotlottie's
     // cache when the screen that shows them mounts — instead of that screen
     // waiting on its own decode.
     return likelySignedOut ? <MascotPreloader sources={AUTH_PRELOAD} /> : null;

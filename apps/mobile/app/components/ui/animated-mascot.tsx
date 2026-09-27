@@ -1,7 +1,5 @@
-import { DotLottie, type Dotlottie } from "@lottiefiles/dotlottie-react-native";
-import LottieView from "lottie-react-native";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { Image, StyleProp, ViewStyle } from "react-native";
+import { memo, useCallback, useEffect, useRef } from "react";
+import { StyleProp, ViewStyle } from "react-native";
 import Animated, {
   Easing,
   Extrapolation,
@@ -12,6 +10,8 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+
+import SkiaMascot from "./skia-mascot";
 
 /**
  * How a mascot arrives once its animation has loaded: it grows in from a
@@ -30,19 +30,16 @@ const APPEAR = {
 /**
  * A Lottie mascot wrapped in a Reanimated view.
  *
- * Two renderers, picked by whether the file needs its own state machine:
- *  - `stateMachineId` set -> the dotLottie runtime, which owns the machine.
- *  - otherwise -> lottie-react-native (lottie-ios), a plain looping animation.
+ * Drawn by `SkiaMascot` (Skottie on the UI thread, stopped off-screen), like
+ * every other mascot in the app. This used to split between the dotLottie
+ * runtime (for state machines) and lottie-ios (for plain loops); the dotLottie
+ * path set its input only after the file loaded, so a cold first visit could
+ * keep showing the machine's default pose. `SkiaMascot` settles the first
+ * state from the inputs before it draws anything.
  *
- * The split matters on iOS: every dotLottie instance owns a private `MTKView`
- * plus a `CIContext`/command queue and renders a `CGImage` on the main thread
- * every frame. This screen shows seven mascots, so keeping the six decorative
- * ones on lottie-ios (Core Animation, GPU-composited, no per-frame main-thread
- * work) is what keeps the screen at 60fps.
- *
- * In both cases Reanimated owns everything *outside* the mascot — scale and
- * translation driven by the shared `progress` value, with a per-mascot input
- * range so movement is staggered.
+ * Reanimated owns everything *outside* the mascot — scale and translation
+ * driven by the shared `progress` value, with a per-mascot input range so
+ * movement is staggered.
  */
 export interface AnimatedMascotProps {
   source: number;
@@ -59,7 +56,8 @@ export interface AnimatedMascotProps {
   /** Portion of the transition this mascot reacts to. */
   inputRange?: [number, number];
   zIndex?: number;
-  /** When set, the lottie state machine is used instead of loop/autoplay. */
+  /** Set for files driven by their state machine. The machine itself is the
+   *  file's own (every mascot carries one); this only says it has inputs. */
   stateMachineId?: string;
   stateMachineInput?: string;
   stateMachineValue?: boolean;
@@ -89,10 +87,7 @@ export default memo(function AnimatedMascot({
   appearDelay = 0,
   onLoaded,
 }: AnimatedMascotProps) {
-  const dotLottieRef = useRef<Dotlottie>(null);
-  const lottieRef = useRef<LottieView>(null);
   const usesStateMachine = Boolean(stateMachineId && stateMachineInput);
-  const lottieStyle = useMemo(() => ({ width: size, height }), [size, height]);
 
   // 0 until the animation has loaded, then eased to 1 once.
   const appear = useSharedValue(0);
@@ -114,54 +109,6 @@ export default memo(function AnimatedMascot({
     const timer = setTimeout(reveal, APPEAR.fallbackMs);
     return () => clearTimeout(timer);
   }, [reveal]);
-
-  // Resolve the bundled `.lottie` asset to a file URI for lottie-ios.
-  // Deliberately `Image.resolveAssetSource`, not the expo-asset `localUri`:
-  // LottieView routes any uri containing `.lottie` to `sourceDotLottieURI`,
-  // and the `file://` path expo-asset caches to renders blank there.
-  const lottieSource = useMemo(
-    () =>
-      usesStateMachine
-        ? undefined
-        : { uri: Image.resolveAssetSource(source).uri },
-    [usesStateMachine, source],
-  );
-
-  // Only set the input after the machine has loaded; the imperative handle is
-  // null until then. `onLoad` below performs the initial set.
-  useEffect(() => {
-    if (!usesStateMachine) return;
-    dotLottieRef.current?.stateMachineSetBooleanInput(
-      stateMachineInput as string,
-      stateMachineValue,
-    );
-  }, [usesStateMachine, stateMachineInput, stateMachineValue]);
-
-  // Stop playback while the screen is off-screen. Skips the initial mount so it
-  // never races autoplay / state-machine load.
-  const didMount = useRef(false);
-  useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true;
-      return;
-    }
-    if (usesStateMachine) {
-      if (paused) {
-        dotLottieRef.current?.stateMachineStop();
-      } else {
-        // Restarting the machine drops back to its initial state, so re-apply
-        // the input that selects the current pose.
-        dotLottieRef.current?.stateMachineStart();
-        dotLottieRef.current?.stateMachineSetBooleanInput(
-          stateMachineInput as string,
-          stateMachineValue,
-        );
-      }
-    } else {
-      if (paused) lottieRef.current?.pause();
-      else lottieRef.current?.resume();
-    }
-  }, [paused, usesStateMachine, stateMachineInput, stateMachineValue]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const p = interpolate(
@@ -188,39 +135,24 @@ export default memo(function AnimatedMascot({
       pointerEvents="none"
       style={[{ position: "absolute", zIndex }, position, animatedStyle]}
     >
-      {usesStateMachine ? (
-        <DotLottie
-          ref={dotLottieRef}
-          source={source}
-          stateMachineId={stateMachineId}
-          style={lottieStyle}
-          // Load/start the machine here rather than relying on the prop setter:
-          // the prop can land before the native view has built its animation, in
-          // which case the load is a silent no-op and is never retried.
-          onLoad={() => {
-            dotLottieRef.current?.stateMachineLoad(stateMachineId as string);
-            dotLottieRef.current?.stateMachineStart();
-            dotLottieRef.current?.stateMachineSetBooleanInput(
-              stateMachineInput as string,
-              stateMachineValue,
-            );
-            reveal();
-            onLoaded?.();
-          }}
-        />
-      ) : (
-        <LottieView
-          ref={lottieRef}
-          source={lottieSource}
-          onAnimationLoaded={() => {
-            reveal();
-            onLoaded?.();
-          }}
-          autoPlay
-          loop
-          style={lottieStyle}
-        />
-      )}
+      <SkiaMascot
+        source={source}
+        width={size}
+        height={height}
+        inputs={
+          usesStateMachine
+            ? { [stateMachineInput as string]: stateMachineValue }
+            : undefined
+        }
+        // The decorative blobs always looped here, whatever their file says
+        // (blob-purple's one state is marked play-once).
+        loop={usesStateMachine ? undefined : true}
+        paused={paused}
+        onLoad={() => {
+          reveal();
+          onLoaded?.();
+        }}
+      />
     </Animated.View>
   );
 });
