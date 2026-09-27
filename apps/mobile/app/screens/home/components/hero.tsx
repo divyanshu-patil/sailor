@@ -9,9 +9,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import Icon from "@react-native-vector-icons/lucide";
-import Svg, { Ellipse, Path } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 
 import { HandwrittenNote } from "@/components/ui/handwritten-note";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { HOME_MASCOT } from "@/constants/mascots";
 
 import {
   cloudDrift,
@@ -51,135 +53,16 @@ const CLOUD_FRONT =
   "M0 180 L0 120 C6 84 46 74 64 104 C72 52 124 40 146 86 C162 30 224 26 240 84 " +
   "C254 40 302 50 312 100 C326 66 368 74 376 112 C384 94 396 100 400 124 L400 180 Z";
 
-/**
- * The placeholder mascot: a grey blob with blank limbs.
- *
- * Deliberately featureless beyond two eyes — this is a hole shaped like the
- * Lottie that replaces it, and the geometry here (size, centre, how far the
- * body clears the front cloud) is what that Lottie has to land in.
- *
- * Drawn in two pieces because the cloud goes between them: the body is behind
- * the front cloud, the limbs drape over it.
- */
-export type MascotMood = "neutral" | "sad";
+/** The hero mascot's `state` input, per streak status. */
+const MASCOT_STATE: Record<StreakStatus, string> = {
+  alive: "default",
+  atRisk: "expiring",
+  broken: "expired",
+};
 
-const MascotBody = memo(function MascotBody({
-  size,
-  mood,
-}: {
-  size: number;
-  mood: MascotMood;
-}) {
-  // TODO(lottie): swap the SVG below for the real mascot once its .lottie
-  // lands. The player is the same one the auth screens use, so the wiring is:
-  //
-  //   import LottieView from "lottie-react-native";
-  //   import { BLOB_CREAM_MASCOT } from "@/constants/mascots";
-  //
-  //   <LottieView
-  //     source={mood === "sad" ? BLOB_SAD_MASCOT : BLOB_CREAM_MASCOT}
-  //     autoPlay
-  //     loop
-  //     style={{ width: size, height: size }}
-  //   />
-  //
-  // `mood` maps to the file, or to a boolean input on one file's state machine
-  // (see components/ui/mascot.tsx for that shape) — either way the call site
-  // keeps passing `mood` and nothing above here changes.
-  // Note the limbs below go away with it — the real file animates its own —
-  // and `MascotLimbs` should be deleted rather than left drawing over it.
-  return (
-    <Svg width={size} height={size * 1.2} viewBox="0 0 120 144" fill="none">
-      {/* The two yellow ticks above the head, from the design. */}
-      <Path
-        d="M50 22 L47 9"
-        stroke={homeColors.spark}
-        strokeWidth={8}
-        strokeLinecap="round"
-      />
-      <Path
-        d="M70 21 L71 8"
-        stroke={homeColors.spark}
-        strokeWidth={8}
-        strokeLinecap="round"
-      />
-      <Ellipse cx="60" cy="88" rx="53" ry="55" fill={homeColors.mascot} />
-      {mood === "sad" ? (
-        <>
-          {/* Downturned arcs, not ovals. Two curves say "sad" at any size,
-              where a mouth or eyebrows turn to mush when the Lottie replaces
-              this and the real character has its own face. */}
-          <Path
-            d="M34 74 C39 63, 49 63, 54 74"
-            stroke={homeColors.mascotInk}
-            strokeWidth={8}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Path
-            d="M67 74 C72 63, 82 63, 87 74"
-            stroke={homeColors.mascotInk}
-            strokeWidth={8}
-            strokeLinecap="round"
-            fill="none"
-          />
-          {/* No tear: the front cloud's edge sits about 25pt below the eyes,
-              so anything on the cheek is swallowed by it. The arcs carry the
-              mood on their own, and the Lottie that replaces this face is free
-              to do more with the room it has. */}
-        </>
-      ) : (
-        <>
-          <Ellipse
-            cx="45"
-            cy="86"
-            rx="10"
-            ry="15"
-            fill={homeColors.mascotInk}
-          />
-          <Ellipse
-            cx="76"
-            cy="86"
-            rx="10"
-            ry="15"
-            fill={homeColors.mascotInk}
-          />
-        </>
-      )}
-    </Svg>
-  );
-});
-
-/**
- * The blank limbs, drawn over the front cloud so the mascot leans on it.
- *
- * One SVG spanning both flanks rather than two placed views: the gap between
- * them is the mascot's width, and keeping that relationship inside a single
- * viewBox means the pair scales with the body instead of drifting apart on a
- * narrower phone.
- */
-const MascotLimbs = memo(function MascotLimbs({ width }: { width: number }) {
-  return (
-    <Svg width={width} height={width * 0.2} viewBox="0 0 200 40" fill="none">
-      <Ellipse
-        cx="30"
-        cy="20"
-        rx="27"
-        ry="13"
-        fill={homeColors.mascotInk}
-        transform="rotate(-9 30 20)"
-      />
-      <Ellipse
-        cx="170"
-        cy="20"
-        rx="27"
-        ry="13"
-        fill={homeColors.mascotInk}
-        transform="rotate(9 170 20)"
-      />
-    </Svg>
-  );
-});
+/** Canvas fractions for home.lottie: the main body's centre x, and its feet. */
+const MASCOT_BODY_X = 0.458;
+const MASCOT_FEET_Y = 0.736;
 
 /**
  * [COMMENT LATER]
@@ -253,10 +136,10 @@ function useDrift(amplitude: number, period: number) {
 
 const CloudScene = memo(function CloudScene({
   width,
-  mood,
+  status,
 }: {
   width: number;
-  mood: MascotMood;
+  status: StreakStatus;
 }) {
   const sceneHeight = heroHeight(width) * SCENE_RATIO;
 
@@ -280,14 +163,15 @@ const CloudScene = memo(function CloudScene({
 
   const overhang = width * 0.1;
   const cloudWidth = width + overhang * 2;
-  /** Head width. The design keeps it around a third of the hero — big enough
-   *  to be the subject, small enough that the clouds still frame it. */
-  const mascotSize = width * 0.35;
-  const limbSpan = mascotSize * 1.42;
-  // Sad: nudged off centre so the restore button has the right half of the
-  // cloud to sit on. `styles.mascot` centres it, so this is the offset from
-  // centre rather than an absolute left.
-  const mascotShift = mood === "sad" ? -width * 0.2 : 0;
+  // The file's body is ~29% of its canvas, so a canvas as wide as the hero
+  // keeps the body around a third of it — the subject, still framed by clouds.
+  const canvas = width;
+  // Broken: nudged off centre so the restore button has the right half of the
+  // cloud to sit on. Measured from the body's centre, not the canvas's.
+  const mascotLeft =
+    width / 2 -
+    canvas * MASCOT_BODY_X +
+    (status === "broken" ? -width * 0.2 : 0);
 
   return (
     <View
@@ -313,20 +197,6 @@ const CloudScene = memo(function CloudScene({
         </Svg>
       </Animated.View>
 
-      <View
-        style={[
-          styles.mascot,
-          {
-            bottom: sceneHeight * 0.16,
-            width: mascotSize,
-            height: mascotSize * 1.2,
-            transform: [{ translateX: mascotShift }],
-          },
-        ]}
-      >
-        <MascotBody size={mascotSize} mood={mood} />
-      </View>
-
       <Animated.View
         style={[styles.cloudLayer, { left: -overhang, bottom: 0 }, front]}
       >
@@ -340,22 +210,21 @@ const CloudScene = memo(function CloudScene({
         </Svg>
       </Animated.View>
 
-      {/* Over the front cloud, but outside its drifting layer: the limbs belong
-          to the mascot, and riding the cloud's ±22pt would visibly detach them
-          from the body they hang off. */}
-      <View
+      {/* Over the front cloud, but outside its drifting layer: the file
+          animates its own hands, and riding the cloud's ±22pt would slide the
+          mascot about. Its feet rest where the front cloud's crest is. */}
+      <SkiaMascot
+        source={HOME_MASCOT.source}
+        inputs={{ [HOME_MASCOT.input]: MASCOT_STATE[status] }}
+        width={canvas}
         style={[
           styles.mascot,
           {
-            bottom: sceneHeight * 0.3,
-            width: limbSpan,
-            height: limbSpan * 0.2,
-            transform: [{ translateX: mascotShift }],
+            left: mascotLeft,
+            bottom: sceneHeight * 0.3 - canvas * (1 - MASCOT_FEET_Y),
           },
         ]}
-      >
-        <MascotLimbs width={limbSpan} />
-      </View>
+      />
     </View>
   );
 });
@@ -439,7 +308,7 @@ export const HomeHero = memo(function HomeHero({
               : "DAY STREAK"}
         </Text>
       </View>
-      <CloudScene width={width} mood={broken ? "sad" : "neutral"} />
+      <CloudScene width={width} status={status} />
 
       {/* After the clouds so the handwriting stays on top of them: the back
           cloud sits high enough now that it would otherwise clip the right
@@ -468,9 +337,8 @@ export const HomeHero = memo(function HomeHero({
       {broken ? (
         <RestoreStreakButton
           onPress={onRestorePress}
-          // Below and right of the mascot: it is shifted 14% of the width left
-          // of centre and is 35% wide, so its right edge lands near 0.53w —
-          // 0.56w clears it without crowding the screen edge.
+          // Below and right of the mascot: its body is centred at 0.3w and
+          // ~0.29w wide, so its right edge lands near 0.45w — 0.5w clears it.
           style={{ left: width * 0.5, bottom: body * 0.1 }}
         />
       ) : null}
@@ -544,5 +412,5 @@ const styles = StyleSheet.create({
 
   scene: { position: "absolute", left: 0, right: 0, bottom: 0 },
   cloudLayer: { position: "absolute" },
-  mascot: { position: "absolute", alignSelf: "center" },
+  mascot: { position: "absolute" },
 });

@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { View } from "react-native";
 
 import MascotPreloader from "@/components/ui/mascot-preloader";
+import { AUTH_PRELOAD } from "@/constants/mascots";
 
 export default function UnauthenticatedLayout() {
   return (
@@ -10,7 +11,7 @@ export default function UnauthenticatedLayout() {
           Mounted here rather than at the root so it lives exactly as long as
           the flow does: it goes away by itself once sign-in swaps this
           navigator out. */}
-      <MascotPreloader />
+      <MascotPreloader sources={AUTH_PRELOAD} />
 
       <Stack
         screenOptions={{

@@ -15,11 +15,12 @@ import { useDailyPractice } from "@/hooks/use-daily-practice";
 
 import { Confetti } from "./components/Confetti";
 import { exitToHome } from "./exit";
-import { Mascot } from "./components/Mascot";
 import { PressableCard } from "./components/PressableCard";
 import { StatTile } from "./components/StatTile";
 import { dailyFonts, dailyTheme, HEADER_INSET, radius, shadow } from "./theme";
 import { fonts } from "@/constants/fonts";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { CELEBRATION_MASCOT } from "@/constants/mascots";
 
 function formatDuration(totalSeconds: number): string {
   const safe =
@@ -92,8 +93,13 @@ const DailyPracticeComplete = () => {
       <View style={styles.hero}>
         {/* [LOTTIE-REPLACE] — see components/Confetti.tsx */}
         <Confetti width={340} height={250} />
-        <Animated.View entering={FadeIn.duration(420).springify()}>
-          <Mascot pose="celebrate" size={150} />
+        {/* A looping cheer. The canvas is wider
+            than the hero on purpose: the character is ~45% of it. */}
+        <Animated.View
+          entering={FadeIn.duration(420).springify()}
+          pointerEvents="none"
+        >
+          <SkiaMascot source={CELEBRATION_MASCOT.source} loop width={300} />
         </Animated.View>
 
         {/* The one bit of voice on the screen. Rotated and set in serif italic

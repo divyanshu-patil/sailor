@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { ImageStyle, StyleProp } from "react-native";
 import { Asset } from "expo-asset";
 import { Image } from "expo-image";
+import SkiaMascot from "@/components/ui/skia-mascot";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -26,9 +27,6 @@ import Animated, {
  */
 
 const MASCOT_SOURCES = {
-  reading: require("../../../../assets/mascots/mascot-reading.png"),
-  celebrate: require("../../../../assets/mascots/mascot-celebrate.png"),
-  empty: require("../../../../assets/mascots/mascot-empty.png"),
   error: require("../../../../assets/mascots/mascot-error.png"),
   search: require("../../../../assets/mascots/mascot-search.png"),
   noResults: require("../../../../assets/mascots/mascot-no-results.png"),
@@ -47,6 +45,29 @@ export function preloadMascots(): Promise<boolean> {
   return Image.prefetch(
     Object.values(MASCOT_SOURCES).map((source) => Asset.fromModule(source).uri),
     "memory-disk",
+  );
+}
+
+/**
+ * A state-machine Lottie mascot in a `size` layout box, standing in for a PNG
+ * pose of the same size. The files draw the character at ~41% of their canvas,
+ * so the canvas is twice the box and overflows it evenly: the character fills
+ * about 82% of the box, and nothing around it has to move.
+ */
+export function LottieMascot({
+  mascot,
+  size,
+}: {
+  mascot: { source: number };
+  size: number;
+}) {
+  const canvas = size * 2;
+  return (
+    <SkiaMascot
+      source={mascot.source}
+      width={canvas}
+      style={{ margin: -(canvas - size) / 2 }}
+    />
   );
 }
 

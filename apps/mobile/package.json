@@ -53,6 +53,7 @@
     "expo-system-ui": "~57.0.0",
     "expo-web-browser": "~57.0.0",
     "expo-widgets": "~57.0.19",
+    "fflate": "^0.8.3",
     "lottie-react-native": "~7.3.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",

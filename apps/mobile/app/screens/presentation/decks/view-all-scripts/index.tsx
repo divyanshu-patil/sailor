@@ -27,6 +27,8 @@ import { router, Stack } from "expo-router";
 import { Card } from "../components/Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "../components/constants";
 import { DeckItem } from "@/services/deck.service";
+import { NO_DECKS_MASCOT } from "@/constants/mascots";
+import { LottieMascot } from "@/screens/daily-practice/components/Mascot";
 import {
   useDecks,
   filterAndSortDecks,
@@ -143,6 +145,7 @@ const AllScriptsScreen = () => {
   if (!decks || decks.length === 0) {
     return (
       <View style={[styles.screen, styles.centered]}>
+        <LottieMascot mascot={NO_DECKS_MASCOT} size={180} />
         <Text style={styles.messageText}>No scripts yet.</Text>
       </View>
     );

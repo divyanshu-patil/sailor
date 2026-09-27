@@ -17,7 +17,8 @@ import { haptics } from "@/lib/haptics";
 import { useDailyPractice } from "@/hooks/use-daily-practice";
 
 import { exitToHome } from "./exit";
-import { Mascot } from "./components/Mascot";
+import { LottieMascot } from "./components/Mascot";
+import { PRACTICE_MASCOT } from "@/constants/mascots";
 import { MetaRow } from "./components/MetaRow";
 import { StreakAtRisk } from "./components/StreakAtRisk";
 // [COMMENT LATER]
@@ -189,7 +190,7 @@ const DailyPracticeIntro = () => {
           {/* Anchored bottom-right and allowed to overflow the card's corner, the
             way the character sits in the reference art. */}
           <View style={styles.mascotWell} pointerEvents="none">
-            <Mascot pose="reading" size={140} />
+            <LottieMascot mascot={PRACTICE_MASCOT} size={140} />
           </View>
         </Animated.View>
 

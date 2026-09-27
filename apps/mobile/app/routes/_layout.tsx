@@ -16,6 +16,7 @@ import { useOnboardingPendingStore } from "@/store/onboarding-pending.store";
 import { syncPreferencesOnce } from "@/services/preferences-sync.service";
 import { useRevenueCatBootstrap } from "@/hooks/use-subscription";
 import MascotPreloader from "@/components/ui/mascot-preloader";
+import { AUTH_PRELOAD } from "@/constants/mascots";
 import { useAppUserStore } from "@/store/app-user.store";
 import * as Sentry from "@sentry/react-native";
 import * as Notifications from "expo-notifications";
@@ -143,7 +144,9 @@ function InitialLayout() {
   // whether that means onboarding, so the splash holds until the server has
   // answered (or the gate has given up waiting).
   const onboardingKnown =
-    !isSignedIn || hasCompletedOnboarding || onboardingCheckedForUserId === userId;
+    !isSignedIn ||
+    hasCompletedOnboarding ||
+    onboardingCheckedForUserId === userId;
 
   // Everything the first frame needs: the persisted stores, a decision about
   // who is signed in and whether they still owe onboarding, and the home
@@ -227,7 +230,7 @@ function InitialLayout() {
     // decoding here, under the splash, so they're already in lottie-ios's
     // cache when the screen that shows them mounts — instead of that screen
     // waiting on its own decode.
-    return likelySignedOut ? <MascotPreloader /> : null;
+    return likelySignedOut ? <MascotPreloader sources={AUTH_PRELOAD} /> : null;
   }
 
   return (

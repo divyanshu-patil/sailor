@@ -46,8 +46,10 @@ const APPEAR = {
  */
 export interface AnimatedMascotProps {
   source: number;
-  /** Square side in device points. */
+  /** Width in device points. */
   size: number;
+  /** Defaults to `size` (square). Pass it for a non-square canvas. */
+  height?: number;
   /** Absolute initial layout (position + width/height). */
   position: StyleProp<ViewStyle>;
   progress: SharedValue<number>;
@@ -72,6 +74,7 @@ export interface AnimatedMascotProps {
 export default memo(function AnimatedMascot({
   source,
   size,
+  height = size,
   position,
   progress,
   targetScale = 1,
@@ -89,7 +92,7 @@ export default memo(function AnimatedMascot({
   const dotLottieRef = useRef<Dotlottie>(null);
   const lottieRef = useRef<LottieView>(null);
   const usesStateMachine = Boolean(stateMachineId && stateMachineInput);
-  const lottieStyle = useMemo(() => ({ width: size, height: size }), [size]);
+  const lottieStyle = useMemo(() => ({ width: size, height }), [size, height]);
 
   // 0 until the animation has loaded, then eased to 1 once.
   const appear = useSharedValue(0);
@@ -202,6 +205,7 @@ export default memo(function AnimatedMascot({
               stateMachineValue,
             );
             reveal();
+            onLoaded?.();
           }}
         />
       ) : (

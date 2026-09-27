@@ -2,9 +2,11 @@ import { memo, type ComponentProps, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Icon from "@react-native-vector-icons/lucide";
 import Animated, { useSharedValue } from "react-native-reanimated";
-import Svg, { Ellipse, Path } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 
 import OrganicBlob from "@/components/ui/organic-blob";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { HOME_BUTTON_MASCOT } from "@/constants/mascots";
 
 import {
   homeColors,
@@ -108,8 +110,12 @@ export interface ActionCardProps {
   blobs: CardBlob[];
   sparks?: CardSpark[];
   squiggle?: { style: object; color: string };
-  /** A grey placeholder mascot peeking over the card's bottom-left corner. */
-  mascot?: { size: number; left: number; bottom: number };
+  /**
+   * The mascot peeking over a card edge. `size`, `left` and `bottom` describe
+   * the visible character, not the Lottie canvas around it. `first` picks the
+   * file's orange pose (`shouldPlayFirst`) over the pink one.
+   */
+  mascot?: { size: number; left: number; bottom: number; first: boolean };
   /** Extra content pinned to the card's bottom-right — the streak pill. */
   badge?: ReactNode;
   /**
@@ -183,14 +189,7 @@ export const ActionCard = memo(function ActionCard({
       {squiggle ? (
         <Squiggle style={squiggle.style} color={squiggle.color} />
       ) : null}
-      {mascot ? (
-        <View
-          pointerEvents="none"
-          style={[styles.decor, { left: mascot.left, bottom: mascot.bottom }]}
-        >
-          <CardMascot size={mascot.size} />
-        </View>
-      ) : null}
+      {mascot ? <CardMascot {...mascot} /> : null}
 
       <View style={styles.row}>
         <View style={[styles.well, { backgroundColor: well }]}>
@@ -212,29 +211,32 @@ export const ActionCard = memo(function ActionCard({
   );
 });
 
+/** The Lottie draws its character at ~45% of its square canvas. */
+const CHARACTER_RATIO = 0.45;
+
 /**
- * The same grey placeholder mascot as the hero, at card scale.
- *
- * Only the head and eyes: at this size the hero's limbs and sparks would be
- * two-pixel smudges, and the whole point of the placeholder is that it reads as
- * unfinished rather than as a tiny finished character. The broken-streak face
- * lives on the hero's mascot, which is the one big enough to carry an emotion.
+ * The card mascot, with the canvas grown around the character so the call
+ * site's numbers keep meaning "where the body sits".
  */
-// TODO(lottie): replaced by the real mascot at the same time as the hero's.
-//
-//   import LottieView from "lottie-react-native";
-//   import { MASCOTS } from "@/constants/mascots";
-//
-//   <LottieView source={MASCOTS.green} autoPlay loop
-//     style={{ width: size, height: size }} />
-//
-const CardMascot = memo(function CardMascot({ size }: { size: number }) {
+const CardMascot = memo(function CardMascot({
+  size,
+  left,
+  bottom,
+  first,
+}: NonNullable<ActionCardProps["mascot"]>) {
+  const canvas = size / CHARACTER_RATIO;
+  const inset = (canvas - size) / 2;
   return (
-    <Svg width={size} height={size} viewBox="0 0 120 120" fill="none">
-      <Ellipse cx="60" cy="66" rx="58" ry="54" fill={homeColors.mascot} />
-      <Ellipse cx="44" cy="58" rx="9" ry="14" fill={homeColors.mascotInk} />
-      <Ellipse cx="76" cy="58" rx="9" ry="14" fill={homeColors.mascotInk} />
-    </Svg>
+    <View
+      pointerEvents="none"
+      style={[styles.decor, { left: left - inset, bottom: bottom - inset }]}
+    >
+      <SkiaMascot
+        source={HOME_BUTTON_MASCOT.source}
+        inputs={{ [HOME_BUTTON_MASCOT.input]: first }}
+        width={canvas}
+      />
+    </View>
   );
 });
 

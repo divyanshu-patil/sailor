@@ -29,12 +29,7 @@ import { FlameIcon } from "@/screens/home/components/streak-icons";
 import { dailyPracticeService } from "@/services/daily-practice.service";
 import { useDailyStore } from "@/store/daily-store";
 import { localDate, type StreakState } from "@/types/daily";
-import {
-  BlockedScene,
-  BottomBlobs,
-  BrokenStreakScene,
-  RestoredScene,
-} from "./scenes";
+import { BottomBlobs, StreakRestoreScene } from "./scenes";
 import { restoreColors, restoreFonts, restoreMotion as M } from "./theme";
 import PressableScale from "@/components/ui/animated/PressableScale";
 
@@ -71,15 +66,10 @@ const arcRadius = (w: number) => w;
 const targetRadius = (w: number, h: number) =>
   Math.hypot(w / 2, h + arcRadius(w)) * 1.06;
 
-/** Restores allowed per calendar month. Mirrors RESTORES_PER_MONTH on the
- *  server, which is the one that actually enforces it — this copy only draws
- *  the "1 / 1" on the blocked screen. */
-const RESTORES_PER_MONTH = 1;
-
 type Phase = "ask" | "revealing" | "won" | "blocked";
 
-/** Why a restore is refused. Two different sentences and two different
- *  pictures — the cap is about how often, the window about how long. */
+/** Why a restore is refused. Two different sentences — the cap is about how
+ *  often, the window about how long. Both share the scene's `error` state. */
 type BlockedReason = "used" | "expired";
 
 /**
@@ -472,7 +462,12 @@ export default function StreakRestoreScreen() {
               what it is given cannot. */}
           <View style={[styles.stage, { paddingTop: insets.top + 46 }]}>
             <View pointerEvents="none">
-              <BrokenStreakScene width={W} />
+              {/* A failed restore (network, nothing to restore) comes back here
+                  with its message, so the scene shows the error pose too. */}
+              <StreakRestoreScene
+                width={W}
+                state={error ? "error" : "restore"}
+              />
             </View>
             <View style={styles.copy}>
               <Text style={[styles.title, { color: restoreColors.ask.ink }]}>
@@ -592,7 +587,7 @@ export default function StreakRestoreScreen() {
 
           <View style={[styles.stage, { paddingTop: insets.top + 40 }]}>
             <View pointerEvents="none">
-              <RestoredScene width={W * 0.84} />
+              <StreakRestoreScene width={W} state="restored" />
             </View>
             <View style={styles.copy}>
               <Text style={[styles.title, { color: restoreColors.won.ink }]}>
@@ -709,19 +704,8 @@ function BlockedState({
           own pieces absolutely, which is why it came apart when that layout
           changed — one structure for both states now. */}
       <View style={[styles.stage, { paddingTop: topInset + 46 }]}>
-        {/* The calendar only makes sense for the cap. A closed window is about
-            time running out, which is what the hourglass in the muted scene
-            already says. */}
         <View pointerEvents="none">
-          {reason === "used" ? (
-            <BlockedScene
-              width={width}
-              used={RESTORES_PER_MONTH}
-              allowed={RESTORES_PER_MONTH}
-            />
-          ) : (
-            <BrokenStreakScene width={width} muted />
-          )}
+          <StreakRestoreScene width={width} state="error" />
         </View>
         <View style={styles.copy}>
           <Text style={[styles.titleTight, { color: c.ink }]}>

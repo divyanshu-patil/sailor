@@ -2,11 +2,9 @@ import LottieView from "lottie-react-native";
 import { memo, useMemo } from "react";
 import { Image, StyleSheet, View } from "react-native";
 
-import { LOGIN_MASCOT, MASCOTS } from "@/constants/mascots";
-
 /**
- * Decodes every lottie-ios mascot once, off-screen, for as long as the auth
- * flow is mounted.
+ * Decodes a set of lottie-ios mascots once, off-screen, for as long as the
+ * navigator it is mounted in lives.
  *
  * `setSourceDotLottieURI` loads asynchronously and blanks the view until it
  * resolves, so a cold mascot costs a fetch-and-decode *and* an empty slot at
@@ -15,25 +13,28 @@ import { LOGIN_MASCOT, MASCOTS } from "@/constants/mascots";
  * a memory warning, not on backgrounding) by the animation's URL, so decoding
  * a source here leaves the parsed file in memory for every later mount.
  *
- * The base screen already displays the six coloured blobs, so in practice the
- * one this rescues is `LOGIN_MASCOT`; the rest cover entering the flow at a
- * deeper screen. They are listed together because it is one array either way.
+ * Used by the auth flow (the coloured blobs around forgot-password's hero).
+ * The signed-in app's mascots play through Skia instead, and `lib/dotlottie`
+ * keeps those loaded.
  *
- * Not the cream mascots: those render through the dotLottie runtime, a
- * different cache this cannot reach.
+ * Not the state-machine mascots (the auth cast, the cream ones): those render
+ * through the dotLottie runtime, a different cache this cannot reach.
  */
-const PRELOAD_SOURCES = [...Object.values(MASCOTS), LOGIN_MASCOT];
-
-export default memo(function MascotPreloader() {
+export default memo(function MascotPreloader({
+  sources: modules,
+}: {
+  /** Asset modules. Pass a module-level array so the memo below holds. */
+  sources: readonly number[];
+}) {
   // Resolved the same way `animated-mascot` resolves it, so the cache key the
   // decode lands under is the one the real mount will look up.
   const sources = useMemo(
     () =>
-      PRELOAD_SOURCES.map((source) => ({
+      modules.map((source) => ({
         key: String(source),
         uri: Image.resolveAssetSource(source).uri,
       })),
-    [],
+    [modules],
   );
 
   return (

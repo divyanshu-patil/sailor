@@ -15,7 +15,8 @@ import { haptics } from "@/lib/haptics";
 import { useDailyStore } from "@/store/daily-store";
 
 import { BackdropShapes } from "./components/BackdropShapes";
-import { Mascot } from "./components/Mascot";
+import { LottieMascot } from "./components/Mascot";
+import { PRACTICE_MASCOT } from "@/constants/mascots";
 import { PressableCard } from "./components/PressableCard";
 import { dailyFonts, dailyTheme, radius } from "./theme";
 
@@ -197,7 +198,7 @@ const FrameworkExplainer = () => {
           entering={FadeIn.delay(360).duration(420)}
           style={styles.mascotRow}
         >
-          <Mascot pose="reading" size={92} />
+          <LottieMascot mascot={PRACTICE_MASCOT} size={92} />
         </Animated.View>
       </ScrollView>
 
