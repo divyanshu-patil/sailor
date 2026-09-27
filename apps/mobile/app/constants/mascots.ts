@@ -84,6 +84,11 @@ export const NO_DECKS_MASCOT = {
   source: require("@/assets/animations/mascots/no-decks.lottie"),
 } as const;
 
+/** Saved decks, empty. */
+export const NO_SAVED_DECKS_MASCOT = {
+  source: require("@/assets/animations/mascots/no-saved-decks.lottie"),
+} as const;
+
 /** Forgot password (state machine). `isSent`: false = idle, true = plane sent. */
 export const FORGOT_PASSWORD_MASCOT = {
   source: require("@/assets/animations/mascots/forgot-password.lottie"),

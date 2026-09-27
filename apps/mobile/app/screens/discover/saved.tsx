@@ -1,8 +1,9 @@
 import React, { useCallback } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { Stack } from "expo-router";
-import { Host, ContentUnavailableView } from "@expo/ui/swift-ui";
+import { router, Stack } from "expo-router";
+import { NO_SAVED_DECKS_MASCOT } from "@/constants/mascots";
+import { LottieMascot } from "@/screens/daily-practice/components/Mascot";
 
 import { useSavedDecks } from "@/hooks/use-saved-decks";
 import { PublicDeck } from "@/services/public-deck.service";
@@ -29,6 +30,11 @@ const SavedDecksScreen = () => {
   return (
     <View style={styles.screen}>
       <Stack.Title>Saved</Stack.Title>
+      {/* Same as Discover: first screen of its own stack, so there's no native
+          back button to inherit. */}
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button icon="chevron.backward" onPress={router.back} />
+      </Stack.Toolbar>
 
       <FlashList
         data={decks}
@@ -45,16 +51,13 @@ const SavedDecksScreen = () => {
               <ActivityIndicator />
             </View>
           ) : (
-            <Host style={styles.placeholder}>
-              <ContentUnavailableView
-                title="Nothing saved yet"
-                systemImage="bookmark"
-                description={
-                  error ??
-                  "Decks you save from Discover show up here. They stay the author's — saving keeps a link, not a copy."
-                }
-              />
-            </Host>
+            <View style={styles.empty}>
+              <LottieMascot mascot={NO_SAVED_DECKS_MASCOT} size={180} />
+              <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+              <Text style={styles.emptyText}>
+                {error ?? "Decks you save from Discover show up here."}
+              </Text>
+            </View>
           )
         }
       />
@@ -72,4 +75,17 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   placeholder: { height: 320, justifyContent: "center", alignItems: "center" },
+  empty: { paddingTop: 80, alignItems: "center", paddingHorizontal: 24 },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 12,
+  },
+  emptyText: {
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 6,
+    opacity: 0.6,
+  },
 });
