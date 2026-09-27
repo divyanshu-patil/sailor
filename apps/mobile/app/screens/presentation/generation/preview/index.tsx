@@ -269,6 +269,9 @@ const PreviewScreen = () => {
             error={error}
             onStop={stopGeneration}
             onRetry={retryGeneration}
+            // Known on the first frame, unlike the id the server hands back:
+            // the draft's id, or the brief (which resolves to one generation).
+            seed={resumeId ?? form}
           />
         )}
       </View>

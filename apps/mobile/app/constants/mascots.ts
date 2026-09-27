@@ -73,6 +73,12 @@ export const PULL_TO_REFRESH_MASCOT = {
   source: require("@/assets/animations/mascots/pull-to-refresh.lottie"),
 } as const;
 
+/** Generating screen. Boolean input `isError`: false = tip, true = error. */
+export const TIP_MASCOT = {
+  source: require("@/assets/animations/mascots/tip.lottie"),
+  input: "isError",
+} as const;
+
 /** Empty states — holding an empty deck. */
 export const NO_DECKS_MASCOT = {
   source: require("@/assets/animations/mascots/no-decks.lottie"),

@@ -44,6 +44,8 @@ interface SkiaMascotProps {
   /** Scrubs the state's segment, 0 to 1, instead of playing it (a pull
    *  gesture). The clock never runs while this is set. */
   progress?: SharedValue<number>;
+  /** Called once the animation is ready to draw. */
+  onLoad?: () => void;
   /** Width in points. */
   width: number;
   /** Defaults to square. Pass it for a non-square canvas. */
@@ -66,6 +68,12 @@ export default memo(function SkiaMascot(props: SkiaMascotProps) {
       live = false;
     };
   }, [source, lottie]);
+
+  // Keyed on the load only: a parent's inline callback isn't a new load.
+  useEffect(() => {
+    if (lottie) props.onLoad?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lottie]);
 
   // Decorative everywhere, so it never takes a touch meant for what it overlaps.
   return (

@@ -1,0 +1,51 @@
+/**
+ * The generating screen's tips — the headlines of docs/public-speaking-tips.md.
+ * One per generation, picked from its id by `tipFor`, so a generation shows
+ * the same tip every time it is opened.
+ */
+export const TIPS = [
+  "Know your one idea.",
+  "Decide what they should know or do at the end.",
+  "Make the audience the hero.",
+  "Give them a reason to care.",
+  "Explain the new with the familiar.",
+  "Write it simple.",
+  "Group it in threes.",
+  "Keep it short.",
+  "Plan one moment they'll retell.",
+  "Walk on, breathe, then speak.",
+  "Open with a promise.",
+  "Open with a hook, not a joke.",
+  "Play your voice like an instrument.",
+  "Slow down for what matters.",
+  "End sentences on a lower pitch.",
+  "Slow and lower your pace overall.",
+  'Pause instead of "um".',
+  "Pause after your big lines.",
+  "Warm up your voice.",
+  "Speak with honesty and warmth.",
+  "One person, one thought.",
+  "Use your hands.",
+  "Smile when you can.",
+  "Stand tall, move with purpose.",
+  "What, so what, now what.",
+  "Say your key idea three times.",
+  "Signpost with numbers and questions.",
+  "Tell a story, not a list.",
+  "Contrast what is with what could be.",
+  'Say "I\'m excited", not "calm down".',
+  "Breathe out longer than you breathe in.",
+  "Notice the nerves, don't fight them.",
+  "Loosen up with a tongue twister.",
+  "End on a line they'll remember.",
+  'Don\'t end on "any questions?"',
+  "Record yourself and watch it back.",
+] as const;
+
+/** The same tip for the same seed, every time. */
+export function tipFor(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++)
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return TIPS[Math.abs(hash) % TIPS.length];
+}
