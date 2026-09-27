@@ -2,13 +2,7 @@ import { Canvas, Group, Skottie } from "@shopify/react-native-skia";
 import { useIsFocused } from "expo-router";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
-import {
-  useFrameCallback,
-  useSharedValue,
-  withTiming,
-  Easing,
-  runOnJS,
-} from "react-native-reanimated";
+import { useFrameCallback, useSharedValue } from "react-native-reanimated";
 
 import { loadDotLottie, peekDotLottie, type DotLottie } from "@/lib/dotlottie";
 import {
@@ -32,9 +26,9 @@ import {
  *
  * States: `inputs` go through `lib/dotlottie-machine`, which follows the file's
  * transitions. The first state is settled from the inputs directly, so a
- * mascot never flashes the file's default pose before the one asked for. A
- * `Tweened` transition cross-fades over its duration; Skottie can't blend two
- * poses property by property the way the dotLottie runtime does.
+ * mascot never flashes the file's default pose before the one asked for.
+ * Every change of state is a cut, never animated — including the file's
+ * `Tweened` transitions, whose durations are ignored on purpose.
  */
 interface SkiaMascotProps {
   source: number;
@@ -107,10 +101,6 @@ function Player({
   const end = useSharedValue(end0);
   const loops = useSharedValue(loops0);
   const frame = useSharedValue(start0);
-  // The outgoing pose, held on its last frame while the new one fades in.
-  const prevFrame = useSharedValue(start0);
-  const fadeIn = useSharedValue(1);
-  const [fading, setFading] = useState(false);
 
   useEffect(() => {
     if (!machine) return;
@@ -122,36 +112,11 @@ function Player({
     if (step.state === current.current) return;
     current.current = step.state;
     const [s, e] = segmentOf(lottie, step.state);
-    prevFrame.set(frame.get());
     start.set(s);
     end.set(e);
     loops.set(loopOverride ?? step.state.loop ?? true);
     frame.set(s);
-    if (step.tween > 0) {
-      setFading(true);
-      fadeIn.set(0);
-      fadeIn.set(
-        withTiming(
-          1,
-          { duration: step.tween * 1000, easing: Easing.inOut(Easing.ease) },
-          (done) => {
-            if (done) runOnJS(setFading)(false);
-          },
-        ),
-      );
-    }
-  }, [
-    inputsKey,
-    machine,
-    lottie,
-    loopOverride,
-    frame,
-    prevFrame,
-    start,
-    end,
-    loops,
-    fadeIn,
-  ]);
+  }, [inputsKey, machine, lottie, loopOverride, frame, start, end, loops]);
 
   const tick = useFrameCallback(({ timeSincePreviousFrame }) => {
     "worklet";
@@ -183,10 +148,7 @@ function Player({
   return (
     <Canvas style={{ width, height }}>
       <Group transform={transform}>
-        {fading ? <Skottie animation={animation} frame={prevFrame} /> : null}
-        <Group opacity={fadeIn}>
-          <Skottie animation={animation} frame={frame} />
-        </Group>
+        <Skottie animation={animation} frame={frame} />
       </Group>
     </Canvas>
   );
