@@ -18,15 +18,19 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
+  useDerivedValue,
   interpolate,
   Extrapolation,
+  Easing,
 } from "react-native-reanimated";
-import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
 
 import { Card } from "../components/Card";
 import { COLUMN_GAP, SCREEN_PADDING } from "../components/constants";
 import { DeckItem } from "@/services/deck.service";
+import { NO_DECKS_MASCOT, PULL_TO_REFRESH_MASCOT } from "@/constants/mascots";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { LottieMascot } from "@/screens/daily-practice/components/Mascot";
 import {
   useDecks,
   filterAndSortDecks,
@@ -39,7 +43,7 @@ import {
 } from "expo-router/build/react-navigation";
 import ShimmerBar from "@/components/ui/shared/shimmer-bar";
 
-const PULL_DISTANCE_FOR_FULL_OPACITY = 80;
+const PULL_DISTANCE_FOR_FULL_OPACITY = 150;
 const SHIMMER_BAR_HEIGHT = 5;
 
 const AnimatedFlashList = Animated.createAnimatedComponent(
@@ -47,7 +51,6 @@ const AnimatedFlashList = Animated.createAnimatedComponent(
 ) as unknown as ForwardRefExoticComponent<
   FlashListProps<DeckItem> & RefAttributes<FlashListRef<DeckItem>>
 >;
-const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const AllScriptsScreen = () => {
   const headerHeight = useHeaderHeight();
@@ -99,19 +102,19 @@ const AllScriptsScreen = () => {
     height: Math.max(0, restOffset - scrollY.value),
   }));
 
-  const mascotImageStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: interpolate(
-          scrollY.value,
-          [pullOffset, restOffset],
-          [1, 0],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-    transformOrigin: ["50%", "100%", 0],
-  }));
+  // The pull scrubs the mascot's timeline: forward as the finger drags down,
+  // back again as the list springs home on release.
+  // Quintic: crawls through most of the pull, then rushes to the end.
+  const pullProgress = useDerivedValue(() =>
+    Easing.poly(2)(
+      interpolate(
+        scrollY.value,
+        [pullOffset, restOffset],
+        [1, 0],
+        Extrapolation.CLAMP,
+      ),
+    ),
+  );
 
   /**
    * No layout animation wrapper.
@@ -143,6 +146,7 @@ const AllScriptsScreen = () => {
   if (!decks || decks.length === 0) {
     return (
       <View style={[styles.screen, styles.centered]}>
+        <LottieMascot mascot={NO_DECKS_MASCOT} size={180} />
         <Text style={styles.messageText}>No scripts yet.</Text>
       </View>
     );
@@ -218,9 +222,10 @@ const AllScriptsScreen = () => {
           mascotContainerStyle,
         ]}
       >
-        <AnimatedImage
-          source={require("@/assets/smiling.svg")}
-          style={[{ width: 98, height: 98 }, mascotImageStyle]}
+        <SkiaMascot
+          source={PULL_TO_REFRESH_MASCOT.source}
+          progress={pullProgress}
+          width={98}
         />
       </Animated.View>
 

@@ -27,7 +27,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { fonts } from "@/constants/fonts";
-import { CREAM_MASCOT_STATES, MASCOTS, MascotKey } from "@/constants/mascots";
+import { ONBOARDING_MASCOTS } from "@/constants/mascots";
 import Svg, { Path } from "react-native-svg";
 import AnimatedOrganicGround from "@/components/ui/animated-organic-ground";
 import AnimatedMascot from "@/components/ui/animated-mascot";
@@ -52,11 +52,6 @@ const MUTED = "#8E887E";
 const LIGHT_BUTTON = "#F5EDE4";
 const WHITE = "#FFFFFF";
 
-// The cream mascot sits in a dedicated state-machine file: `namaste` loops
-// while `isNamaste === true`, and setting it false tweens to `hello`. The
-// runtime owns the transition and looping — we only flip the boolean.
-const CREAM_SOURCE = CREAM_MASCOT_STATES;
-
 const HEADLINES = [
   { line1: "Prepare Better", line2: "Perform better." },
   { line1: "Your ideas", line2: "Your stage." },
@@ -66,49 +61,16 @@ const HEADLINES = [
 const BASE_DESCRIPTION =
   "Create stunning presentations, craft compelling speeches, and practice with confidence all in one place.";
 
-type BlobKey = Exclude<MascotKey, "cream">;
-
-type Layout = {
-  size: number;
-  top: number;
-  left?: number;
-  right?: number;
-  zIndex: number;
+// The whole cast is one state-machine file (1080x1299): `sayHi` false plays
+// the default pose, true the wave. Laid out full-width, its edge mascots are
+// cropped by the canvas the way the screen edge crops them. `top` puts the
+// centre mascot's stand (canvas y≈976) on the ground's crest (y=320).
+const SCENE = {
+  top: -50,
+  // Rides up with the ground (its crest rises ~90) into the create-account pose.
+  motion: { scale: 1, dx: 0, dy: -90 },
+  range: [0, 0.72] as [number, number],
 };
-
-type Motion = {
-  scale: number;
-  dx: number;
-  dy: number;
-  range: [number, number];
-};
-
-const BLOB_LAYOUT: Record<BlobKey, Layout> = {
-  green: { size: 330, top: -80, left: -90, zIndex: 2 },
-  pink: { size: 340, top: 15, left: -140, zIndex: 3 },
-  blue: { size: 350, top: 130, left: -130, zIndex: 6 },
-  orange: { size: 300, top: -10, right: -110, zIndex: 2 },
-  yellow: { size: 300, top: 80, right: -110, zIndex: 3 },
-  purple: { size: 300, top: 160, right: -110, zIndex: 6 },
-};
-
-// Final create-account placement of every surrounding mascot, tuned
-// individually against the target composition. `dx`/`dy` are the movement of
-// the mascot's centre (design units); `range` staggers each one.
-const MASCOT_MOTION: Record<BlobKey, Motion> = {
-  green: { scale: 0.8, dx: -30, dy: -30, range: [0.05, 0.72] },
-  pink: { scale: 0.8, dx: -10, dy: -50, range: [0.1, 0.78] },
-  blue: { scale: 0.8, dx: -10, dy: -80, range: [0.0, 0.7] },
-  orange: { scale: 0.9, dx: 10, dy: -80, range: [0.08, 0.75] },
-  yellow: { scale: 1, dx: -10, dy: -88, range: [0.12, 0.8] },
-  purple: { scale: 1, dx: 0, dy: -85, range: [0.02, 0.72] },
-};
-
-const CREAM_SIZE = 320;
-// The cream mascot grows only relative to the surroundings; in absolute terms
-// the target is a touch smaller than the base pose.
-const CREAM_MOTION = { scale: 1.16, dx: -10, dy: -110 };
-const CREAM_RANGE: [number, number] = [0, 0.7];
 
 const GROUND = {
   left: -80,
@@ -225,49 +187,20 @@ const YellowSquiggle = memo(function YellowSquiggle({
 const MascotWorld = memo(function MascotWorld({
   scale,
   progress,
-  isNamaste,
+  sayHi,
   focused,
 }: {
   scale: number;
   progress: SharedValue<number>;
-  isNamaste: boolean;
+  sayHi: boolean;
   focused: boolean;
 }) {
-  // Absolute layout is recomputed only when the screen scale changes, so the
-  // memoized `AnimatedMascot`s below keep stable `position` prop identities.
-  const blobPositions = useMemo(() => {
-    return (Object.keys(BLOB_LAYOUT) as BlobKey[]).map((key) => {
-      const layout = BLOB_LAYOUT[key];
-      const size = layout.size * scale;
-      return {
-        key,
-        source: MASCOTS[key],
-        size,
-        zIndex: layout.zIndex,
-        targetScale: MASCOT_MOTION[key].scale,
-        targetDx: MASCOT_MOTION[key].dx * scale,
-        targetDy: MASCOT_MOTION[key].dy * scale,
-        inputRange: MASCOT_MOTION[key].range,
-        position: {
-          width: size,
-          height: size,
-          top: layout.top * scale,
-          ...(layout.left !== undefined
-            ? { left: layout.left * scale }
-            : { right: layout.right! * scale }),
-        },
-      };
-    });
-  }, [scale]);
-
-  const creamPosition = useMemo(
-    () => ({
-      width: CREAM_SIZE * scale,
-      height: CREAM_SIZE * scale,
-      left: ((DESIGN_WIDTH - CREAM_SIZE + 30) / 2) * scale,
-      top: 100 * scale,
-    }),
-    [scale],
+  const width = DESIGN_WIDTH * scale;
+  const height = width * ONBOARDING_MASCOTS.aspect;
+  // Memoized so the memoized `AnimatedMascot` keeps a stable `position`.
+  const scenePosition = useMemo(
+    () => ({ width, height, left: 0, top: SCENE.top * scale }),
+    [width, height, scale],
   );
 
   return (
@@ -278,24 +211,6 @@ const MascotWorld = memo(function MascotWorld({
         { width: DESIGN_WIDTH * scale, height: CLUSTER_HEIGHT * scale },
       ]}
     >
-      {blobPositions.map((blob, i) => (
-        <AnimatedMascot
-          key={blob.key}
-          source={blob.source}
-          size={blob.size}
-          zIndex={blob.zIndex}
-          // A short cascade after the one in the middle, not six at once.
-          appearDelay={120 + i * 55}
-          progress={progress}
-          targetScale={blob.targetScale}
-          targetDx={blob.targetDx}
-          targetDy={blob.targetDy}
-          inputRange={blob.inputRange}
-          position={blob.position}
-          paused={!focused}
-        />
-      ))}
-
       <AnimatedOrganicGround
         key={`ground-${scale}`}
         width={GROUND.width * scale}
@@ -313,18 +228,19 @@ const MascotWorld = memo(function MascotWorld({
       />
 
       <AnimatedMascot
-        source={CREAM_SOURCE}
-        size={CREAM_SIZE * scale}
+        source={ONBOARDING_MASCOTS.source}
+        size={width}
+        height={height}
         zIndex={10}
         progress={progress}
-        targetScale={CREAM_MOTION.scale}
-        targetDx={CREAM_MOTION.dx * scale}
-        targetDy={CREAM_MOTION.dy * scale}
-        inputRange={CREAM_RANGE}
-        position={creamPosition}
-        stateMachineId="mascot"
-        stateMachineInput="isNamaste"
-        stateMachineValue={isNamaste}
+        targetScale={SCENE.motion.scale}
+        targetDx={SCENE.motion.dx * scale}
+        targetDy={SCENE.motion.dy * scale}
+        inputRange={SCENE.range}
+        position={scenePosition}
+        stateMachineId={ONBOARDING_MASCOTS.machineId}
+        stateMachineInput={ONBOARDING_MASCOTS.input}
+        stateMachineValue={sayHi}
         paused={!focused}
       />
     </View>
@@ -777,7 +693,7 @@ export default function Base() {
         <MascotWorld
           scale={scale}
           progress={progress}
-          isNamaste={isBase}
+          sayHi={!isBase}
           focused={isFocused}
         />
 

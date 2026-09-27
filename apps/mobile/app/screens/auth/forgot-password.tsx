@@ -28,11 +28,8 @@ import Svg, { Path } from "react-native-svg";
 import AnimatedMascot from "@/components/ui/animated-mascot";
 import OrganicBlob from "@/components/ui/organic-blob";
 import { fonts } from "@/constants/fonts";
-import { MASCOTS, BLOB_CREAM_MASCOT } from "@/constants/mascots";
-import {
-  EMAIL_REGEX,
-  MIN_PASSWORD_LENGTH,
-} from "@/screens/auth/validation";
+import { FORGOT_PASSWORD_MASCOT, MASCOTS } from "@/constants/mascots";
+import { EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "@/screens/auth/validation";
 import { MorphArrow } from "@/screens/auth/components/morph-arrow";
 import { useTransitionSettled } from "@/screens/auth/use-transition-settled";
 
@@ -66,10 +63,12 @@ type MascotPlacement = {
 
 type ResetStep = "email" | "code" | "password";
 
+// `cy` is the canvas centre. This file draws its body high (canvas y≈0.39), so
+// the centre sits ~38 below where the body should land (y≈120).
 const CREAM_PLACEMENT: MascotPlacement = {
   character: 158,
   cx: 208,
-  cy: 120,
+  cy: 158,
   zIndex: 15,
 };
 
@@ -250,9 +249,12 @@ const CloudGround = memo(function CloudGround({ scale }: { scale: number }) {
 const MascotScene = memo(function MascotScene({
   scale,
   focused,
+  sent,
 }: {
   scale: number;
   focused: boolean;
+  /** Flips the mascot from idle to throwing the paper plane. */
+  sent: boolean;
 }) {
   // A fixed shared value: nothing morphs here, but AnimatedMascot and
   // MorphArrow both read a `progress` value, so one static driver is shared.
@@ -298,14 +300,14 @@ const MascotScene = memo(function MascotScene({
       <CloudGround scale={scale} />
 
       <AnimatedMascot
-        source={BLOB_CREAM_MASCOT}
+        source={FORGOT_PASSWORD_MASCOT.source}
         size={cream.size}
         zIndex={CREAM_PLACEMENT.zIndex}
         progress={still}
         position={cream.position}
-        stateMachineId="mascot"
-        stateMachineInput="isNamaste"
-        stateMachineValue
+        stateMachineId={FORGOT_PASSWORD_MASCOT.machineId}
+        stateMachineInput={FORGOT_PASSWORD_MASCOT.input}
+        stateMachineValue={sent}
         paused={!focused}
       />
     </View>
@@ -746,7 +748,14 @@ export default function ForgotPasswordScreen() {
           pointerEvents="none"
           style={[styles.hero, { height: HERO_HEIGHT * scale }]}
         >
-          {settled && <MascotScene scale={scale} focused={isFocused} />}
+          {settled && (
+            <MascotScene
+              scale={scale}
+              focused={isFocused}
+              // The code is out once we've left the email step.
+              sent={step !== "email"}
+            />
+          )}
 
           {/* <DoodleNote
             text={"No worries!\nIt happens."}

@@ -12,7 +12,7 @@ import { fonts } from "@/constants/fonts";
  * a colour sampled from the mockup: if something needs to separate from its
  * background, it changes which of the four it is, not how pale it is.
  *
- * The only non-brand values are achromatic: ink, the mascot's placeholder grey,
+ * The only non-brand values are achromatic: ink,
  * and the page. `inkSoft`/`note` are that same ink at reduced alpha, which is a
  * transparency, not a fifth colour.
  */
@@ -31,15 +31,8 @@ export const homeColors = {
   /** Handwritten asides on the orange. */
   note: "rgba(27, 23, 32, 0.52)",
 
-  cloudFront: "#FFF8EF",
+  cloudFront: "#D7F4FF",
   cloudBack: "#D2D2FF",
-
-  /** Placeholder mascot. Grey on purpose — it is a hole shaped like the Lottie
-   *  that replaces it, and a coloured one would read as finished. */
-  mascot: "#C9C4CC",
-  mascotInk: "#191418",
-
-  spark: "#E59F4E",
 
   /** The tab bar. A pale wash of the hero rather than the hero itself — the bar
    *  is chrome sitting under a screen that is already orange, and matching it

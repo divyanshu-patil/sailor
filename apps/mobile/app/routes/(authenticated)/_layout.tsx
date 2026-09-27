@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { startGenerationLifecycleWatch } from "@/lib/generation-guard";
+import { HOME_PRELOAD } from "@/constants/mascots";
+import { preloadDotLottie } from "@/lib/dotlottie";
 
 export default function AuthenticatedLayout() {
   // Mounted once, above every screen that can start a generation. Backgrounding
@@ -10,6 +12,9 @@ export default function AuthenticatedLayout() {
   // a return to the home tab. Backing out of the preview screen is deliberately
   // not one of them.
   useEffect(startGenerationLifecycleWatch, []);
+  // Home's two mascots start loading the moment the app is signed in, and
+  // `lib/dotlottie` keeps them parsed for the session — tab switches reuse them.
+  useEffect(() => preloadDotLottie(HOME_PRELOAD), []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

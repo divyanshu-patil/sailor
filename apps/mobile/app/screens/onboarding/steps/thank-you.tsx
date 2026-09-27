@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
-import HeartMascot from "../components/heart-mascot";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { THANK_YOU_MASCOT } from "@/constants/mascots";
 
 interface Benefit {
   icon: ComponentProps<typeof Ionicons>["name"];
@@ -43,16 +44,20 @@ export default function ThankYouStep() {
   return (
     <View style={styles.body}>
       <View style={styles.hero}>
-        <Text style={styles.note}>
-          {"You're\none step closer\nalready!"}
-        </Text>
+        <Text style={styles.note}>{"You're\none step closer\nalready!"}</Text>
         <Ionicons
           name="arrow-forward"
           size={26}
           color={PROFILE.muted}
           style={styles.arrow}
         />
-        <HeartMascot size={200} />
+        {/* The canvas is ~2x the character; the negative margin keeps the
+            hero's height what the old 200pt drawing gave it. */}
+        <SkiaMascot
+          source={THANK_YOU_MASCOT.source}
+          width={MASCOT_CANVAS}
+          style={styles.mascot}
+        />
         <Ionicons name="heart" size={42} color="#F7A8C4" style={styles.heart} />
       </View>
 
@@ -94,7 +99,10 @@ export default function ThankYouStep() {
   );
 }
 
+const MASCOT_CANVAS = 360;
+
 const styles = StyleSheet.create({
+  mascot: { marginVertical: -(MASCOT_CANVAS - 190) / 2 },
   body: {
     flex: 1,
   },

@@ -6,7 +6,11 @@ import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 import { haptics } from "@/lib/haptics";
 import { MorphBlob } from "@/components/ui/morph-blob";
-import { Mascot } from "@/screens/daily-practice/components/Mascot";
+import {
+  LottieMascot,
+  Mascot,
+} from "@/screens/daily-practice/components/Mascot";
+import { NO_DECKS_MASCOT } from "@/constants/mascots";
 import { PressableCard } from "@/screens/daily-practice/components/PressableCard";
 import { dailyFonts, dailyTheme, radius } from "@/screens/daily-practice/theme";
 
@@ -91,7 +95,14 @@ export function EmptyState({
           style={styles.cloudRight}
         />
         <View style={styles.mascot}>
-          <Mascot pose={kind} size={MASCOT_W} style={{ height: MASCOT_H }} />
+          {kind === "empty" ? (
+            // Same box as the PNG poses, so the cloud and note stay put.
+            <View style={styles.mascotBox}>
+              <LottieMascot mascot={NO_DECKS_MASCOT} size={MASCOT_H} />
+            </View>
+          ) : (
+            <Mascot pose={kind} size={MASCOT_W} style={{ height: MASCOT_H }} />
+          )}
         </View>
 
         {/* Voice, not data — decorative, so hidden from VoiceOver. */}
@@ -234,6 +245,12 @@ const styles = StyleSheet.create({
   cloudLeft: { left: -26, top: 106 },
   cloudRight: { left: 96, top: 52 },
   mascot: { position: "absolute", left: 44, top: 56 },
+  mascotBox: {
+    width: MASCOT_W,
+    height: MASCOT_H,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   aside: {
     position: "absolute",
     left: -6,

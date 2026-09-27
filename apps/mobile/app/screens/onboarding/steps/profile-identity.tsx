@@ -1,6 +1,8 @@
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { HandwrittenNote } from "@/components/ui/handwritten-note";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { PEEK_MASCOT } from "@/constants/mascots";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
 import { validateNickname } from "@/utils/nickname";
 import MorphingAvatar from "../components/morphing-avatar";
@@ -42,6 +44,10 @@ export default function ProfileIdentityStep({
 
   return (
     <View style={styles.body}>
+      {/* Slides in from the right edge of its canvas, so the canvas sits
+          flush with the screen edge (past the scroll body's 28pt gutter) and
+          the mascot peeks in from off-screen beside the heading. */}
+      <SkiaMascot source={PEEK_MASCOT.source} width={160} style={styles.peek} />
       <Text style={styles.heading}>{"What should\nwe call you?"}</Text>
       <Text style={styles.subtitle}>
         Let’s make this a little more personal.
@@ -122,6 +128,11 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     alignItems: "center",
+  },
+  peek: {
+    position: "absolute",
+    top: 300,
+    right: -28,
   },
   heading: {
     marginTop: 16,

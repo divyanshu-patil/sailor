@@ -23,7 +23,7 @@ import { GoogleSignInButton } from "@/components/ui/auth/GoogleSignInButton";
 import AnimatedMascot from "@/components/ui/animated-mascot";
 import OrganicBlob from "@/components/ui/organic-blob";
 import { fonts } from "@/constants/fonts";
-import { LOGIN_MASCOT, MASCOTS } from "@/constants/mascots";
+import { ONBOARDING_MASCOTS } from "@/constants/mascots";
 import { MorphArrow } from "@/screens/auth/components/morph-arrow";
 import { useTransitionSettled } from "@/screens/auth/use-transition-settled";
 import { mark } from "@/lib/frame-probe"; // TEMP profiling
@@ -46,52 +46,11 @@ const GUTTER = 24;
 // scales down together without editing every value by 10%.
 const COMPONENT_SCALE = 0.9;
 
-// Every mascot Lottie draws its character at ~45% of its 720x720 canvas, so a
-// square sized for a target character is `characterSize / CHARACTER_RATIO`.
-// Entries below are authored by the character's centre in design units.
-const CHARACTER_RATIO = 0.45;
-
-type MascotPlacement = {
-  /** Visible character size in design units. */
-  character: number;
-  /** Character centre in design units. */
-  cx: number;
-  cy: number;
-  zIndex: number;
-};
-
-// Central cream mascot (the hero) plus the colourful blobs layered around it.
-// Ordered by z-index so the front blobs partially occlude the ones behind.
-const CREAM_MASCOT: MascotPlacement = {
-  character: 160,
-  cx: 209,
-  cy: 138,
-  zIndex: 15,
-};
-
-// `blue` and `purple` sit in front of the cream hero (higher z) so they
-// overlap its lower body, while green/pink/yellow tuck in behind it. The
-// blobs are kept low and to the sides so the cream mascot's face stays clear.
-const SURROUNDING_MASCOTS = [
-  { key: "pink", character: 106, cx: 75, cy: 114, zIndex: 3 },
-  { key: "yellow", character: 98, cx: 318, cy: 142, zIndex: 3 },
-  { key: "blue", character: 104, cx: 66, cy: 188, zIndex: 12 },
-  { key: "purple", character: 100, cx: 334, cy: 196, zIndex: 12 },
-] as const;
-
-/** Resolves a design-unit placement to the square Lottie layout in points. */
-function mascotLayout(placement: MascotPlacement, scale: number) {
-  const size = (placement.character / CHARACTER_RATIO) * scale;
-  return {
-    size,
-    position: {
-      width: size,
-      height: size,
-      left: placement.cx * scale - size / 2,
-      top: placement.cy * scale - size / 2,
-    },
-  };
-}
+// The cast is one state-machine file (1080x1299), waving (`sayHi`) here since
+// this is the "good to see you again" screen. Its characters span canvas
+// y≈146–1000, so at this width they fill the hero, and `top` sets the centre
+// mascot's stand on the hero's bottom edge.
+const SCENE = { width: 320, top: -46 };
 
 interface LoginFieldProps {
   icon: "envelope" | "lock";
@@ -172,26 +131,20 @@ const MascotScene = memo(function MascotScene({
   scale: number;
   focused: boolean;
 }) {
-  // A fixed shared value: the mascots keep their pose (no morph here) while
-  // still going through the same AnimatedMascot transform pipeline.
+  // A fixed shared value: nothing morphs here, but AnimatedMascot still wants
+  // one for its transform pipeline.
   const still = useSharedValue(0);
-
-  const blobs = useMemo(
-    () =>
-      SURROUNDING_MASCOTS.map((blob) => {
-        const { size, position } = mascotLayout(blob, scale);
-        return {
-          key: blob.key,
-          source: MASCOTS[blob.key],
-          size,
-          zIndex: blob.zIndex,
-          position,
-        };
-      }),
-    [scale],
+  const width = SCENE.width * scale;
+  const height = width * ONBOARDING_MASCOTS.aspect;
+  const position = useMemo(
+    () => ({
+      width,
+      height,
+      left: ((DESIGN_WIDTH - SCENE.width) / 2) * scale,
+      top: SCENE.top * scale,
+    }),
+    [width, height, scale],
   );
-
-  const cream = useMemo(() => mascotLayout(CREAM_MASCOT, scale), [scale]);
 
   return (
     <View
@@ -202,27 +155,16 @@ const MascotScene = memo(function MascotScene({
         alignSelf: "center",
       }}
     >
-      {blobs.map((blob) => (
-        <AnimatedMascot
-          key={blob.key}
-          source={blob.source}
-          size={blob.size}
-          zIndex={blob.zIndex}
-          progress={still}
-          position={blob.position}
-          paused={!focused}
-        />
-      ))}
-
-      {/* Rendered through lottie-ios (no state machine) so the idle animation
-          loops continuously like its surrounding blobs. */}
       <AnimatedMascot
         onLoaded={() => mark("hero:lottie loaded")} /* TEMP profiling */
-        source={LOGIN_MASCOT}
-        size={cream.size}
-        zIndex={CREAM_MASCOT.zIndex}
+        source={ONBOARDING_MASCOTS.source}
+        size={width}
+        height={height}
         progress={still}
-        position={cream.position}
+        position={position}
+        stateMachineId={ONBOARDING_MASCOTS.machineId}
+        stateMachineInput={ONBOARDING_MASCOTS.input}
+        stateMachineValue
         paused={!focused}
       />
     </View>
@@ -325,8 +267,12 @@ export default function Page() {
   const isFocused = useIsFocused();
   const settled = useTransitionSettled();
   mark("login:render"); // TEMP profiling
-  useEffect(() => { mark("login:mounted"); }, []);
-  useEffect(() => { if (settled) mark("login:settled->mascots mount"); }, [settled]);
+  useEffect(() => {
+    mark("login:mounted");
+  }, []);
+  useEffect(() => {
+    if (settled) mark("login:settled->mascots mount");
+  }, [settled]);
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 

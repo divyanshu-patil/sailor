@@ -40,6 +40,9 @@ import DeliveryPill from "./components/DeliveryPill";
 import { lightenColor } from "./utils/lightenColor";
 import DurationText from "./components/DurationText";
 import { useCards } from "@/hooks";
+import SkiaMascot from "@/components/ui/skia-mascot";
+import { CELEBRATION_MASCOT, NO_DECKS_MASCOT } from "@/constants/mascots";
+import { LottieMascot } from "@/screens/daily-practice/components/Mascot";
 type ScriptPracticeParams = {
   id: string;
   color: string;
@@ -260,6 +263,7 @@ const ScriptPracticeScreen = () => {
           styles.centered,
         ]}
       >
+        {!cardsError && <LottieMascot mascot={NO_DECKS_MASCOT} size={180} />}
         <Text
           style={{
             color: "#666",
@@ -362,8 +366,19 @@ const ScriptPracticeScreen = () => {
               );
             })}
 
+            {/* Mounted only once the last card is gone, so the cheer starts
+                from its first frame at that moment, then loops. */}
+            {currentIndex >= cards.length && (
+              <SkiaMascot
+                source={CELEBRATION_MASCOT.source}
+                loop
+                width={260}
+                style={styles.celebration}
+              />
+            )}
             <Animated.Text
               entering={FadeIn.delay(100)}
+              layout={LinearTransition.springify()}
               style={[
                 styles.emptytext,
                 {
@@ -371,7 +386,7 @@ const ScriptPracticeScreen = () => {
                 },
               ]}
             >
-              No Cards Left
+              Completed 🎉
             </Animated.Text>
           </View>
         </GestureDetector>
@@ -494,6 +509,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  celebration: { marginBottom: -40 },
   emptytext: {
     fontSize: 36,
     fontFamily: fonts.amarna.regular,

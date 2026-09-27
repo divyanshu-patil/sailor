@@ -94,9 +94,7 @@ const HomeScreen = () => {
   const cardWidth = width;
 
   const greeting = useMemo(() => pickGreeting(), []);
-  const name = capitalise(
-    appUser?.nickname?.trim() || "there",
-  );
+  const name = capitalise(appUser?.nickname?.trim() || "there");
 
   /** Every card is an entrance into a flow, so they all get the same press. */
   const go = (path: string, options?: { withAnchor: boolean }) => () => {
@@ -176,7 +174,12 @@ const HomeScreen = () => {
             // Mirrored from the practice card's, which peeks in from the left
             // — two mascots on the same side would read as a repeated element
             // rather than as two characters.
-            mascot={{ size: 100, left: cardWidth - 124, bottom: -30 }}
+            mascot={{
+              size: 100,
+              left: cardWidth - 124,
+              bottom: -30,
+              first: true,
+            }}
             sparks={[
               { style: { right: 26, bottom: 16 }, color: homeColors.rose },
             ]}
@@ -219,7 +222,11 @@ const HomeScreen = () => {
             // half-clears the cloud in the hero — but only while the streak is
             // alive. When it breaks, the hero's mascot is the one carrying that
             // news, and a second one down here just repeats it.
-            mascot={broken ? undefined : { size: 104, left: 4, bottom: -34 }}
+            mascot={
+              broken
+                ? undefined
+                : { size: 104, left: 4, bottom: -34, first: false }
+            }
             // Declared per state, so losing the pill to a broken streak does
             // not collapse the card to one row with the mascot stranded behind
             // the well.
