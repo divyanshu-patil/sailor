@@ -20,16 +20,20 @@ type ResultsScreenParams = {
    *  yet. Cards are generated first and the deck is written together with them,
    *  so this screen waits for one to exist rather than rendering an empty one. */
   generationId: string;
+  /** "1" when arriving from Create: this screen queues the build itself, so it
+   *  shows its loading state without waiting on the kickoff request. */
+  start?: string;
 };
 
 const ResultsScreen = () => {
   const { colors } = useColors();
-  const { generationId } = useLocalSearchParams<ResultsScreenParams>();
+  const { generationId, start } = useLocalSearchParams<ResultsScreenParams>();
 
   const {
     state,
     deckId,
     error,
+    createDeck,
     resumeDeckGeneration,
     retryDeckGeneration,
     stopDeckGeneration,
@@ -44,8 +48,13 @@ const ResultsScreen = () => {
   useEffect(() => {
     if (startedRef.current || !generationId) return;
     startedRef.current = true;
-    resumeDeckGeneration(generationId);
-  }, [generationId, resumeDeckGeneration]);
+    if (start === "1") {
+      // A failed kickoff is already the poller's "failed" state, with Try again.
+      createDeck(generationId).catch(() => {});
+    } else {
+      resumeDeckGeneration(generationId);
+    }
+  }, [generationId, start, createDeck, resumeDeckGeneration]);
 
   /**
    * Card generation isn't cancelled on unmount, for the same reason the script

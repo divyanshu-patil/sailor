@@ -378,6 +378,7 @@ const ScriptPracticeScreen = () => {
             )}
             <Animated.Text
               entering={FadeIn.delay(100)}
+              layout={LinearTransition.springify()}
               style={[
                 styles.emptytext,
                 {
@@ -385,7 +386,7 @@ const ScriptPracticeScreen = () => {
                 },
               ]}
             >
-              No Cards Left
+              Completed 🎉
             </Animated.Text>
           </View>
         </GestureDetector>

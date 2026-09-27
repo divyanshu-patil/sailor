@@ -448,7 +448,7 @@ export function useScriptGeneration() {
  */
 export function useDeckGeneration() {
   // Destructured for the same reason as useScriptGeneration above.
-  const { state, result, error, attach, stop, jobIdRef } = useJobPoller<{
+  const { state, result, error, start, attach, stop, jobIdRef } = useJobPoller<{
     deckId: string;
   }>({
     getStatus: async (generationId) => {
@@ -467,18 +467,23 @@ export function useDeckGeneration() {
     cancelJob: scriptService.cancelDeckBuild,
   });
 
-  /** Accept the script and start building. Resolves as soon as the job is
-   *  queued — the deck id arrives later, through `result`. */
+  /** Accept the script and start building. Goes through the poller's `start`,
+   *  so the screen reads "generating" before the kickoff request returns and a
+   *  failed kickoff lands as a retryable failure. The deck id arrives later,
+   *  through `result`. */
   const createDeck = useCallback(
-    async (generationId: string) => {
-      await scriptService.startDeckBuild(generationId);
-      // The script has been accepted; the script job itself is long finished, so
-      // there's nothing left for the guard to cancel.
-      releaseActiveGeneration(generationId);
-      attach(generationId);
-      return generationId;
+    (generationId: string) => {
+      // Set up front so Try again has an id even if the kickoff itself fails.
+      jobIdRef.current = generationId;
+      return start(async () => {
+        await scriptService.startDeckBuild(generationId);
+        // The script has been accepted; the script job itself is long finished,
+        // so there's nothing left for the guard to cancel.
+        releaseActiveGeneration(generationId);
+        return { job_id: generationId };
+      });
     },
-    [attach],
+    [start, jobIdRef],
   );
 
   const resumeDeckGeneration = useCallback(

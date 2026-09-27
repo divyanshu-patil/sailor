@@ -2,7 +2,12 @@ import { Canvas, Group, Skottie } from "@shopify/react-native-skia";
 import { useIsFocused } from "expo-router";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
-import { useFrameCallback, useSharedValue } from "react-native-reanimated";
+import {
+  useAnimatedReaction,
+  useFrameCallback,
+  useSharedValue,
+  type SharedValue,
+} from "react-native-reanimated";
 
 import { loadDotLottie, peekDotLottie, type DotLottie } from "@/lib/dotlottie";
 import {
@@ -36,6 +41,9 @@ interface SkiaMascotProps {
   inputs?: Inputs;
   /** Overrides the state's own `loop` (e.g. a one-shot cheer made to loop). */
   loop?: boolean;
+  /** Scrubs the state's segment, 0 to 1, instead of playing it (a pull
+   *  gesture). The clock never runs while this is set. */
+  progress?: SharedValue<number>;
   /** Width in points. */
   width: number;
   /** Defaults to square. Pass it for a non-square canvas. */
@@ -75,6 +83,7 @@ function Player({
   lottie,
   inputs,
   loop: loopOverride,
+  progress,
   width,
   height,
 }: SkiaMascotProps & { lottie: DotLottie; height: number }) {
@@ -132,8 +141,17 @@ function Player({
   // screen under a push, advances nothing and redraws nothing.
   const focused = useIsFocused();
   useEffect(() => {
-    tick.setActive(focused);
-  }, [focused, tick]);
+    tick.setActive(focused && !progress);
+  }, [focused, tick, progress]);
+
+  useAnimatedReaction(
+    () => progress?.get(),
+    (p) => {
+      if (p === undefined) return;
+      const t = Math.min(1, Math.max(0, p));
+      frame.set(start.get() + t * (end.get() - start.get() - 0.001));
+    },
+  );
 
   const scale = Math.min(width / size.width, height / size.height);
   const transform = useMemo(

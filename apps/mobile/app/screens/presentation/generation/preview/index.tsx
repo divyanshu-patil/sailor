@@ -7,10 +7,7 @@ import {
   useFocusEffect,
   useNavigation,
 } from "expo-router";
-import {
-  useScriptGeneration,
-  useDeckGeneration,
-} from "../../hooks/use-script-generation";
+import { useScriptGeneration } from "../../hooks/use-script-generation";
 import { PresentationFormState } from "../../new-script/types/types";
 import GeneratingScreen from "./components/generating";
 import BlobBackground from "../components/background";
@@ -63,7 +60,6 @@ const PreviewScreen = () => {
   } = useScriptGeneration();
 
   const [isConfirming, setIsConfirming] = useState(false);
-  const { createDeck } = useDeckGeneration();
 
   const title = useScriptStore((s) => s.title);
   const script = useScriptStore((s) => s.script);
@@ -133,32 +129,26 @@ const PreviewScreen = () => {
   /**
    * Accept the script.
    *
-   * This queues card generation; the deck itself is created only once those
-   * cards exist, so the results screen is handed the *generation* id and waits
-   * for a deck to come into being. Nothing appears in the user's deck grid in
-   * the meantime — which is the whole reason the deck isn't created here.
+   * The results screen queues card generation itself (`start: "1"`), so its
+   * loading state is up the instant Create is tapped rather than after the
+   * kickoff round trip. The deck is created only once those cards exist, so
+   * results is handed the *generation* id and waits for a deck to come into
+   * being. Nothing appears in the user's deck grid in the meantime.
    */
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (state !== "completed" || !generationId || isConfirming) return;
+    // Never reset: this screen is replaced, and a second tap mustn't queue twice.
+    setIsConfirming(true);
 
-    try {
-      setIsConfirming(true);
-      await createDeck(generationId);
-
-      // Replace the whole creation stack with the results screen, rather than
-      // pushing onto it. Accepting a script is the end of the flow: backing out
-      // of the results should go home, not walk back through the script the
-      // user just accepted and the wizard that produced it — neither of which
-      // can be returned to meaningfully once a deck exists.
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "results", params: { generationId } }],
-      });
-    } catch {
-      // The hook surfaces the reason through its own error state.
-    } finally {
-      setIsConfirming(false);
-    }
+    // Replace the whole creation stack with the results screen, rather than
+    // pushing onto it. Accepting a script is the end of the flow: backing out
+    // of the results should go home, not walk back through the script the
+    // user just accepted and the wizard that produced it — neither of which
+    // can be returned to meaningfully once a deck exists.
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "results", params: { generationId, start: "1" } }],
+    });
   };
 
   // A revision is a job on the same generation, so the revised script arrives

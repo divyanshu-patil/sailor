@@ -68,6 +68,11 @@ export const PRACTICE_MASCOT = {
   source: require("@/assets/animations/mascots/practice.lottie"),
 } as const;
 
+/** Pull to refresh on the decks grid. Scrubbed by the pull, not played. */
+export const PULL_TO_REFRESH_MASCOT = {
+  source: require("@/assets/animations/mascots/pull-to-refresh.lottie"),
+} as const;
+
 /** Empty states — holding an empty deck. */
 export const NO_DECKS_MASCOT = {
   source: require("@/assets/animations/mascots/no-decks.lottie"),
