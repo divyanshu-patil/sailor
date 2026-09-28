@@ -555,8 +555,19 @@ export default function OnboardingFrame() {
     ),
   }));
 
-  if (!controller.hydrated || !controller.state) {
-    return <View style={styles.placeholder} />;
+  // Just signed in: the hand-off is claiming the nickname (no record yet), or
+  // has just completed the record and the route guard is about to move on to
+  // the app. Nothing to answer either way, so hold the backdrop with a spinner
+  // rather than an empty screen — or a flash of the first step.
+  const leaving =
+    authenticated && controller.state?.status === "completed" && !handedOff;
+  if (!controller.hydrated || !controller.state || leaving) {
+    return (
+      <View style={styles.placeholder}>
+        <OnboardingBackdrop />
+        <ActivityIndicator color={PROFILE.ink} style={styles.flex} />
+      </View>
+    );
   }
 
   const showBack = index > 0 || router.canGoBack();
