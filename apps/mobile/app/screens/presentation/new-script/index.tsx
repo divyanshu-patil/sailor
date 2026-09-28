@@ -12,7 +12,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { router, Stack } from "expo-router";
+import { router, Stack, useIsFocused } from "expo-router";
 import { usePreventRemove } from "expo-router/react-navigation";
 import Animated, {
   FadeInDown,
@@ -349,7 +349,12 @@ function FlowContent() {
   // Past the first step, leaving the screen means stepping back through the
   // wizard: the swipe and the native back button walk the steps instead of
   // popping the route and throwing the brief away.
-  usePreventRemove(currentStep > 0, goBack);
+  //
+  // Only while this is the screen on top. Preview's Create resets the stack out
+  // from under the wizard, and a guard still armed at step three swallowed that
+  // reset — results never mounted, so the deck build was never requested.
+  const isFocused = useIsFocused();
+  usePreventRemove(currentStep > 0 && isFocused, goBack);
 
   // The same two gates the footer button used: the API's own min_length, and
   // "every file has landed" — a brief can't reference an id that doesn't exist.
