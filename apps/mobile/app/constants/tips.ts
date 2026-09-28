@@ -41,11 +41,3 @@ export const TIPS = [
   'Don\'t end on "any questions?"',
   "Record yourself and watch it back.",
 ] as const;
-
-/** The same tip for the same seed, every time. */
-export function tipFor(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++)
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  return TIPS[Math.abs(hash) % TIPS.length];
-}

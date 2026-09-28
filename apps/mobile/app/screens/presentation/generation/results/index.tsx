@@ -114,7 +114,6 @@ const ResultsScreen = () => {
           error={error}
           onStop={stopDeckGeneration}
           onRetry={retryDeckGeneration}
-          seed={generationId ? `${generationId}:deck` : null}
         />
       )}
     </>
