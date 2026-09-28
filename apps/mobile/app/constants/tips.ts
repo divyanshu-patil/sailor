@@ -1,7 +1,7 @@
 /**
- * The generating screen's tips — the headlines of docs/public-speaking-tips.md.
- * One per generation, picked from its id by `tipFor`, so a generation shows
- * the same tip every time it is opened.
+ * The generating screen's tips — the headlines of docs/public-speaking-tips.md,
+ * in the same order, shortened where the bubble needs it. The doc says who each
+ * one comes from. One is picked at random each time the screen appears.
  */
 export const TIPS = [
   "Know your one idea.",
@@ -13,6 +13,8 @@ export const TIPS = [
   "Group it in threes.",
   "Keep it short.",
   "Plan one moment they'll retell.",
+  "Make the numbers human.",
+  "Don't let slides flatten your story.",
   "Walk on, breathe, then speak.",
   "Open with a promise.",
   "Open with a hook, not a joke.",
@@ -24,20 +26,30 @@ export const TIPS = [
   "Pause after your big lines.",
   "Warm up your voice.",
   "Speak with honesty and warmth.",
+  "Turn up the volume.",
+  "Slow down to sound clearer.",
+  "Stretch your range: read aloud, exaggerated.",
   "One person, one thought.",
   "Use your hands.",
   "Smile when you can.",
   "Stand tall, move with purpose.",
+  "Keep your hands visible.",
   "What, so what, now what.",
   "Say your key idea three times.",
   "Signpost with numbers and questions.",
   "Tell a story, not a list.",
   "Contrast what is with what could be.",
+  "Breathe before you answer.",
+  'Drop "I think".',
+  "Notice when you've said enough.",
   'Say "I\'m excited", not "calm down".',
   "Breathe out longer than you breathe in.",
   "Notice the nerves, don't fight them.",
   "Loosen up with a tongue twister.",
+  "Serve them, don't perform.",
+  "Act first, confidence follows.",
   "End on a line they'll remember.",
   'Don\'t end on "any questions?"',
   "Record yourself and watch it back.",
+  "Rehearse in front of one or two people.",
 ] as const;
