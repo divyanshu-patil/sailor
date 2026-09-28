@@ -14,7 +14,7 @@ import CtaButton from "../../../components/cta-button";
 import { GenerationState } from "../../../../hooks/use-script-generation";
 import SkiaMascot from "@/components/ui/skia-mascot";
 import { TIP_MASCOT } from "@/constants/mascots";
-import { tipFor } from "@/constants/tips";
+import { TIPS } from "@/constants/tips";
 import { fonts } from "@/constants/fonts";
 import { DAILY_SPRING } from "@/screens/daily-practice/theme";
 import { weight } from "@/lib/haptics";
@@ -29,9 +29,6 @@ interface GeneratingScreenProps {
   onStop: () => void;
   /** Re-run the job. Omitted where there's nothing sensible to retry. */
   onRetry?: () => void;
-  /** Picks the tip. The generation's id, so reopening it shows the same one;
-   *  no tip until it's known. */
-  seed?: string | null;
 }
 
 /**
@@ -51,10 +48,11 @@ const GeneratingScreen = ({
   onStop,
   onRetry,
   status,
-  seed,
 }: GeneratingScreenProps) => {
   const isTerminal = status === "failed" || status === "cancelled";
-  const tip = seed ? tipFor(seed) : null;
+  // A fresh tip each time this screen appears — every generation, revision
+  // and deck build — held for as long as it stays up.
+  const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
 
   // 1 = parked just past the right edge, 0 = in place.
   const slide = useSharedValue(1);
@@ -75,7 +73,7 @@ const GeneratingScreen = ({
     },
   );
 
-  const showTip = landed && !isTerminal && !!tip;
+  const showTip = landed && !isTerminal;
   useEffect(() => {
     tipIn.set(
       withTiming(showTip ? 1 : 0, {

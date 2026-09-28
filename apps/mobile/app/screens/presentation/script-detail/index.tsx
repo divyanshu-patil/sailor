@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -35,6 +35,7 @@ import { publicDeckService } from "@/services/public-deck.service";
 import { fonts } from "@/constants/fonts";
 
 import { haptics } from "@/lib/haptics";
+import { parseBlocks, type Segment } from "@/utils/parseInlineMarkdown";
 
 type ScriptDetailParams = {
   id: string;
@@ -310,6 +311,9 @@ export default function ScriptDetailScreen() {
   // paragraph about I/O systems that every deck displayed regardless of what it
   // was actually about.
   const scriptText = publicScript ?? script ?? "";
+  // The same blocks the full script screen reads, so `## [HOOK]` headings,
+  // **stress** and *delivery notes* aren't shown as raw markdown here.
+  const scriptBlocks = useMemo(() => parseBlocks(scriptText), [scriptText]);
 
   const textDarkColor = colord(currentScript.color)
     .darken(0.35)
@@ -539,7 +543,26 @@ export default function ScriptDetailScreen() {
               style={[styles.scriptText, { color: textDarkColor }]}
               numberOfLines={10}
             >
-              {scriptText}
+              {/* Nested spans inside the one Text, so the card still clamps to
+                  ten lines with an ellipsis across block boundaries. */}
+              {scriptBlocks.map((block, i) => (
+                <Fragment key={i}>
+                  {i > 0 && "\n\n"}
+                  {block.type === "quote" ? (
+                    block.lines.map((line, j) => (
+                      <Fragment key={j}>
+                        {j > 0 && "\n"}
+                        <Spans segments={line} italic />
+                      </Fragment>
+                    ))
+                  ) : (
+                    <Spans
+                      segments={block.segments}
+                      bold={block.type === "heading"}
+                    />
+                  )}
+                </Fragment>
+              ))}
             </Text>
             <CtaButton
               label="View"
@@ -560,6 +583,29 @@ export default function ScriptDetailScreen() {
     </>
   );
 }
+
+/** Inline markdown as nested Text spans, inheriting the parent's size and
+ *  colour. `bold`/`italic` force the style for a whole heading or quote. */
+const Spans = ({
+  segments,
+  bold,
+  italic,
+}: {
+  segments: Segment[];
+  bold?: boolean;
+  italic?: boolean;
+}) =>
+  segments.map((segment, i) => (
+    <Text
+      key={i}
+      style={[
+        (bold || segment.bold) && styles.scriptBold,
+        (italic || segment.italic) && styles.scriptItalic,
+      ]}
+    >
+      {segment.text}
+    </Text>
+  ));
 
 /**
  * A small fact about the deck: an icon in its own disc, then a value.
@@ -685,4 +731,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   scriptText: { fontSize: 20, fontWeight: "600" },
+  scriptBold: { fontWeight: "800" },
+  scriptItalic: { fontStyle: "italic" },
 });
