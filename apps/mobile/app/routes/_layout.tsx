@@ -109,6 +109,8 @@ function ReminderRouting() {
 // Held from module load, before the first render, so there is no window where
 // iOS has already taken the splash down and the app has nothing to show.
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// iOS cuts the splash away without this; Android always animates its own exit.
+SplashScreen.setOptions({ duration: 300, fade: true });
 
 function InitialLayout() {
   const isOnboardingCompletionHydrated = useOnboardingCompletionStore(
