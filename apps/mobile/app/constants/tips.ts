@@ -1,7 +1,7 @@
 /**
- * The generating screen's tips — the headlines of docs/public-speaking-tips.md.
- * One per generation, picked from its id by `tipFor`, so a generation shows
- * the same tip every time it is opened.
+ * The generating screen's tips — the headlines of docs/public-speaking-tips.md,
+ * in the same order, shortened where the bubble needs it. The doc says who each
+ * one comes from. One is picked at random each time the screen appears.
  */
 export const TIPS = [
   "Know your one idea.",
@@ -13,9 +13,16 @@ export const TIPS = [
   "Group it in threes.",
   "Keep it short.",
   "Plan one moment they'll retell.",
+  "Make the numbers human.",
+  "Don't let slides flatten your story.",
+  "Start with why.",
+  "Talk about an idea, not your company.",
+  "Write the talk before the slides.",
+  "Don't wing it.",
   "Walk on, breathe, then speak.",
   "Open with a promise.",
   "Open with a hook, not a joke.",
+  "Take 15 seconds to introduce yourself.",
   "Play your voice like an instrument.",
   "Slow down for what matters.",
   "End sentences on a lower pitch.",
@@ -24,28 +31,45 @@ export const TIPS = [
   "Pause after your big lines.",
   "Warm up your voice.",
   "Speak with honesty and warmth.",
+  "Turn up the volume.",
+  "Slow down to sound clearer.",
+  "Stretch your range: read aloud, exaggerated.",
+  'Say it like "pass the salt".',
   "One person, one thought.",
   "Use your hands.",
   "Smile when you can.",
   "Stand tall, move with purpose.",
+  "Keep your hands visible.",
+  "Move your face to move them.",
+  "Let your face match your words.",
+  "Mirror the room's energy.",
+  "Steeple your hands when still.",
+  "Nod slowly when they ask.",
   "What, so what, now what.",
   "Say your key idea three times.",
   "Signpost with numbers and questions.",
   "Tell a story, not a list.",
   "Contrast what is with what could be.",
+  "Breathe before you answer.",
+  'Drop "I think".',
+  "Notice when you've said enough.",
+  "Believe every word.",
+  "Put on the spot? Use 3-2-1.",
+  'Drop "does that make sense?"',
+  'Don\'t trail off with "so".',
+  "Lead with your ask.",
+  "Cut the speed bumps.",
+  "Say it in three sentences.",
   'Say "I\'m excited", not "calm down".',
   "Breathe out longer than you breathe in.",
   "Notice the nerves, don't fight them.",
   "Loosen up with a tongue twister.",
+  "Serve them, don't perform.",
+  "Act first, confidence follows.",
+  "Train courage like a muscle.",
   "End on a line they'll remember.",
   'Don\'t end on "any questions?"',
   "Record yourself and watch it back.",
+  "Rehearse in front of one or two people.",
+  "Know it by heart.",
 ] as const;
-
-/** The same tip for the same seed, every time. */
-export function tipFor(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++)
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  return TIPS[Math.abs(hash) % TIPS.length];
-}

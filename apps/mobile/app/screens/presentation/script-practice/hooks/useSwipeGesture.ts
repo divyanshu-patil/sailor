@@ -14,6 +14,23 @@ export const SWIPE_THRESHOLD = RIGHT_SWIPE_THRESHOLD + LEFT_SWIPE_THRESHOLD / 2;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const RETURN_START_X = SCREEN_WIDTH * 1.5;
 const RETREAT_SPRING = { damping: 22, stiffness: 250, mass: 0.6 };
+/** iOS's normal scroll deceleration, per millisecond (UIScrollView's
+ *  `.normal`). Tune down toward 0.99 if flicks commit too eagerly. */
+const DECELERATION_RATE = 0.998;
+
+/**
+ * Where a release is headed, not just where the finger stopped: the distance
+ * plus how far the card would coast at `DECELERATION_RATE`. A quick short
+ * flick and a slow long drag project to the same place, so either commits —
+ * and a drag flicked back toward the centre projects short and cancels.
+ */
+const projectRelease = (translation: number, velocity: number) => {
+  "worklet";
+  return (
+    translation +
+    ((velocity / 1000) * DECELERATION_RATE) / (1 - DECELERATION_RATE)
+  );
+};
 
 type SwipeDirection = "left" | "right" | null;
 
@@ -133,6 +150,7 @@ const handleLeftSwipeUpdate = (
  * off-screen, then call onAdvance) or settle back to center.
  */
 const handleRightSwipeEnd = (
+  projected: number,
   params: Pick<
     UseSwipeGestureParams,
     | "translateX"
@@ -147,7 +165,7 @@ const handleRightSwipeEnd = (
   >,
 ) => {
   "worklet";
-  const pastDistance = params.translateX.value > RIGHT_SWIPE_THRESHOLD;
+  const pastDistance = projected > RIGHT_SWIPE_THRESHOLD;
   const didExceedThreshold =
     pastDistance && params.currentIndexSV.value < params.cardsLength;
 
@@ -204,7 +222,7 @@ const handleRightSwipeEnd = (
  * cards back to their resting positions.
  */
 const handleLeftSwipeEnd = (
-  translationX: number,
+  projected: number,
   params: Pick<
     UseSwipeGestureParams,
     | "translateX"
@@ -221,7 +239,9 @@ const handleLeftSwipeEnd = (
   >,
 ) => {
   "worklet";
-  const pastDistance = Math.abs(translationX) > LEFT_SWIPE_THRESHOLD;
+  // Negated, not abs: a left drag flicked back to the right projects
+  // positive, and that is a cancel, not a commit.
+  const pastDistance = -projected > LEFT_SWIPE_THRESHOLD;
   const didExceedThreshold = pastDistance && params.currentIndexSV.value > 0;
 
   params.dragX.value = 0;
@@ -323,8 +343,9 @@ export const useSwipeGesture = ({
     })
     .onEnd((e) => {
       if (isAnimating.value) return;
+      const projected = projectRelease(e.translationX, e.velocityX);
       if (swipeDirection.value === "right") {
-        handleRightSwipeEnd({
+        handleRightSwipeEnd(projected, {
           translateX,
           translateY,
           prevCardOpacity,
@@ -336,7 +357,7 @@ export const useSwipeGesture = ({
           onAdvance,
         });
       } else if (swipeDirection.value === "left") {
-        handleLeftSwipeEnd(e.translationX, {
+        handleLeftSwipeEnd(projected, {
           translateX,
           translateY,
           prevCardX,
