@@ -161,6 +161,7 @@ const AllScriptsScreen = () => {
         <Stack.Toolbar.Button
           variant="prominent"
           icon="bookmark"
+          tintColor={"#6C6CE4"}
           onPress={() => router.push("/(authenticated)/discover/saved")}
         />
         <Stack.Toolbar.Menu icon="line.3.horizontal.decrease">
