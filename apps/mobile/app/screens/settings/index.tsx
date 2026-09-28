@@ -10,6 +10,7 @@ import { PracticeSection } from "./PracticeSection";
 import { DefaultMoodSection } from "./DefaultMoodSection";
 import { CacheSection } from "./CacheSection";
 import { SubscriptionSection } from "./SubscriptionSection";
+import { ENV } from "@/lib/config/env";
 import { VersionSection } from "./VersionSection";
 import { AccountSecuritySection } from "./AccountSecuritySection";
 import { SentryTestSection } from "./SentryTestSection";
@@ -62,7 +63,9 @@ const SettingsScreen = () => {
             selectedMood={preferences?.defaultMood ?? "confident"}
             onUpdate={updatePreference}
           />
-          <SubscriptionSection onMessage={showAlert} />
+          {ENV.REVENUECAT_ENABLED && (
+            <SubscriptionSection onMessage={showAlert} />
+          )}
           <CacheSection onCleared={handleCacheCleared} />
           <VersionSection />
           <AccountSecuritySection
@@ -70,8 +73,8 @@ const SettingsScreen = () => {
             onError={showAlert}
           />
           {__DEV__ && <SentryTestSection onMessage={showAlert} />}
-          {/* [COMMENT LATER] */}
-          {__DEV__ && <DevStreakSection onMessage={showAlert} />}
+          {/* [COMMENT LATER] In Release too for now, for testing on a device. */}
+          <DevStreakSection onMessage={showAlert} />
         </Form>
 
         <Alert

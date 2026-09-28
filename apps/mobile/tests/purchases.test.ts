@@ -42,13 +42,21 @@ type Lib = typeof import("@/lib/purchases");
  * A fresh copy of the module: which store key it picks and whether it has been
  * configured are both decided once per launch, at import.
  */
-async function load(os = "ios", keys = { ios: "appl_key", android: "goog_key" }): Promise<{
+async function load(
+  os = "ios",
+  keys = { ios: "appl_key", android: "goog_key" },
+  enabled = true,
+): Promise<{
   lib: Lib;
   Linking: { openURL: ReturnType<typeof vi.fn> };
 }> {
   vi.resetModules();
   vi.stubEnv("EXPO_PUBLIC_REVENUECAT_IOS_API_KEY", keys.ios);
   vi.stubEnv("EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY", keys.android);
+  vi.doMock("@/lib/config/env", async (importOriginal) => {
+    const { ENV } = await importOriginal<typeof import("@/lib/config/env")>();
+    return { ENV: { ...ENV, REVENUECAT_ENABLED: enabled } };
+  });
   const rn = await import("react-native");
   rn.Platform.OS = os as never;
   return { lib: await import("@/lib/purchases"), Linking: rn.Linking as never };
@@ -117,6 +125,13 @@ describe("configure", () => {
     expect((await load("web")).lib.configurePurchases()).toBe(false);
     expect((await load("ios", { ios: "", android: "" })).lib.configurePurchases()).toBe(false);
     expect(rc.Purchases.configure).not.toHaveBeenCalled();
+  });
+
+  it("switched off, never configures and grants everyone Pro", async () => {
+    const { lib } = await load("ios", undefined, false);
+    expect(lib.configurePurchases()).toBe(false);
+    expect(rc.Purchases.configure).not.toHaveBeenCalled();
+    expect(lib.hasProEntitlement(null)).toBe(true);
   });
 
   it("every call is a safe no-op before configure", async () => {

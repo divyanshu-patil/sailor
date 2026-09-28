@@ -13,7 +13,6 @@ import {
   presentCustomerCenter,
   presentPaywall,
   presentPaywallIfNeeded,
-  isPurchasesSupported,
   openManageSubscriptions,
   requestRefund,
 } from "@/lib/purchases";
@@ -32,7 +31,12 @@ export function useRevenueCatBootstrap() {
   const previousUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!configurePurchases()) return;
+    // No SDK: settle the store once so gates stop waiting on an answer that
+    // will never come.
+    if (!configurePurchases()) {
+      applyCustomerInfo(null);
+      return;
+    }
 
     // One listener for the whole app. Every entitlement change lands here —
     // purchases, restores, renewals, expiries, and changes made on another
@@ -73,7 +77,9 @@ export function useRevenueCatBootstrap() {
     // Wait for Clerk: `userId` is null while the session is still loading, and
     // acting on that would log a signed-in user out of RevenueCat on every cold
     // start, orphaning their purchases behind an anonymous id.
-    if (!isLoaded || !isPurchasesSupported) return;
+    // Runs without an SDK too: login/logout are no-ops then, but `loggedInAs`
+    // still has to land or the post-onboarding redirect waits out its timer.
+    if (!isLoaded) return;
 
     const previous = previousUserId.current;
     previousUserId.current = userId ?? null;

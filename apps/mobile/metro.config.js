@@ -16,6 +16,15 @@ config.resolver.nodeModulesPaths = [
 // dotLottie files ship as a zip; Metro must copy them verbatim rather than
 // try to parse them.
 config.resolver.assetExts.push("lottie");
+// RevenueCat is switched off (REVENUECAT_ENABLED in app/lib/config/env.ts).
+// Its native code is excluded from autolinking in package.json, so its JS is
+// left out of the bundle too rather than shipped pointing at nothing.
+const REVENUECAT = new Set(["react-native-purchases", "react-native-purchases-ui"]);
+const resolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) =>
+  REVENUECAT.has(moduleName)
+    ? { type: "empty" }
+    : resolveRequest(context, moduleName, platform);
 config.resolver.alias = {
   "@": path.resolve(projectRoot, "src"),
   "@/assets": path.resolve(projectRoot, "assets"),

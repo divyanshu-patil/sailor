@@ -95,6 +95,12 @@
   },
   "private": true,
   "expo": {
+    "autolinking": {
+      "exclude": [
+        "react-native-purchases",
+        "react-native-purchases-ui"
+      ]
+    },
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false

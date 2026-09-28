@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/expo";
 
 import { useProIntroStore } from "@/store/pro-intro.store";
 import { useIsPro, useSubscriptionStore } from "@/store/subscription.store";
+import { ENV } from "@/lib/config/env";
 
 /** How long a sign-in may wait on RevenueCat before the screen decides anyway. */
 const ENTITLEMENT_WAIT_MS = 3000;
@@ -31,7 +32,8 @@ const Home = () => {
   }, [waiting]);
 
   if (waiting) return null;
-  if (owed && !isPro) {
+  // With billing off everyone is Pro, but the screen is still shown.
+  if (owed && (!isPro || !ENV.REVENUECAT_ENABLED)) {
     return <Redirect href="/(authenticated)/sailors-pro" />;
   }
   return <Redirect href={"/(authenticated)/(tabs)/(home)"} />;

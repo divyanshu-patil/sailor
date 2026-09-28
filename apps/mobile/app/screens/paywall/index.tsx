@@ -46,6 +46,10 @@ export const PaywallScreen = ({
     onEntitled?.();
   };
 
+  // The effect above is already dismissing, and without the SDK bundled there
+  // is no Paywall component to render in the meantime.
+  if (!isPurchasesConfigured()) return null;
+
   return (
     // A native view host: it needs a real size, or it renders as nothing.
     <View style={styles.container}>

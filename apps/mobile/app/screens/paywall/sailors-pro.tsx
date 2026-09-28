@@ -32,6 +32,7 @@ import { haptics, weight } from "@/lib/haptics";
 import { PROFILE, profileFonts } from "@/screens/profile/theme";
 import { useProIntroStore } from "@/store/pro-intro.store";
 import { useIsPro } from "@/store/subscription.store";
+import { ENV } from "@/lib/config/env";
 import ProHero from "./pro-hero";
 
 const PURPLE = "#8B6CF0";
@@ -120,11 +121,12 @@ export default function SailorsProScreen() {
   // A subscriber whose entitlement arrives after this screen opened has
   // nothing to decide here.
   useEffect(() => {
-    if (isPro) enterApp();
+    if (isPro && ENV.REVENUECAT_ENABLED) enterApp();
   }, [isPro, enterApp]);
 
   const seePlans = async () => {
-    if (opening) return;
+    // Billing off: there is no paywall to open.
+    if (opening || !ENV.REVENUECAT_ENABLED) return;
     setOpening(true);
     const outcome = await openPaywall();
     setOpening(false);

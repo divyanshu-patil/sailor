@@ -33,6 +33,7 @@ import { useAppUserStore } from "@/store/app-user.store";
 import { useUser } from "@/hooks/use-user";
 import { useProfileIdentity } from "@/hooks/use-profile-identity";
 import { useSubscription } from "@/hooks/use-subscription";
+import { ENV } from "@/lib/config/env";
 import { formatRenewal } from "@/utils/format-renewal";
 
 const ProfileScreen = () => {
@@ -313,17 +314,19 @@ const ProfileScreen = () => {
             />
           </Animated.View>
 
-          <Animated.View style={[styles.cardWrap, planStyle]}>
-            <SubscriptionCard
-              planName={planName}
-              periodLabel={plan?.period}
-              shimmerName={isPro}
-              description={planDescription}
-              statusLabel={statusLabel}
-              loading={planLoading}
-              onManagePress={openManageMenu}
-            />
-          </Animated.View>
+          {ENV.REVENUECAT_ENABLED && (
+            <Animated.View style={[styles.cardWrap, planStyle]}>
+              <SubscriptionCard
+                planName={planName}
+                periodLabel={plan?.period}
+                shimmerName={isPro}
+                description={planDescription}
+                statusLabel={statusLabel}
+                loading={planLoading}
+                onManagePress={openManageMenu}
+              />
+            </Animated.View>
+          )}
 
           <Animated.View style={[styles.cardWrap, settingsStyle]}>
             <SettingsCard />

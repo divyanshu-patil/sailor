@@ -31,8 +31,8 @@ export const PRO_ENTITLEMENT = "pro";
  * Purchases can't run at all without a native module, so web is out — and the
  * app is expected to keep working there, minus billing.
  */
-export const isPurchasesSupported =
-  Platform.OS === "ios" || Platform.OS === "android";
+const isPurchasesSupported =
+  ENV.REVENUECAT_ENABLED && (Platform.OS === "ios" || Platform.OS === "android");
 
 const apiKey =
   Platform.OS === "ios"
@@ -64,9 +64,11 @@ export function configurePurchases(): boolean {
 
 export const isPurchasesConfigured = () => configured;
 
-/** Whether a customer info payload grants Pro. The one place that decides. */
+/** Whether a customer info payload grants Pro. The one place that decides —
+ *  and with billing switched off there is nothing to buy, so everyone has it. */
 export const hasProEntitlement = (info: CustomerInfo | null): boolean =>
-  !!info && info.entitlements.active[PRO_ENTITLEMENT] !== undefined;
+  !ENV.REVENUECAT_ENABLED ||
+  (!!info && info.entitlements.active[PRO_ENTITLEMENT] !== undefined);
 
 /**
  * The subscription behind the Pro entitlement, flattened into what a card can

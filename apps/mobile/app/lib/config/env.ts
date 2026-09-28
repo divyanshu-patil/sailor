@@ -12,6 +12,11 @@ export const ENV = {
   ),
   API_URL: getEnvVar("EXPO_PUBLIC_API_URL", process.env.EXPO_PUBLIC_API_URL),
 
+  // RevenueCat kill switch. Off: the SDK isn't compiled (package.json
+  // expo.autolinking.exclude) or bundled (metro.config.js), and everyone gets
+  // Pro. Turning it back on means undoing both of those too.
+  REVENUECAT_ENABLED: false,
+
   // Public SDK keys — safe to ship in the bundle, unlike the RevenueCat *secret*
   // key, which is server-only. Not required: the app runs fine without billing
   // configured (and has to, on web, where there is no native Purchases module),

@@ -10,7 +10,7 @@
     "ios": {
       "icon": "./assets/sailors.icon",
       "bundleIdentifier": "com.sailors.presentation",
-      "appleTeamId": "MY2RYL82UV",
+      "appleTeamId": "Z87B7YT54Y",
       "deploymentTarget": "17.0"
     },
     "android": {
