@@ -403,5 +403,7 @@ so a "monthly" plan can expire minutes after purchase. The profile card marks th
 
 ## Licence
 
-By contributing you agree that your contributions are licensed under the
-[MIT License](LICENSE) that covers this project.
+Sailors is proprietary, all rights reserved (see [LICENSE](LICENSE)). By
+contributing you grant Divyanshu Patil and Bhavesh More a perpetual, worldwide,
+irrevocable, royalty-free licence to use, modify, distribute and commercialise
+your contribution, and you confirm you have the right to grant it.

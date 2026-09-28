@@ -1,21 +1,73 @@
-MIT License
+Sailors Proprietary License
 
-Copyright (c) 2026 Divyanshu Patil and Bhavesh More
+Copyright (c) 2026 Divyanshu Patil and Bhavesh More. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository and everything in it, including the source code, compiled
+applications, backend services, designs, artwork, mascots, animations,
+illustrations, written copy, and the name "Sailors" with its logos and other
+branding (together, the "Software"), is the proprietary property of
+Divyanshu Patil and Bhavesh More (the "Owners").
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. NO LICENCE GRANTED
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   The Software is made visible for reference only. Being able to see it,
+   download it, or clone it does not give you any licence or right to use it.
+   No rights are granted, by implication, estoppel, or otherwise, except in a
+   written agreement signed by the Owners.
+
+2. RESTRICTIONS
+
+   Without the Owners' prior written permission, you may not:
+
+   a. copy, reproduce, modify, adapt, translate, or create derivative works
+      of the Software, in whole or in part;
+   b. distribute, publish, sublicense, sell, rent, lease, lend, or otherwise
+      make the Software or any part of it available to anyone else;
+   c. use the Software or any part of it in any product or service, whether
+      commercial or not. This includes building, publishing, or distributing
+      an application derived from it on any app store or platform, and
+      running any part of it as a hosted service;
+   d. use the name "Sailors", its logos, mascots, or other branding, or any
+      name, logo, or mark confusingly similar to them;
+   e. reverse engineer, decompile, or disassemble any compiled form of the
+      Software, except to the extent that applicable law expressly permits
+      this despite this restriction;
+   f. use the Software or any part of it to train, fine-tune, or evaluate any
+      machine learning or artificial intelligence model;
+   g. remove, obscure, or alter this notice or any copyright, trademark, or
+      other proprietary notice in the Software.
+
+3. THIRD-PARTY COMPONENTS
+
+   The Software depends on and includes third-party components that are
+   published under their own licences. Those licences apply only to those
+   components and grant no rights in the rest of the Software. Parts of
+   apps/mobile derived from Expo's create-expo-app template are under the
+   MIT License in apps/mobile/LICENSE-EXPO-TEMPLATE.
+
+4. CONTRIBUTIONS
+
+   Anyone who submits a contribution to the Software grants the Owners a
+   perpetual, worldwide, irrevocable, royalty-free, transferable licence to
+   use, copy, modify, distribute, sublicense, and commercialise that
+   contribution as part of the Software or otherwise, and confirms that they
+   have the right to grant it.
+
+5. TERMINATION
+
+   Any use of the Software that breaches this licence is unauthorised and
+   infringes the Owners' rights. The Owners reserve every remedy available to
+   them under applicable law.
+
+6. NO WARRANTY AND NO LIABILITY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   OWNERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
+   ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OF OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+For permission or licensing enquiries, contact the Owners through
+https://github.com/divyanshu-patil/sailor.
