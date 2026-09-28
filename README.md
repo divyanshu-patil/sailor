@@ -22,10 +22,10 @@
   <img alt="React Native 0.86" src="https://img.shields.io/badge/React%20Native-0.86-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
   <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
   <br />
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2E7D5B?style=for-the-badge" />
+  <img alt="License: all rights reserved" src="https://img.shields.io/badge/license-all%20rights%20reserved-2E7D5B?style=for-the-badge" />
   <img alt="Built for RevenueCat Shipaton 2026" src="https://img.shields.io/badge/RevenueCat-Shipaton%202026-F2545B?style=for-the-badge&logo=revenuecat&logoColor=white" />
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-B75C5C?style=for-the-badge" /></a>
-  <a href="https://github.com/divyanshu-patil/sailor/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/divyanshu-patil/sailor?style=for-the-badge&color=1C1A18" /></a>
+  <a href="https://github.com/divyanshu-patil/sailors/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/divyanshu-patil/sailors?style=for-the-badge&color=1C1A18" /></a>
 </p>
 
 <p>
@@ -550,9 +550,11 @@ lives in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## License
 
-[MIT](LICENSE) © Divyanshu Patil and Bhavesh More.
+Proprietary, all rights reserved. © 2026 Divyanshu Patil and Bhavesh More.
 
-Use it, fork it, ship it, sell it. Just keep the notice.
+The source is public to read, not to reuse. Copying it, building on it, publishing
+an app from it, or using the Sailors name or mascots needs our written permission.
+See [LICENSE](LICENSE).
 
 <div align="center">
 <br />
