@@ -12,7 +12,7 @@ import {
 import { pillMark, SelectionMark, Stagger } from "../components/choice-motion";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
-/** The pills' height; the check mark sits by it (see `pillMark`). */
+/** The pills' height. */
 const CARD_HEIGHT = 76;
 
 interface ContextOption {
@@ -125,7 +125,7 @@ export default function SpeakingContextsStep({
                   />
                 </View>
                 <Text style={styles.label}>{option.label}</Text>
-                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
+                <SelectionMark active={active} style={pillMark()} />
               </PressableScale>
             </Stagger>
           );

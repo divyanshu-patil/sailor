@@ -12,7 +12,7 @@ import {
 import SquareMascot, { type SquareEyes } from "../components/square-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
-/** The pills' height; the check mark sits by it (see `pillMark`). */
+/** The pills' height. */
 const CARD_HEIGHT = 116;
 
 interface LevelOption {
@@ -117,7 +117,7 @@ export default function SpeakingLevelStep({
                   <Text style={styles.title}>{option.title}</Text>
                   <Text style={styles.description}>{option.description}</Text>
                 </View>
-                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
+                <SelectionMark active={active} style={pillMark()} />
               </PressableScale>
             </Stagger>
           );

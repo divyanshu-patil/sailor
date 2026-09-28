@@ -92,13 +92,15 @@ export function HeadingIn({ children }: { children: ReactNode }) {
 export const selectedBorder = (card: string) => colord(card).darken(0.2).toHex();
 
 /**
- * The mark's place on a pill-shaped card of this height: on the straight top
- * edge, just short of where the rounded end begins — the corner it sits in on
- * a square card is curved away on a pill.
+ * The mark's place on a pill-shaped card: centred on its rounded end, across
+ * from the icon badge — the corner it sits in on a square card is curved away
+ * on a pill. Centred by percentage, so a label that wraps and grows the card
+ * doesn't leave it high. `right` clears whatever else lives in that end.
  */
-export const pillMark = (height: number): ViewStyle => ({
-  top: 8,
-  right: height / 2 - 10,
+export const pillMark = (right = 20): ViewStyle => ({
+  top: "50%",
+  marginTop: -12,
+  right,
 });
 
 const styles = StyleSheet.create({
