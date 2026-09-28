@@ -14,7 +14,7 @@ import {
 import BlobMascot, { type BlobEyes } from "../components/blob-mascot";
 import type { OnboardingController } from "../hooks/use-onboarding-controller";
 
-/** The pills' height; the check mark sits by it (see `pillMark`). */
+/** The pills' height. */
 const CARD_HEIGHT = 92;
 
 interface ReferralOption {
@@ -143,7 +143,7 @@ export default function ReferralStep({
                     size={90}
                   />
                 </View>
-                <SelectionMark active={active} style={pillMark(CARD_HEIGHT)} />
+                <SelectionMark active={active} style={pillMark(90)} />
               </PressableScale>
             </Stagger>
           );
@@ -197,7 +197,8 @@ const styles = StyleSheet.create({
     minHeight: CARD_HEIGHT,
     marginBottom: 14,
     paddingLeft: 14,
-    paddingRight: 86,
+    // The mascot's end, plus the check mark that sits just inside it.
+    paddingRight: 118,
     borderRadius: 999,
     borderWidth: 2,
     borderColor: "transparent",
