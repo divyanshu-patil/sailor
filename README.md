@@ -25,7 +25,7 @@
   <img alt="License: all rights reserved" src="https://img.shields.io/badge/license-all%20rights%20reserved-2E7D5B?style=for-the-badge" />
   <img alt="Built for RevenueCat Shipaton 2026" src="https://img.shields.io/badge/RevenueCat-Shipaton%202026-F2545B?style=for-the-badge&logo=revenuecat&logoColor=white" />
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-B75C5C?style=for-the-badge" /></a>
-  <a href="https://github.com/divyanshu-patil/sailor/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/divyanshu-patil/sailor?style=for-the-badge&color=1C1A18" /></a>
+  <a href="https://github.com/divyanshu-patil/sailors/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/divyanshu-patil/sailors?style=for-the-badge&color=1C1A18" /></a>
 </p>
 
 <p>

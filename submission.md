@@ -186,7 +186,7 @@ minute the streak dies, then rescheduled or cancelled as you practise.
 
 ## "Try it out" links
 
-- **Source code:** https://github.com/divyanshu-patil/sailor
+- **Source code:** https://github.com/divyanshu-patil/sailors
 - **TestFlight / App Store:** <!-- TODO: add the public TestFlight or App Store link -->
 - **Demo video:** <!-- TODO: add the video link -->
 
@@ -207,7 +207,7 @@ minute the streak dies, then rescheduled or cancelled as you practise.
 - **Running it yourself costs nothing.** The backend defaults to Ollama
   (`AI_PROVIDER=ollama`), so the full pipeline (brief in, script and practice cards out)
   runs locally with no API key. Setup is in
-  [CONTRIBUTING.md](https://github.com/divyanshu-patil/sailor/blob/main/CONTRIBUTING.md).
+  [CONTRIBUTING.md](https://github.com/divyanshu-patil/sailors/blob/main/CONTRIBUTING.md).
 - **Sponsor tools we actually used:** RevenueCat (billing), Expo (runtime, router, native
   modules, widgets), OpenRouter (production model routing), Sentry (crash and error
   monitoring), Software Mansion (Reanimated, Gesture Handler, Screens, Pulsar haptics), and

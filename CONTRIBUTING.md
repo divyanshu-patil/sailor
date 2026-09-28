@@ -115,7 +115,7 @@ sailor/
 ```bash
 # 1. Clone and install. The postinstall hook runs `uv sync` for the backend,
 #    so this one command sets up both apps.
-git clone https://github.com/divyanshu-patil/sailor.git
+git clone https://github.com/divyanshu-patil/sailors.git
 cd sailor
 pnpm install
 
