@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useIsFocused } from "expo-router";
+import { useReducedMotion } from "react-native-reanimated";
 
 import PressableScale from "@/components/ui/animated/PressableScale";
 
@@ -31,6 +33,12 @@ const ProfileHero = memo(function ProfileHero({
   avatarLoading,
   onAvatarPress,
 }: ProfileHeroProps) {
+  // Alive while the profile is in view; still when it's behind another screen
+  // or the user has asked for less motion.
+  const focused = useIsFocused();
+  const reduceMotion = useReducedMotion();
+  const animate = focused && !reduceMotion;
+
   return (
     <View style={styles.container}>
       <PressableScale
@@ -44,6 +52,7 @@ const ProfileHero = memo(function ProfileHero({
           name={avatarName ?? name}
           size={AVATAR_SIZE}
           loading={avatarLoading}
+          animate={animate}
           tint={PROFILE_PASTELS.pink}
         />
       </PressableScale>
