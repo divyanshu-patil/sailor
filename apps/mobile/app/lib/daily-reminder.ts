@@ -40,6 +40,22 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/** Checks, never asks. The syncs run at launch, and the system prompt belongs
+ *  to the onboarding step that explains it, not to the first frame. */
+export const hasNotificationPermission = async () =>
+  (await Notifications.getPermissionsAsync()).granted;
+
+const grantListeners = new Set<() => void>();
+
+/** Called when a prompt is answered yes: the launch syncs found no permission
+ *  and scheduled nothing, so they have to run again. */
+export function onNotificationGrant(listener: () => void): () => void {
+  grantListeners.add(listener);
+  return () => grantListeners.delete(listener);
+}
+
+/** Shows the system prompt. Only for a deliberate user action — the onboarding
+ *  step, or turning reminders on in settings. */
 export async function ensureNotificationPermission(): Promise<boolean> {
   const existing = await Notifications.getPermissionsAsync();
   if (existing.granted) return true;
@@ -47,8 +63,9 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   // anyway, and asking turns a denied permission into a silent failure loop.
   if (!existing.canAskAgain) return false;
 
-  const requested = await Notifications.requestPermissionsAsync();
-  return requested.granted;
+  const { granted } = await Notifications.requestPermissionsAsync();
+  if (granted) grantListeners.forEach((listener) => listener());
+  return granted;
 }
 
 /**
@@ -74,7 +91,7 @@ export async function syncDailyReminder(
   );
 
   if (!enabled) return false;
-  if (!(await ensureNotificationPermission())) return false;
+  if (!(await hasNotificationPermission())) return false;
 
   const [h, m] = time.split(":").map(Number);
   const hour = Number.isFinite(h) ? h! : 18;
@@ -126,12 +143,15 @@ export function startReminderSync(): () => void {
   };
 
   let previous = read();
-  void syncDailyReminder(
-    previous.practiceRemindersEnabled,
-    previous.practiceReminderTime,
-  );
+  const sync = () =>
+    void syncDailyReminder(
+      previous.practiceRemindersEnabled,
+      previous.practiceReminderTime,
+    );
+  sync();
+  const stopGrant = onNotificationGrant(sync);
 
-  return usePreferenceStore.subscribe(() => {
+  const stopPrefs = usePreferenceStore.subscribe(() => {
     const next = read();
     if (
       next.practiceRemindersEnabled === previous.practiceRemindersEnabled &&
@@ -140,9 +160,11 @@ export function startReminderSync(): () => void {
       return;
     }
     previous = next;
-    void syncDailyReminder(
-      next.practiceRemindersEnabled,
-      next.practiceReminderTime,
-    );
+    sync();
   });
+
+  return () => {
+    stopPrefs();
+    stopGrant();
+  };
 }

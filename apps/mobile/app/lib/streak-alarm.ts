@@ -6,7 +6,7 @@ import { useDailyStore } from "@/store/daily-store";
 import { usePreferenceStore } from "@/store/preference-store";
 import { localDate, StreakState } from "@/types/daily";
 
-import { ensureNotificationPermission } from "./daily-reminder";
+import { hasNotificationPermission, onNotificationGrant } from "./daily-reminder";
 import { STREAK_ALERTS, streakAlertFor } from "./notification-copy";
 
 /**
@@ -72,7 +72,7 @@ export async function syncStreakAlerts(
   );
 
   if (!target || !enabled) return;
-  if (!(await ensureNotificationPermission())) return;
+  if (!(await hasNotificationPermission())) return;
 
   const now = Date.now();
   await Promise.all(
@@ -156,6 +156,11 @@ export function startStreakAlertSync(): () => void {
   sync();
   const stopDaily = useDailyStore.subscribe(sync);
   const stopPrefs = usePreferenceStore.subscribe(sync);
+  // The key hasn't changed, but the answer has: nothing was armed without it.
+  const stopGrant = onNotificationGrant(() => {
+    previous = "";
+    sync();
+  });
 
   /**
    * Every foreground, in this order.
@@ -176,6 +181,7 @@ export function startStreakAlertSync(): () => void {
   return () => {
     stopDaily();
     stopPrefs();
+    stopGrant();
     appState.remove();
   };
 }
