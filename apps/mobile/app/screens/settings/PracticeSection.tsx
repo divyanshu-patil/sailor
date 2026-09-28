@@ -4,6 +4,7 @@ import { tint } from "@expo/ui/swift-ui/modifiers";
 import { UserPreferences } from "@/types/settings/preferences";
 import { usePreferenceStore } from "@/hooks";
 import { haptics } from "@/lib/haptics";
+import { ensureNotificationPermission } from "@/lib/daily-reminder";
 import { colord } from "colord";
 
 function timeStringToDate(time: string): Date {
@@ -61,6 +62,9 @@ export function PracticeSection({
           onUpdate("practiceRemindersEnabled", value);
           if (value) {
             haptics.toggleOn();
+            // Someone who skipped the onboarding ask gets it here; a grant
+            // reschedules through the sync's own listener.
+            void ensureNotificationPermission();
           } else {
             haptics.toggleOff();
           }

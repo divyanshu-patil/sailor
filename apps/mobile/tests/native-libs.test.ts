@@ -266,6 +266,24 @@ describe("daily reminder", () => {
     expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
+  it("never prompts from a sync, and schedules once a prompt is granted", async () => {
+    notifications.getPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+    const stop = startReminderSync();
+    await flush();
+    expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+
+    // The onboarding step asks; the sync picks the answer up on its own.
+    notifications.requestPermissionsAsync.mockImplementation(async () => {
+      notifications.getPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
+      return { granted: true };
+    });
+    await expect(ensureNotificationPermission()).resolves.toBe(true);
+    await flush();
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(30);
+    stop();
+  });
+
   it("follows the preference store, ignoring unrelated writes", async () => {
     const stop = startReminderSync();
     await flush();
@@ -330,6 +348,26 @@ describe("streak alarm", () => {
     notifications.cancelScheduledNotificationAsync.mockClear();
     await syncStreakAlerts(target, true);
     expect(notifications.cancelScheduledNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("arms once a prompt is granted, though nothing it keys on changed", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 8, 20, 12));
+    useDailyStore.setState({ streak: streak({ lastCompletedDate: "2026-09-19" }) });
+    notifications.getPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+    const stop = startStreakAlertSync();
+    await flush();
+    expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+
+    notifications.getPermissionsAsync
+      .mockResolvedValueOnce({ granted: false, canAskAgain: true })
+      .mockResolvedValue({ granted: true, canAskAgain: true });
+    await ensureNotificationPermission();
+    await flush();
+    expect(notifications.requestPermissionsAsync).toHaveBeenCalledOnce();
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalled();
+    stop();
+    vi.useRealTimers();
   });
 
   it("reschedules on streak and toggle changes, and refreshes on foreground", async () => {

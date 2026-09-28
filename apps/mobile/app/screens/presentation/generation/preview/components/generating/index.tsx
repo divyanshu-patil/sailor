@@ -17,8 +17,9 @@ import { TIP_MASCOT } from "@/constants/mascots";
 import { tipFor } from "@/constants/tips";
 import { fonts } from "@/constants/fonts";
 import { DAILY_SPRING } from "@/screens/daily-practice/theme";
+import { weight } from "@/lib/haptics";
 
-const MASCOT_SIZE = 200;
+const MASCOT_SIZE = 150;
 const MASCOT_RIGHT = 12;
 const MASCOT_BOTTOM = 230;
 
@@ -129,7 +130,11 @@ const GeneratingScreen = ({
 
       <CtaButton
         containerStyles={styles.ctaStyle}
-        onPress={isTerminal ? (onRetry ?? onStop) : onStop}
+        onPress={() => {
+          // Deep either way: Stop ends paid work, Try again restarts it.
+          weight.heavy();
+          (isTerminal ? (onRetry ?? onStop) : onStop)();
+        }}
       >
         {isTerminal ? "Try again" : "Stop"}
       </CtaButton>
