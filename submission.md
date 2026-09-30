@@ -212,7 +212,7 @@ minute the streak dies, then rescheduled or cancelled as you practise.
 
 ## "Try it out" links
 
-- **Source code:** https://github.com/divyanshu-patil/sailors
+- **Source code:** https://github.com/divyanshu-patil/sailors (README has screenshots of the home screen, onboarding, script setup, script detail, practice, widgets and streak/restore states)
 - **TestFlight / App Store:** not required for the Next Gen Award (video + source code).
   <!-- TODO: add a TestFlight link only if one exists -->
 - **Next Gen judging:** the repo is public and open source under its LICENSE; setup is in
@@ -234,7 +234,7 @@ account is needed. Requires a .edu (or equivalent) email.
 - [x] Source code: https://github.com/divyanshu-patil/sailors (public, open source)
 - [x] Both team members are students
 - [x] App icon, 1024×1024: `docs/submission/sailors-icon-1024.png`
-- [ ] Screenshots, at least one at 1179×2556, no device frame
+- [x] Screenshots, all 1179×2556, no device frame: `apps/mobile/assets/screenshots/` (also shown in the README)
 - [x] Monetization access for judges: RevenueCat Test Store, so purchases are free and unlock premium (see notes)
 - [x] RevenueCat SDK integrated (paywall, entitlements, customer centre; see notes below)
 
