@@ -38,14 +38,16 @@ The MVP is two steps, plus a daily habit that builds the skill underneath them.
    the PDF you were handed, and set the length, audience and mood. Sailors writes a
    structured script (beats like `[HOOK]` and `[CORE MESSAGE]`, stressed phrases,
    written-in pauses). You tell it your profession and speaking experience once, and every
-   script is pitched at you.
+   script is pitched at you. Not quite right? Revise it to be softer or quieter, then
+   create the deck.
 2. **Practise it on colour-coded, haptic cards.** The script becomes a deck, one idea per
    card with its keywords and a delivery style. Each card also carries how hard the line
    should land, and you get that two ways at once. You **see** it: the card's colour runs
    from calm mint to peak coral, more vivid the harder it hits. You **feel** it: five impact
    tiers, each with its own haptic, played as the card arrives. Colour and touch give your
    memory two more hooks than the words alone, so you remember the rhythm of the talk, not
-   just its sentences. Then record yourself against the deck and play it back.
+   just its sentences. Tap a card to flip it and read the full line, edit any card, then
+   record yourself against the deck and play it back.
 
 Around that core:
 
@@ -66,7 +68,9 @@ Around that core:
      *when* to reach for a pattern, not just what it is.
    - **Small enough to keep doing.** Two minutes fits a coffee queue. Streaks live on the
      home screen, in an iOS widget, and in reminders timed to the minute your streak would
-     break, with one streak restore a month.
+     break, with one streak restore a month. The widget's mascot greets you, sulks when your
+   streak breaks, urges you to hurry when it's about to, and reacts to your thumb.
+   Onboarding runs 20+ screens and is personalised to you.
    - **It feeds the core.** Once you know the shapes, you spot them in the scripts Sailors
      writes, and when a Q&A pulls you off-script, you have a structure ready.
 
@@ -93,8 +97,30 @@ Sailors is a Turborepo monorepo with two apps.
   Groq plug in behind the same adapter.
 - **Identity** is Clerk. **Subscriptions, the paywall and the customer centre** are
   RevenueCat. **Errors** go to Sentry.
-- **The mascot**, who reacts to what you're doing, is animated in Blooby and shipped as
-  dotLottie files with their own state machines.
+- **The mascot**, who reacts to what you're doing, was animated in **Blooby
+  (https://blooby-editor.vercel.app/), a mascot animation editor we built ourselves** for
+  this project. It exports dotLottie files with
+  their own state machines, which the app plays.
+
+#### Our journey
+
+We started in **May 2026**, the day RevenueCat announced the Shipaton. We're primarily
+mobile developers, and that announcement was the push we needed. We began with basic design
+prototypes in Figma and built from them, and every screen has evolved many times since. The
+[Figma file](https://www.figma.com/design/jaDgU8OfnDAiENh3VyYzFi/Sailor-app?node-id=362-377&t=aU5SSI4NzCkZ4V3h-1)
+holds every design, including the first rough ones.
+
+We studied what makes a premium mobile app feel premium and added all of it: a mascot,
+haptics, home-screen widgets, micro-interactions and gesture-based controls, so the app
+feels natural under the thumb. Much of the UI is heavily inspired by apps we studied on
+Mobbin.
+
+The last three weeks were the hardest. The app wasn't complete, the MVP was unfinished, our
+college schedule was tight, and we were stuck trying to animate the mascot in After Effects.
+We got so frustrated that we built our own mascot editor, **[Blooby](https://blooby-editor.vercel.app/)**.
+Every piece of artwork in Sailors is now made with it. Then we hit a new problem: lots of
+Lottie files were heavy on performance, so we moved from standard Lottie playback to
+Skia-based Lottie rendering. We still finished on the deadline.
 
 #### Challenges we ran into
 
@@ -187,8 +213,30 @@ minute the streak dies, then rescheduled or cancelled as you practise.
 ## "Try it out" links
 
 - **Source code:** https://github.com/divyanshu-patil/sailors
-- **TestFlight / App Store:** <!-- TODO: add the public TestFlight or App Store link -->
-- **Demo video:** <!-- TODO: add the video link -->
+- **TestFlight / App Store:** not required for the Next Gen Award (video + source code).
+  <!-- TODO: add a TestFlight link only if one exists -->
+- **Next Gen judging:** the repo is public and open source under its LICENSE; setup is in
+  CONTRIBUTING.md.
+- **Demo video:** https://youtube.com/shorts/uoi3QuBXQ8s
+- **Build in public:** https://x.com/okkdiv · https://www.linkedin.com/in/divyanshupatil/
+- **Mascot editor (Blooby):** https://blooby-editor.vercel.app/
+
+---
+
+## Devpost checklist (from the Shipaton page)
+
+Deadline: **Oct 1, 2026, 12:00pm PDT**. Entering the **Next Gen Award** (students): a video
+and open source code are submitted instead of a published store app, and no paid developer
+account is needed. Requires a .edu (or equivalent) email.
+
+- [x] Text description (this file)
+- [x] Demo video on YouTube: https://youtube.com/shorts/uoi3QuBXQ8s (max 2 min, shows the app running on a device)
+- [x] Source code: https://github.com/divyanshu-patil/sailors (public, open source)
+- [x] Both team members are students
+- [x] App icon, 1024×1024: `docs/submission/sailors-icon-1024.png`
+- [ ] Screenshots, at least one at 1179×2556, no device frame
+- [x] Monetization access for judges: RevenueCat Test Store, so purchases are free and unlock premium (see notes)
+- [x] RevenueCat SDK integrated (paywall, entitlements, customer centre; see notes below)
 
 ---
 
@@ -200,7 +248,9 @@ minute the streak dies, then rescheduled or cancelled as you practise.
   one subscription (**Wave** monthly or **Voyager** annually) unlocks everything with no
   credits or limits. Discover (browsing public decks) is free with no plan, so you can
   explore without paying.
-  <!-- TODO: if you're giving judges access (promo code, sandbox account, TestFlight), say how here. -->
+  **Judge access:** the app uses RevenueCat's **Test Store**, so no real money is involved.
+  Tap a plan on the paywall and the test purchase completes instantly and unlocks
+  everything, including the entitlement-gated features.
 - **RevenueCat does the billing end to end:** offerings, the paywall, entitlements that
   gate the app, and the customer centre for managing the plan. Plans and prices can change
   without an app update.
@@ -212,4 +262,42 @@ minute the streak dies, then rescheduled or cancelled as you practise.
   modules, widgets), OpenRouter (production model routing), Sentry (crash and error
   monitoring), Software Mansion (Reanimated, Gesture Handler, Screens, Pulsar haptics), and
   Mobbin (the UI reference behind each screen).
-- **Built by two people:** Divyanshu Patil and Bhavesh More, from May to September 2026.
+- **We built our own mascot editor, Blooby.** Every mascot animation in Sailors was made in
+  Blooby, a motion-design editor for mascots that exports Lottie/dotLottie, rather than
+  pulled from an asset pack. We built it after struggling to animate the mascot in After
+  Effects. Try it: https://blooby-editor.vercel.app/
+- **Build in public:** we posted regularly through the build on X (https://x.com/okkdiv) and
+  LinkedIn (https://www.linkedin.com/in/divyanshupatil/).
+- **Designs:** https://www.figma.com/design/jaDgU8OfnDAiENh3VyYzFi/Sailor-app?node-id=362-377&t=aU5SSI4NzCkZ4V3h-1
+- **Built by two people:** Divyanshu Patil and Bhavesh More, from May (the day the Shipaton was announced) to September 2026, alongside college.
+
+---
+
+## YouTube video description
+
+**Title:** Sailors: practise public speaking with haptic flashcards | RevenueCat Shipaton 2026
+
+```
+Public speaking is a must-have skill, and most people never really learn it.
+
+Sailors is an iPhone app that takes you from "I have to talk about this on Thursday" to actually doing it:
+
+• Generate a script from a description, images or a PDF. Set the audience, mood, card count and duration, and revise it to be softer or quieter.
+• Practise on colour-coded flash cards with haptics: the harder a line should land, the more vivid the card and the stronger the vibration. Flip to see the full line, edit any card.
+• Deliver with the teleprompter: custom speed, hold the left or right edge for 2x.
+• Build the skill daily with short talks based on 21+ communication frameworks (PREP, STAR, SCQA and more).
+• Streaks with a playful mascot and widgets. It greets you, gets sad when your streak breaks, and hurries you when it's about to. You can always restore it.
+• 20+ screen personalised onboarding and haptics throughout.
+
+The mascot is animated in Blooby, a mascot editor we built ourselves: https://blooby-editor.vercel.app/
+
+Built with RevenueCat (paywall, entitlements, customer centre), Expo, OpenRouter, Sentry, Software Mansion (Reanimated, Pulsar haptics) and more.
+
+Source code: https://github.com/divyanshu-patil/sailors
+Designs: https://www.figma.com/design/jaDgU8OfnDAiENh3VyYzFi/Sailor-app?node-id=362-377
+Follow the build: https://x.com/okkdiv · https://www.linkedin.com/in/divyanshupatil/
+
+Made by Divyanshu Patil and Bhavesh More for the RevenueCat Shipaton 2026 (Next Gen Award).
+
+#RevenueCatShipaton #ReactNative #Expo #PublicSpeaking #BuildInPublic
+```
