@@ -143,7 +143,7 @@ is always a visibly more vivid card. Five tiers, five colours, five distinct hap
 from one number:
 
 $$
-\text{tier}(i) = \#\{\, \theta \in \{0.2,\ 0.4,\ 0.6,\ 0.8\} : i \ge \theta \,\}
+\text{tier}(i) = \left|\{\, \theta \in \{0.2,\ 0.4,\ 0.6,\ 0.8\} : i \ge \theta \,\}\right|
 $$
 
 **Waiting that doesn't feel like waiting.** Even with jobs in the background, a screen that
@@ -301,3 +301,59 @@ Made by Divyanshu Patil and Bhavesh More for the RevenueCat Shipaton 2026 (Next 
 
 #RevenueCatShipaton #ReactNative #Expo #PublicSpeaking #BuildInPublic
 ```
+
+---
+
+## Build in Public Award: how did building in public improve your app or process?
+
+<!-- DRAFT: only facts we know. Fill the [brackets] with real feedback/numbers before submitting. -->
+
+We started in May 2026, the day the Shipaton was announced, and posted our progress regularly
+on X (https://x.com/okkdiv) and LinkedIn (https://www.linkedin.com/in/divyanshupatil/) from
+then until the deadline.
+
+- **Accountability.** Two students with a full college schedule, five months, one deadline.
+  Posting something every week meant there was always a screen, animation or feature to show,
+  which kept us shipping when the work felt slow. [Add: how often you posted.]
+- **Honest checkpoints.** Sharing designs from the first rough Figma prototypes onward made
+  us compare each version with the last, and every screen was redesigned several times as a
+  result.
+- **Sharing the struggle led to Blooby.** In the last three weeks we were stuck animating the
+  mascot in After Effects and said so publicly. That frustration is why we built our own
+  mascot editor, Blooby, and then shared it for others to use: https://blooby-editor.vercel.app/
+- **Feedback.** [Add: 1-3 real comments or suggestions from X/LinkedIn and what you changed
+  because of them.]
+- **Lessons.** Showing small, real progress (a haptic, a mascot reaction, a streak widget) got
+  more response than announcements, so we kept demos short and visual. [Edit to match what
+  you actually saw.]
+
+## RevenueCat Design Award: distinctive design elements
+
+Sailors is built to feel like a native iPhone app with a personality, and every screen was
+redesigned many times from our first Figma prototype
+(https://www.figma.com/design/jaDgU8OfnDAiENh3VyYzFi/Sailor-app?node-id=362-377).
+
+- **A mascot that reacts.** A cast of mascots greets you, sulks when your streak breaks, hurries
+  you when it is about to, and reacts to your thumb. They were animated in Blooby, a mascot
+  editor we built ourselves, exported as dotLottie with state machines, and played on Skia so
+  seven can run on one screen at 60fps. The pull-to-refresh mascot is scrubbed by the pull
+  distance on a quintic curve instead of being played as a clip.
+- **Colour and haptics you can feel.** Each practice card carries how hard the line should land.
+  You see it as colour, from calm mint to peak coral in an OKLCH palette where steps look
+  equally different, and feel it as five distinct haptic tiers (Software Mansion Pulsar). Colour
+  and touch give your memory more hooks than the words.
+- **Onboarding that feels personal.** 20+ screens with playful, tactile pickers (the speaking
+  as / mood / audience dials, a dial for reminder time) and copy that is one short line per
+  screen.
+- **Native where it counts.** SwiftUI controls through `@expo/ui`, system materials and
+  navigation, a WidgetKit home-screen widget with per-state mascot art, and gesture-based
+  controls throughout. The teleprompter is driven by touch: hold the middle to pause, hold an
+  edge for 2x speed, drag back to re-read.
+- **Motion with a budget.** Springs use one damping convention everywhere, animations stop
+  drawing when off-screen, and loading screens show the mascot with a tip right away, so waiting
+  on the AI never feels like waiting.
+- **Inspired by the best.** The layouts draw on patterns we studied on Mobbin, then made our
+  own with the mascot, colour and haptics.
+
+Please look at: the onboarding dials, the card deck with haptics on a real device, the streak
+broken / 1-day / 12-day home states, the streak restore screens, and the widgets.
