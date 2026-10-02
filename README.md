@@ -87,6 +87,61 @@ speech.
 
 <br />
 
+## Screenshots
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="apps/mobile/assets/screenshots/home-streak-12-days.png" alt="Home" /></td>
+    <td align="center" width="33%"><img src="apps/mobile/assets/screenshots/welcome.png" alt="Onboarding" /></td>
+    <td align="center" width="33%"><img src="apps/mobile/assets/screenshots/onboarding-tone.png" alt="Speaking as, mood, audience" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Home</b></sub></td>
+    <td align="center"><sub><b>Onboarding</b></sub></td>
+    <td align="center"><sub><b>Speaking as, mood, audience</b></sub></td>
+  </tr>
+</table>
+</div>
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="apps/mobile/assets/screenshots/script-detail.png" alt="Script detail" /></td>
+    <td align="center" width="33%"><img src="apps/mobile/assets/screenshots/deck-record.png" alt="Script practice" /></td>
+    <td align="center" width="33%"><img src="apps/mobile/assets/screenshots/widgets.png" alt="Widgets" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Script detail</b></sub></td>
+    <td align="center"><sub><b>Script practice</b></sub></td>
+    <td align="center"><sub><b>Widgets</b></sub></td>
+  </tr>
+</table>
+</div>
+
+**Streak and restore**
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="20%"><img src="apps/mobile/assets/screenshots/home-streak-broken.png" alt="Streak broken" /></td>
+    <td align="center" width="20%"><img src="apps/mobile/assets/screenshots/home-streak-1-day.png" alt="1-day streak" /></td>
+    <td align="center" width="20%"><img src="apps/mobile/assets/screenshots/home-streak-12-days.png" alt="12-day streak" /></td>
+    <td align="center" width="20%"><img src="apps/mobile/assets/screenshots/streak-restore.png" alt="Restore offer" /></td>
+    <td align="center" width="20%"><img src="apps/mobile/assets/screenshots/streak-restored.png" alt="Restored" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Streak broken</b></sub></td>
+    <td align="center"><sub><b>1-day streak</b></sub></td>
+    <td align="center"><sub><b>12-day streak</b></sub></td>
+    <td align="center"><sub><b>Restore offer</b></sub></td>
+    <td align="center"><sub><b>Restored</b></sub></td>
+  </tr>
+</table>
+</div>
+
+<br />
+
 ## What Sailors does
 
 The heart of Sailors is two steps: **generate a presentation script, then practise it on
